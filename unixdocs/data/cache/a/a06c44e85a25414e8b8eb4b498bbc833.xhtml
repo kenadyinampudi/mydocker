@@ -1,0 +1,84 @@
+
+<p>
+<strong>Adding a Disk to an AIX HACMP Cluster</strong>
+</p>
+
+<p>
+This document outlines the procedure for adding a disk to an AIX High Availability Cluster Multiprocessing (HACMP) cluster. This process involves expanding storage space within the cluster by requesting additional storage from the storage team and then configuring the newly allocated disk within the cluster environment.
+</p>
+
+<p>
+<strong>Procedure:</strong>
+</p>
+
+<p>
+1. <strong>Request Storage Allocation:</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Contact the storage team and provide them with the following information:</div>
+<ol>
+<li class="level2"><div class="li"> Cluster name</div>
+</li>
+<li class="level2"><div class="li"> WWNs of all nodes within the cluster</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Request storage allocation for the new disk.</div>
+</li>
+</ol>
+
+<p>
+2. <strong>Discover and Configure Disk:</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Log in to both primary and secondary nodes of the HACMP cluster.</div>
+</li>
+<li class="level1"><div class="li"> Open a terminal or console window and run the following command to configure the newly allocated disk:<pre class="code">cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that the disk is recognized and available by running:<pre class="code">lspv</pre>
+</div>
+</li>
+</ol>
+
+<p>
+3. <strong>Adding the Disk:</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> On the primary node, execute the following command to open the System Management Interface Tool (SMIT) for HACMP:<pre class="code">smit hacmp
+     In the SMIT menu, navigate as follows:
+     - System Management (C-SPOC)
+     - Storage
+     - Volume Groups
+     - Set Characteristics of a Volume Group
+     - Add a Volume to a Volume Group
+     On the entry screen, select the appropriate Volume Group (VG) and the newly allocated disk. Press Enter to confirm the selection.</pre>
+</div>
+</li>
+</ol>
+
+<p>
+4. <strong>Confirm Disk Addition:</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Once the disk has been successfully added, exit the SMIT interface.</div>
+</li>
+<li class="level1"><div class="li"> Run the following command on the primary node to confirm HACMP-related information:<pre class="code">     smit hacmp
+   - Navigate to:
+     - Extended Configuration
+     - Discover HACMP-related Information from Configured Nodes
+   - Verify that the newly added disk is visible on all nodes within the cluster.</pre>
+</div>
+</li>
+</ol>
+
+<p>
+5. <strong>Verify Disk Allocation:</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> To ensure proper allocation of the disk, run the following command on both the primary and secondary nodes:<pre class="code">lspv</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that the disk is allocated to the correct Volume Group (VG).</div>
+</li>
+</ol>

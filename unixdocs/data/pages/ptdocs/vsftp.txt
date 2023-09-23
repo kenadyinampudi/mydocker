@@ -1,0 +1,10 @@
+===== VSFTP =====
+
+This is one of a couple of different FTP services we use.
+The main config file is at /etc/vsftp.conf\\
+\\
+/etc/ftpusers is a list of "deny" users.\\
+The main security access is maintained with /etc/pam.d/vsftpd.\\
+
+=== PROBLEMS ===
+  * One problem I ran across was ssh would work with HPCC systems but not ftp.  The issue was with the pam_shells.so directive which requires a valid shell for a user to proceed.  AD authenticated users don't have a defined shell, so this part was failing.  I removed the requirement for a valid shell and both authentication and the deny list worked correctly.

@@ -1,0 +1,47 @@
+====== St-Truiden IBM V7000 zoning ======
+
+** Fabric **
+
+^Storage array^Port Name^Switch Name^Port No^Fabric^Alias name^WWN^Zoning target^
+|strv7kvip1|Canister 1 Slot 1 port 1|strds300a|4|Fabric A|strv7k_ct1_fc1|50:05:07:68:10:11:14:74|AIX/VMWARE|
+|strv7kvip1|Canister 2 Slot 1 port 2|strds300a|7|Fabric A|strv7k_ct2_fc2|50:05:07:68:10:12:14:9B|AIX/VMWARE|
+|strv7kvip1|Canister 1 Slot 1 port 2|strds300b|4|Fabric B|strv7k_ct1_fc2|50:05:07:68:10:12:14:74|AIX/VMWARE|
+|strv7kvip1|Canister 2 Slot 1 port 1|strds300b|7|Fabric B|strv7k_ct2_fc1|50:05:07:68:10:11:14:9B|AIX/VMWARE|
+
+===== Creating Alias for storage array canisters =====
+
+  -FAB A Alias<code>alicreate "strv7k_ct1_fc1","50:05:07:68:10:11:14:74"
+alicreate "strv7k_ct2_fc2","50:05:07:68:10:12:14:9B"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+  -FAB B Alias<code>alicreate "strv7k_ct1_fc2","50:05:07:68:10:12:14:74"
+alicreate "strv7k_ct2_fc1","50:05:07:68:10:11:14:9B"
+cfgsave
+cfgenable "fab_b_act_config"</code>
+
+===== FAB A Zoning strds300a =====
+
+  -Zone the host to fabric A switch monds300a<code>zonecreate "pocmonsv01_4e00d0__strv7k_ct1_fc1","pocmonsv01_4e00d0;strv7k_ct1_fc1"
+zonecreate "pocmonsv01_4e00d0__strv7k_ct2_fc2","pocmonsv01_4e00d0;strv7k_ct2_fc2"
+
+zonecreate "pocmonsv01_4e00d4__strv7k_ct1_fc1","pocmonsv01_4e00d4;strv7k_ct1_fc1"
+zonecreate "pocmonsv01_4e00d4__strv7k_ct2_fc2","pocmonsv01_4e00d4;strv7k_ct2_fc2"
+
+cfgadd "fab_a_act_config","pocmonsv01_4e00d0__strv7k_ct1_fc1;pocmonsv01_4e00d0__strv7k_ct2_fc2;pocmonsv01_4e00d4__strv7k_ct1_fc1;pocmonsv01_4e00d4__strv7k_ct2_fc2"
+
+cfgsave
+cfgenable "fab_a_act_config"</code>
+
+===== FAB B zoning =====
+
+  -Zone host to Fab B switch strds300a<code>zonecreate "pocmonsv01_4e00d2__strv7k_ct1_fc2","pocmonsv01_4e00d2;strv7k_ct1_fc2"
+zonecreate "pocmonsv01_4e00d2__strv7k_ct2_fc1","pocmonsv01_4e00d2;strv7k_ct2_fc1"
+
+zonecreate "pocmonsv01_4e00d6__strv7k_ct1_fc2","pocmonsv01_4e00d6;strv7k_ct1_fc2"
+zonecreate "pocmonsv01_4e00d6__strv7k_ct2_fc1","pocmonsv01_4e00d6;strv7k_ct2_fc1"
+
+
+cfgadd "fab_b_act_config","pocmonsv01_4e00d2__strv7k_ct1_fc2;pocmonsv01_4e00d2__strv7k_ct2_fc1;pocmonsv01_4e00d6__strv7k_ct1_fc2;pocmonsv01_4e00d6__strv7k_ct2_fc1"
+
+cfgsave
+cfgenable "fab_b_act_config"</code>

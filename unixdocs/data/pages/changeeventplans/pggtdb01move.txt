@@ -1,0 +1,70 @@
+====== Upgrade memory and move pggtdb01 ======
+
+===== Memory upgrade =====
+
+  - Shutdown applications on xggtdb01 and xeerdb99
+  - Shutdown OS xggtdb01, xeerdb99, xeerdb03, taprvio80 and taprvio81
+  - Poweroff the frame, perform memory upgrades.
+  - Startup OS taprvio80, taprvio81, xggtdb01 and xeerdb99
+  - Startup applications on xggtdb01 and xeerdb99
+
+
+===== Migrate pggtdb01 from 55A to E6D =====
+
+==== Shutdown apps and OS ====
+
+  - Shutdown GTS application on pggtdb01
+  - Unmount NFS mounted filesystems from clients
+    - tspr1d03<code>sudo umount /comm</code>
+    - dggtdb01 and qggtdb01<code>sudo umount /usr/sap/trans</code>
+  - Remove IP configurations and shutdown pggtdb01
+    - Login to the console<code>sudo getconsole pggtdb01</code>Login as root<code>sudo ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   sudo rmdev -dl en${dev}
+   sudo rmdev -dl et${dev}
+   sudo rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>Shutdown pggtdb01 OS<code>sudo shutdown -F</code>
+
+==== Swing the storage ====
+
+  - Magic GUI on VMAX
+
+==== Change identity and bring up xeerdb03 as pggtdb01 ====
+
+  - Change the lpar name on HMC
+  - Change the VLAN on Virtual NIC on slot 2 to vlan '406'
+  - Boot the sytem, Open a console, login as root and change the IP<code>sudo /usr/sbin/mktcpip -h pggtdb01 -a 10.32.6.60 -m 255.255.255.0 -i en0 -g 10.32.6.1 -A no -s</code>Chane IP of the backup NIC<code>sudo chdev -l en1 -a netaddr=10.32.51.60 -a netmask=255.255.255.0 -a state=up</code>
+  - Enable MPIO <code>lsdev -Ccdisk | grep MPIO | awk '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</code>
+  - Reboot<code>sudo shutdown -Fr</code>
+  - Make sure we have all the devices<code>for pvid in $(awk '{print $2 }' /home/x1kxk630/pggtdb01.pvids )
+do
+   lspv | grep -q ${pvid}
+   [[ ${?} -eq 0 ]] && echo "Good :: Found ${pvid}" || echo "Bad :: Cannot find ${pvid}"
+done</code>
+  - Import vgs<code>sudo importvg -y binvg01 000d9cdacbfd543b
+sudo importvg -y datavg01 000d9cda2ee4ca5c
+sudo importvg -y logvg01 000d9cdacbeba980</code>
+  - Disable CIO<code>for fs in /oracle/PGT/mirrlogA /oracle/PGT/mirrlogB /oracle/PGT/origlogB\
+ /oracle/PGT/origlogA /oracle/PGT/sapdata1 /oracle/PGT/sapdata2 /oracle/PGT/sapdata3 /oracle/PGT/sapdata4
+do
+   sudo chfs -a options=rw ${fs}
+done</code>
+  - Mount filesystems<code>for vg in binvg01 logvg01 datavg01
+do
+   for fs in $(sudo lsvgfs ${vg} )
+   do
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done
+done</code>
+  - Populate .information file<code>sudo cp /home/x1kxk630/.information /var/adm/.information</code>
+  - Enable cron<code>sudo mkitab cron:23456789:respawn:/usr/sbin/cron</code>
+  - NFS export filesystems<code>sudo exportfs -av</code>
+  - NFS mount the filesystems<code>echo "" | sudo tee -a /etc/filesystems
+sudo cat /home/x1kxk630/filesystems.nfs | sudo tee -a /etc/filesystems
+sudo mount /sapsoft</code>
+  - NFS remount the filesystems on tspr1d03, dggtdb01 and qggtdb01
+    - tspr1d03<code>sudo mount /comm</code>
+    - dggtdb01 and qggtdb01<code>sudo mount /usr/sap/trans</code>
+  - Handover to Basis to startup applications on pggtdb01.

@@ -1,0 +1,104 @@
+<hr />
+
+<h1 class="sectionedit1" id="this_is_in_draft_to_be_verified_during_ep1_to_es1_refresh_on_01_aug_2021">This is in Draft to be verified during EP1 to ES1 Refresh on 01_AUG_2021</h1>
+<div class="level1">
+<hr />
+
+<p>
+<strong>This documentation is a continuation of <a href="/doku.php?id=unix:powercli_datastore_cname" class="wikilink1" title="unix:powercli_datastore_cname">How to get Datastore Name and Canonical Name through PowerCLI</a></strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Once the disks have been identified, request the storage team to take the snapshot and present it on the cluster where the new VM will be built.</div>
+</li>
+<li class="level1"><div class="li"> Once the disks are presented, scan the LUNs.  Replace the cluster with the appropriate cluster where the disks are presented <pre class="code">Get-Cluster non-prod-linux2 |Get-VMHost|Get-VMHostStorage -RescanAllHba</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that the LUN has been added, they should be at the bottom of the list.  Change the VMhost according to the cluster name. <pre class="code">Get-SCSILun -VMhost cdcvilvm125.driv.com -LunType Disk | Select CanonicalName,Capacity</pre>
+
+<p>
+ <strong>Another way</strong> to do this is to assign all the CanonicalNames that the Storage team gave to a variable and then verify it against the previous command. Please remember to put a space separated list of all CanonicalNames that were newly presented to confirm that they are visible.
+</p>
+<pre class="code">$DISKS=&quot;naa.624a9370451ceeaa321e480801bfebb8 naa.624a9370451ceeaa321e480801bfebb9&quot; 
+
+Get-SCSILun -VMhost cdcvilvm125.driv.com -LunType Disk | Select CanonicalName, CapacityGB | findstr $DISKS</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The next step is to resignature. <strong>Exercise Caution</strong> for the following steps. We are going to use the vmfsname of the original disk.  Repeat the steps for all the disks that have to be resignatured.  <pre class="code">$vmfsname = &quot;CDC-PURE-NL-002&quot;
+$esxcli.storage.vmfs.snapshot.list($vmfsname)</pre>
+
+<p>
+ Verify the output of the previous command &amp; then only execute the next command 
+</p>
+<pre class="code">$esxcli.storage.vmfs.snapshot.resignature($vmfsname)</pre>
+
+<p>
+ Verify again, the next command is to verify that the resignature is done and should return a blank o/p as the disk has been resignatured.
+</p>
+<pre class="code">$esxcli.storage.vmfs.snapshot.list($vmfsname)</pre>
+
+<p>
+Sample output below 
+</p>
+<pre class="code">PS C:\WINDOWS\system32&gt; $vmfsname = &quot;CDC-PURE-NL-002&quot;
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+Canmount                      : false
+Canresignature                : true
+Reasonfornonresignaturability : 
+Reasonforunmountability       : the original volume is still online
+UnresolvedExtentCount         : 1
+VMFSUUID                      : 5a5ed8b1-0bcb99a6-d493-0025b5a433be
+VolumeName                    : CDC-PURE-NL-002
+
+PS C:\WINDOWS\system32&gt;
+PS C:\WINDOWS\system32&gt; $esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+true
+
+PS C:\WINDOWS\system32&gt;
+PS C:\WINDOWS\system32&gt; $esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+PS C:\WINDOWS\system32&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now Rename the disks.  The resignatured disks will automatically take a name <pre class="code">get-datastore |findstr CDC-PURE-NL-002</pre>
+
+<p>
+ Rename it 
+</p>
+<pre class="code">get-datastore snap-7ea60f66-CDC-PURE-NL-002 | set-datastore -name CDC-PURE-NL-002-NEW</pre>
+
+<p>
+ Replace CDC-PURE-NL-002-NEW following the standard convention of the disks. &amp; verify 
+</p>
+<pre class="code"> get-datastore CDC-PURE-NL-002-NEW </pre>
+
+<p>
+ Sample Output below.
+</p>
+<pre class="code">PS C:\WINDOWS\system32&gt; get-datastore |findstr CDC-PURE-NL-002
+snap-7ea60f66-CDC-PURE-NL-002        1,175.333       4,095.750
+CDC-PURE-NL-002                      1,175.325       4,095.750
+
+PS C:\WINDOWS\system32&gt;
+PS C:\WINDOWS\system32&gt; get-datastore |findstr CDC-PURE-NL-002 |findstr snap
+snap-7ea60f66-CDC-PURE-NL-002        1,175.333       4,095.750
+
+PS C:\WINDOWS\system32&gt;
+PS C:\WINDOWS\system32&gt; get-datastore snap-7ea60f66-CDC-PURE-NL-002 | set-datastore -name CDC-PURE-NL-002-NEW
+Name                               FreeSpaceGB      CapacityGB
+----                               -----------      ----------
+CDC-PURE-NL-002-NEW                  1,175.348       4,095.750
+
+PS C:\WINDOWS\system32&gt;
+PS C:\WINDOWS\system32&gt; get-datastore CDC-PURE-NL-002-NEW
+Name                               FreeSpaceGB      CapacityGB
+----                               -----------      ----------
+CDC-PURE-NL-002-NEW                  1,175.348       4,095.750
+
+PS C:\WINDOWS\system32&gt;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "This is in Draft to be verified during EP1 to ES1 Refresh on 01_AUG_2021" [7-] -->

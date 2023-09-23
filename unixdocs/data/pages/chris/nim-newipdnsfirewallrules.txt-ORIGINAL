@@ -1,0 +1,74 @@
+====== Securing DNS names, IP addresses and Firewall Rules ======
+
+==== DNS Names ====
+
+  * Unix systems GIOS manage follow a naming standard. (There are many exceptions - This note is to ensure we wont have new exceptions)
+
+Example ''pagi3p01''
+
+p --> Production (Landscape )
+  p - Production
+  d - Development
+  q - QA
+  t - Test
+  x - Sandbox
+a --> America (Geographycal location the application support)
+  a - America
+  e - Europe
+  g - Global
+gi --> GIS ( Application )
+3p --> Type
+  3p - 3rd party
+  ap - App
+  db - Database
+  sv - Service etc
+01 --> Serialnumber ( the second 3rd party server would be pagi3p02 )
+
+==== IP Address ====
+
+  10.0.48.0/24   --> America/Global public subnet
+  10.0.49.0/24   --> America/Global backup subnet
+  10.32.50.0/24  --> Europe public subnet
+  10.32.51.0/24  --> Europe backup subnet
+  10.32.60.0/24  --> Heavy backups - another backup subnet
+
+There are some more - I think they are carried over from the past
+
+  10.32.6.0/24
+  10.0.0.5.0/24
+
+==== Firewall Rules ====
+
+  * These are the firewall rules a Tenneco Unix system needs when it is being installed in the DMZ
+
+^OS^Purpose^Source^Target^Port^Protocol^Direction^
+|ALL|SSH|10.32.51.118|Server|22|TCP|-->|
+|ALL|SSH|Server|10.32.51.118|22|TCP|-->|
+|ALL|SSH|User Subnet|Server|22|TCP|-->|
+|ALL|SYSLOG|Server|10.32.50.59|514|UDP|-->|
+|ALL|SYSLOG-ERRPT|Server|10.0.48.5|514|UDP|-->|
+|Linux|Kickstart|Server|10.0.48.5|80,443|TCP|-->|
+|ALL|UUMA|10.0.48.122|Server|40035|UDP|-->|
+|ALL|NTP|Server|10.1.1.1|123|UDP|<-->|
+|ALL|NTP|Server|10.1.1.2|123|UDP|<-->|
+|ALL|DNS|Server|10.32.8.53|53|UDP/TCP|-->|
+|ALL|DNS|Server|10.0.4.50|53|UDP/TCP|-->|
+|IBM Power|DLPAR|Server|10.32.10.55|657|UDP/TCP|<-->|
+|IBM Power|DLPAR|Server|10.32.10.56|657|UDP/TCP|<-->|
+
+
+==== NIM Firewall Rules ====
+
+
+^OS^Purpose^Source^Target^Port^Protocol^Direction^Comments^
+|AIX|BOOTP|Client|10.32.51.118|68|UDP|<--| |
+|AIX|BOOTP|10.32.51.118|Client|67|UDP|-->| |
+|AIX|TFTP|Client|10.32.51.118|69|UDP|<--> | |
+|AIX|TFTP|Client|10.32.51.118|Random port between 2768 and 65535|UDP|<-->| |
+|AIX|NFS|Client|10.32.51.118|111|UDP|<-->| |
+|AIX|NFS|Client|10.32.51.118|NNN|TCP|<-->|random port between 32768 and 65535, or the port specified in /etc/services for 'mountd' and 'lockd', as 'statd' must use the port range between 32768 and 65535)|
+|AIX|NFS|Cloent|10.32.51.118|249|TCP||random port between 32768 and 65535, or the port specified in /etc/services for 'mountd' and 'lockd', as 'statd' must use the port range between 32768 and 65535)|
+|AIX|ICMP|Client|10.32.51.118|5813|UDP|<-->| |
+|AIX|ICMP|Client|10.32.51.118|5813|TCP|<-->| |
+|AIX|NIM|Client|10.32.51.118|1058/1059+512-1023|TCP|<-->| |
+|AIX|RSH|MASTER|Client|513,514 + 513-1023|TCP|<-->| |

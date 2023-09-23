@@ -1,0 +1,71 @@
+====== Host based storage migration  to Pure Storage -- Lincolnshire ======
+
+===== Preperation =====
+
+  - Create change controls and get approvals necessary. [ In most cases - this is done by Storage team ]
+  - Figure out the storage requirement and email them to Storage team in advance.
+    - Login to the server<code>ssh <hostname></code>
+    - Define this function<code>function find_disks {
+sudo /usr/local/scripts/lsvpcfg.sh | grep -v ^"Disk" | awk -F: '{if ($5!="2") print $0}' > lsvpcfg.out.1
+echo "VG                   Count      Size(GB)"
+
+for VG in $(awk -F: '{print $NF}' lsvpcfg.out.1 | sort -u | grep -v ^$ )
+do
+   grep :${VG}$ lsvpcfg.out.1 > ${VG}.out.1
+   for size in $(awk -F: '{print $5}' ${VG}.out.1 | sort -u )
+   do
+      count=$(grep :${size}: ${VG}.out.1 | wc -l )
+      siZe=$(echo ${size} | awk '{printf "%.2f",$1/1024}')
+      echo "${VG} ${count} ${siZe}" | awk '{printf "%-20s %-10s %-10s \n",$1,$2,$3}'
+   done
+   rm ${VG}.out.1
+done
+}</code>
+    - Execute it<code>find_disks</code>
+    - Email the result to SAN Storage team and request the storage to be allocated. 
+      - Exclude local disks used for paging or boot disks
+      - If the system is vSCSI, please find out the VIOS servers and ask for storage on the VIOS servers. Do include the hostname/guestname.
+  - Use the following table to figure out if we need Pure ODM drivers<code>Virtualized SCSI disks - Do not install on the Guest( Instead, install them on the VIOS servers )
+NPIV Virtualised disks - Install the device drivers
+Direct Connect         - Install the device drivers</code>
+    - Check if pure ODM has been installed.<code>lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte</code>You should see this if ODM is installed<code> Fileset                      Level  State      Description         
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  devices.fcp.disk.pure.flasharray.mpio.rte
+                             1.0.0.4  COMMITTED  AIX MPIO Support for PURE
+                                                 Flash Arrays(New Install)</code>If Pure ODM is not installed, you would find something like this<code>lslpp: 0504-132  Fileset devices.fcp.disk.pure.flasharray.mpio.rte not installed.</code>
+      - If Pure ODM is not installed, install it now.
+      - NFS mount the source for packages<code>sudo mkdir -p /mnt/pure ;sudo  mount pgnmsv01:/prod/images/storage /mnt/pure</code>
+      - Install the ODM<code>sudo installp -acX -d /mnt/pure/PureODM all</code>It will say reboot, but don't reboot. i.e. Please ignore this message<code>    * * *  A T T E N T I O N  * * *
+    System boot image has been updated. You should reboot the
+    system as soon as possible to properly integrate the changes
+    and to avoid disruption of current functionality.</code>
+      - Unmount the nfs mount<code>sudo umount /mnt/pure</code>
+===== Migration =====
+
+  - Assuming storage admins have allocated the disks. Run cfgmgr
+    - Capture the before state<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+    - Cfgmgr<code>sudo cfgmgr</code>
+    - Capture the after state<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+    - Validate the number of required drives are present.<code>diff lsvpcfg.out.1 lsvpcfg.out.2</code>
+  - Migrate the data disks first using mirror and unmirror -- This is documented elsewhere.
+  - Migrate rootvg
+    - [[kapil:function2migraterootvg|A function that let's you migrate rootvg]]
+    - Mirror rootvg too<code>export LVM_HOTSWAP_BOOTDISK=1
+sudo extendvg rootvg hdiskY
+sudo mirrorvg rootvg hdiskY
+sudo bosboot -ad /dev/hdiskX
+sudo bosboot -ad /dev/hdiskY
+sudo bootlist -m normal hdiskY
+sudo unmirrorvg rootvg hdiskX
+sudo migratepv hdiskX
+sudo reducevg rootvg hdiskX
+sudo bosboot -ad /dev/hdiskY</code>
+    - Migrate the alt_disk. This step does not delete the data off of alt_rootvg<code>sudo alt_disk_install -X altinst_rootvg</code>
+    - Delete the old disks<code>sudo rmdev -dl hdiskX # Old root disk
+sudo rmdev -dl hdiskZ # Old alt_rootvg disk</code>
+    - Create a new alt_disk_copy<code>sudo alt_disk_copy -g -B -d hdiskA</code>
+
+===== Cleanup =====
+
+  - After sufficient wait time ( say a week ) please send a request to Storage admins to cleanup old storage and zoning etc. ** Ignore this step for now ** We will cleanup all of them together at a later date.

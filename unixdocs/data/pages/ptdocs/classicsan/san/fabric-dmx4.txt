@@ -1,0 +1,24 @@
+====== Fabric zoning servers to DMX4 ======
+
+Here is the port maps for respective hosts. If a new host is to be added, please discuss within the team and get an agreement on where to place it.
+
+^FA port(s)^Hostname^
+|7B:1 & 10B:1|taitc118,taprvio14,taprvio50,taprvio51,taprvio6,taprvio8|
+|8C:0 & 9C:0|taprvio60,taprvio70,taprvio20,taprvio21,taprvio30,taprvio31|
+|8D:0 & 9D:0|teprbk01,tedv2d01|
+|8B:1,9B:1,7C:0,10C:0|peerdb99|
+|8C:0,9C:0|peerap99|
+===== Example - zoning taprvio50 to DMX4 =====
+
+  * Fabric A zoning - taprvio50 and taprvio51 to 7B1
+    - Login to Fabric A principal switch<code>ssh admin@ldcds5300a1</code>
+    - Create zones<code>zonecreate "taprvio50_9c8959__dmx4_3339_7b1","taprvio50_9c8959;dmx4_3339_7b1"</code><code>zonecreate "taprvio51_a5e5ff__dmx4_3339_7b1","taprvio51_a5e5ff;dmx4_3339_7b1"</code>
+    - Add the zone to config<code>cfgadd "fab_a_act_config","taprvio50_9c8959__dmx4_3339_7b1;taprvio51_a5e5ff__dmx4_3339_7b1"</code>
+    - Save and enable the config<code>cfgsave
+cfgenable "fab_a_act_config"</code>
+  * Fabric B zoning - taprvio50 and taprvio51 to 10B1
+    - Login to Fabric B principal switch<code>ssh admin@ldcds5300b1</code>
+    - Create zoning<code>zonecreate "taprvio50_a5f031__dmx4_3339_10b1","taprvio50_a5f031;dmx4_3339_10b1"</code><code>zonecreate "taprvio51_9d1001__dmx4_3339_10b1","taprvio51_9d1001;dmx4_3339_10b1"</code>
+    - Add the zone to config<code>cfgadd "fab_b_act_config","taprvio50_a5f031__dmx4_3339_10b1;taprvio51_9d1001__dmx4_3339_10b1"</code>
+    - Save and enable the config<code>cfgsave
+cfgenable "fab_b_act_config"</code>

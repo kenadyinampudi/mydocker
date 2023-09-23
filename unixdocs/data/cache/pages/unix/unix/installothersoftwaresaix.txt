@@ -1,0 +1,20 @@
+====== Install addtional softwares on AIX / VIOS ( sudo and rsync ) ======
+
+  * Login to NIM server taitc118.
+
+** sudo **
+
+  * Copy the latest sudo RPM from the NIM server ( taitc118 ) to the server where we need it installed<code>sudo scp /prod/images/RPMS/sudo-1.6.9p23-2noldap.aix5.3.ppc.rpm ${targethost}:/tmp</code>
+  * Install / Upgrade sudo on the target host<code>sudo ssh ${targethost} "rpm -Uvh /tmp/sudo-1.6.9p23-2noldap.aix5.3.ppc.rpm"</code>
+  * Copy the latest sudoers file to the target server.<code>sudo scp /prod/images/etc/sudoers ${targethost}:/etc/sudoers</code>
+
+** rsync **
+
+  * Copy the latest RPM from the NIM server ( taitc118 ) to the server where we need it installed<code>sudo scp /prod/images/RPMS/rsync-3.0.6-1.aix5.3.ppc.rpm ${targethost}:/tmp</code>
+  * Install / Upgrade rsync on the target host<code>sudo ssh ${targethost} "rpm -Uvh /tmp/rsync-3.0.6-1.aix5.3.ppc.rpm"</code>
+
+** bash **
+
+  * Copy the latest RPM from the NIM server ( taitc118 ) to the server where we need it installed<code>sudo scp /prod/images/RPMS/bash-4.2-3.aix6.1.ppc.rpm ${targethost}:/tmp</code>
+  * Install / Upgrade bash on the target host<code>sudo ssh ${targethost} "rpm -Uvh bash-4.2-3.aix6.1.ppc.rpm"</code>
+  * Add ''/usr/bin/bash'' to ''/etc/security/login.cfg''<code>sudo ssh ${targethost} "chsec -f /etc/security/login.cfg -s usw -a shells=/bin/sh,/bin/bsh,/bin/csh,/bin/ksh,/bin/tsh,/usr/bin/sh,/usr/bin/bsh,/usr/bin/csh,/usr/bin/ksh,/usr/bin/tsh,/usr/sbin/sliplogin,/usr/sbin/uucp/uucico,/usr/sbin/snappd,/usr/bin/rksh,/usr/bin/rksh93,/usr/bin/bash"</code>

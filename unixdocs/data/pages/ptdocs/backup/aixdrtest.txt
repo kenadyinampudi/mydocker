@@ -1,0 +1,17 @@
+====== AIX DR Recovery using HMC ======
+
+To do a DR test quickly, go to cdcpillx055:/scripts/drtest/aix \\
+\\
+The scripts will ssh to phlypahmc011 as leedsn16 and run various commands. \\
+To run a complete test lifecycle, run "start_dr".  \\
+Stop a DR test, either temporarily or as a final, run "pause_dr".
+To reset the environment after a test, run "cleanup_dr".
+\\
+First, start up all the LPARs with their DR profiles into SMS mode using "chsysstate". Run "start_dr".\\ 
+After this, each machine will need to search for new SAN drives.  Choose a discovered boot volume and boot normally.\\
+\\
+To stop all the LPARs, we will use "chsysstate again to gracefully shutdown the LPARs.  Run "pause_dr".\\
+\\If this doesn't work, you may need to force the machines down. \\
+\\
+Finally run through the cleanup scripts after a test.  This will reset each profile back to the "default_profile", which uses a minimal amount of resources to put the frame back into capacity on demand compliance.  Run "cleanup_dr".  The LPARs need to be off first.\\ 
+\\ 

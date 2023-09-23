@@ -1,0 +1,29 @@
+====== PTA database storage allocation ( Pure storage ) ======
+
+** We need to complete these steps for PTA storage allocation. **
+
+  * Create production LUNs on Pure storage and assign to tapr1d01
+  * Add the production LUNs to protection group "PTAONLINEBACKUP".
+  * Create backup LUNs on pure and assign to taqa1d01.
+
+===== Technical steps =====
+
+==== Create PTA database volume ====
+
+    * Login to pgunap01. Export a variable for SSH2PURE<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+    * Find out the next PTA database volume's name<code>${SSH2PURE} purevol list | grep ^ptadb | awk '{print $1}' | sort</code>The output<code>ptadbdata_001
+ptadbdata_002
+ptadbdata_003
+ptadbdata_004</code>In this case, the next volume name will be ''ptadbdata_005''
+    * Create PTA database volume<code>${SSH2PURE} purevol create --size 250g ptadbdata_005</code>
+    * Assign PTA database volume to tapr1d01<code>${SSH2PURE} purevol connect ptadbdata_005 --host tapr1d01</code>
+    * Add PTA database volume to the protection group<code>${SSH2PURE} purepgroup setattr --addvollist ptadbdata_005 PTAONLINEBKP </code>
+
+==== Create PTA backup volume ====
+
+    * Find out the next PTA backup volume's name<code>${SSH2PURE} purevol list | grep ^PTAONLINEBKP | awk '{print $1}' | sort</code>The output<code>PTAONLINEBKP_001
+PTAONLINEBKP_002
+PTAONLINEBKP_003
+PTAONLINEBKP_004</code>In this case, the next volume name will be ''PTAONLINEBKP_005''
+    * Create PTA backup volume<code>${SSH2PURE} purevol create --size 250g PTAONLINEBKP_005</code>
+    * Assign PTA backup volume to taqa1d01<code>${SSH2PURE} purevol connect PTAONLINEBKP_005 --host taqa1d01</code>

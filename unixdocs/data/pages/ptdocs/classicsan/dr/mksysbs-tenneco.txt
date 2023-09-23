@@ -1,0 +1,36 @@
+====== AIX MKSYSB process documentation ======
+
+=====MKSYSB Scripts =====
+
+|/usr/local/scripts/mksysb.sh|Perform mksysb to a file, store the copy on the Primary MKSYSB target|
+|/usr/local/scripts/mksysb-dr.sh|Copy the mksysb file to a DR location|
+|/usr/local/scripts/mksysb-tape.sh|Perform mksysb to a locally attached tape|
+
+===== MKSYSB Setup =====
+
+  * Install the standard exclude.rootvg<code>scp taitc118:/prod/images/etc/exclude.rootvg /etc/exclude.rootvg</code>
+
+**Lincolnshire**
+
+  - Copy the mksysb ssh key<code>scp -p taitc118:/prod/images/etc/id_dsa.mksysb /usr/local/scripts/id_dsa.mksysb</code>
+  - Copy the latest mksysb script from taitc118<code>scp taitc118:/prod/images/scripts/mksysb.sh /usr/local/scripts/mksysb.sh</code>
+  - Test the mksysb once.<code>nohup /usr/local/scripts/mksysb.sh &</code>
+
+**Interexion**
+
+  - Copy the mksysb ssh key<code>scp -p taitc118:/prod/images/etc/id_dsa.mksysb /usr/local/scripts/id_dsa.mksysb</code>
+  - Copy the latest mksysb script from taitc118<code>scp taitc118:/prod/images/scripts/mksysb.sh /usr/local/scripts/mksysb.sh</code>
+===== MKSYSB Process =====
+
+^Servers^Primary MKSYSB target^DR mksysb target^Local tape mksysb^Status^
+|All Lincolnshire Servers|taitc118|Tape offsite|Some of them do|Work in Progress|
+|All Interexion Servers|penmsv01|tastr05? (Need to decide)|Some of them do|Work in Progress|
+|NA - Atlas production servers ta???055|Local backup server ta???057|taitc118|All of them do|Work in Progress|
+|NA - Atlas backup servers ta???057|Local production server ta???055|taitc118|All of them do|Work in Progress|
+|EU - Atlas production servers ta???055|Local backup server ta???057|penmsv01|All of them do|Work in Progress|
+|EU - Atlas backup servers ta???057|Local production server ta???055|penmsv02|All of them do|Work in Progress|
+|South African Server(s)|penmsv01|penmsv01|All of them do|Work in Progress|
+
+** Visual of the above information **
+
+{{:dr:tenneco_mksysb.jpg|}}

@@ -1,0 +1,11 @@
+**On a mirrored rootvg system**
+
+  - Find out the rootvg<code>lspv | grep rootvg
+hdisky          00021ffb513afe5a                    rootvg          active
+hdiskx          00021ffb513aff90                    rootvg          active</code>
+  - Unmirror the VG<code>sudo unmirrorvg rootvg hdiskX</code>
+  - Remove the disk from rootvg<code>sudo reducevg rootvg hdiskX</code>
+  - Clear the VGDA<code>sudo chpv -c hdiskX</code>
+  - Set the bootlist to boot from the remaining disk<code>sudo bootlist -m normal hdiskY</code>
+  - Perform an alt_disk_copy to the alt_rootvg<code>sudo alt_disk_copy -B -d hdiskX</code>
+  - Check altinsta_rootvg has been created<code>lspv | grep rootvg</code>Make sure you see the altinst_rootvg in the output

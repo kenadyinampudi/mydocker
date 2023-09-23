@@ -1,0 +1,17 @@
+a:3:{i:0;a:3:{i:0;s:14:"document_start";i:1;a:0:{}i:2;i:0;}i:1;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:1209:"sudo rsync --delete -axvv /usr/sap/              paerap99:/usr/sap/
+sudo rsync --delete -axvv /usr/sap/trans/        paerap99:/usr/sap/trans/
+sudo rsync --delete -axvv /usr/sap/PTA/          paerap99:/usr/sap/PTA/
+sudo rsync --delete -axvv /usr/sap/PTA/D00/sort/ paerap99:/usr/sap/PTA/D00/sort/
+sudo rsync --delete -axvv /usr/ecc/              paerap99:/usr/ecc/
+sudo rsync --delete -axvv /taedi53/              paerap99:/taedi53/
+sudo rsync --delete -axvv /sapmnt/               paerap99:/sapmnt/
+sudo rsync --delete -axvv /oracle/               paerap99:/oracle/
+sudo rsync --delete -axvv /opt/vertex/           paerap99:/opt/vertex/
+sudo rsync --delete -axvv /edi/                  paerap99:/edi/
+sudo rsync --delete -axvv /application/          paerap99:/application/
+sudo rsync --delete -axvv /taedi61/              paerap99:/taedi61/
+sudo rsync --delete -axvv /users/unispool/       paerap99:/users/unispool/
+sudo rsync --delete -axvv /sapcomm/              paerap99:/sapcomm/
+sudo rsync --delete -axvv /sapcomm/PTA/PWC/      paerap99:/sapcomm/PTA/PWC/
+sudo rsync --delete -axvv /usr/sap/DAA/          paerap99:/usr/sap/DAA/
+sudo rsync --delete -axvv /sapcomm/PTA/ftpgis/   paerap99:/sapcomm/PTA/ftpgis/";i:1;N;i:2;N;}i:2;i:6;}i:2;a:3:{i:0;s:12:"document_end";i:1;a:0:{}i:2;i:6;}}

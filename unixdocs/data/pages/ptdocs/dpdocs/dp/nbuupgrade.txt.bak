@@ -1,0 +1,184 @@
+In order to be up to date with ours NetBackup software there is a need to perform upgrades of ours backup environments on some given basis. You can use this below points to perform NBU upgrades.
+Of course this is only proposal and does not guarantee a successful upgrade. It is an example of WINDOWS based NBU master server with connected NBU appliance acting as media server.
+  - Check the SORT web site for new updates/procedures "Installation and Upgrade Checklist" [[https://sort.veritas.com/checklist/install|SORT]]
+   - If upgrading from 8.0 or pre 8.0 to 8.1.x family with MSDP read these two and apply [[https://www.veritas.com/support/en_US/article.100044088|one]] [[https://www.veritas.com/content/support/en_US/article.100044312.html|two]]
+  - Download [[https://download.veritas.com/resources/content/live/OSVC/100039000/100039978/en_US/02-15-2019.nbdiagutil.zip?__gda__=1551506077_f77a9820d4b8502c7f4c46456a8aa51d|nbdiagutil]] and run it on upgraded server [[https://www.veritas.com/content/support/en_US/article.100039978.html|nbdiagutil home page]] - resolve any issues found by this tool.
+  - Gather Veritas SmartMeter registration keys for NBU version 8.1.2 and greater [[dp:nbusmartmeter|steps]]
+  - **If upgrading to 8.1.1 from 8.0 or 8.1 follow this [[https://www.veritas.com/support/en_US/article.100042241|TN]]. Below one is to change EMM DB password to well known (apply our well know password - as the password is generated randomly during installation) [[https://www.veritas.com/content/support/en_US/doc/18716246-129889741-0/v41725295-129889741|TN]]. Of course have a NBU hot catalog backup prior any changes. Same applies to NBU appliances (3.0 or 3.1 upgrade to 3.1.1).**
+  - Make sure that the user scvbackup is in local administrator group<code>net localgroup administrators|findstr /i svcbackup</code>If not found add it!!<code>net localgroup administrators domain-name\svcbackup /add</code>
+  - Download NBU 8.1.2 for wintel to upgraded system <code>IF NOT EXIST p:\temp\ (mkdir P:\temp\)
+  robocopy /S /ipg:750 /z /r:30 /w:30 /tee /LOG+:c:\robolog.txt \\taitc138\f$\Veritas\NBU_8.1.2\NetBackup_8.1.2_Win p:\temp</code>  - Estimate the MSDP conversion time for each server that uses MSDP<code>P:\temp\NetBackup_8.0_Win\Addons\x64\Dedupe\pddeobjectcount.exe -e</code>
+  - Check if there is 12% free space for MSDP conversion - for each pre 7.6 NBU - from GUI check the MSDP available space
+  - Run the NetBackup environment checker on Windows <code>P:\temp\NetBackup_8.0_Win\VxValidate\VxValidator64\VxValidate.exe</code>
+  - Check for free space for catalog rebuid. The computer must have sufficient disk space available in the data directory to create an additional copy of all .db files. By default, the data directory is located in install_path\Veritas\NetBackupDB\ for Windows and /usr/openv/db/ for UNIX/Linux.
+  - Stop OpsCenter monitoring, have OpsCenter admin to disable monitoring for this NBU domain: only Pawel or Ragha can do it for you!
+  - Gather information about active policies - so you can revert back your changes after upgrade<code>mkdir c:\temp\NBU_upgrade
+FOR /F "usebackq" %i IN (`bppllist`) DO (
+echo %i
+bpplinfo %i -U |findstr Active > c:\temp\NBU_upgrade\%i)
+dir c:\temp\NBU_upgrade</code>
+  - Deactivate all policies<code>FOR /F "usebackq" %i IN (`bppllist`) DO bpplinfo %i -modify -inactive</code>
+  - Activate back policy configured for catalog backup <code>FOR /F "usebackq" %i IN (`bppllist ^|findstr HOT`) DO bpplinfo %i -modify -active</code>
+  - Run HOT CATALOG backup - notice tape used for this backup, you can also write this backup to basic disk storage unit. If a given master server has not tape drives directly connected, made this backup to basic disk STU - as recovering catalog backups from media server is hard to achieve. Use below commands if there is exising a backup schedule with name which do contain DEMAND word, ie: KEC_HOT_ON_DEMAND<code>for /F "tokens=1,2" %s in ('"FOR /F "usebackq" %i IN (`bppllist ^|findstr HOT`) DO bpplsched %i -U |findstr DEMAN"') do (echo bpbackup -i -p %i -s %t)
+FOR /F "usebackq" %i IN (`bppllist ^|findstr HOT`) DO (for /F "tokens=2" %a in ('bpplsched %i -U ^|findstr DEMAN') DO @echo %a) > schedule
+set /p s= < schedule
+FOR /F "usebackq" %i IN (`bppllist ^|findstr HOT`) DO bpbackup -i -p %i -s %s</code>
+  - Once done catalog backup disable all SLP, Disk staging units. Make a list from GUI which ones are active.<code>for /f "tokens=1,2" %a in ('"nbstl -L |findstr "Name:"|findstr /v Window"') do echo nbstlutil inactive -lifecycle %b</code> Above command will deactivate all SLPs for DSU use GUI.
+  - Follow this in order to enable NBU authentication service (prior actual upgrade start) [[https://www.veritas.com/support/en_US/article.000126119|technote]] <code>sc config "nbatd" start= auto</code> Check with services.msc if service "NetBackup Authentication" is set to automatic start.
+  - Check if CLIENT_NAME and SERVER_NAME is the same, [[https://www.veritas.com/support/en_US/article.000125564.html|here is VRTS TECH NOTE]]<code>reg query HKLM\SOFTWARE\Veritas\NetBackup\CurrentVersion\Config /s |findstr "Server"
+reg query HKLM\SOFTWARE\Veritas\NetBackup\CurrentVersion\Config /s |findstr "Client_Name"</code>
+  - Create local user ID for NBU 8.0 Please follow these links and read with understanding [[https://www.veritas.com/support/en_US/article.000081350.html|first]],[[https://www.veritas.com/support/en_US/article.000125106.html|second]],[[https://www.veritas.com/support/en_US/article.000116317|third]]<code>net user nbwebsvc <oursPassword> /comment:"User needed by NetBackup from version 8" /PASSWORDCHG:NO /add
+wmic useraccount where name='nbwebsvc' set passwordExpires=false
+net localgroup nbwebgrp /comment:"Group needed by NetBackup from version 8" /add
+net localgroup nbwebgrp nbwebsvc /add</code>
+  - <del>Grant nbwebsvc/nbwebgrp and emea\svcbackup FULL CONTROL to the NBU directory (VERITAS) [[https://www.veritas.com/support/en_US/article.000125569.html|follow this link]] I know this TN is pointing to var directory - but CEs in most recent cases opened with VRTS said to grant privleges on Vertias folder!! Once granted you need to right click on Veritas foder than its properties, and in Security tab click Advanced, than highlight added user, click on Change Permissions button, highlight desired user, check the box next to Replace all chold object permissions with inheritable permissions from this object and click Apply. Do it for all there added users.{{ :dp:nbu_perms_on_folder.png?200 |}} Please check inside Veritas if no subfolder is having a locker icon next to it {{ :dp:nbu_locker_on_folder.png?200 |}}</del>
+  - <del>Have wintel team to execute their procedure - do not proceed with upgrade as it will fail without their task begin made correctly</del> [[https://tenneco.sharepoint.com/sites/COUSGI/WM/Document%20Library/How%20to/Upgrade%20NetBackup%20to%20v8.docx?d=w7f0295fd377345a29e46175c92bd9b17|Link does not work for us but works for wintel team for sure]].
+  - <del>Grant nbwebsvc, nbwebgrp and emea\svcbackup by using the secpol.msc once wintel will remove it from GPO management with the following: **Logon as a service, Replace level token, Act as part of operating system**</del>
+  - Check number of backup images <code>bpimagelist -d 01/01/2000 -idonly |find /C "ID:"</code> and write down that number
+  - Stop scheduled tasks for NBU related things - use "schedule tasks" - if defined task is following ours standard you can disbale it from CMD<code>schtasks /change /disable  /tn tapes_exchange</code>
+  - Check for pending file name renames - if a reboot is required, proper response is:<code>ERROR: The system was unable to find the specified registry key or value</code>Command to run is:<code>reg query "hklm\System\CurrentControlSet\Control\Session Manager" /v PendingFileRenameOperations</code>If you will see other - have wintel team to reboot this box. **Don't proceed with upgrade.**
+  - Download newest NBCC tool [[https://www.veritas.com/support/en_US/article.000037262.html|from here]] and or use this one<code>IF NOT EXIST p:\temp\ (mkdir P:\temp\)
+  robocopy /ipg:750 /z /r:30 /w:30 /tee /LOG+:c:\robolog.txt \\taitc138\f$\NBCC_newest p:\temp</code>Once on destiantion system move it to <install_path>\Veritas\NetBackup\bin\support folder.<code>move /Y p:\temp\NBCC.exe <install_path>\Veritas\NetBackup\bin\support</code>Make sure its versions is equal or higher then then NBU you are upgrading to<code>d:\Program Files\Veritas\NetBackup\bin\support>NBCC.exe -version
+NBCC 8.1</code>and run when no jobs are running on master<code>nbcc -upgrade </code>to check consistency of NBU DB. Correct outcome will have such line<code>NBCC did not detect any NetBackup catalog inconsistencies.</code> While bad one looks like this<code>***NBCC DETECTED A NetBackup CATALOG INCONSISTENCY!***</code>**If inconsitency is being detected immediatelly stop** - and open case with VRTS to address this issue!! Most frequent issue is with cleaning tapes - which barcode start with CL and it is not of cleaning type... Or the cleaning tape is not in the None volume pool - this is also important. Other frequently seen issue is when there are FROZEN tapes, find these<code>bpmedialist -summary |findstr FROZEN</code> and if these were not frozen per purpose, unfreeze ones found<code>bpmedia -unfreeze -m mediaID</code> Collect their labels to be aware later on that these were unfrozen. Once done run the following<code>bpexpdate -deassignempty -force
+  bpimage -cleanup -allclients</code>Rerun NBCC to see if it helped. To change media type to cleaning tape with barcode CLNU01 do<code>vmchange -m CLNU01 -new_mt hcart_clean</code>
+  - Stop NBU and make sure no NBU related processes are running <code>bpdown -f -v
+bpps </code>
+  - Create a test folder on c: drive<code>mkdir c:\test
+cd /d c:\test</code>Export current setting of security user/groups by executing the following<code>secedit /export /cfg security_policy_config.db /verbose /log export.log
+secedit /export /cfg user_rights_conf.db /areas USER_RIGHTS /quiet /verbose /log userexport.txt
+notepad user_rights_conf.db</code>In this notepad search for these privileges: **SeServiceLogonRight**; **SeTcbPrivilege** and **SeAssignPrimaryTokenPrivilege** - at the end of each add such users: nbwebsvc, nbwebgrp, domain\svcbackup (where domain is EMEA, ASPA, AMER - respectively on the site you work on)<code>secedit /configure /db security_policy_config.db /cfg user_rights_conf.db /overwrite /areas USER_RIGHTS /verbose /log merge.txt</code>Review the merge.txt file with notepad. If there was a failure check for a USER IDs and remove these from this file user_rights_conf.db Example failures:<code>	Configure S-1-5-6.
+	Configure Virtual Machines.
+Error 1332: No mapping between account names and security IDs was done.
+ 	Cannot find Virtual Machines.	Configure NT SERVICE\NT SERVICE.
+Error 1332: No mapping between account names and security IDs was done.
+ 	Cannot find NT SERVICE\NT SERVICE.</code>So now you have to open this file user_rights_conf.db and remove these two users from it: NT SERVICE\NT SERVICE and Virtual Machines <code>notepad user_rights_conf.db</code>and rerun the last command<code>secedit /configure /db security_policy_config.db /cfg user_rights_conf.db /overwrite /areas USER_RIGHTS /verbose /log merge.txt</code>Again check the merge.log to see if there are no errors, if no continue with upgrade **immediatelly** as the gpupdate can overwrite those setting and if you will be unlucky the upgrade will fail due to this on step SetupWMC.bat.
+  - Start actual upgrade by executing the binary for the same. Follow the prompts and of course make your self familiar with NBU upgrade guide - for the version you are upgrading to.
+  - Once the upgrade is complete, phase 1 of the image metadata migration begins, if your upgrade is from a pre- 7.5 version of NetBackup. Phase 1 is not required if the upgrade is from NetBackup 7.5x.x or NetBackup 7.6.x.x.
+  - Start the NetBackup Administration Console and open the Activity Monitor.
+  - Check the migration status If the result shows SLP_DSSU_MIGRATION_STATE="1", phase 1 has completed. (Pre-NetBackup 7.5 only) If the result shows SLP_DSSU_MIGRATION_STATE="0", phase 1 has not completed. If the result shows LIST_FS_IMAGE_HEADERS = "0", phase 2 has completed. If the result shows LIST_FS_IMAGE_HEADERS = "1" or if no result appears, phase 2 has not completed. <code>nbemmcmd -listsettings -brief -machinename (master_server_name) </code>
+  - Check the following directory for corrupt images<code>dir "d:\Program Files\Veritas\NetBackup\db*"</code> If there is "db.corrupt" folder - have VRTS to look into this.
+  - If your master server has an MSDP disk pool and the NetBackup installer does not detect the MSDP configuration run <code>stconv.exe --status</code>Command available in D:\Program Files\Veritas\pdde
+  - Check if there is available any patch for 8.0 - especially security ones [[https://sort.veritas.com/nbu_tools/nbu_hotfix_lookup|here]]
+  - Apply any found
+  - Check the number of backup images and compare with the number prior install - the number wrote down in point 16.<code>bpimagelist -d 01/01/2000 -idonly |find /C "ID:"</code>
+  - revert back changes in task scheduler<code>schtasks /change /enable /tn tapes_exchange</code>
+  - enable back DSSU
+  - Activate policies - remember to keep inactivate the ones which were not active prior upgrade<code>FOR /F "tokens=*" %G IN ('dir /b c:\temp\NBU_upgrade\') do (@findstr /l /e yes c:\temp\NBU_upgrade\%G && bpplinfo %G -modify -active)</code>
+  - Enable SLPs (if there are any media servers to be upgraded hold on with this step and proceed with their upgrade)
+  - Enable OpsCenter monitoring
+  - <del>Have wintel team to withdrawn their changes. Once done reboot that master server to check if everything is coming up as should have.</del>
+  - Update this [[https://tenneco.sharepoint.com/sites/COUSGI/DPT/Lists/Library_links/AllItems.aspx|web page]] so ours inventory will be showing proper details.
+  - Configure NBU Hot Catalog DR Passphrase as stated [[https://dpdocs/doku.php?id=dp:nbuinststd#hot_catalog_backup|here]]
+  - If you were upgrading NBU appliance to 3.1.2 login to it via CLI as nbasecadmin and change its default password P@ssw0rd to ours well known!!
+  - If 8.1.2 than patch this server with this nbdeployuitl patch [[https://www.veritas.com/support/en_US/article.100044626.html|NBDEPLOUTIL]]. Please check if on this server power shell is in version 4, in version 2 it is failing for sure... <code>PS D:\> $PSVersionTable
+
+Name                           Value
+----                           -----
+PSVersion                      4.0
+WSManStackVersion              3.0
+SerializationVersion           1.1.0.1
+CLRVersion                     4.0.30319.42000
+BuildVersion                   6.3.9600.16406
+PSCompatibleVersions           {1.0, 2.0, 3.0, 4.0}
+PSRemotingProtocolVersion      2.2</code> Or you can use the work around I came with. So run the installer:<code>eebinstaller_3967233_1_AMD64.exe
+This program performs an installation of files related to
+PET3964939, SET3967233, EEB1 on platform x64.
+
+DISCLAIMER:
+-----------
+NOTE: These binaries are pre-release. As such, they are intended solely for
+the recipient and shall not be further distributed to other parties. Their
+use is subject to the terms and conditions of your VERITAS NetBackup
+license and agreement. They have not been fully tested by VERITAS
+Technologies and, as such, are being provided "as is" without any guarantee
+or warranty of any kind, either express or implied. VERITAS reserves the
+right to require the removal of these binaries in order to troubleshoot and/or
+resolve any subsequent issues that are reported.
+
+Do you acknowledge this disclaimer?   [y,n] (y) y
+
+This installer will use the following as the base installation directory:
+  E:\Program Files\Veritas\
+
+Is this the correct path?   [y,n] (y)
+
+Veritas Bug ID: 3967233
+NetBackup_8.1.2 x64
+
+Deliverables:
+--
+\NetBackup\wmc\webserver\webapps_api\netbackup.war
+\NetBackup\bin\admincmd\nbdeployutil.exe
+
+Additional Notes:
+--
+None
+File checksums:
+--
+1368965724 60778535 netbackup.war
+761878684 6500815 nbdeployutil.exe
+
+Recommended Service State:
+--
+All NetBackup services can remain running.
+
+Continue?  [y,n] (y)
+
+Validating target platform...
+EEB platform = <x64>
+Target platform = <x64>
+
+Validating target platform...  Successful!
+Checksum of original at E:\Program Files\Veritas\NetBackup\wmc\webserver\webapps_api\netbackup.war: 1502834318, Checksum of file in the installer: 1368965724
+Checksum of original at E:\Program Files\Veritas\NetBackup\bin\admincmd\nbdeployutil.exe: 237938027, Checksum of file in the installer: 761878684
+
+Extracting...
+E:\Program Files\Veritas\NetBackup\wmc\webserver\webapps_api\netbackup.war
+E:\Program Files\Veritas\NetBackup\bin\admincmd\nbdeployutil.exe
+
+Installation complete.
+
+
+Starting post-processing.
+
+Extracting post-process script -- E:\Program Files\Veritas\NetBackup\wmc\webserver\webapps_api\install-3967233_eebi_nbwmc.ps1
+
+File E:\Program Files\Veritas\NetBackup\wmc\webserver\webapps_api\install-3967233_eebi_nbwmc.ps1 cannot be loaded because the execution of scripts is disabled
+on this system. Please see "get-help about_signing" for more details.
+    + CategoryInfo          : NotSpecified: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : RuntimeException
+
+
+post-process complete.
+
+
+Press Enter to exit</code>It is failing! Than you have to open a power shell prompt as admin and do the following:<code> PS C:\Users\q1pawetk> Set-ExecutionPolicy -ExecutionPolicy remotesigned
+
+Execution Policy Change
+The execution policy helps protect you from scripts that you do not trust. Changing the execution policy might expose
+you to the security risks described in the about_Execution_Policies help topic. Do you want to change the execution
+policy?
+[Y] Yes  [N] No  [S] Suspend  [?] Help (default is "Y"): y
+PS C:\Users\q1pawetk> Get-ExecutionPolicy
+RemoteSigned</code>Once this was done rerun the eeb but with the -extractonly parameter:<code>eebinstaller_3967233_1_AMD64.exe -extractonly
+This program performs an extraction of files related to
+PET3964939, SET3967233, EEB1 on platform x64.
+Extracting 6 file(s) to 'C:\Users\q1pawetk\Downloads'
+Extracting: C:\Users\q1pawetk\Downloads\NetBackup\wmc\webserver\webapps_api\post_uninstall-3967233_eebi_nbwmc.ps1
+Extracting: C:\Users\q1pawetk\Downloads\NetBackup\wmc\webserver\webapps_api\install_failure_3967233_eebi_nbwmc.ps1
+Extracting: C:\Users\q1pawetk\Downloads\NetBackup\wmc\webserver\webapps_api\netbackup.war
+Extracting: C:\Users\q1pawetk\Downloads\NetBackup\bin\admincmd\nbdeployutil.exe
+Extracting: C:\Users\q1pawetk\Downloads\NetBackup\wmc\webserver\webapps_api\install-3967233_eebi_nbwmc.ps1
+Extracting: C:\Users\q1pawetk\Downloads\Readme.txt
+Finished extracting files at 'C:\Users\q1pawetk\Downloads'
+
+Press Enter to exit
+</code>Copy the file with such name to NBU dir<code>copy C:\Users\q1pawetk\Downloads\NetBackup\wmc\webserver\webapps_api\install-3967233_eebi_nbwmc.ps1 NBU_install_dir\NetBakcup\wmc\webserver\webapps_api</code> Edit the copied file with wordpad and replace there string 'tee -a' with 'tee '. Save this file and execute from there <code>PS E:\Program Files\Veritas\NetBackup\wmc\webserver\webapps_api> .\install-3967233_eebi_nbwmc.ps1
+Stopping the NetBackup Web Management Console could take a couple of minutes.
+Starting the NetBackup Web Management Console could take a couple of minutes.
+PS E:\Program Files\Veritas\NetBackup\wmc\webserver\webapps_api></code>Then check the nbdeployutil version it should read like this:<code>c:\test>nbdeployutil --version
+nbdeployutil.exe 8.1.2_EEB1_PET3964939_SET3967233
+NetBackup is a registered trademark of Veritas Technologies LLC.
+Copyright # 2019 Veritas Technologies LLC</code>
+  - If this upgraded server is AIRing any backup images to remote site follow [[https://dpdocs/doku.php?id=dp:air_replication_on_812_-_certificates|this]].
+  - Upgrade client binaries - no needed to be done on the same day.

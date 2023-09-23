@@ -1,0 +1,40 @@
+====== Check for an open port on a server from the inside ======
+Netstat is a good way of checking what ports are open from within a given server.
+Ports may still be blocked by an internal or external firewall, but first thing to check is if the server in question is even attempting to listen on a port.
+
+The easiest method is to use netstat.
+
+==== Netstat with Linux ====
+Netstat in Linux is deprecated on some versions of SuSE Linux, but still available (for now) on RedHat.
+[[https://dougvitale.wordpress.com/2011/12/21/deprecated-linux-networking-commands-and-their-replacements/#netstat|Deprecated commands and their new replacements.]]
+Try this first:
+  netstat --listening
+And the same with processes listed ...
+  netstat --listening -p
+\\ 
+\\ 
+If netstat is not installed, this is probably a newer system.  Try using SS to grab the open ports and the processes.
+\\ 
+Listening ports only ---
+  ss --listening
+Listening ports with processes (messy) --
+  ss --listening --processes
+  
+==== Netstat with AIX ====
+Why do things the same?
+In this case, we rely on a feature of "rmsock" to report back the offending script for a given port.
+We intentionally feed it a used port so it will report back on the script which is "owning" the port.
+[[https://www.ibm.com/developerworks/community/blogs/cgaix/entry/rmsock?lang=en|netstat, rmsock and you, A Packet's Journey]]
+
+Listening ports only:
+  root on pgnmsv01:/root $ netstat -Aan | grep LISTEN
+Listening ports with processes (messier than linux):
+  root on pgnmsv01:/root $ netstat -Aan | grep LISTEN
+  f1000e0001af23b8 tcp4       0      0  *.13724               *.*                   LISTEN
+  f1000e0001ae7bb8 tcp4       0      0  *.13782               *.*                   LISTEN
+  f1000e00001813b8 tcp4       0      0  *.40035               *.*                   LISTEN
+Grab the first field of the port you care about and feed it to rmsock:
+  root on pgnmsv01:/root $ rmsock f1000e00001813b8 tcpcb
+  The socket 0xf1000e0000181008 is being held by proccess 1704040 (inetd).
+
+

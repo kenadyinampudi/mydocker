@@ -1,0 +1,148 @@
+====== Build a VIO server ======
+
+====== Create VIOS partitions ======
+
+  - In most cases, we will have a design as follows prior to the hardware arriving.
+
+===== VIOS hardware Design =====
+
+^VIOS      ^Location Code           ^Description              ^Notes     ^
+|taprvio110|U78CB.001.WZS02HL-P1-C14|SAS Adapter              |Boot drive|
+|taprvio110|U78CB.001.WZS02HL-P1-C2 |Dual Fiber Channel HBA   |SAN       |
+|taprvio110|U78CB.001.WZS02HL-P1-C3 |Dual port Network Adapter|LAN       |
+|taprvio111|U78CB.001.WZS02HL-P1-C15|SAS Adapter              |Boot Drive|
+|taprvio111|U78CB.001.WZS02HL-P1-C11|Dual Fiber Channel HBA   |SAN       |
+|taprvio111|U78CB.001.WZS02HL-P1-C7 |Dual port Network Adapter|LAN       |
+
+===== VIOS Network virtualization Design =====
+
+^VIOS      ^Location / Slot^Description             ^VLAN IDs          ^802.1q?^Trunk Priority^
+|taprvio110|2              |Virtual NIC1 - VLANs - A|4,48,49           |Yes    |1             |
+|taprvio110|3              |Virtual NIC2 - VLANs - B|450,451,406,460   |Yes    |1             |
+|taprvio110|4              |Virtual NIC3 - VIOS LAN |808               |No     |N/A           |
+|taprvio110|5              |Virtual NIC2 - CTRL Chan|999               |No     |N/A           |
+|taprvio111|2              |Virtual NIC1 - VLANs - A|48,49             |Yes    |1             |
+|taprvio111|3              |Virtual NIC2 - VLANs - B|450,451,406,460   |Yes    |1             |
+|taprvio111|4              |Virtual NIC3 - VIOS LAN |808               |No     |N/A           |
+|taprvio111|5              |Virtual NIC2 - CTRL Chan|999               |No     |N/A           |
+
+
+===== Cable up & Work with SAN & LAN Admins =====
+
+  - Create the VIOS partitions as per the above design.
+  - Cable up the servers to the correct LAN and SAN ports.
+  - Additional configurations are required on the LAN ports. Please create a request as follows,<code>Network Team,
+
+Please configure the following network ports in a Virtual port channel 802.3ad and add these VLANs to the allowed VLANs list,
+
+VLANs :- 4,48,49,450,451,406,460
+
+Virtual Port Channel 1 Members,
+
+taprvio110 - U78CB.001.WZS02HL-P1-C3-T1 --- Connect to Core Switch1 - port XX
+taprvio110 - U78CB.001.WZS02HL-P1-C3-T2 --- Connect to Core Switch2 - port XX
+
+Virtual Port Channel 2 Members,
+
+taprvio111 - U78CB.001.WZS02HL-P1-C7-T1 --- Connect to Core Switch1 - port XY
+taprvio111 - U78CB.001.WZS02HL-P1-C7-T2 --- Connect to Core Switch2 - port XY
+</code>
+===== Configure NIM =====
+
+  - Login to the NIM server pgnmsv01. Export a variable pointing to the VIOS server<code>export hostname=<vios_server_name></code>
+  - Update the console database. Login to pgnmsv01<code>sudo vi /prod/images/etc/unix_sys_console</code>Make an entry similar to this<code>taprvio110:lpar-ibm:tgprhmc6:Server-8284-22A-SN215D24V:taprvio110:2:hscroot</code>
+  - For MP builds, please make entries in /etc/hosts on the NIM server pgnmsv01. 
+    - E.g.<code>10.128.112.70       cdcvilpv117.fmmotorparts.com   cdcvilpv117
+10.128.112.71       cdcvilpv118.fmmotorparts.com   cdcvilpv118</code>
+    - You could use the snippet<code>echo $(host ${hostname} | awk '{print $NF,$1}') ${hostname} | sudo tee -a /etc/hosts</code>
+  - Login to the NIM server - pgnmsv01 and define the VIO server as a NIM client<code>sudo nim -o define -t standalone -a \
+platform=chrp -a if1="find_net ${hostname} 0" -a netboot_kernel=mp ${hostname}</code>
+  - As of March 12th 2019, these are the VIOS resources to be used for installation<code>vios-2-2-6-32-bosinst_data      resources       bosinst_data
+vios-2-2-6-32-mksysb            resources       mksysb
+vios-2-2-6-32-spot              resources       spot</code>
+  - Prepare the NIM client(VIO server) for a NIM bosinst operation<code>sudo nim -o bos_inst -a \
+source=mksysb -a \
+spot=vios-2-2-6-32-spot -a \
+bosinst_data=vios-2-2-6-32-bosinst_data -a \
+mksysb=vios-2-2-6-32-mksysb -a \
+accept_licenses=yes -a \
+no_client_boot=yes ${hostname}</code>
+===== Install VIOS using NIM =====
+
+  - Login to the LDC NIM server ''pgnmsv01''
+  - Export a variable pointing to the VIOS server we are planning to work on<code>export hostname=<viosserver_name></code>
+  - Power on the VIOS partition to SMS
+    - Find out the frame and HMC<code>export frame=$(grep -i ^${hostname} /prod/images/etc/unix_sys_console | awk -F: '{print $4}' )
+export hmc=$(grep -i ^${hostname} /prod/images/etc/unix_sys_console | awk -F: '{print $3}' )</code>
+    - Execute power on<code>ssh ${hmc} "chsysstate -r lpar -o on -b sms -m ${frame} -n ${hostname}"</code>
+  - Enable LPAR2RRD data collection<code>ssh ${hmc} chlparutil -m ${frame} -r config -s 60</code>
+  - Login to pgnmsv01 and open a console session to the VIO server<code>sudo getconsole ${hostname}</code>
+  - Configure network ISL and perform a network boot.
+  - After the installation, the lpar will automatically restart.
+  - Login as padmin then accept the license<code>license -accept</code>
+
+===== Configure Networking on VIOS =====
+
+  - Remove all the network configurations<code>oem_setup_env</code>detach the network config<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>Remove them from ODM<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+  - Now run cfgmgr<code>cfgmgr</code>
+  - Take a look at the adapters and figure out which adapters are to be used.<code>lscfg | grep ent</code>The output would look like this<code>* ent11            U9009.42A.7823D40-V1-C5-T1                                   Virtual I/O Ethernet Adapter (l-lan)
+* ent10            U9009.42A.7823D40-V1-C4-T1                                   Virtual I/O Ethernet Adapter (l-lan)
+* ent9             U9009.42A.7823D40-V1-C3-T1                                   Virtual I/O Ethernet Adapter (l-lan)
+* ent8             U9009.42A.7823D40-V1-C2-T1                                   Virtual I/O Ethernet Adapter (l-lan)
++ ent4             U78D2.001.WZS039A-P1-C4-T1                                   PCIe2 4-Port Adapter (10GbE SFP+) (e4148a1614109304)
++ ent5             U78D2.001.WZS039A-P1-C4-T2                                   PCIe2 4-Port Adapter (10GbE SFP+) (e4148a1614109304)
++ ent6             U78D2.001.WZS039A-P1-C4-T3                                   PCIe2 4-Port Adapter (1GbE RJ45) (e4148a1614109404)
++ ent7             U78D2.001.WZS039A-P1-C4-T4                                   PCIe2 4-Port Adapter (1GbE RJ45) (e4148a1614109404)
++ ent0             U78D2.001.WZS039A-P1-C2-T1                                   PCIe2 4-Port Adapter (10GbE SFP+) (e4148a1614109304)
++ ent1             U78D2.001.WZS039A-P1-C2-T2                                   PCIe2 4-Port Adapter (10GbE SFP+) (e4148a1614109304)
++ ent2             U78D2.001.WZS039A-P1-C2-T3                                   PCIe2 4-Port Adapter (1GbE RJ45) (e4148a1614109404)
++ ent3             U78D2.001.WZS039A-P1-C2-T4                                   PCIe2 4-Port Adapter (1GbE RJ45) (e4148a1614109404)</code>
+
+
+===== Document the details =====
+
+
+^Adapter name^Location Code             ^Role                     ^
+|ent0        |U78D2.001.WZS039A-P1-C2-T1|10G Interface 1          |
+|ent1        |U78D2.001.WZS039A-P1-C2-T2|                         |
+|ent2        |U78D2.001.WZS039A-P1-C2-T3|                         |
+|ent3        |U78D2.001.WZS039A-P1-C2-T4|                         |
+|ent4        |U78D2.001.WZS039A-P1-C4-T1|10G Interface 2          |
+|ent5        |U78D2.001.WZS039A-P1-C4-T2|                         |
+|ent6        |U78D2.001.WZS039A-P1-C4-T3|                         |
+|ent7        |U78D2.001.WZS039A-P1-C4-T4|                         |
+|ent8        |U9009.42A.7823D40-V1-C2-T1|Virtual NIC1             |
+|ent9        |U9009.42A.7823D40-V1-C3-T1|Virtual NIC2             |
+|ent10       |U9009.42A.7823D40-V1-C4-T1|VIOS server's Primary NIC|
+|ent11       |U9009.42A.7823D40-V1-C5-T1|SEA Control Channel      |
+
+
+===== Configure Link Aggregation and SEA =====
+
+  - Configure Link aggregation<code>mkvdev -lnagg ent0 ent4 -attr mode='8023ad' hash_mode='src_dst_port'</code>You should see a similar output<code>ent12 Available
+en12
+et12</code>
+  - Create the SEA interface<code>mkvdev -sea ent12 -vadapter ent8,ent9 -default ent8 -defaultid 1 -attr ha_mode=sharing ctl_chan=ent11</code>You should see something similar output<code>ent12 Available
+en12
+et12</code>
+  - Change the hostname to the shortname<code>sudo chdev -l inet0 -a hostname=<hostname></code>
+  - Configure the primary interface of the VIOS server<code>mktcpip -hostname <hostname_of_the_vios> inetaddr <ip_address> -interface en10 -netmask <netmask> -gateway <gateway> -start</code>
+
+===== Further configurations =====
+  - [[unix:enable-mover-partition| Enable Mover Partition for Live Partition Mobility]]
+  - [[unix:enable-lpm-lun-checking| Enable Live Partition Mobility Lun Checking]]
+  - Login to pgnmsv01 and store the hostname<code>export targethost=<host></code>'host' is the one being built.
+  - [[unix:usersandgroups|Create basic unix group and users]]
+  - If booting from internal disks, Mirror rootvg
+    - AIX<code>extendvg rootvg hdiskX
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdiskX
+sudo bootlist -m normal hdiskX hdiskY</code>
+  - Login to the NIM server and perform a NIM client cleanup<code>sudo nim -F -o reset <hostname>
+  - ** If you have build a New server, please fill the missing attributes of the new server in CMDB later. **

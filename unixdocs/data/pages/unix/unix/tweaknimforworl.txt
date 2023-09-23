@@ -1,0 +1,26 @@
+====== Tweaking the NIM environment for WAN based installations ======
+
+**Change the hostnames accordingly, taerm055 and 057 were used as an example**
+
+  - The idea is to use a local server in the same subnet as the container for NIM installation files. For this documentation purpose, I am using taerm055 as the container and taerm057 as the target. IP addresses are as follows<code>taerm055 ---> 10.60.97.55
+taerm057 ---> 10.60.97.57</code>
+  - Get the bootptab entry from taitc118 and change it as follows<code>grep ^taerm057 /etc/bootptab
+taerm057.emea.int.tenneco.com:bf=/tftpboot/taerm057.emea.int.tenneco.com:ip=10.60.97.57:ht=ethernet:sa=10.32.51.118:gw=10.60.97.1:sm=255.255.255.0:</code>Change it as this and add it to the /etc/bootptab on taerm055<code>taerm057.emea.int.tenneco.com:bf=/tftpboot/taerm057.emea.int.tenneco.com:ip=10.60.97.57:ht=ethernet:sa=10.60.97.55:gw=10.60.97.1:sm=255.255.255.0:</code>Note the change from **sa=10.32.51.118** to **sa=10.60.97.55**
+  - Create this directory on taerm055<code>sudo mkdir -p /export/nim/scripts</code>
+  - Copy these files from taitc118 to taerm055<code>scp /tftpboot/taerm057.emea.int.tenneco.com taerm055:/tftpboot/taerm057.emea.int.tenneco.com
+scp /tftpboot/610TL07-05_spot.iplrecord.ent taerm055:/tftpboot/taerm057.emea.int.tenneco.com.iplrecord
+scp /tftpboot/taerm057.emea.int.tenneco.com.info taerm055:/tftpboot/taerm057.emea.int.tenneco.com.info
+scp /export/nim/scripts/taerm057.script taerm055:/export/nim/scripts/taerm057.script</code>
+  - Copy over the LPPSRC and Spot to taerm055<code>cd <lppsrc_dir>
+tar cvf - . | gzip - | ssh taerm055 "(cd /prod/nim/resources/lppsrc ; gunzip - | tar xvf - )"
+cd <spot_directory>
+tar cvf - . | gzip - | ssh tamon055 "(cd /prod/nim/resources/spot/610TL07-05_spot/usr ; gunzip - | tar xvf - )"</code>**This needs to be done in advance**
+  - NFS export LPPSRC, Spot and the script from taerm055<code>exportfs -i -o ro,root=taerm057.emea.int.tenneco.com,access=taerm057.emea.int.tenneco.com /prod/nim/resources/spot/610TL07-05_spot/usr
+exportfs -i -o ro,root=taerm057.emea.int.tenneco.com,access=taerm057.emea.int.tenneco.com /prod/nim/resources/lppsrc/610TL07-05
+exportfs -i -o ro,root=taerm057.emea.int.tenneco.com,access=taerm057.emea.int.tenneco.com /export/nim/scripts/taerm057.script</code>
+  - Edit this file on taerm055 and make modifications<code>vi /tftpboot/taerm057.emea.int.tenneco.com.info</code>Change these sections<code>export SPOT=taerm055.emea.int.tenneco.com:/prod/nim/resources/spot/610TL07-05_spot/usr
+export NIM_CUSTOM="/../SPOT/usr/lpp/bos.sysmgt/nim/methods/c_script -a location=taerm055.emea.int.tenneco.com:/export/nim/scripts/taerm057.script"
+export NIM_HOSTS=" 127.0.0.1:loopback:localhost  10.60.97.57:taerm057.emea.int.tenneco.com  10.60.97.55:taerm055.emea.int.tenneco.com "
+export NIM_MOUNTS=" taerm055.emea.int.tenneco.com:/prod/nim/resources/lppsrc/610TL07-05:/SPOT/usr/sys/inst.images:dir "</code>Change all references to taitc118 to taerm055 in these sections. **Also do not forget to change the LPPSRC & Spot locations is they are different from NIM server taitc118.**
+  - Make sure bootpd and tftpd are uncommented in /etc/inetd.conf<code>egrep "^tftp|^bootp" /etc/inetd.conf</code>
+  - Make sure tftpd is running<code>lssrc -s tftpd</code>

@@ -1,0 +1,79 @@
+<code>sudo symaccess -sid 0301 -name peerap98-p8_IG -type initiator create -wwn c0507607f3530018
+sudo symaccess -sid 0301 -name peerap98-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap98-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+
+sudo symaccess -sid 0301 -name peerap98-p8_IG -type initiator -wwn c0507607f3530019 add
+sudo symaccess -sid 0301 -name peerap98-p8_IG -type initiator -wwn c0507607f353001a add
+sudo symaccess -sid 0301 -name peerap98-p8_IG -type initiator -wwn c0507607f353001b add
+
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 081D;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 081D;" commit -nop
+
+sudo symaccess -sid 0301 -name peerap98-p8_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name peerap98-p8_SG add devs 
+sudo symfast -sid 0301 -fp_name Bronze associate -sg peerap98-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap98-p8_MV -sg peerap98-p8_SG -pg 2G1_3G1_PG -ig peerap98-p8_IG
+
+svctask mkhost -fcwwpn c0507607f3530018:c0507607f3530019:c0507607f353001a:c0507607f353001b -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name peerap98 -type generic
+
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerap98_001 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerap98_002 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+
+mkvdiskhostmap -host peerap98 peerap98_001
+mkvdiskhostmap -host peerap98 peerap98_002
+
+svctask mkhost -fcwwpn 10000000c97d8d6c:10000000c998458c -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name peerdb98 -type generic
+
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_001 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_002 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_003 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_004 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_005 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_006 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_007 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_008 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_009 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_010 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_011 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_012 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_013 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_014 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_015 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_016 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_017 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_018 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_019 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_020 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_021 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_022 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_023 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_024 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_025 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_026 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 80%
+
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_001 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_002 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_003 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_004 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_005 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_006 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_007 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_008 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_009 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name peerdb99_010 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+
+
+svctask mkhost -fcwwpn c0507607cd0e0010:c0507607cd0e0014:c0507607cd0e0012:c0507607cd0e0016 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name peerap99 -type generic
+
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2cidata_001 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2cidata_002 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2cidata_003 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2cidata_004 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2cidata_005 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 80%
+
+
+sudo symconfigure -sid 0301 -cmd "configure 1 devices copying dev 0F2A;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 1 devices copying dev 0F2A;" commit -nop
+
+sudo symaccess -sid 0301 -type storage -name TA2CI_SG add devs </code>

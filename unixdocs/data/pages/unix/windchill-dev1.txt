@@ -1,0 +1,83 @@
+====== Windchill NFS - DEV1 Migration ======
+
+^Source NFS                                            ^Source Mount Point^Target NFS                                                       ^Target MountPoint           ^
+|cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults5    			|/PTVaults5        	|cdcpilns024.pt.int.tenneco.com:/windchill_dev1_vaults5           |/pnas/PTVaults5         |
+|cdcpilns013.federalmogul.com:/v11.0/dev1/WindchillLogs			|/WindchillLogs    	|cdcpilns024.pt.int.tenneco.com:/windchill_dev1_WindchilLogs      |/pnas/WindchilLogs      |
+|cdcpilns013.federalmogul.com:/v11.0/dev1/node0        			|/PTWindchill      	|cdcpilns024.pt.int.tenneco.com:/windchill_dev1/PTWindchill       |/pnas/PTWindchill       |
+|cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults     			|/PTVaults         	|cdcpilns024.pt.int.tenneco.com:/windchill_dev1_vaults            |/pnas/PTVaults          |
+|cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults3    			|/PTVaults3        	|cdcpilns024.pt.int.tenneco.com:/windchill_dev1_vaults3           |/pnas/PTVaults3         |
+|cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults4    			|/PTVaults4        	|cdcpilns024.pt.int.tenneco.com:/windchill_dev1_vaults4           |/pnas/PTVaults4         |
+|cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults2    			|/PTVaults2        	|cdcpilns024.pt.int.tenneco.com:/windchill_dev1_vaults2           |/pnas/PTVaults2         |
+|cdcpilns013.federalmogul.com:/v11.0/dev1/sharedLoadXMLFiles            |/sharedLoadXMLFiles    |cdcpilns024.pt.int.tenneco.com:/windchill_dev1/sharedLoadXMLFiles|/pnas/sharedLoadXMLFiles|
+
+
+===== Pre-work =====
+
+  - Initial copy operations<code>rsync -avh /PTVaults5/ /pnas/PTVaults5/
+rsync -avh /WindchillLogs/ /pnas/WindchillLogs/
+rsync -avh /PTWindchill/ /pnas/PTWindchill/
+rsync -avh /PTVaults/ /pnas/PTVaults/
+rsync -avh /PTVaults3/ /pnas/PTVaults3/
+rsync -avh /PTVaults4/ /pnas/PTVaults4/
+rsync -avh /PTVaults2/ /pnas/PTVaults2/
+rsync -avh /sharedLoadXMLFiles/ /pnas/sharedLoadXMLFiles/</code>
+
+
+===== Cutover steps =====
+
+  - Shutdown Windchill applications
+  - Remount the existing Windchill NFS to a new mountpoint.
+    - Unmount existing filesystems<code>umount /PTVaults5
+umount /WindchillLogs
+umount /PTWindchill
+umount /PTVaults
+umount /PTVaults3
+umount /PTVaults4
+umount /PTVaults2
+umount /sharedLoadXMLFiles</code>
+    - Mount the existing filesystems to a new mountpoint<code>mkdir -p /hnas/PTVaults5
+mkdir -p /hnas/WindchillLogs
+mkdir -p /hnas/PTWindchill
+mkdir -p /hnas/PTVaults
+mkdir -p /hnas/PTVaults3
+mkdir -p /hnas/PTVaults4
+mkdir -p /hnas/PTVaults2
+mkdir -p /hnas/sharedLoadXMLFiles
+
+
+mount cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults5     /hnas/PTVaults5
+mount cdcpilns013.federalmogul.com:/v11.0/dev1/WindchillLogs /hnas/WindchillLogs
+mount cdcpilns013.federalmogul.com:/v11.0/dev1/node0         /hnas/PTWindchill
+mount cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults      /hnas/PTVaults
+mount cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults3     /hnas/PTVaults3
+mount cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults4     /hnas/PTVaults4
+mount cdcpilns013.federalmogul.com:/v11.0/dev1/PTVaults2     /hnas/PTVaults2
+mount cdcpilns013.federalmogul.com:/v11.0/dev1/sharedLoadXMLFiles     /hnas/sharedLoadXMLFiles</code>
+  - Final rsync operation<code>
+rsync --delete -avvhc /hnas/PTVaults5/    	/pnas/PTVaults5/         | tee -a PTVaults5.rsync.log	
+rsync --delete -avvhc /hnas/WindchillLogs/	/pnas/WindchillLogs/     | tee -a WindchillLogs.rsync.log	
+rsync --delete -avvhc /hnas/PTWindchill/  	/pnas/PTWindchill/       | tee -a PTWindchill.rsync.log	
+rsync --delete -avvhc /hnas/PTVaults/     	/pnas/PTVaults/          | tee -a PTVaults.rsync.log	
+rsync --delete -avvhc /hnas/PTVaults3/    	/pnas/PTVaults3/         | tee -a PTVaults3.rsync.log	
+rsync --delete -avvhc /hnas/PTVaults4/    	/pnas/PTVaults4/         | tee -a PTVaults4.rsync.log	
+rsync --delete -avvhc /hnas/PTVaults2/    	/pnas/PTVaults2/         | tee -a PTVaults2.rsync.log	
+rsync --delete -avvhc /hnas/sharedLoadXMLFiles/ /pnas/sharedLoadXMLFiles/| tee -a sharedLoadXMLFiles.rsync.log</code>
+  - Remount "/pnas" filesystems as original and handover to Apps team
+    - Unmount the Pure NAS mountpoints<code>umount /pnas/PTVaults5
+umount /pnas/PTWindchill
+umount /pnas/WindchillLogs
+umount /pnas/PTVaults
+umount /pnas/PTVaults3
+umount /pnas/PTVaults4
+umount /pnas/PTVaults2
+umount /pnas/sharedLoadXMLFiles</code>
+    - Manipulate the fstab so that the original mount points are now mounted from Pure NAS.
+    - Mount the filesytems<code>mount /PTVaults5
+mount /PTWindchill
+mount /WindchillLogs
+mount /PTVaults
+mount /PTVaults3
+mount /PTVaults4
+mount /PTVaults2
+mount /sharedLoadXMLFiles</code>
+  - Handover to Apps team

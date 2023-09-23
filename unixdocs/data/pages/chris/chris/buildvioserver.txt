@@ -1,0 +1,80 @@
+====== Build a VIO server ======
+
+===== Create LPAR =====
+
+  - Create the VIOS partition(s)
+    - IVM -->  Insert the blade into the Blade Centre Chassis slot and verify that the Blade Centre Management module can see it. Lincolnshire has three Blade Centre Chassis,
+      - [[http://tgprbld1|Bladecentre 1]]
+      - [[http://tgprbld2|Bladecentre 2]]
+      - [[http://tgprbld3|Bladecenter 3]]
+    - Standard Power frames (720/740/780 etc )
+      - Create the VIOS partitions using Systems plan of manually. Documentation is beyond the scope of this note.
+    - If you are planning to use **VLAN tagging on a Blade VIO server ** please request the following setup<code>Switch configuration :-
+
+Please configure the switch ports as follows.
+
+Bladecentre2 - switch1 - port 7 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre2 - switch2 - port 7 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre2 - switch3 - port 7 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre2 - switch4 - port 7 - trunk , no native vlan, allowed VLANs 49,451</code>
+
+
+===== Configure NIM =====
+
+  - [[unix:viosnimsetup|If the NIM VIO resources are not available do it now]]
+  - Update the console database. Login to pgnmsv01<code>sudo vi /prod/images/etc/unix_sys_console</code>Make an entry similar to this<code>taprvio3:blade-ibm:tgprbld1:1:root</code>
+  - Login to the respective NIM server and define the VIO server as a NIM client<code>sudo nim -o define -t standalone -a \
+platform=chrp -a if1="find_net <vioservername> 0" -a netboot_kernel=mp <viosservername></code>
+  - Prepare the NIM client(VIO server) for a NIM bosinst operation<code>sudo nim -o bos_inst -a source=mksysb -a spot=vios-2-2-4-0-spot -a \
+bosinst_data=vios-2-2-4-0-bosinst_data -a accept_licenses=yes -a \
+no_client_boot=yes -a mksysb=vios-2-2-4-0-mksysb <vioservername></code>
+
+===== Install VIOS using NIM =====
+
+  - Login to pgnmsv01 and open a console session to the VIO server<code>sudo getconsole <vioservername></code>
+  - Power on the VIOS partition
+    - IVM --> From the Bladecentre Management GUI [[http://tgprbld1]] power on the blade.
+    - Power frame --> From the HMC
+  - At the console, Interrupt the boot and get into SMS, configure network ISL as usual and point to the NIM server and perform a network boot.
+  - After the installation, the lpar will automatically restart.
+  - Login as padmin, set a password and then accept the license<code>license -accept</code>
+    - You will be shown a screen like this<code>Current system settings are different from the best practice recommendations for a VIOS.
+
+  To view the differences between system and the recommended settings, run the following:
+  $rules -o diff -s -d
+
+  To deploy the VIOS recommended default settings, run the following:
+  $rules -o deploy -d
+  $shutdown -restart</code>
+    - Apply the recommended settings<code>rules -o deploy -d</code>you will see somthing like this<code>A manual post-operation is required for the changes to take effect, please reboot the system.</code>Restart the vios server<code>shutdown -force -restart</code>
+  - On IVMs, perform the initial logical partition on an IVM<code>mkgencfg -o init</code>
+  - Eliminate syslog messages<code>oem_setup_env</code><code>touch /tmp/syslog.out</code>
+  - Set root password<code>passwd root</code>
+
+===== Configure Networking on VIOS =====
+
+  - Remove all the network configurations<code>oem_setup_env</code>detach the network config<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>Remove them from ODM<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+  - Now run cfgmgr<code>cfgmgr</code>
+  - If you are building a **VLAN tagged** VIOS server follow this procedure
+    - [[unix:bladeviovlantagging|VLAN Tagging on Blade VIO Server]]
+    - [[unix:bladeviovlantagging-frame|VLAN Tagging on dual VIOS]]
+    - [[unix:bladeviovlantagging-frame-dmz|VLAN Tagging on dual VIOS taprvio90-91 in the DMZ]]
+    - [[unix:bladeviovlantagging-vio140-141|VLAN Tagging on dual VIOS taprvio140-141]]
+  - If you are building a **non-VLAN tagged** VIOS server follow this procedure
+    - [[unix:bladevionovlantagging|Configure networking on a VIO Server]]
+===== Further configurations =====
+
+  - Increase paging space. Increase hd6 to be twice the size of memory.<code>chps -s 30 hd6
+swapoff /dev/paging00
+rmps paging00</code>
+  - [[unix:upgrade-to-vios-2.2.4.22|Update VIOS to the latest level - 2.2.4.22]]
+  - [[unix:upgrade-to-vios-2.2.5.10|Update VIOS to the latest level - 2.2.5.10]]
+  - [[unix:setuplpar2rrdvioivm|Configure LPAR2RRD Client]]
+  - [[unix:setupsshkeysfornim|Setup SSH keys for NIM server]]
+  - [[unix:postinstallationsteps|Proceed to post install steps]]

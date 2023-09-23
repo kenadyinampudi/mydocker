@@ -1,0 +1,143 @@
+
+<h1 class="sectionedit1" id="change_work_plan_for_pta_os_upgrades_odm_firmware_and_powerpath_upgrade">Change Work Plan for PTA OS upgrades, ODM, Firmware and Powerpath upgrade.</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Change Work Plan for PTA OS upgrades, ODM, Firmware and Powerpath upgrade." [1-90] -->
+<h3 class="sectionedit2" id="aix_upgrade_process">AIX upgrade process.</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> AIX upgrade from 5.3 to 7.1 follow documentation from Chris.</div>
+</li>
+<li class="level2"><div class="li"> Firmware upgrade on Blade servers and MMA - Documentation from Chris.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "AIX upgrade process." [91-266] -->
+<h3 class="sectionedit3" id="odm_installation_on_app_servers">ODM installation on App servers</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> NFS mount the software repository<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the ODM<pre class="code">sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Correct the HBA settings for next reboot<pre class="code">for FSCSI in $(lscfg | grep fscsi | awk &#039;{print $2}&#039; )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable roundrobin and turn off reservelock for next reboot<pre class="code">lsdev -Ccdisk | grep MPIO | awk &#039;{print $1}&#039; | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove old device files<pre class="code">lsdev -Ccdisk | grep Defined | awk &#039;{print $1}&#039; | xargs -n1 rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "ODM installation on App servers" [267-1213] -->
+<h3 class="sectionedit4" id="odm_upgrade_on_pta_db_server_taprvio30_taprvio31">ODM upgrade on PTA DB server, taprvio30, taprvio31</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> NFS mount the software repository<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Upgrade the ODM<pre class="code">cd /mnt/emc/ODM/$(oslevel)-latest</pre>
+<pre class="code">sudo smitty update_all</pre>
+
+<p>
+Then select ”.” as the path.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the Clariion device drivers<pre class="code">sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "ODM upgrade on PTA DB server, taprvio30, taprvio31" [1214-1725] -->
+<h3 class="sectionedit5" id="powerpath_upgrade_on_pta_db_server_taprvio30_taprvio31">Powerpath upgrade on PTA DB server, taprvio30, taprvio31</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> NFS mount the software repository<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Upgrade Powerpath<pre class="code">cd /mnt/emc/PowerPath/5.5-P04</pre>
+<pre class="code">sudo smitty update_all</pre>
+
+<p>
+Then select ”.” as the path.
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> If it complains about hdiskpower devices active, do this.</div>
+<ol>
+<li class="level3"><div class="li"> tapr1d01</div>
+<ol>
+<li class="level4"><div class="li"> Disable SAN paging<pre class="code">lsps -a | grep sanpagevg01 | awk &#039;{print &quot;/dev/&quot;$1}&#039; | xargs -n1 sudo swapoff</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Varyoff all SAN VGs<pre class="code">for vg in $(lsvg | grep -v rootvg)
+do
+   for fs in $(lsvgfs ${vg} | sort -r)
+   do
+      sudo umount ${fs}
+   done
+   sudo varyoffvg ${vg}
+done</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Define all hdiskpowers<pre class="code">lspv | grep hdiskpower | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -l</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> VIOS</div>
+<ol>
+<li class="level4"><div class="li"> Document the mapping<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.07132013</pre>
+<pre class="code">awk -F: &#039;{print $1}&#039; lsdiskcfg.out.07132013 &gt; /var/tmp/allviomappeddsks</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Define the mapped devices as padmin <code>sudo su - padmin</code><pre class="code">for dev in $(cat /var/tmp/allviomappeddsks)
+do
+   rmvdev -vdev ${dev} -ucfg
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Upgrade Powerpath<pre class="code">cd /mnt/emc/PowerPath/5.5-P04</pre>
+<pre class="code">sudo smitty update_all</pre>
+
+<p>
+Then select ”.” as the path.
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Reboot the server<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On VIO servers, make sure the mapping and reserve locks are turned off.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Powerpath upgrade on PTA DB server, taprvio30, taprvio31" [1726-] -->

@@ -1,0 +1,30 @@
+====== SFTP Configuration ======
+
+We ran into an issue with SFTP not really working correctly.\\ 
+The solution is here: [[https://www.suse.com/support/kb/doc/?id=7018647]]
+
+\\ 
+The SFTP config is contained in the /etc/ssh/sshd_config file.  However, the SFTP location is different between SLES 12.x and SLES 11.x\\
+  - Check the version of the OS\\ <code>cat /etc/*release</code>
+  - Edit the sshd_config file.\\ <code>vi /etc/ssh/sshd_config</code>
+  - Replace the line with an appropriate value.
+    - SLES 12: <code>Subsystem sftp  /usr/lib/ssh/sftp-server</code>
+    - SLES 11: <code>Subsystem sftp  /usr/lib64/ssh/sftp-server</code>
+
+Alternative issue: \\
+You might need to add a valid shell to the user wanting to use sftp. \\
+  - Check if the user is real ... ''finger <username>''<cli prompt="#">cdcpillx151:/ # finger leedsn16
+Login: leedsn16                         Name: Nathan Leeds
+Directory: /home/leedsn16               Shell: /bin/false
+On since Wed Sep  2 10:04 (EDT) on pts/0 from 10.131.12.11
+No Mail.
+No Plan.
+</cli>
+  - Modify the user account to have a valid shell. ''usermod --shell /bin/bash <username>'' <cli prompt="#">cdcpillx151:/ # usermod --shell /bin/bash leedsn16
+cdcpillx151:/ # finger leedsn16
+Login: leedsn16                         Name: Nathan Leeds
+Directory: /home/leedsn16               Shell: /bin/bash
+On since Wed Sep  2 10:04 (EDT) on pts/0 from 10.131.12.11
+No Mail.
+No Plan.
+</cli>

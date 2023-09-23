@@ -1,0 +1,49 @@
+====== Building a Virtual Machine in the SAP VMWARE cluster ======
+
+===== Placement of SAP App servers =====
+
+^Chassis^    1        ^    1            ^      1          ^       1         ^      2          ^      1          ^       2         ^      2          ^      1          ^       2         ^       2         ^        2        ^
+^Details^taitc327     ^     taitc328    ^    taitc329     ^     taitc330    ^     taitc332    ^     taitc331    ^    taitc333     ^     taitc329    ^     taitc334    ^    taitc336     ^     taitc337    ^    taitc338     ^
+|SE1|                 |                 |                 |                 |                 |seerap99h(02c32G)|                 |                 |                 |                 |                 |                 |
+|C11|deerap98h(05c81G)|                 |                 |                 |                 |                 |                 |                 |                 |deerap99h(02c32G)|deerap01h(02c32G)|                 |
+|IT0|                 |                 |                 |                 |qeerap99h(03c50G)|                 |                 |                 |                 |                 |                 |qeerap01h(04c48G)|
+|TA2|                 |peerap01h(15c96G)|peerap02h(15c96G)|                 |peerap03h(15c96G)|peerap04h(15c96G)|                 |peerap05h(15c96G)|peerap06h(15c96G)|peerap07h(15c96G)|                 |                 |
+|TA2|peerap98h(9c150G)|                 |                 |                 |                 |                 |                 |                 |pgadap01h(15c96G)|                 |peerap99h(13c209G|                 |
+|CTA|                 |                 |                 |                 |                 |                 |daerap01h(08c32G)|                 |                 |                 |                 |daerap99h(02c32G)|
+|FTA|                 |qaerap99h(6c104G)|                 |                 |qaerap01h(03c48G)|                 |                 |                 |                 |                 |                 |                 |
+|PTA|                 |                 |peerap99h(9c149G)|                 |                 |paerap01h(11c96G)|paerap02h(11c96G)|                 |paerap03h(11c96G)|                 |paerap04h(11c96G)|paerap05h(11c96G)|
+|DSM|                 |                 |                 |                 |                 |                 |                 |                 |                 |pgsmap00h(04c68G)|                 |                 |
+|DSM|                 |                 |                 |                 |                 |                 |                 |dgsmap00h(04c68G)|                 |                 |                 |                 |
+|PLS|sggpap99h(02c32G)|                 |                 |                 |                 |                 |                 |                 |                 |                 |                 |                 |
+|PLD|                 |                 |                 |                 |                 |                 |qggpap99h(2c32G) |                 |                 |                 |                 |                 |
+|PLT|                 |                 |                 |                 |                 |                 |                 |dggpap99h(02c32G)|                 |                 |                 |                 |
+|PLP|                 |pggpap01(06c96G) |                 |pggpap99h27c435G |                 |                 |                 |                 |                 |                 |                 |                 |
+
+===== Build procedure =====
+
+  - Login to vSphere using fat client or web client.
+  - On the address space click and select "Hosts and Clusters"
+  - On the left hand pane, select "ITC-SAP Cluster"
+  - Right click on the "ITC-SAP Cluster" --> Click on New Virtual Machine --> 
+  - Select Custom and click next --> Select "Linux Servers" and click Next --> 
+  - Select one of the datastores that has space click next --> Select Virtual Machine Version 11 --> 
+  - Choose "Linux" and "Redhat Enterprise Linux 7 (64 bit) click next --> Select the number of cores/sockets --> 
+  - Select correct amount of memory --> Select the correct VLAN --> Select VMWARE Paravirtual SCSI controller --> 
+  - Create a New disk --> Enter 70G size **select Thin provision**. --> Click next on the next screen --> 
+  - Check edit settings and click Continue --> At the edit screen Add an additional hard disks for data and paging
+  - Create a virtual disk for datavg size 40G for ERP systems.For HANA or any special app servers, please use the appropriate size as per the request.
+  - Create a second virtual disk for paging space. ( Use the table below to pick the right size ) --> ** Please follow the order in which disks are created because the snippets will create datavg on sdb ( second disk ) and paging vg on sdc ( 3rd disk ).**
+  - On the Options window, enable "Memory/CPU Hotplug" --> 
+  - Change the Boot options to "10000" --> Click Finish
+
+^RAM [GB]^Paging space size[GB]^
+|<32|2 x RAM|
+|32 - 63|64|
+|64 - 127|96|
+|128 - 255|128|
+|256 - 511|160|
+|512 - 1023|192|
+|1024 - 2047|224|
+|2048 - 4095|256|
+|4096 - 8191|288|
+|>8192|320|

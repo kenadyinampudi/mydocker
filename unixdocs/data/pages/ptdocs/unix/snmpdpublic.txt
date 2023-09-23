@@ -1,0 +1,34 @@
+====== Turn off SNMPD public and private ======
+
+  - How to test this. 
+  - Login to pablsv02 which has the snmpwalk executable
+    - Version 1<code>[x1kxk630@pablsv02 ~]$ snmpwalk -v1 -c public panmsv02
+End of MIB</code>This would mean the public string on ON.
+    - Version 2<code>[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+End of MIB</code>This would mean the public string on ON.
+
+=== Turning off public and private ===
+
+== AIX ==
+
+  - Turning off the Version 2 public string<code>sudo vi /etc/snmpdv3.conf</code>And comment out this line<code>COMMUNITY public    public     noAuthNoPriv 0.0.0.0    0.0.0.0         -</code>
+    - Or simply copy the file from pgnmsv01<code>sudo scp pgnmsv01:/prod/images/etc/snmpdv3.conf /etc/</code>
+    - And restart snmpd ( refresh is not enough )<code>stopsrc -s snmpd ; sleep 1 ; startsrc -s snmpd</code>
+  - Try the snmpwalk command from pablsv02 once more and you will see it does not respond anymore.<code>[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+Timeout: No Response from panmsv02</code>
+
+== Solaris 8 ==
+
+  - Turning off the Version 2 public string<code>sudo vi /etc/snmpdv3.conf</code>And comment out this line<code>COMMUNITY public    public     noAuthNoPriv 0.0.0.0    0.0.0.0         -</code>And restart snmpd ( refresh is not enough )<code>stopsrc -s snmpd ; sleep 1 ; startsrc -s snmpd</code>
+  - Try the snmpwalk command from pablsv02 once more and you will see it does not respond anymore.<code>[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+Timeout: No Response from panmsv02</code>
+
+====== Send a test / notification snmp traffic ======
+
+  - You may need to install the RPMs that provide these executables<code>snmptrap -v 2c -c oicu812 taitc229 "" 1.3.6.1.2.1.43.18.2.0.1</code>Then ask the OV team and they should find osmething like this on the NNMi server<code>Trap .1.3.6.1.2.1.43.18.2.0.1 at August 22, 2017 11:57:22 AM CDT from pgnetws01.
+amer.int.tenneco.com
+Version: SNMPv2c
+Varbinds:
+state=HAS_VALUE type=TimeTicks oid=.1.3.6.1.2.1.1.3.0 value=166286704
+state=HAS_VALUE type=OBJECT IDENTIFIER oid=.1.3.6.1.6.3.1.1.4.1.0 value=.1.3.6.1
+.2.1.43.18.2.0.1</code>

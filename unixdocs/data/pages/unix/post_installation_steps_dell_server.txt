@@ -1,0 +1,102 @@
+====== Customization - Dell Servers ======
+For Monitoring team to start hardware monitoring, Dell OMSA (Open Manage Server Administration) software must be installed and configured.  Dell OMSA repository has been configured on the Linux Repository server and contains packages specific to RHEL7 clients.  
+
+==== Install & Configure DELL OMSA Service ====
+    - Install the relevant packages (this will install ~40 packages)<code>sudo yum install srvadmin-all -y</code>
+    - Enable smuxpeer This will add a line in /etc/snmp/snmpd.conf<code> sudo /etc/init.d/dataeng enable-snmp</code>
+    - Confirm that a line has been added<code>sudo tail -n 1 /etc/snmp/snmpd.conf</code> Sample Output <code>x1naveka on smynbuhmams:/home/x1naveka $ sudo tail -n 1 /etc/snmp/snmpd.conf
+smuxpeer .1.3.6.1.4.1.674.10892.1
+x1naveka on smynbuhmams:/home/x1naveka $
+</code>
+    - Confirm that all services have been enabled<code>sudo /opt/dell/srvadmin/sbin/srvadmin-services.sh is-enabled</code> Sample Output<code>x1naveka on smynbuhmams:/home/x1naveka $ sudo /opt/dell/srvadmin/sbin/srvadmin-services.sh is-enabled
+instsvcdrv: enabled
+dsm_sa_datamgrd: enabled
+dsm_sa_eventmgrd: enabled
+dsm_sa_snmpd: enabled
+dsm_om_connsvc: enabled
+x1naveka on smynbuhmams:/home/x1naveka $</code>If any of them is disabled, enable them one by one using the following command <code>sudo /opt/dell/srvadmin/sbin/srvadmin-services.sh enable service</code>
+    - Restart all omsa services <code> sudo /opt/dell/srvadmin/sbin/srvadmin-services.sh restart</code> And, also restart snmpd <code>sudo systemctl restart snmpd</code>
+    - Make sure all services are running<code>sudo /opt/dell/srvadmin/sbin/srvadmin-services.sh status
+sudo systemctl status snmpd.service</code> Sample Output <code>x1naveka on smynbuhmams:/home/x1naveka $ sudo /opt/dell/srvadmin/sbin/srvadmin-services.sh status
+● instsvcdrv.service - Systems Management Device Drivers
+   Loaded: loaded (/etc/systemd/system/instsvcdrv.service; enabled; vendor preset: disabled)
+   Active: active (exited) since Fri 2021-04-23 08:38:03 CDT; 22h ago
+  Process: 52787 ExecStop=/usr/libexec/instsvcdrv-helper stop (code=exited, status=0/SUCCESS)
+  Process: 52823 ExecStart=/usr/libexec/instsvcdrv-helper start (code=exited, status=0/SUCCESS)
+
+Apr 23 08:38:03 smynbuhmams systemd[1]: Starting Systems Management Device Drivers...
+Apr 23 08:38:03 smynbuhmams systemd[1]: Started Systems Management Device Drivers.
+● dsm_sa_datamgrd.service - Systems Management Data Engine
+   Loaded: loaded (/etc/systemd/system/dsm_sa_datamgrd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Fri 2021-04-23 08:38:17 CDT; 22h ago
+  Process: 52877 ExecStart=/opt/dell/srvadmin/sbin/dsm_sa_datamgrd (code=exited, status=0/SUCCESS)
+ Main PID: 52878 (dsm_sa_datamgrd)
+   CGroup: /system.slice/dsm_sa_datamgrd.service
+           ├─52878 /opt/dell/srvadmin/sbin/dsm_sa_datamgrd
+           └─52940 /opt/dell/srvadmin/sbin/dsm_sa_datamgrd
+
+Apr 23 08:38:03 smynbuhmams systemd[1]: Starting Systems Management Data Engine...
+Apr 23 08:38:17 smynbuhmams systemd[1]: Started Systems Management Data Engine.
+● dsm_sa_eventmgrd.service - Systems Management Event Management
+   Loaded: loaded (/etc/systemd/system/dsm_sa_eventmgrd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Fri 2021-04-23 08:38:03 CDT; 22h ago
+  Process: 52866 ExecStart=/opt/dell/srvadmin/sbin/dsm_sa_eventmgrd (code=exited, status=0/SUCCESS)
+ Main PID: 52867 (dsm_sa_eventmgr)
+   CGroup: /system.slice/dsm_sa_eventmgrd.service
+           └─52867 /opt/dell/srvadmin/sbin/dsm_sa_eventmgrd
+
+Apr 23 08:38:03 smynbuhmams systemd[1]: Starting Systems Management Event Management...
+Apr 23 08:38:03 smynbuhmams systemd[1]: Started Systems Management Event Management.
+Apr 23 08:38:17 smynbuhmams Server_Administrator[52867]: 52867 5000 - Instrumentation Service  Severity: Informational, Category: Audit, MessageID:...tarting.
+Apr 23 08:38:17 smynbuhmams Server_Administrator[52867]: 52867 5012 - Instrumentation Service  Severity: Informational, Category: System Health, Me...present.
+Apr 23 08:38:17 smynbuhmams Server_Administrator[52867]: 52867 5001 - Instrumentation Service  Severity: Informational, Category: Audit, MessageID:...started.
+Apr 23 08:38:17 smynbuhmams Server_Administrator[52867]: 52867 5008 - Instrumentation Service  Severity: Informational, Category: Audit, MessageID:...started.
+Apr 23 22:00:08 smynbuhmams Server_Administrator[52867]: 52867 2242 - Storage Service  Severity: Informational, Category: Storage, MessageID: CTL37... Mini ).
+Apr 24 03:19:03 smynbuhmams Server_Administrator[52867]: 52867 2243 - Storage Service  Severity: Informational, Category: Storage, MessageID: CTL38... Mini ).
+Hint: Some lines were ellipsized, use -l to show in full.
+● dsm_sa_snmpd.service - Systems Management SNMP
+   Loaded: loaded (/etc/systemd/system/dsm_sa_snmpd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Fri 2021-04-23 08:38:21 CDT; 22h ago
+  Process: 52922 ExecStart=/opt/dell/srvadmin/sbin/dsm_sa_snmpd (code=exited, status=0/SUCCESS)
+ Main PID: 52923 (dsm_sa_snmpd)
+   CGroup: /system.slice/dsm_sa_snmpd.service
+           └─52923 /opt/dell/srvadmin/sbin/dsm_sa_snmpd
+
+Apr 23 08:38:17 smynbuhmams systemd[1]: Starting Systems Management SNMP...
+Apr 23 08:38:21 smynbuhmams systemd[1]: Started Systems Management SNMP.
+● dsm_om_connsvc.service - DSM SA Connection Service
+   Loaded: loaded (/etc/systemd/system/dsm_om_connsvc.service; enabled; vendor preset: disabled)
+   Active: active (running) since Fri 2021-04-23 08:38:21 CDT; 22h ago
+  Process: 52959 ExecStart=/bin/sh -c LD_LIBRARY_PATH=$(/opt/dell/srvadmin/sbin/dsm_om_connsvc-helper) exec /opt/dell/srvadmin/sbin/dsm_om_connsvcd -run (code=exited, status=0/SUCCESS)
+ Main PID: 52967 (dsm_om_connsvcd)
+   CGroup: /system.slice/dsm_om_connsvc.service
+           ├─52967 /opt/dell/srvadmin/sbin/dsm_om_connsvcd -run
+           └─52968 /opt/dell/srvadmin/sbin/dsm_om_connsvcd -run
+
+Apr 23 08:38:21 smynbuhmams systemd[1]: Starting DSM SA Connection Service...
+Apr 23 08:38:21 smynbuhmams systemd[1]: Started DSM SA Connection Service.
+Apr 23 08:45:41 smynbuhmams dsm_om_connsvcd[52968]: pam_unix(omauth:auth): check pass; user unknown
+Apr 23 08:45:41 smynbuhmams dsm_om_connsvcd[52968]: pam_unix(omauth:auth): authentication failure; logname= uid=0 euid=0 tty= ruser= rhost=
+Apr 23 08:45:58 smynbuhmams dsm_om_connsvcd[52968]: pam_unix(omauth:auth): check pass; user unknown
+Apr 23 08:45:58 smynbuhmams dsm_om_connsvcd[52968]: pam_unix(omauth:auth): authentication failure; logname= uid=0 euid=0 tty= ruser= rhost=
+x1naveka on smynbuhmams:/home/x1naveka $ sudo systemctl status snmpd.service
+● snmpd.service - Simple Network Management Protocol (SNMP) Daemon.
+   Loaded: loaded (/usr/lib/systemd/system/snmpd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Fri 2021-04-23 08:38:40 CDT; 22h ago
+ Main PID: 53129 (snmpd)
+   CGroup: /system.slice/snmpd.service
+           └─53129 /usr/sbin/snmpd -LS0-6d -f
+
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+Apr 24 07:08:20 smynbuhmams snmpd[53129]: Connection from UDP: [10.128.100.25]:60623->[10.96.65.53]:161
+x1naveka on smynbuhmams:/home/x1naveka $</code> You should see the last //connection from UDP// messages in the snmpd status only if the monitoring team has already setup hardware monitoring.
+
+

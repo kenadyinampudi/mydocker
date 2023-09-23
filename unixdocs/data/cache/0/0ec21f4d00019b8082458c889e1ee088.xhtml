@@ -1,0 +1,57 @@
+
+<h1 class="sectionedit1" id="custom_syslog_configurations_for_driv">Custom syslog configurations for DRiV</h1>
+<div class="level1">
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Type of log   </th><th class="col1">LogServer</th><th class="col2 leftalign">Logfile                              </th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">sudo          </td><td class="col1">pcdcunxlxap04 </td><td class="col2 leftalign">/prod/unixlog/sudo/secure.log        </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">errpt-detailed</td><td class="col1">pcdcunxlxap04 </td><td class="col2 leftalign">/prod/unixlog/errpt/errpt.log        </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">errpt-readable</td><td class="col1">pcdcunxlxap04 </td><td class="col2">/prod/unixlog/errpt/errptreadable.log</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [54-328] -->
+</div>
+<!-- EDIT1 SECTION "Custom syslog configurations for DRiV" [1-328] -->
+<h2 class="sectionedit3" id="configuring_an_aix_host_to_send_errpt_entries_to_centralized_syslog_server">Configuring an AIX host to send errpt entries to centralized syslog server</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create a template<pre class="code">vi /var/tmp/tensyslogadd</pre>
+
+<p>
+Insert this template
+</p>
+<pre class="code">errnotify:
+en_name=&quot;ten-central-log&quot;
+en_persistenceflg = 1
+en_method = &quot;logger -pnotice Msg from Error Log: $(errpt -a -l $1 ) ; logger -ttenerrpt $(errpt -l $1 | grep -v ^IDENTIFIER &quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add this to the <code>errnotify</code> class in ODM<pre class="code">sudo odmadd /var/tmp/tensyslogadd</pre>
+
+<p>
+Delete the template file
+</p>
+<pre class="code">rm /var/tmp/tensyslogadd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add this line to sysllog config so the error loges get shipped out.<pre class="code">sudo vi /etc/syslog.conf</pre>
+
+<p>
+Add this. <strong>Do not add if there is already a similar line in the file</strong>
+</p>
+<pre class="code">*.notice           @unixlogs.driv.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart syslogd<pre class="code">sudo refresh -s syslogd</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Configuring an AIX host to send errpt entries to centralized syslog server" [329-] -->

@@ -1,0 +1,79 @@
+====== Configuring disks on Dual VIOS, present disks to guest and create filesystem ======
+
+==== Request ====
+
+  - From time to time, we will get requests from application teams like the one below<code>Please create a filesystem /usr/sap/CTA/SUM size 100G and change the ownership to ctaadm:sapsys on daerdb01</code>
+
+==== Prep tasks ====
+
+  - Logon to daerdb01 and check if the filesystem exists or not<code>ls -ld /usr/sap/CTA/SUM</code>If it does exist, even if it is a directory, please go back to the requestor and check with them and make sure it is okay to go ahead and create the filesystem.
+  - Make sure that the mount point is not on an NFS mounted filesystem.<code>df -k /usr/sap/CTA/SUM</code>
+  - Find out the correct VG for the requested filesystem.<code>lsvg</code>Check similar filesystems and figure out where they are<code>lslv <lvname></code>
+  - Find out if the VG has enough space or not<code>lsvg <vg_name></code>
+    - If the VG has enough space, go to "Create the fileysstem step"
+    - If the VG does not have enough storage, we need to add an additional disk to it. AIX servers we maintain, use one of the following for storage
+      * Local disks ( SAS, SCSI, etc )<code>lsdev -Ccdisk | egrep -i "sas|scsi"
+hdisk3   Available 03-00-00 SAS Disk Drive
+hdisk4   Available 02-00-00 SAS RAID 0 SSD Array
+hdisk5   Available 02-00-00 SAS RAID 0 SSD Array
+hdisk6   Available 08-00-00 SAS Disk Drive
+hdisk7   Available 05-00-00 SAS RAID 0 SSD Array
+hdisk8   Available 05-00-00 SAS RAID 0 SSD Array</code>
+      * Directly attached SAN storage<code>x1kxk630 on pggtdb01:/home/x1kxk630 $ lsdev -Ccdisk
+hdisk0  Available C5-T1-01 EMC Symmetrix FCP MPIO VRAID
+hdisk1  Available C7-T1-01 EMC Symmetrix FCP MPIO VRAID
+hdisk2  Available C7-T1-01 EMC Symmetrix FCP MPIO VRAID
+hdisk3  Available C4-T1-01 EMC Symmetrix FCP MPIO VRAID</code>
+      * Virtual SCSI disk presented through VIOS server(s)<code>hdisk0  Available  Virtual SCSI Disk Drive
+hdisk8  Available  Virtual SCSI Disk Drive
+hdisk9  Available  Virtual SCSI Disk Drive
+hdisk10 Available  Virtual SCSI Disk Drive</code>
+
+==== Adding disks to a Dual VIOS guest ====
+
+  - Find out which VIO server serves the storage for the given server using one of the following methods.
+    - [[unix:viodisksmap-summary|Look up unix documentation]]
+    - Look at the HMC, find out the managed system, then find out the VIO servers.
+  - [[unix:viodisksmap-summary|Make a note of the array serial number from the documentation]]
+  - Find out the disk size used on the VG<code>lsvg -p , bootinfo -s</code>
+  - Send a request to Storage team requesting storage<code>How many disks are needed ?
+Size of each disk
+To which server they should provision the storage ?
+The array serial number from which the storage needs to be carved.</code>
+
+==== Configure the storage on VIOS servers ====
+
+  - The storage, once provisioned, will come back to you with some comments like this<code>LUN xyz has been allocated to taprvio50 & 51. Please run cfgmgr.</code>
+  - Configure the storage on VIOS servers
+    - On the first VIOS server. Document the current disk layout<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.before</code>Run cfgmgr to rescan and detect the new disks<code>sudo cfgmgr</code>Document the disk layout now<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.after</code>Find out the new device using diff<code>diff lsdiskcfg.out.before lsdiskcfg.out.after</code>
+      - If VIOS server is using powerpath, disable reserve_lock policy.
+        - On some EMC ODM versions<code>sudo chdev -l <hdiskpowername> -a reserve_lock=no</code>On some other versions<code>sudo chdev -l hdiskpowername -a reserve_policy=no_reserve</code>
+      - If VIOS server is using AIX MPIO<code>sudo chdev -l <hdiskname> -a reserve_policy=no_reserve</code>
+      - Allocate a PVID<code>sudo chdev -l <hdiskpowername> -a pv=yes</code>
+    - On the second VIOS server, Document the current disk layout<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.before</code>Run cfgmgr to rescan and detect the new disks<code>sudo cfgmgr</code>Document the disk layout now<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.after</code>Find out the new device using diff<code>diff lsdiskcfg.out.before lsdiskcfg.out.after</code>Make sure you see the new disk on the second VIOS server as well.
+      - If VIOS server is using powerpath, disable reserve_lock policy.
+        - On some EMC ODM versions<code>sudo chdev -l <hdiskpowername> -a reserve_lock=no</code>On some other versions<code>sudo chdev -l hdiskpowername -a reserve_policy=no_reserve</code>
+      - If VIOS server is using AIX MPIO<code>sudo chdev -l <hdiskname> -a reserve_policy=no_reserve</code>
+
+==== Configure storage to the guest ====
+
+  - On VIOS server 1, find out the vhost that is used by the guest<code>grep <guestname> lsdiskcfg.out.after</code>Make a note of it
+  - Login as padmin and add the disks to the vhost<code>sudo su - padmin</code>Add the VIOS mapping<code>mkvdev -vdev <hdiskpowername> -vadapter <vhost_name></code>  
+  - On VIOS server 2, find out the vhost that is used by the guest<code>grep <guestname> lsdiskcfg.out.after</code>Make a note of it
+  - Login as padmin and add the disks to the vhost<code>sudo su - padmin</code>Add the VIOS mapping<code>mkvdev -vdev <hdiskpowername> -vadapter <vhost_name></code>  
+
+==== Detect and configure the device on guest ====
+
+  - Document the current disks<code>lspv > lspv.before</code>
+  - Run cfgmgr<code>sudo cfgmgr</code>
+  - Document the current disks<code>lspv > lspv.after</code>
+  - Find the difference which should list the disk we just added<code>diff lspv.before lspv.after</code>
+  - Check if the PVID matches to which we saw in the VIOS servers
+  - Add the disk to the VG<code>sudo extendvg <vgname> <diskname></code>
+
+==== Create the filesystem ====
+
+  - Create the filesystem<code>sudo crfs -v jfs2 -A yes -t no -g <vg_name> -a size=<size>G -m <mount_point></code>
+  - Then mount the filesystem<code>sudo mount <mount_point></code>
+  - Change the ownership<code>sudo chown ctaadm:sapsys <mount_point></code>
+  - Close the ticket and email the user.

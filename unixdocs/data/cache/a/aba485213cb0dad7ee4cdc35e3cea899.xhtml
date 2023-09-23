@@ -1,0 +1,117 @@
+
+<h1 class="sectionedit1" id="soln_mgr_hana_db_server">Soln Mgr HANA DB server</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Soln Mgr HANA DB server" [1-39] -->
+<h2 class="sectionedit2" id="create_users">Create users</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the server<pre class="code">ssh &lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enter and manipulate the SID name(s) into variables<pre class="code">export hana_sid_name=&lt;enter the hana sid name in lower case&gt;
+export HANA_SID_NAME=$(echo ${hana_sid_name} | tr a-z A-Z)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:pickthenextuid" class="wikilink1" title="unix:pickthenextuid">Figure out one new unique id for the user</a></div>
+</li>
+<li class="level1"><div class="li"> Define uid as variables<pre class="code">export firstuid=&lt;&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create groups and users accounts<pre class="code">sudo useradd -K PASS_MAX_DAYS=-1 -s /usr/bin/csh -g sapsys -G sapinst -d /home/${hana_sid_name}adm -c &quot;SAP System Account&quot; -m -u ${firstuid} ${hana_sid_name}adm
+echo &quot;${hana_sid_name}adm:sawEP2WRAA3tQ&quot; | sudo chpasswd -e</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Grant permission to run cron<pre class="code">echo ${hana_sid_name}adm | sudo tee -a /etc/cron.allow</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the Virtual IP<pre class="code">export VIP=&lt;ip_address&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create configuration<pre class="code">echo &quot;DEVICE=eth0:0&quot;        | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo &quot;ONBOOT=yes&quot;           | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo &quot;TYPE=Ethernet&quot;        | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo &quot;BOOTPROTO=none&quot;       | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo &quot;NAME=eth0:0&quot;          | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo &quot;IPADDR=${VIP}&quot;        | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo &quot;NETMASK=255.255.255.0&quot;| sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0</pre>
+
+<p>
+Bring up the interface
+</p>
+<pre class="code">sudo ifup eth0:0</pre>
+
+<p>
+Check
+</p>
+<pre class="code">ifconfig -a</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Create users" [40-1588] -->
+<h2 class="sectionedit3" id="create_filesystems_for_sap_hana">Create filesystems for SAP HANA</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">sudo lvcreate -n home_${hana_sid_name}adm       -L 1024MB  datavg01
+sudo lvcreate -n usr_sap_${HANA_SID_NAME}       -L 10G datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/home_${hana_sid_name}adm
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_${HANA_SID_NAME}
+
+cat &lt;&lt; EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-home_${hana_sid_name}adm        /home/${hana_sid_name}adm          ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_${HANA_SID_NAME}        /usr/sap/${HANA_SID_NAME}          ext4    defaults        1 2
+EOF
+
+for fs in /home/${hana_sid_name}adm /usr/sap/${HANA_SID_NAME}
+do
+    sudo mkdir -p ${fs}
+    sudo mount ${fs}
+    sudo chown ${hana_sid_name}adm:sapsys ${fs}
+done
+
+for fs in /usr/sap /hana/data /hana/shared /hana/log 
+do
+    sudo chown ${hana_sid_name}adm:sapsys ${fs}
+done</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Create filesystems for SAP HANA" [1589-2465] -->
+<h2 class="sectionedit4" id="adjust_filesystem_sizes_for_hana">Adjust filesystem sizes for HANA</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Storage sizes as variables<pre class="code">sudo /usr/local/scripts/extendfs /hana/shared 512G
+sudo /usr/local/scripts/extendfs /hana/data 768G
+sudo /usr/local/scripts/extendfs /hana/log 384G
+sudo /usr/local/scripts/extendfs /usr/sap 10G
+sudo /usr/local/scripts/extendfs /usr/sap/${ABAP_SID_NAME} 50G</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Adjust filesystem sizes for HANA" [2466-2813] -->
+<h2 class="sectionedit5" id="adjust_sysctl_solman_db_server">Adjust sysctl SolMan DB server</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the original HANA DB server and execute the below command to find the local port range<pre class="code">sysctl net.ipv4.ip_local_port_range</pre>
+
+<p>
+Output
+</p>
+<pre class="code">net.ipv4.ip_local_port_range = 32768    60999</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If required make the changes according on the newly built SAP HANA DB Server<pre class="code">sudo sysctl -w net.ipv4.ip_local_port_range=&quot;40000 65300&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Adjust sysctl SolMan DB server" [2814-] -->

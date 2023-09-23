@@ -1,0 +1,40 @@
+
+<h1 class="sectionedit1" id="configure_aix_network_and_memory_parameters_install">Configure AIX network and memory parameters (Install)</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Configure VMO parameters<pre class="code">sudo vi /etc/tunables/nextboot</pre>
+<pre class="code">vmo:
+        minperm% = &quot;3&quot;
+        maxclient% = &quot;90&quot;
+        maxperm% = &quot;90&quot;
+        maxfree = &quot;1088&quot;
+        minfree = &quot;960&quot;
+        strict_maxclient = 1
+        strict_maxperm = 0
+
+no:
+        udp_ephemeral_high = &quot;65500&quot;
+        udp_ephemeral_low = &quot;9000&quot;
+        tcp_ephemeral_high = &quot;65500&quot;
+        tcp_ephemeral_low = &quot;9000&quot;
+        rfc1323 = &quot;1&quot;
+        ipignoreredirects = &quot;1&quot;
+        ipforwarding = &quot;1&quot;
+        ipsendredirects = &quot;0&quot;
+        sb_max = &quot;1048576&quot;
+        tcp_recvspace = &quot;262144&quot;
+        tcp_sendspace = &quot;262144&quot;
+        udp_recvspace = &quot;57344&quot;
+        udp_sendspace = &quot;57344&quot;
+        tcp_pmtu_discover = &quot;0&quot;
+        udp_pmtu_discover = &quot;0&quot;
+
+ioo:
+        aio_minservers = &quot;8&quot;
+        aio_maxservers = &quot;32&quot;
+        aio_maxreqs = &quot;1024&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>

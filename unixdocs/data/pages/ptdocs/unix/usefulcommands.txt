@@ -1,0 +1,700 @@
+====== HMC commands ======
+
+http://www.ibm.com/developerworks/aix/library/au-aix-ibm-powervm/index.html
+
+===== Reset connection to a host on the HMC =====
+
+Clear the connection history if you want to remove and add again a managed system:
+<cli prompt='>'>
+hmc@hscroot > mksysconn -o auto
+</cli>
+
+===== list UAK (update access key) on Power 8 and later =====
+
+You have a firmware expiration date, it me be renew in case of expired
+<cli prompt='>'>
+hmc@hscroot > lslic -m 9119-MME*??????? -F mtms,update_access_key_exp_date
+9119-MME*???????,04/01/2019
+</cli>
+
+You can enable an automatic renewal, go to **Service Management** -> **Transmit Service Information** and select **Update Access Key Information** with some interval.
+
+===== Basic command for HMC =====
+
+Open a terminal on a host using command line:
+<cli prompt='#'>
+ mkvterm -m managed-system
+        {-p partition-name | --id partition-ID} [--help]
+
+ Open a virtual terminal session for the partition with an ID of 1:
+
+       mkvterm -m 9406-570*12345678 --id 1
+       
+       Exit the Vterm using ~~.  or  ~.
+</cli>
+
+To get the names of server(s) managed by an HMC:
+<code>
+hscroot@sfohmc1:~> lssyscfg -r sys -F name
+Server-9133-55A-SN062EEBH
+Server-9406-MMA-SN103A7C0
+Server-8233-E8B-SN0623B7P
+</code>
+
+To list LPAR names and LPAR profile names:
+<code>
+hscroot@sfohmc1:~> lssyscfg -r prof -m Server-8233-E8B-SN0623B7P --header -F lpar_name,name
+lpar_name,name
+06-23B7P,default_profile
+vio1,default
+vio2,default
+</code>
+
+  * Add a virtual FC adapter on VIOs and the targeted LPAR (Commands from the HMC)
+  For the VIO
+(DLPAR vfc "server" on LABVIO01 into slot 34, for LPAR labaix01 slot 14)
+<cli prompt='#'>
+# chhwres -r virtualio -m lab-01-p740 -o a -s 34 -p LABVIO01 --rsubtype fc -a "adapter_type=server,remote_lpar_name=labaix01,remote_slot_num=14"
+</cli>
+
+(Same into the profile of the VIOS)
+<cli prompt='#'>
+# chsyscfg -r prof -m lab-01-p740 -i 'name=vios,lpar_id=1,"virtual_fc_adapters+=""34/server/6//14//1"""'
+                For the LPAR
+                               (Same into the profile of the LPAR)
+chsyscfg -r prof -m lab-01-p740 -i 'name=default_profile,lpar_id=6,"virtual_fc_adapters+=""14/client/1/LABVIO01/34//1"""'
+                               (Si besoin, DLPAR vfc "client" on labaix01 slot 14, from source LABVIO01 slot 34)
+#chhwres -r virtualio -m lab-01-p740 -o a -s 14 -p labaix01 --rsubtype fc -a "adapter_type=client,remote_lpar_name=LABVIO01,remote_slot_num=34"                                             
+</cli>
+
+<code>
+cybroot@sfohmc1:~> lshwres -r virtualio --rsubtype fc --level lpar -m Server-8233-E8B-SN0623B7P -F lpar_name,wwpns --header --filter lpar_names=lpar2
+lpar_name,wwpns
+lpar2,"c0507602f66f0004,c0507602f66f0005"
+lpar2,"c0507602f66f0006,c0507602f66f0007"
+cybroot@sfohmc1:~>
+
+
+hscroot@sfohmc1:~> lshwres -r virtualio --rsubtype fc --level lpar -m Server-8233-E8B-SN0623B7P
+lpar_name=vio1,lpar_id=2,slot_num=31,adapter_type=server,state=1,is_required=0,remote_lpar_id=4,remote_lpar_name=lpar1,remote_slot_num=21
+lpar_name=vio1,lpar_id=2,slot_num=32,adapter_type=server,state=1,is_required=0,remote_lpar_id=5,remote_lpar_name=lpar2,remote_slot_num=21
+lpar_name=vio1,lpar_id=2,slot_num=33,adapter_type=server,state=1,is_required=0,remote_lpar_id=6,remote_lpar_name=lpar3,remote_slot_num=21
+lpar_name=vio1,lpar_id=2,slot_num=34,adapter_type=server,state=1,is_required=0,remote_lpar_id=7,remote_lpar_name=lpar4,remote_slot_num=21
+lpar_name=vio2,lpar_id=3,slot_num=31,adapter_type=server,state=1,is_required=0,remote_lpar_id=4,remote_lpar_name=lpar1,remote_slot_num=22
+lpar_name=vio2,lpar_id=3,slot_num=32,adapter_type=server,state=1,is_required=0,remote_lpar_id=5,remote_lpar_name=lpar2,remote_slot_num=22
+lpar_name=vio2,lpar_id=3,slot_num=33,adapter_type=server,state=1,is_required=0,remote_lpar_id=6,remote_lpar_name=lpar3,remote_slot_num=22
+lpar_name=vio2,lpar_id=3,slot_num=34,adapter_type=server,state=1,is_required=0,remote_lpar_id=7,remote_lpar_name=lpar4,remote_slot_num=22
+lpar_name=lpar1,lpar_id=4,slot_num=21,adapter_type=client,state=1,is_required=0,remote_lpar_id=2,remote_lpar_name=vio1,remote_slot_num=31,"wwpns=c0507602f66f0000,c0507602f66f0001"
+lpar_name=lpar1,lpar_id=4,slot_num=22,adapter_type=client,state=1,is_required=0,remote_lpar_id=3,remote_lpar_name=vio2,remote_slot_num=31,"wwpns=c0507602f66f0002,c0507602f66f0003"
+lpar_name=lpar2,lpar_id=5,slot_num=21,adapter_type=client,state=1,is_required=0,remote_lpar_id=2,remote_lpar_name=vio1,remote_slot_num=32,"wwpns=c0507602f66f0004,c0507602f66f0005"
+lpar_name=lpar2,lpar_id=5,slot_num=22,adapter_type=client,state=1,is_required=0,remote_lpar_id=3,remote_lpar_name=vio2,remote_slot_num=32,"wwpns=c0507602f66f0006,c0507602f66f0007"
+</code>
+
+List difference between running profile and defined profiles: (lsyscfg: defined, lshwres: running config)
+<cli prompt='>'>
+hscroot@hmc:~> lssyscfg -r prof -m P570-SERVER  --header -F lpar_name,name,max_virtual_slots
+lpar_name,name,max_virtual_slots
+vio1,normal,100
+nim,normal,16
+lpardev,normal,16
+hscroot@hmc:~> lshwres -r virtualio --rsubtype slot --level lpar -m P570-SERVER -F lpar_name,curr_max_virtual_slots
+vio1,100
+nim,16
+lpardev,10
+</cli>
+
+
+HMC command line:\\
+commands have --help option and man pages
+<code>
+lssyscfg -r sys -F name | grep aix21f04                       shows the full name of the managed system (what we can use in other commands)
+lssyscfg -r lpar -m <managedsysname> -F name                  shows the full name of the lpars of the managed system
+lssyscfg -r sys -m <managedsysname> -F name,state --header    shows the state of the managed system
+lssyscfg -r lpar -m <managedsysname> -F name,state --header   shows the state of the lpars of the managed system
+lssyscfg -r prof -m aix10c22-SN0603C6H --filter "lpar_names=aix10c22b" -F name,boot_mode    it will show the boot mode in the profile
+
+lshwres -r mem -m <managedsysname> --level sys                shows memory information of the managed system
+lshwres -r mem -m <managedsysname> --level lpar               shows memory information of lpars of the managed system
+lshwres -r proc -m <managedsysname> --level sys               shows processor information of the managed system
+lshwres -r proc -m <managedsysname> --level lpar              shows processor information of lpars of the manage system
+lshwres -r io -m <managedsysname> --rsubtype slot             shows IO slot information
+lshwres -r proc -m <managedsysname> --level sys -F installed_sys_proc_units:configurable_sys_proc_units
+
+lshwres -r virtualio --rsubtype scsi -m <managedsysname> --level lpar               lists scsi devices by LPAR
+lshwres -r virtualio --rsubtype eth -m <managedsysname> --level lpar                lists virt. eth. devices by LPAR
+lshwres -r virtualio --rsubtype eth -m <managedsysname> --level lpar -F lpar_name,port_vlan_id
+
+chsysstate -m <managedsysname> -o standby -r sys              power on a system to standby
+chsysstate -r sys -m <managedsysname> -o off                  normal power off the managed system
+chsysstate -r sys -m <managedsysname> -o off --immed          fast power off the managed system
+
+chsysstate -m <managed system> -r lpar -n <lparname> -o shutdown --restart          it will reboot an lpar with dump
+chsysstate -m <managed system> -r lpar -n <lparname> -o shutdown --immed --restart  it will reboot an lpar immediately (without dump)
+chsysstate -m <managedsysname> -r lpar -n <lparname> -o shutdown --immed            it will shutdown the oprating system
+chsysstate -m aix10c22-SN65158BE -o on -r lpar -n aix10c22b -f default              it will activate an lpar
+
+lspartition -dlpar                                            shows dlpar capable partitions
+                                                              (it will show if RMC connection is OK between the HMC and LPAR)
+
+lssysconn -r all                                              to see what IPs are assigned by the HMC
+mksysconn -o auto                                             tells HMC to re-discover all servers' IP address
+
+lssvcevents -t console -d 60                                  lists console events in the past 60 days
+lssvcevents -t hardware -d 0                                  list serviceable events which occured today
+
+lshmc -V                                                      hmc version
+lshmc -v                                                      hmc model
+lshmc -n                                                      lists the network settings of the hmc
+hmcshutdown -t now -r                                         reboot the HMC (-t: timing in minutes, -r: reboot)
+
+vtmenu                                                        hmc menu options (console session can be opened as well)
+logout: ~~. (2 tilde and a dot)
+
+------------------------------------
+
+Default root password: passw0rd (try su -)
+
+------------------------------------
+
+opening/closing virtual terminal from hmc:
+
+lssyscfg -r sys -F name                         <--get managed system name
+lssyscfg -r lpar -m <managed system> -F name    <--get lpar name
+
+mkvterm -m <managed system> -p <lpar>           <--opens a terminal window
+rmvterm -m <managed system> -p <lpar>           <--closes a terminal window
+
+~~.                                             <--logout from te session (not necessary to leave AIX)
+</code>
+
+Create a new virtual switch (use "r" to remove)
+<cli prompt='>'>
+hscroot@hmc:~> chhwres -r virtualio -m p824-1234 -o a --rsubtype vswitch --vswitch net_production
+</cli>
+
+Create an LPAR and specify a WWPN
+<cli prompt='>'>
+hscroot@hmc:~> mksyscfg -m SERVER -r lpar -i ‘name=LPARname,profile_name=Profilename,lpar_id=10,lpar_env=os400,min_mem=1024,desired_mem=2048,max_mem=2048,mem_mode=ded,proc_mode=shared,min_proc_units=0.05,desired_proc_units=0.1,max_proc_units=2.0,min_procs=1,desired_procs=1,max_procs=2,sharing_mode=uncap,uncap_weight=128,shared_proc_pool_id=1,max_virtual_slots=10,“virtual_eth_adapters=2/0/70//0/0/Ethernet0//all/none”, “virtual_fc_adapters=””2/client/17/VIOS1/11/c050760828120001,c050760828120002/1″”,“”3/client/17/VIOS1/12/c050760828120003,c050760828120004/0″”,“”4/client/18/VIOS2/11/c050760828120005,c050760828120006/1″””, console_slot=hmc’
+
+mksyscfg -r lpar -m system1 -i "name=aix_lpar2,
+        profile_name=prof1,lpar_env=aixlinux,min_mem=256,
+        desired_mem=1024,max_mem=1024,proc_mode=ded,
+        min_procs=1,desired_procs=1,max_procs=2,allow_perf_collection=1,
+        sharing_mode=share_idle_procs,auto_start=1,sync_curr_profile=1,
+        boot_mode=norm,lpar_io_pool_ids=3,
+        "io_slots=21010003/3/1,21030003//0""
+</cli>
+
+VIOS command through the HMC (use RMC)
+<cli prompt='>'>
+[root@labaixna201] /root> command=$(printf "lsdev "); ssh hscroot@labibmha001 viosvrcmd -m cpk-90-p710-lab -p LABVIOA001 -c "$command" | grep '^fcs' | awk '{print $1}'
+fcs0
+fcs1
+</cli>
+
+===== Advanced command for HMC =====
+
+==== LPM (Partition mobility) ====
+
+shows how many concurrent migrations are possible (num_active_migr._supported)
+  lslparmigr -r sys -m <system>                        
+list status of lpars (lpar_id will be shown as well)
+  lslparmigr -r lpar -m source_sys
+validation of lpar (id) for migration                     
+  migrlpar -o v -t dest_sys -m source_sys --id 1         
+  echo $?                                          if return code is 0, validation was successful
+migrating lpar
+  migrlpar -o m -t dest_sys -m source_sys -p lpar1 &   
+show state  
+  lssyscfg -r lpar -m source_sys -F name,state           
+
+Show migration state
+  lslparmigr -r lpar -m source_sys -F name,migration_state,bytes_transmitted,bytes_remaining
+
+
+==== Backup HMC data ====
+
+<code>
+hscroot@hmcsrvr:~> bkconsdata -r ftp -h hostname -u user --passwd pass -d /home/user/
+</code>
+
+==== User management ====
+
+Create or list a user:
+<cli prompt='>'>
+hscroot@hmc:~> lshmcusr 
+name=root,taskrole=hmcsuperadmin,description=root,pwage=99999,resourcerole=ALL:,authentication_type=local,remote_webui_access=1,remote_ssh_access=1,min_pwage=0,session_timeout=0,verify_timeout=15,idle_timeout=0,inactivity_expiration=0,resources=<ResourceID = ALL:><UserDefinedName = AllSystemResources>,password_encryption=sha512,disabled=0
+name=hscroot,taskrole=hmcsuperadmin,description=HMC Super User,pwage=99999,resourcerole=ALL:,authentication_type=local,remote_webui_access=1,remote_ssh_access=1,min_pwage=0,session_timeout=0,verify_timeout=15,idle_timeout=0,inactivity_expiration=0,resources=<ResourceID = ALL:><UserDefinedName = AllSystemResources>,password_encryption=sha512,disabled=0
+hscroot@hmc:~> mkhmcusr -u admin -a hmcsuperadmin --passwd abc1234
+</cli>
+
+Remove restricted shell for hscroot user (needs to boot on a linux live CD with Knoppix or Gparted):
+<code>
+cd /opt/hsc/data/ssh/
+chmod 755 hmcsshrc
+vi hmcsshrc
+Add # before "set -r"
+</code>
+
+==== Manage HMC disk space ====
+
+Check space on HMC:
+<cli prompt='>'>
+hscroot@hmc1:~> monhmc -r disk -n 0
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/sda2             16121184   6467024   8835248  43% /
+tmpfs                  1031944       136   1031808   1% /dev
+tmpfs                  1031944         0   1031944   0% /dev/shm
+/dev/sda3              6040320   2951240   2782240  52% /var
+/dev/sda7              8056524    159336   7487936   3% /dump
+/dev/sda8            126833720    192216 120198636   1% /extra
+
+hscroot@hmc1:~> monhmc -r disk -n 0
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/sda2             16121184   7277296   8024976  48% /
+tmpfs                  1031924       156   1031768   1% /dev
+tmpfs                  1031924         0   1031924   0% /dev/shm
+/dev/sda3              6040320    327112   5406368   6% /var
+/dev/dm-1             10321208    227212   9569708   3% /home
+/dev/dm-3              6192704    329100   5549032   6% /var/hsc/log
+/dev/dm-0             30963708    177776  29213068   1% /dump
+/dev/dm-2             20642428    176088  19417764   1% /extra
+/dev/dm-5             41284928    183784  39003992   1% /data
+</cli>
+
+Estimate the space you can freed:
+<cli prompt='>'>
+hscroot@hmc1:~> lshmcfs -o c -d 0
+filesystem=/var,filesystem_size=5898,filesystem_avail=4388,"temp_files_start_time=Jun 6, 2013 4:56:00 PM",temp_files_size=542,to_be_freed=1695
+filesystem=/dump,filesystem_size=7867,filesystem_avail=7316,"temp_files_start_time=Sep 19, 2013 7:35:00 AM",temp_files_size=0,to_be_freed=4
+filesystem=/extra,filesystem_size=123861,filesystem_avail=117381,temp_files_start_time=none,temp_files_size=0,to_be_freed=0
+filesystem=/,filesystem_size=15743,filesystem_avail=8628,temp_files_start_time=none,temp_files_size=0,to_be_freed=0
+</cli>
+
+Clean up:
+<cli prompt='>'>
+hscroot@hmc1:~> chhmcfs -o f -d 0
+</cli>
+
+Now you use less space:
+<cli prompt='>'>
+hscroot@hmc1:~> lshmcfs -o c -d 0
+filesystem=/var,filesystem_size=5898,filesystem_avail=4390,"temp_files_start_time=Jun 6, 2013 4:56:00 PM",temp_files_size=544,to_be_freed=0
+filesystem=/dump,filesystem_size=7867,filesystem_avail=7317,"temp_files_start_time=Sep 19, 2013 7:35:00 AM",temp_files_size=0,to_be_freed=0
+...
+hscroot@hmc1:~> monhmc -r disk -n 0
+Filesystem           1K-blocks      Used Available Use% Mounted on
+...
+/dev/sda3              6040320   1246296   4487184  22% /var
+</cli>
+
+
+
+=== HMC related commands: ===
+
+<cli prompt='>'>
+monhmc -r mem -n 0                                            shows total, used and free mamory of HMC
+monhmc -r disk -n 0                                           shows filesystems and usage info (same as "df -k")
+monhmc -r proc -n 0                                           shows cpu usage of each processor
+monhmc -r swap -n 0                                           shows paging space usage
+</cli>
+
+Managed system and LPAR related commands:
+
+ commands have --help option and man pages
+<cli prompt='>'>
+lssyscfg -r sys -F name | grep aix21                          shows the full name of the managed system (what we can use in other commands)
+lssyscfg -r lpar -m <managedsysname> -F name                  shows the full name of the lpars of the managed system
+lssyscfg -r sys -m <managedsysname> -F name,state --header    shows the state of the managed system
+lssyscfg -r lpar -m <managedsysname> -F name,state --header   shows the state of the lpars of the managed system
+lssyscfg -r prof -m aix10-SN0603C6H --filter "lpar_names=aix10" -F name,boot_mode   it will show the boot mode in the profile
+lssyscfg -r prof -m <man.sys> -F lpar_name,virtual_eth_adapters                     shows LPARS with ethernet adaptesr and VLAN tags
+</cli>
+<cli prompt='>'>
+lshwres -r mem -m <managedsysname> --level sys                shows memory information of the managed system
+lshwres -r mem -m <managedsysname> --level lpar               shows memory information of lpars of the managed system
+lshwres -r proc -m <managedsysname> --level sys               shows processor information of the managed system
+lshwres -r proc -m <managedsysname> --level lpar              shows processor information of lpars of the manage system
+lshwres -r io -m <managedsysname> --rsubtype slot             shows IO slot information
+lshwres -r proc -m <managedsysname> --level sys -F installed_sys_proc_units:configurable_sys_proc_units
+
+lshwres -r virtualio --rsubtype scsi -m <managedsysname> --level lpar               lists scsi devices by LPAR
+lshwres -r virtualio --rsubtype eth -m <managedsysname> --level lpar                lists virt. eth. devices by LPAR
+lshwres -r virtualio --rsubtype eth -m <managedsysname> --level lpar -F lpar_name,port_vlan_id
+</cli>
+
+Check RMC state
+<cli prompt='>'>
+lssyscfg -r lpar -m <managedsysname> -F lpar_id,state, rmc_state,rmc_ipaddr,os_version,dlpar_mem_capable,dlpar_proc_capable,dlpar_io_capable 
+</cli>
+
+<cli prompt='>'>
+chsysstate -m <managedsysname> -o standby -r sys              power on a system to standby
+chsysstate -r sys -m <managedsysname> -o off                  normal power off the managed system
+chsysstate -r sys -m <managedsysname> -o off --immed          fast power off the managed system
+
+chsysstate -m <managed system> -r lpar -n <lparname> -o shutdown --restart          it will reboot an lpar with dump
+chsysstate -m <managed system> -r lpar -n <lparname> -o shutdown --immed --restart  it will reboot an lpar immediately (without dump)
+chsysstate -m <managedsysname> -r lpar -n <lparname> -o shutdown --immed            it will shutdown the oprating system
+chsysstate -m aix10-SN65158BE -o on -r lpar -n aix10 -f default                     it will activate an lpar
+</cli>
+<cli prompt='>'>
+mksyscfg -r prof -m <MAN_SYS> -o save -p <LPAR_NAME> -n <PROFILE_NAME> --force      it overwrites profile with actual running config
+</cli>
+<cli prompt='>'>
+lspartition -dlpar                                            shows dlpar capable partitions
+                                                              (it will show if RMC connection is OK between the HMC and LPAR)
+</cli>
+<cli prompt='>'>
+lssysconn -r all                                              to see what IPs are assigned by the HMC
+mksysconn -o auto                                             tells HMC to re-discover all servers' IP address
+</cli>
+<cli prompt='>'>
+lssvcevents -t console -d 60                                  lists console events in the past 60 days
+lssvcevents -t hardware -d 0                                  list serviceable events which occured today
+lssvcevents -t console -d 300 | grep DLPAR                    list DLPAR operations of last 300 days (you can grep more to mem or proc)
+lssvcevents -t console -d 7 | grep Migration                  list last 7 days LPMs
+</cli>
+<cli prompt='>'>
+
+lshmc -V                                                      hmc version
+lshmc -v                                                      hmc model
+lshmc -n                                                      lists the network settings of the hmc
+hmcshutdown -t now -r                                         reboot the HMC (-t: timing in minutes, -r: reboot)
+</cli>
+<cli prompt='>'>
+vtmenu                                                        hmc menu options (console session can be opened as well)
+logout: ~~. (2 tilde and a dot)
+</cli>
+<cli prompt='>'>
+lslparmigr -r sys -m <managed system> | sed "s/,/\n/g"        shows how many concurrent migr. is possible
+
+ssh hscroot@hmcXX 'for i in `lssyscfg -r sys -F name`;do echo $i;lssyscfg -r lpar -m $i -F name|grep <LPARNAME>;echo;done' <--shows man. system of given LPAR via ssh
+</cli>
+<code>
+for i in `lssyscfg -r sys -F name`;do lssyscfg -r prof -m $i -F lpar_name,virtual_eth_adapters | grep vio | grep <VLAN>;echo; done <--shows spec. VLAN
+
+for sys in `lssyscfg -r sys -F name`; do for vio in `lssyscfg -r lpar -m $sys -F name,lpar_env | grep vioserver | cut -f 1 -d, | sort`; do echo $vio; viosvrcmd -m $sys -p $vio -c <VIO COMMAND>; done; done <--runs a command on VIOS servers
+</code>
+<cli prompt='>'>
+
+------------------------------------
+
+Default root password: passw0rd (try su -)
+
+------------------------------------
+
+opening/closing virtual terminal from hmc:
+
+lssyscfg -r sys -F name                         <--get managed system name
+lssyscfg -r lpar -m <managed system> -F name    <--get lpar name
+
+mkvterm -m <managed system> -p <lpar>           <--opens a terminal window
+rmvterm -m <managed system> -p <lpar>           <--closes a terminal window
+
+~~.                                             <--logout from te session (not necessary to leave AIX)
+</cli>
+------------------------------------
+
+Adding/removing VLAN TAG dynamically:
+(it will not add to profile)
+
+adding:
+<cli prompt='>'>
+chhwres -r virtualio --rsubtype eth -m <man.sys.> -o s -p <LPAR> -s <adapter id> -a "addl_vlan_ids+=<VLAN TAG>"
+</cli>
+removing:
+<cli prompt='>'>
+chhwres -r virtualio --rsubtype eth -m <man.sys.> -o s -p <LPAR> -s <adapter id> -a "addl_vlan_ids-=<VLAN TAG>"
+</cli>
+------------------------------------
+
+Changing LPAR weight:
+<cli prompt='>'>
+lshwres -r proc -m <MAN_SYS> --level lpar --filter lpar_names=<LPAR_NAME>                            list actual running config
+chhwres -r proc -m <MAN_SYS> -p <LPAR_NAME> -o s -a "uncap_weight=32"                                changes weight of actual running config
+
+lssyscfg -r prof -m <MAN_SYS> --filter lpar_names=<LPAR_NAME>                                        list profile
+chsyscfg -r prof -m <MAN_SYS> -i "name=<PROFILE_NAME>,lpar_name=<LPAR_NAME>,uncap_weight=32"         changes weight in given profile
+chsyscfg -r lpar -m <managed_system> -o apply -p <lpar_name> -n <profile_name>
+</cli>
+
+
+------------------------------------
+
+Changing simplified restart capability, to change it we currently need to change it during LPAR poweroff:
+<cli prompt='>'>
+hscroot@hmc:~> lssyscfg -m p812-srv1 -r lpar --filter "lpar_names=lparlab" -F simplified_remote_restart_capable
+0
+hscroot@hmc:~> chsyscfg -m p812-srv1 -r lpar -i "name=lparlab,simplified_remote_restart_capable=1"
+An error occurred while changing the partition named lparlab.
+HSCLA9F8 The remote restart capability of the partition can only be changed when the partition is shutdown.
+</cli>
+
+==> LPAR propertie:
+Remote Restartable (Simplified):	Activated
+
+Now you are able to start the LPAR once poweroff directly on another server
+Restart LPAR only if poweroff
+<cli prompt='>'>
+hscroot@hmc:~> rrstartlpar -o restart -m 'p812-srv1' -p lparlab -t p812-srv2
+</cli>
+
+========================================
+
+How to list the system connections. This way you can check what error you have if you are not able to see the partitions on a squadron.
+  hscroot@hmc$ lssysconn -r all
+
+How to check if the lpars have connection with the current HMC. This is useful when you have issues related to DLPAR operations.
+<cli prompt='>'>
+hscroot@hmc:~> lspartition -dlpar
+<#36> Partition:<7*9117-MMA*56A3R4A, , 192.168.207.63>
+       Active:<1>, OS:<AIX, 6.1, 6100-06-05-1115>, DCaps:<0x2c5f>, CmdCaps:<0x1b, 0x1b>, PinnedMem:<1137>
+</cli>
+
+Example of non-working one:
+<cli prompt='>'>
+<#37> Partition:<4*9117-MMA*56A5R9A, , 192.168.207.23>
+       Active:<0>, OS:<, , >, DCaps:<0x0>, CmdCaps:<0x0, 0x0>, PinnedMem:<0>
+</cli>
+
+What to do if you reconnect the management system to HMC and it is not recognized (to clear the HMC's connection history):
+  hscroot@hmc$ mksysconn -o auto
+
+How to list 3 days of console events:
+  hscroot@hmc$ lssvcevents -t console -d 3
+
+How to list 3 days of console events for a specific lpar:
+  hscroot@hmc$ lssvcevents -t console -m PARTITION -s ALL -d 3
+
+How to list 3 days of hardware events:
+  hscroot@hmc$ lssvcevents -t hardware -d 3
+
+How to list 3 days of hardware events for a specific lpar:
+  hscroot@hmc$ lssvcevents -t hardware -m PARTITION -s ALL -d 3
+
+How to do HMC restart:
+  hscroot@hmc$ hmcshutdown -r -t0
+
+How to list HMC version:
+  hscroot@hmc$ lshmc -V
+
+How to list HMC hardware information, including the serial number:
+  hscroot@hmc$ lshmc -v
+
+How to list managed systems (enter lssyscfg alone for more):
+  hscroot@hmc$ lssyscfg -r sys -F name
+
+How to list lpars by name, id, state and current profile of LPARNAME:
+<cli prompt='>'>
+hscroot@hmc:~> lssyscfg -m FRAME -r lpar --filter "lpar_names=LPARNAME" -F name,lpar_id,state,curr_profile
+</cli>
+
+How to list lpars by name, id, state and current profile in a managed system:
+  hscroot@hmc$ lssyscfg -m FRAME -r lpar -F name,lpar_id,state,curr_profile
+
+How to list squadron's processors, real and virtual:
+  hscroot@hmc$ lshwres -r proc -m FRAME --level lpar -F lpar_name,curr_proc_units,curr_procs
+
+How to list total processors of the squadron:
+
+  hscroot@hmc$ lshwres -r mem  -m FRAME --level sys -F configurable_sys_mem installed_sys_mem curr_avail_sys_mem sys_firmware_mem
+
+How to list total memory of the squadron:
+  hscroot@hmc$ lshwres -r mem  -m FRAME --level sys -F configurable_sys_mem installed_sys_mem curr_avail_sys_mem sys_firmware_mem
+
+How to list memory for each lpar in a squadron:
+  hscroot@hmc$ lshwres -r mem -m FRAME --level lpar -F lpar_name,curr_mem
+
+How to display vios from all squadrons:
+<code>
+hscroot@hmc$ for FRAME in $(lssyscfg -r sys -F name); do printf "$FRAME\n";lssyscfg -r lpar -m $FRAME -F name,lpar_env|grep vio; done
+</code>
+
+How to search a partition name on all squadrons:
+<code>
+hscroot@hmc$ for FRAME in $(lssyscfg -r sys -F name); do printf "$FRAME:\n";lssyscfg -r lpar -m $FRAME -F name,lpar_env|grep PARTITION; done
+</code>
+
+How to soft reset a system running in FullPartitionMode (power4):
+  hscroot@hmc> chsysstate -n FRAME -r sys -o reset
+
+How to hard reset a system running in FullPartitionMode (power4):
+  hscroot@hmc> chsysstate -n FRAME -r sys -o off
+
+How to soft reset LPAR partition via HMC:
+<code>
+power4: hscroot@hmc$ chsysstate -m FRAME -r lpar -n PARTITION -o reset
+power5: hscroot@hmc$ chsysstate -r lpar -m FRAME -o shutdown -n PARTITION
+</code>
+
+How to stop LPAR partition via HMC:
+<code>
+power4: hscroot@hmc$ chsysstate -m pserver -r lpar -n mylpar -o off
+power5: hscroot@hmc$ chsysstate -m FRAME -r lpar -o shutdown -n PARTITION --immed
+</code>
+
+How to stop LPAR partition via HMC with dump:
+  hscroot@hmc$ chsysstate -m FRAME -r lpar -o dumprestart -n PARTITION
+
+How to start LPAR partition via HMC (use "-b" option to start in different mode than normal, e.g. "sms" for sms menu):
+  hscroot@hmc$ chsysstate -r lpar -m FRAME -n PARTITION -f PROFILE -o on
+
+How to connect to LPAR partition via HMC (via vtmenu or mkvterm):
+<code>
+1. vtmenu
+2. select frame
+3. select partition number
+or:hscroot@hmc$ mkvterm -m FRAME -p PARTITION
+</code>
+
+How to remove an existing terminal connection:
+  hscroot@hmc$ rmvterm -m FRAME -p PARTITION
+
+How to connect to HMC via ssh tunneling:
+<code>
+1. Connect to gateway as usual but with the additional options highlighted in green: ssh gateway -L 3333:HMCIP:443 (where HMCIP = THE IP OF YOUR HMC)
+2. Go to your favorite browser on your station and access the following address: https://localhost:3333
+</code>
+
+How to check the current disk space on HMC:
+  hscroot@hmc$ monhmc -r disk
+
+How to remove all temporary HMC files from all file systems:
+  hscroot@hmc$ chhmcfs -o f -d 0
+
+How to back up critical HMC data via command line interface:
+  To DVD: hscroot@hmc$ bkconsdata -r dvd
+  Via NFS: hscroot@hmc$ bkconsdata -r nfs -h NFSIP -l /hmc/backup/
+
+How to back up partition profile data via command line interface:
+  hscroot@hmc$ bkprofdata -m FRAME -f dvd
+
+How to check the date and time when the last critical console data backup was performed:
+  hscroot@hmc$ lssvcevents -t console -d 9999|grep 'backup of critical'
+
+How to check the date and time when the last profile data backup was performed:
+<cli prompt='>'>
+hscroot@hmc:~> lssvcevents -t console -d 9999|grep 'Profile data'
+</cli>
+
+=== HMC user, password policy ===
+
+How to make a new password policy in HMC with hscroot user:
+Create it:
+<cli prompt='>'>
+hscroot@hmc:~> mkpwdpolicy –i	\
+"name=gzadm,		\
+description=,		\
+min_pwage=1,		\ 
+pwage=180,		\
+min_length=4,		\
+hist_size=10,		\
+warn_pwage=7,		\
+min_digits=0,		\
+min_uppercase_chars=0,	\
+min_lowercase_chars=0,	\
+min_special_chars=0"
+</cli>
+
+Activate it:
+<cli prompt='>'>
+hscroot@hmc:~> chpwdpolicy -o a -n gzadm
+</cli>
+
+Change the password:
+<cli prompt='>'>
+hscroot@hmc:~> chhmcusr -u gzadm -t passwd
+</cli>
+
+Disable the policy:
+<cli prompt='>'>
+hscroot@hmc:~> chpwdpolicy -o d
+</cli>
+
+Remove the policy:
+<cli prompt='>'>
+hscroot@hmc:~> rmpwdpolicy -n gzadm
+</cli>
+
+How to list user's settings:
+
+**NOTE:** these values are all changeable via chhmcusr command.
+
+<cli prompt='~'>
+hscroot@hmc:~ lshmcusr --filter "names=hscroot"
+name=hscroot,taskrole=hmcsuperadmin,description=HMC Super User,pwage=99999,resourcerole=ALL:,authentication_type=local,remote_webui_access=1,remote_ssh_access=1,min_pwage=0,session_timeout=0,verify_timeout=15,idle_timeout=0,inactivity_expiration=0,resources=<ResourceID = ALL:><UserDefinedName = AllSystemResources>,password_encryption=md5,disabled=0
+</cli>
+
+What to do if you get the following error on DLPAR dynamic operations: HSCL297A There are some mismatches between pending and current values.
+Assuming the memory was involved in this error, run the rsthwres command to re-sync the values.
+<cli prompt='>'>
+hscroot@hmc:~> rsthwres -r mem -m FRAME
+</cli>
+
+How to free up partition resources with chhwres command in Power 7:
+You have a currently active partition with 0.6 processing units assigned to it and you want to stop it and not using it for a while.
+
+
+Use the chhwres command to free up this resource from the partition:
+<cli prompt='>'>
+hscroot@hmc:~> chhwres -r proc -m FRAME -o r --id 6 --procunits 0.6
+</cli>
+<code>
+name=Default,lpar_name=PARTITION,lpar_id=6,lpar_env=aixlinux,all_resources=0,
+min_mem=512,desired_mem=20480,max_mem=34576,min_num_huge_pages=0,desired_num_huge_pages=0,
+max_num_huge_pages=0,mem_mode=ded,hpt_ratio=1:64,proc_mode=shared,min_proc_units=0.1,
+desired_proc_units=0.6,max_proc_units=2.0,min_procs=1,desired_procs=4,max_procs=8,
+sharing_mode=uncap,uncap_weight=64,shared
+</code>
+
+
+
+===== Clone LPAR config from HMC/IVM =====
+
+To generate a "mksyscfg" command line from a single LPAR, run the following command on the HMC (this should all be on 1 long line).  Change the highlighted yellow parts with the name of the LPAR and the managed system name:
+
+<code>
+    lpar=aix1; system=p520; printf "##Command to create $lpar ($system)\nmksyscfg -r lpar -m $system -i \""; lssyscfg -r prof -m $system --filter "lpar_names=$lpar,profile_names=`lssyscfg -r lpar -m $system --filter "lpar_names=$lpar" -F default_profile`" | sed  -e 's/\(^\|,\)name=/profile_name=/' -e 's/,lpar_name=/,name=/' -e 's/"/\\"/g' -e 's/$/"/'; printf "#\n#\n"
+</code>
+
+<code>
+lssyscfg -r prof -m P7C3 --filter lpar_names=$NAME -F lpar_env,virtual_fc_adapters | \
+	tr -s ',' '\n' | perl -lne 'print $1 if m%\w+vios\d+/(\d+)/%' | sort -n | head -1)
+ADAP2=$((ADAP1+1))
+echo "Adapter: $ADAP1 $ADAP2"
+echo
+</code>
+# VIOS config hmc command
+# Create vfc server 1 on vios1
+CMD=$( cat<<EOF
+chhwres -r virtualio -m $MACHINE -o a -p ${VIOS}1 --rsubtype fc -s $ADAP1 -a "adapter_type=server,remote_slot_num=6,remote_lpar_name=$NAME"
+EOF
+
+List adapter on VIOS:
+<code>
+lssyscfg -r prof -m p710 --filter lpar_names=VIOS03 -F lpar_env,virtual_fc_adapters,virtual_scsi_adapters
+vioserver,"21/server/11/NIM01/5//1,31/server/11/NIM01/6//1",11/server/11/NIM01/4/1
+</code>
+
+http://www-01.ibm.com/support/docview.wss?uid=isg3T1011788
+
+The command to create a vscsi pair is:
+  $ chhwres -r virtualio --rsubtype scsi -o a -s 5 --id 2
+detail:
+  $ chhwres -r virtualio --rsubtype scsi -o a<add> -s<slot> 5 --id<lpar> 2
+
+The command to remove or delete a vscsi pair is:
+  $ chhwres -r virtualio --rsubtype scsi -o r -s 5 --id 2
+detail:
+  $ chhwres -r virtualio --rsubtype scsi -o r<remove> -s<slot> 5 --id<lpar> 2 
+
+  chhwres -r virtualio -m $MACHINE -o a -p ${VIOS}1 --rsubtype fc -s $ADAP1 -a "adapter_type=server,remote_slot_num=6,remote_lpar_name=$NAME"
+EOF
+
+https://www.ibm.com/developerworks/community/blogs/brian/entry/cloning_lpar_configurations_to_save_time_and_for_disaster_recovery12?lang=en
+
+<code>
+hscroot@hmc01:~> lssyscfg -r prof -m P710 --filter lpar_names=NIM01
+name=normal,lpar_name=NIM01,lpar_id=11,lpar_env=aixlinux,all_resources=0,min_mem=4096,desired_mem=4096,max_mem=8192,min_num_huge_pages=0,desired_num_huge_pages=0,max_num_huge_pages=0,mem_mode=ded,hpt_ratio=1:64,proc_mode=shared,min_proc_units=0.1,desired_proc_units=0.2,max_proc_units=2.0,min_procs=1,desired_procs=2,max_procs=2,sharing_mode=uncap,uncap_weight=128,shared_proc_pool_id=0,shared_proc_pool_name=DefaultPool,affinity_group_id=none,io_slots=none,lpar_io_pool_ids=none,max_virtual_slots=20,"virtual_serial_adapters=0/server/1/any//any/1,1/server/1/any//any/1",virtual_scsi_adapters=4/client/3/VIOS03/11/1,"virtual_eth_adapters=2/0/2//0/1/ETHERNET0//all/none,3/0/2//0/1/ETHERNET0//all/none",virtual_eth_vsi_profiles=none,vtpm_adapters=none,"virtual_fc_adapters=""5/client/3/VIOS03/21/c050760522210000,c050760522210001/1"",""6/client/3/VIOS03/31/c050760522210002,c050760522210003/1""",hca_adapters=none,boot_mode=norm,conn_monitoring=0,auto_start=0,power_ctrl_lpar_ids=none,work_group_id=none,redundant_err_path_reporting=0,bsr_arrays=0,lhea_logical_ports=none,lhea_capabilities=none,lpar_proc_compat_mode=default,electronic_err_reporting=null
+</code>

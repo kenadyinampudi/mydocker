@@ -1,0 +1,187 @@
+
+====== Installation checklist for VNX ======
+
+  - Add a line to ''pgunap01:/prod/storageteam/etc/allstgarrays''
+  - Complete the design document with EMC SE
+  - Change the default passwords
+    - Change sysadmin password<code>Log into Unisphere --> From "All Systems" page, select "Domains" --> Select "Manage Global Users"
+Highlight sysadmin and click on "Modify" --> Change password</code>
+    - Change nasadmin & root passwords<code>Log into Unisphere with sysadmin (global account) --> Select the VNX ---> Click on "Settings" -> "Security" -> "Local Users for File" --> 
+Highlight nasadmin click on "Properties" --> Change password
+Highligh root, click on Properties --> Change password</code>Propogate to standby CS. Login to the cs1 as root<code>/nas/sbin/cs_standby -failover</code>
+  - If using VNX as a unified solution
+    - Create a FSN adapter in failsafe mode on 10 GigE adapters
+    - Create interfaces with IP addresses for each CIFS server / VDM we plan to create.
+    - Start the CIFS service. EMC folks often forget this<code>server_setup ALL -Protocol cifs -option start</code>
+    - Add the default route for datamover<code>server_route ALL -add default <def gateway ip></code>
+    - Enable the homedir function to the home filesystem's VDM.
+      - Create a file called homedir.txt in this format<code>emea:*:/fs-taede104/ede_homes:create</code>
+      - Upload to the VDM<code>server_file taede104_vdm -put homedir.txt /.etc/homedir</code>
+      - Enable the homedir function<code>server_cifs taede104_vdm -option homedir</code>
+    - Perform Ethernet failover test for Datamovers.
+  - NAS filesystems needs the following attributes set
+    - Dedupe turned on
+    - Checkpoints created. e.g.<code>nas_ckpt_schedule -create fstaede100 -filesystem fs-taede100 -recurrence daily -runtimes 03:30 -keep 10 -every 1 -start_on 2016-01-22 -description "Daily snapshot of fs-taede100" -cvfsname_prefix fs100</code>
+  - Implement monitoring
+    - Ping NNM monitoring for CS0, CS1, SPA, SPB, VDM - tickets to GIOS STorage team
+    - Filesystem (CIFS ) - alerts to be sent to Wintel Services Team.
+    - Critical - errors / callhomes to be a medium ticket to GIOS Storage team
+    - Warnings and alerts to be sent to syslog collector & an email to GIOS Storage team Ask unix team to configure a collector on pglgsv01 ''forward logs to pglgsv01 ''
+    - Implement an email alert template
+      - Create a template file<code>vi Monitoring.tpl</code>Modify the text accordingly to represent the correct storage array.Add this to it<code>Template Monitoring
+{
+EM_VERSION 6.2
+LogToSystemLog No
+LogToEventLog Yes
+Compound No
+Response EMail
+{
+Message ldcvnx53001cs0
+Message %TYPE=I
+Message %PRIORITY=Low
+Message %GROUP=SAN Admin
+Message %CATEGORY=Hardware.EMC/SAN
+Message %DESCRIPTION=
+Message Time Stamp %T% Event Number %N% 
+Message Severity %SEV% Host %H% 
+Message Storage Array %SUB% %SP% Device %D% 
+Message Description %E%
+From ldcvnx53001sps
+SendTo giosstoragealerts@tenneco.com
+Subject Issues with VNX5300 at LDC
+UseTempFile No
+MailServer 10.32.8.27
+}
+Response SNMP
+{
+OpenviewHost taitc177.amer.int.tenneco.com
+Community oicu812
+}
+}</code>
+    - Import the template to SPA<code>naviseccli -h <spa_host_name> eventmonitor -template -import -templateFileName Monitoring.tpl</code>
+  - Make sure contract database is uptodate with the inventory and warranty expiry - work with VMO
+  - Set NTP servers for NAS and BLOCK as follow:<code>server_date server_2 timesvc
+server_date server_2 timesvc stop ntp
+server_date server_2 timesvc start ntp 10.56.13.111 10.32.6.131 10.43.8.130
+server_date server_2 timesvc
+/nas/sbin/navicli -h spa ntp -list -all
+/nas/sbin/navicli -h spb ntp -list -all
+/nas/sbin/navicli -h spa ntp -set -start yes -interval 30 -servers 10.56.13.111 10.32.6.131 10.43.8.130
+/nas/sbin/navicli -h spb ntp -set -start yes -interval 30 -servers 10.56.13.111 10.32.6.131 10.43.8.130
+
+/nas/sbin/navicli -h spa ntp -list -all</code>
+====== NDMP Backup Settings Configuration on VNX ======
+
+  * Kindly set 256 kb block size for writing on to tape. Execute the following command:
+   *<code> server_param server_2  -facility PAX -modify readWriteBlockSizeInKB -value 256 </code>
+   *<code> server_param server_3  -facility PAX -modify readWriteBlockSizeInKB -value 256 </code>
+   *<code> server_param server_2 -facility NDMP -modify bufsz -value 256 </code>
+   *<code> server_param server_3 -facility NDMP -modify bufsz -value 256 </code>
+  * You must reboot server_2/Server_3 for readWriteBlockSizeInKB and bufsz  changes to take effect.
+
+====== Following steps to reboot the server and change the password for svcbck user ======
+
+<code>[nasadmin@glkvnx5400cs0 ~]$ /nas/sbin/server_user server_2 -add -md5 -password svcbck
+Creating new user svcbck
+User ID: 1000
+Group ID: 1000
+Home directory:
+Changing password for user svcbck
+New passwd: - password well known to datapres team
+Retype new passwd:
+
+To reboot data movers:
+
+[nasadmin@glkvnx5400cs0 ~]$ nas_server -l
+id      type  acl  slot groupID  state  name
+1        1    0     2              0    server_2
+2        4    0     3              0    server_3
+
+[nasadmin@glkvnx5400cs0 ~]$ getreason
+10 - slot_0 primary control station
+11 - slot_1 secondary control station
+ 5 - slot_2 contacted
+ 5 - slot_3 contacted
+
+[nasadmin@glkvnx5400cs0 ~]$ server_cpu server_3 -r -m now
+server_3 : reboot in progress 0.4.4.4.done
+[nasadmin@glkvnx5400cs0 ~]$
+
+[nasadmin@glkvnx5400cs0 ~]$ getreason
+10 - slot_0 primary control station
+11 - slot_1 secondary control station
+ 5 - slot_2 contacted
+ 5 - slot_3 contacted
+
+[nasadmin@glkvnx5400cs0 ~]$ server_cpu server_2 -r -m now
+server_2 : reboot in progress 0.3.4.4.done
+
+This literally took 120 seconds for both servers 2 and 3.... 
+
+[nasadmin@glkvnx5400cs0 ~]$ server_uptime server_2
+server_2 :  up 0 days 0 hours 1 min 58 secs
+[nasadmin@glkvnx5400cs0 ~]$ server_uptime server_3
+server_3 :  up 0 days 0 hours 1 min 24 secs
+[nasadmin@glkvnx5400cs0 ~]$
+
+To failover primary DM to standby (I am testing few things as long time I was not using those commands)
+[nasadmin@glkvnx5400cs0 ~]$ server_standby  server_2 -activate mover
+server_2 :
+ server_2 : going offline
+ server_3 : going active
+ replace in progress ...done
+ failover activity complete
+
+ Waiting for server_2.faulted.server_3 to complete warm reboot.
+ Data services are available on server_2.
+
+ commit  in progress (not interruptible)...done
+
+server_2 : renamed as server_2.faulted.server_3
+server_3 : renamed as server_2
+[nasadmin@glkvnx5400cs0 ~]$ nas_server -l
+id      type  acl  slot groupID  state  name
+1        4    0     2              2    server_2.faulted.server_3
+2        1    0     3              0    server_2
+
+[nasadmin@glkvnx5400cs0 ~]$ server_uptime server_2
+server_2 :  up 0 days 0 hours 39 min 27 secs
+[nasadmin@glkvnx5400cs0 ~]$ server_uptime server_2.faulted.server_3
+server_2.faulted.server_3 :  up 0 days 0 hours 0 min 55 secs
+
+From above we can see that failed server is being rebooted....
+To fail back to server_2
+[nasadmin@glkvnx5400cs0 ~]$ time server_standby server_2 -restore mover
+server_2 :
+ server_2 : going standby
+ server_2.faulted.server_3 : going active
+ replace in progress ...done
+ failover activity complete
+
+ Waiting for server_3 to complete warm reboot.
+ Data services are available on server_2.
+
+ commit  in progress (not interruptible)...done
+
+server_2 : renamed as server_3
+server_2.faulted.server_3 : renamed as server_2
+
+real    0m39.234s
+user    0m0.479s
+sys     0m0.243s
+[nasadmin@glkvnx5400cs0 ~]$ server_uptime server_3
+server_3 :  up 0 days 0 hours 0 min 34 secs
+</code>
+
+====== SMTP Setting ======
+   - Become root:<code>su</code>
+   - Update SMTP if different from smtp.tenneco.com, check current setting<code>/nas/sbin/nas_connecthome -i
+/nas/sbin/nas_connecthome -modify -email_server smtp.tenneco.com
+/nas/sbin/nas_emailuser -i
+/nas/sbin/nas_emailuser -modify -email_server smtp.tenneco.com
+/nas/sbin/navicli -h spa eventmonitor -template -list
+Monitoring
+/nas/sbin/navicli -h spa eventmonitor -template -export -templatename Monitoring -filepath /tmp/
+#</code>Edit exported file and replace the line containing MailServer with proper smtp server name smtp.tenneco.com<code>vi /tmp/Monitoring.tpl</code>Import back saved file:<code>/nas/sbin/navicli -h spa eventmonitor -template -import -templatefilename /tmp/Monitoring.tpl
+The template with the same template name already exists. Importing action will overwrite the existing template. Do you really want to perform the action (y/n)? y
+The template with the same template name has been overwritten.</code>

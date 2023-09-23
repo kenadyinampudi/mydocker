@@ -1,0 +1,125 @@
+
+<h1 class="sectionedit1" id="install_aix">Install AIX</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Setup NIM resources using one of the following ways</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:freshinstallation" class="wikilink1" title="unix:freshinstallation">A new installation using rte</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:cloninginstall" class="wikilink1" title="unix:cloninginstall">Build the system using a mksysb of an existing server</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:upgrademksysb" class="wikilink1" title="unix:upgrademksysb">Upgrade a mksysb of an existing system on to a new server</a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Add the server to the console database <strong>/prod/images/etc/unix_sys_console</strong><pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> A regular lpar on a P Series frame<pre class="code">taitc118:lpar-ibm:taitc051:taitc118-9111-520-SN10B4F8D:taitc118:2:hscroot</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> A lpar on a blade IVM VIO Server<pre class="code">dagi3p01:blade-ibm-vio:taprvio9:4:padmin</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Open up a console session to the new server. On taitc118 as root<pre class="code">getconsole peerap09</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If cloning an existing server, please enter a blackout for the server whose mksysb is being used.</div>
+<ol>
+<li class="level2"><div class="li"> <a href="http://taitc212/cgi-bin/blackout/login.cgi" class="urlextern" title="http://taitc212/cgi-bin/blackout/login.cgi"  rel="nofollow">Use this URL to enter a new one</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="http://taitc212/cgi-bin/active_bo.cgi" class="urlextern" title="http://taitc212/cgi-bin/active_bo.cgi"  rel="nofollow">Use this URL to verify the blackout</a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Power on the server to SMS. </div>
+<ul>
+<li class="level2"><div class="li"> HMC —→ Regular lpars</div>
+<ul>
+<li class="level3"><div class="li"> This code will get the command if we have made proper entries in the console database<pre class="code">grep ^xagi3p02: /prod/images/etc/unix_sys_console | awk -F: &#039;{print &quot;ssh &quot;$7&quot;@&quot;$3&quot;\n&quot;&quot;chsysstate -r lpar -o on -b sms -m &quot;$4,&quot;-n&quot;,$1,&quot;-f&quot;,$1}&#039;</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> IVM —→ IVM guests</div>
+<ul>
+<li class="level3"><div class="li"> This code will get the command if we have made proper entries in the console database<pre class="code">grep ^panmsv02: /prod/images/etc/unix_sys_console | awk -F: &#039;{print &quot;ssh &quot;$5&quot;@&quot;$3&quot;\n&quot;&quot;chsysstate -r lpar -o on -b sms -n&quot;,$1}&#039;</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> Bladecentre —→ Physical blades</div>
+<ul>
+<li class="level3"><div class="li"> This code will help you with CLI<pre class="code">grep ^taprvio4: /prod/images/etc/unix_sys_console | awk -F: &#039;{print &quot;ssh &quot;$5&quot;@&quot;$3&quot;\n&quot;&quot;power -on -T blade[&quot;$4&quot;]&quot;}&#039;</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> At the console, setup Remote IPL as normal and perform a network boot.</div>
+</li>
+<li class="level1"><div class="li"> Wait for the installation to complete</div>
+</li>
+<li class="level1"><div class="li"> Completely remove network configuration.</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interface<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure etherchannels if necessary.</div>
+<ol>
+<li class="level2"><div class="li"> LPARs on Blade VIO/IVM servers [ The public network is configured on an etherchannel over the HEAs, The backup network is from the virtualized ethernet - VIOS ]</div>
+<ol>
+<li class="level3"><div class="li"> Create an ether-channel using the HEA adapters<pre class="code">mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names=&#039;ent0&#039;  -a backup_adapter=&#039;ent1&#039;  -a netaddr=&#039;10.32.50.1&#039;  -a num_retries=&#039;2&#039; -a retry_time=&#039;2&#039;
+
+ent3 Available</pre>
+
+<p>
+Make a note of the &#039;ent&#039; number. Run cfgmgr
+</p>
+<pre class="code">cfgmgr</pre>
+
+<p>
+Also make a note of the ent that is virtualized, the following steps will use these names.
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> LPARs on a frame that has virtualized Ethernet. [ Both the public and the backup networks are virtualized - in most cases - Use your judgement if an exception was made ]. Make a note of the ent number that has the correct VLAN ids ( Use HMC <abbr title="Graphical User Interface">GUI</abbr> or CLI ),the following steps will use these names.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure IP address.</div>
+<ol>
+<li class="level2"><div class="li"> Configure the front end IP address on the correct interface<pre class="code">/usr/sbin/mktcpip -h &lt;hostname&gt; -a a.b.c.d -m 255.255.255.0 -i enX -g a.b.c.1 -A no -s</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure the backend(bck) IP address<pre class="code">chdev -l enY -a netaddr=e.f.g.h -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupsshkeysfornim" class="wikilink1" title="unix:setupsshkeysfornim">Setup SSH keys for NIM server</a> </div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps" class="wikilink1" title="unix:postinstallationsteps">Proceed to post install steps</a></div>
+</li>
+</ol>
+
+</div>

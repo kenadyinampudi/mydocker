@@ -1,0 +1,22 @@
+====== Upgrading Red Hat servers from one minor version to the next using Satellite ======
+
+This is a multi-step process.
+
+==== On Satellite ====
+  * Go to "Hosts", "Content Hosts" in the tree on the left.
+  * In the search bar that says "Filter...", search for your system.  Alternatively, just scroll through the list to find it.
+  * Click the link to go to the server's package screen.
+  * In the "Details" tab, look for the "Content Host Content" section.
+  * Click the small box with a pencil in the "Content View" to edit, matching the version you are upgrading to.
+  * Click Save.
+  * Click the small box with a pencil in the "Release Version" to edit, matching the version you are upgrading to.
+  * Click Save.
+
+==== On the Host ====
+  * Issue \\ <code>subscription-manager refresh
+yum clean all
+yum makecache fast
+yum -y update</code>
+
+In theory, this should do everything.
+You might need to wait a few minutes inbetween changing the "Content Host Content" on Satellite and manually refreshing the client's yum repository.

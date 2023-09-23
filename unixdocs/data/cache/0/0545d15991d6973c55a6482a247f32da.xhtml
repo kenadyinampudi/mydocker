@@ -1,0 +1,143 @@
+
+<h1 class="sectionedit1" id="aix_recovery_instructions">AIX recovery instructions</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "AIX recovery instructions" [1-41] -->
+<h3 class="sectionedit2" id="perform_the_nim_installation">Perform the NIM installation</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> <a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmdsaix-fdc&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" alt="" width="100" /></a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmdsaix-fdc&amp;media=dr:really-are-you-sure-about-that.jpg" class="media" title="dr:really-are-you-sure-about-that.jpg"><img src="/lib/exe/fetch.php?w=200&amp;media=dr:really-are-you-sure-about-that.jpg" class="media" alt="" width="200" /></a></div>
+</li>
+<li class="level1"><div class="li"> Pick your server, update the DR database for the server&#039;s Restore base operating system task to <code>In Progress</code>.</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server to SMS - make sure you select DEFAULT PROFILE - NOT CURRENT CONFIGURATION</div>
+</li>
+</ol>
+
+<p>
+<a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmdsaix-fdc&amp;media=dr:2021-04-19-phlypahmc007-hardware-management-console-boot.png" class="media" title="dr:2021-04-19-phlypahmc007-hardware-management-console-boot.png"><img src="/lib/exe/fetch.php?media=dr:2021-04-19-phlypahmc007-hardware-management-console-boot.png" class="media" alt="" /></a>
+</p>
+<ol>
+<li class="level1"><div class="li"> Select Boot Options</div>
+<ol>
+<li class="level2"><div class="li">  1st option <strong>Select Install/Boot Device</strong></div>
+</li>
+<li class="level2"><div class="li">  5th option <strong>List all Devices</strong> wait for all devices to be scanned, this will take some time, select the device number with the output similiar to the following <pre class="code">1      148 GB   FC Harddisk, part=2 (AIX 7.2.0)</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login as root on the console.</div>
+</li>
+<li class="level1"><div class="li"> Change PS1 variable. Make a backup copy<pre class="code">sudo cp /etc/profile /etc/profile.copyforDR</pre>
+
+<p>
+Then
+</p>
+<pre class="code">sudo vi /etc/profile</pre>
+
+<p>
+Add this towards the end ( last line )
+</p>
+<pre class="code">HOST=$(uname -n)
+PS1=&#039;DR test -- $HOST:$PWD&gt;&#039;
+readonly PS1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Completely remove network configuration.</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interface<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr to reset all network devices , the -v option is used so you can confirm that cfgmgr is running <pre class="code">sudo cfgmgr -v</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> In the /home/tauxrpt/rpt_config directory select the latest configure_my_ip_cmds file and execute the commands in it to restore all the Network configurations and IP addresses for the server. There are 24 entries. It was discoverd that cron would run before the network was reconfigured and wipe out a single entry. This allows for multiple copies to insure that there is a valid copy available. </div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Enable NTP. Stop daemon. <pre class="code">sudo stopsrc -s xntpd</pre>
+
+<p>
+Backup the config
+</p>
+<pre class="code">sudo mv /etc/ntp.conf /etc/ntp.conf.DRtest</pre>
+
+<p>
+Put the new config
+</p>
+<pre class="code">cat &lt;&lt; EOF &gt;&gt; /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server EGDCILDC002.driv.com
+EOF</pre>
+
+<p>
+Start the daemons
+</p>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+
+<p>
+Set the correct time from NIM server
+</p>
+<pre class="code">date ; sudo ntpdate -u EGDCILDC002.driv.com ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change itocroot password<pre class="code">echo &quot;itocroot:ka95aLbJ7WER6&quot; | chpasswd -e
+pwdadm -c itocroot</pre>
+
+<p>
+Password will now be “abcd1234”
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the timezone from filesystems.txt and make sure it matches<pre class="code">grep TZ /etc/environment</pre>
+
+<p>
+Now compare it to the filesystems.txt
+</p>
+<pre class="code">grep -i tz /home/tauxrpt/rpt_config/file_systems.txt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If your are recovering an Oracle database server, configure IOCP<pre class="code">sudo chdev -l iocp0 -a autoconfig=available</pre>
+
+<p>
+Make it available
+</p>
+<pre class="code">sudo mkdev -l iocp0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>!!! After the reboot of the server check to make sure that all file systems are mounted. !!!</strong> <pre class="code"> grep -i mount /home/tauxrpt/rpt_config/file_systems.txt |grep -v true</pre>
+
+<p>
+ <strong> !!! Check for NFS mounts !!!</strong> 
+</p>
+<pre class="code">grep -p nfs /home/tauxrpt/rpt_config/file_systems.txt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>!!! If there are ANY LINUX application servers for this landscape, (example PTA, TA2) make sure you REBOOT ALL THE LINUX application servers and check that all file systems are mounted correctly on ALL the application servers. !!!</strong><pre class="code"> cat /etc/fstab | awk &#039;{print $2}&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong> !!! Only after making sure that ALL Related Application Server File Systems are correctly mounted including all NFS Mounts then and only then turn over the server to the next group. !!!</strong></div>
+</li>
+<li class="level1"><div class="li"> <strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremly careful ) </strong></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Perform the NIM installation" [42-] -->

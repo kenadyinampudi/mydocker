@@ -1,0 +1,61 @@
+
+<h1 class="sectionedit1" id="allocating_storage_on_a_single_vio_environment">Allocating storage on a single VIO environment</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Find out the parent VIO server(s). In most cases a frame only one VIO server. If it has more than one - use the following script to find the parent VIO server. Login to one of the VIO server(s). In this case, the VIO client is taitc102 and the VIO servers are vio60/70.<pre class="code">export PS1=&quot;$LOGNAME on &quot;`hostname`&quot;:&quot;&#039;$PWD&gt; &#039;
+/usr/local/scripts/lsdiskcfg &gt; /var/tmp/viostgconfig.out</pre>
+
+<p>
+Look for the VIO guest
+</p>
+<pre class="code">grep dehrdb01 /var/tmp/viostgconfig.out | head -4
+hdiskpower241:00f72d67fc48f4d2:000190103339:05C6:138105:9:vhost5:taitc102:hdisk524:hdisk558
+hdiskpower242:00f72d67fc47c897:000190103339:1226:138105:9:vhost5:taitc102:hdisk525:hdisk559
+hdiskpower243:00f72d67fc46f508:000190103339:188A:34526:9:vhost5:taitc102:hdisk526:hdisk560
+hdiskpower244:00f72d67fc45e258:000190103339:188E:34526:9:vhost5:taitc102:hdisk527:hdisk561</pre>
+
+<p>
+This means vio60 does provide storage to taitc102.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Request for storage on the correct VIO server. Submit a request to the storage team requesting storage to be presented on the correct VIO server.</div>
+</li>
+<li class="level1"><div class="li"> Once the disks are presented, document the VIO storage config<pre class="code">/usr/local/scripts/lsdiskcfg &gt; /var/tmp/viostgconfig.out</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Assign pvid to the disks. DO NOT COPY PASTE THIS ONTO PUTTY !!<pre class="code">for disk in hdisk28 hdisk29 hdisk30 hdisk31
+do
+  chdev -l ${disk} -a pv=yes
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the vhost number<pre class="code">grep -w dehrdb01 /var/tmp/viostgconfig.out | head -1 | awk -F: &#039;{print $7}&#039;
+vhost3</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Assign the disks to VIO guest<pre class="code">for disk in hdisk28 hdisk29
+do
+  mkvdev -vdev ${disk} -vadapter vhost3
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Discover the devices on the VIO guest. Login to taitc102 as root<pre class="code">lspv &gt; /var/tmp/lspv.before.out
+cfgmgr
+lspv &gt; /var/tmp/lspv.after.out
+diff /var/tmp/lspv.before.out /var/tmp/lspv.after.out
+26a27,31
+&gt; hdisk26         00f72d677fd958a4                    None
+&gt; hdisk27         00f72d677fdab206                    None
+&gt; hdisk28         00f72d677fdbcf5d                    None
+&gt; hdisk29         00f72d677fcd7b7d                    None
+&gt; hdisk30         00f72d677fce7abd                    None</pre>
+
+<p>
+Please make sure to check and match the pvids.
+</p>
+</div>
+</li>
+</ol>
+
+</div>

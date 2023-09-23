@@ -1,0 +1,139 @@
+<code>
+
+Fabric A
+
+alicreate "dggwdb01_c80016","c0:50:76:08:9b:c8:00:16"
+alicreate "dggwdb01_c80017","c0:50:76:08:9b:c8:00:17"
+alicreate "qggwdb01_c80010","c0:50:76:08:9b:c8:00:10"
+alicreate "qggwdb01_c80011","c0:50:76:08:9b:c8:00:11"
+
+alicreate "pggwdb01_c8000e","c0:50:76:08:9b:c8:00:0e"
+alicreate "pggwdb01_c8000f","c0:50:76:08:9b:c8:00:0f"
+
+
+zonecreate "dggwdb01_c80016__vnx53001_spa0_spb0","dggwdb01_c80016;vnx53001_spa0;vnx53001_spb0"
+zonecreate "dggwdb01_c80017__vnx53001_spa0_spb0","dggwdb01_c80017;vnx53001_spa0;vnx53001_spb0"
+zonecreate "qggwdb01_c80010__vnx53001_spa0_spb0","qggwdb01_c80010;vnx53001_spa0;vnx53001_spb0"
+zonecreate "qggwdb01_c80011__vnx53001_spa0_spb0","qggwdb01_c80011;vnx53001_spa0;vnx53001_spb0"
+
+zonecreate "pggwdb01_c8000e__vmax_0301_2g1","pggwdb01_c8000e;vmax_0301_2g1"
+zonecreate "pggwdb01_c8000f__vmax_0301_2g1","pggwdb01_c8000f;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","dggwdb01_c80016__vnx53001_spa0_spb0;dggwdb01_c80017__vnx53001_spa0_spb0"
+cfgadd "fab_a_act_config","qggwdb01_c80010__vnx53001_spa0_spb0;qggwdb01_c80011__vnx53001_spa0_spb0"
+cfgadd "fab_a_act_config","pggwdb01_c8000e__vmax_0301_2g1;pggwdb01_c8000f__vmax_0301_2g1"
+cfgsave
+cfgenable "fab_a_act_config
+
+naviseccli -h ldcvnx53001spa storagegroup -create -gname DGGWDB01
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGGWDB01 -hbauid c0:50:76:08:9b:c8:00:16:c0:50:76:08:9b:c8:00:16 -sp a -spport 4 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGGWDB01 -hbauid c0:50:76:08:9b:c8:00:16:c0:50:76:08:9b:c8:00:16 -sp b -spport 4 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGGWDB01 -hbauid c0:50:76:08:9b:c8:00:17:c0:50:76:08:9b:c8:00:17 -sp a -spport 4 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGGWDB01 -hbauid c0:50:76:08:9b:c8:00:17:c0:50:76:08:9b:c8:00:17 -sp b -spport 4 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -create -gname QGGWDB01
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname QGGWDB01 -hbauid c0:50:76:08:9b:c8:00:10:c0:50:76:08:9b:c8:00:10 -sp a -spport 4 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname QGGWDB01 -hbauid c0:50:76:08:9b:c8:00:10:c0:50:76:08:9b:c8:00:10 -sp b -spport 4 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname QGGWDB01 -hbauid c0:50:76:08:9b:c8:00:11:c0:50:76:08:9b:c8:00:11 -sp a -spport 4 -type 3 -ip 10.32.50.113 -host QGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname QGGWDB01 -hbauid c0:50:76:08:9b:c8:00:11:c0:50:76:08:9b:c8:00:11 -sp b -spport 4 -type 3 -ip 10.32.50.113 -host QGGWDB01 -failovermode 4 -arraycommpath 1
+
+
+
+
+
+Fabric B
+
+alicreate "dggwdb01_c80014","c0:50:76:08:9b:c8:00:14"
+alicreate "dggwdb01_c80015","c0:50:76:08:9b:c8:00:15"
+alicreate "qggwdb01_c80012","c0:50:76:08:9b:c8:00:12"
+alicreate "qggwdb01_c80013","c0:50:76:08:9b:c8:00:13"
+
+alicreate "pggwdb01_c8000c","c0:50:76:08:9b:c8:00:0c"
+alicreate "pggwdb01_c8000d","c0:50:76:08:9b:c8:00:0d"
+
+
+zonecreate "dggwdb01_c80014__vnx53001_spa1_spb1","dggwdb01_c80014;vnx53001_spa1;vnx53001_spb1"
+zonecreate "dggwdb01_c80015__vnx53001_spa1_spb1","dggwdb01_c80015;vnx53001_spa1;vnx53001_spb1"
+zonecreate "qggwdb01_c80012__vnx53001_spa1_spb1","qggwdb01_c80012;vnx53001_spa1;vnx53001_spb1"
+zonecreate "qggwdb01_c80013__vnx53001_spa1_spb1","qggwdb01_c80013;vnx53001_spa1;vnx53001_spb1"
+
+zonecreate "pggwdb01_c8000c__vmax_0301_3g1","pggwdb01_c8000c;vmax_0301_3g1"
+zonecreate "pggwdb01_c8000d__vmax_0301_3g1","pggwdb01_c8000d;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","dggwdb01_c80014__vnx53001_spa1_spb1;dggwdb01_c80015__vnx53001_spa1_spb1"
+cfgadd "fab_b_act_config","qggwdb01_c80012__vnx53001_spa1_spb1;qggwdb01_c80013__vnx53001_spa1_spb1"
+cfgadd "fab_b_act_config","pggwdb01_c8000c__vmax_0301_3g1;pggwdb01_c8000d__vmax_0301_3g1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGGWDB01 -hbauid c0:50:76:08:9b:c8:00:14:c0:50:76:08:9b:c8:00:14 -sp a -spport 5 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGGWDB01 -hbauid c0:50:76:08:9b:c8:00:14:c0:50:76:08:9b:c8:00:14 -sp b -spport 5 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGGWDB01 -hbauid c0:50:76:08:9b:c8:00:15:c0:50:76:08:9b:c8:00:15 -sp a -spport 5 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGGWDB01 -hbauid c0:50:76:08:9b:c8:00:15:c0:50:76:08:9b:c8:00:15 -sp b -spport 5 -type 3 -ip 10.32.50.110 -host DGGWDB01 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname QGGWDB01 -hbauid c0:50:76:08:9b:c8:00:12:c0:50:76:08:9b:c8:00:12 -sp a -spport 5 -type 3 -ip 10.32.50.113 -host QGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname QGGWDB01 -hbauid c0:50:76:08:9b:c8:00:12:c0:50:76:08:9b:c8:00:12 -sp b -spport 5 -type 3 -ip 10.32.50.113 -host QGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname QGGWDB01 -hbauid c0:50:76:08:9b:c8:00:13:c0:50:76:08:9b:c8:00:13 -sp a -spport 5 -type 3 -ip 10.32.50.113 -host QGGWDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname QGGWDB01 -hbauid c0:50:76:08:9b:c8:00:13:c0:50:76:08:9b:c8:00:13 -sp b -spport 5 -type 3 -ip 10.32.50.113 -host QGGWDB01 -failovermode 4 -arraycommpath 1
+
+
+
+sudo symaccess -sid 0301 -name pggwdb01_IG -type initiator create
+sudo symaccess -sid 0301 -name pggwdb01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pggwdb01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pggwdb01_IG -type initiator -wwn c05076089bc8000e add
+sudo symaccess -sid 0301 -name pggwdb01_IG -type initiator -wwn c05076089bc8000f add
+sudo symaccess -sid 0301 -name pggwdb01_IG -type initiator -wwn c05076089bc8000c add
+sudo symaccess -sid 0301 -name pggwdb01_IG -type initiator -wwn c05076089bc8000d add
+
+
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 08FA;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 08FA;" commit -nop
+
+sudo symconfigure -sid 0301 -cmd "configure 14 devices copying dev 1026;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 14 devices copying dev 1026;" commit -nop
+
+sudo symaccess -sid 0301 -name pggwdb01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pggwdb01_SG add devs 03989,0398D,03991,0399D,039A9
+sudo symfast -sid 0301 -fp_name Gold associate -sg pggwdb01_SG -priority 2
+sudo symaccess -sid 0301 create view -name pggwdb01_MV -sg pggwdb01_SG -pg 2G1_3G1_PG -ig pggwdb01_IG
+
+
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 903 -name DGGWDB01_903
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 904 -name DGGWDB01_904
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 905 -name DGGWDB01_905
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 906 -name DGGWDB01_906
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 907 -name DGGWDB01_907
+
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 908 -name QGGWDB01_908
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 909 -name QGGWDB01_909
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 910 -name QGGWDB01_910
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 911 -name QGGWDB01_911
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 912 -name QGGWDB01_912
+
+
+HLU=0
+
+for LUN in 903 904 905 906 907
+do
+   echo "naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname DGGWDB01 -alu ${LUN} -hlu ${HLU}"
+   export HLU=$(echo "${HLU} + 1" | bc )
+done
+
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname DGGWDB01 -alu 903 -hlu 0
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname DGGWDB01 -alu 904 -hlu 1
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname DGGWDB01 -alu 905 -hlu 2
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname DGGWDB01 -alu 906 -hlu 3
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname DGGWDB01 -alu 907 -hlu 4
+
+for LUN in 908 909 910 911 912
+do
+   echo "naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname QGGWDB01 -alu ${LUN} -hlu ${HLU}"
+   export HLU=$(echo "${HLU} + 1" | bc )
+done
+
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname QGGWDB01 -alu 908 -hlu 0
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname QGGWDB01 -alu 909 -hlu 1
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname QGGWDB01 -alu 910 -hlu 2
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname QGGWDB01 -alu 911 -hlu 3
+naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname QGGWDB01 -alu 912 -hlu 4</code>

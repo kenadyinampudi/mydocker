@@ -1,0 +1,39 @@
+
+<h4 id="import_suse_15_sp3_distribution_to_the_cobbler_server_pcdcunxlxap01">Import SUSE 15 SP3 distribution to the cobbler server pcdcunxlxap01</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> Copy the iso to the build server<pre class="code">cd /var/tmp
+wget http://unixisos.driv.com/SLE-15-SP3-Full-x86_64-GM-Media1.iso</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Loopback mount the iso file on build server<pre class="code">sudo mkdir -p /cdrom</pre>
+<pre class="code">sudo mount /var/tmp/SLE-15-SP3-Full-x86_64-GM-Media1.iso /cdrom -t iso9660 -o loop</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the contents to the sources directory<pre class="code">sudo mkdir -p /var/www/html/sources/SLE-15-SP3</pre>
+<pre class="code">sudo rsync -a /cdrom/ /var/www/html/sources/SLE-15-SP3/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a SLE-15 repository<pre class="code">sudo createrepo /var/www/html/sources/SLE-15-SP3</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import SLE-15 distribution to cobbler<pre class="code">sudo cobbler import --path=/cdrom --name=SLE-15-SP3 --arch=x86_64</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup the files<pre class="code">sudo umount /cdrom
+rm /var/tmp/SLE-15-SP3-Full-x86_64-GM-Media1.is</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create SLE-15 kickstart file<pre class="code">sudo vi /var/lib/cobbler/kickstarts/sle15-sp3.ks</pre>
+</div>
+<ul>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:tennecorhel7ks" class="wikilink1" title="unix:tennecorhel7ks">Add this content</a> </div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Associate kickstart to the SLE15 profile.<pre class="code">sudo cobbler profile edit --name SLE-15-SP3 --kickstart=/var/lib/cobbler/kickstarts/sle15-sp3.ks</pre>
+</div>
+</li>
+</ul>
+
+</div>

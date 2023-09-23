@@ -1,0 +1,65 @@
+
+<h1 class="sectionedit1" id="change_ip_and_hostname_redhat_relay1_relay2_ns1_and_ns2">Change IP and hostname Redhat (relay1, relay2, ns1 and ns2)</h1>
+<div class="level1">
+
+<p>
+Swap identity of these servers.
+</p>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Hostname</th><th class="col1">Old IP</th><th class="col2">New IP</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">relay1</td><td class="col1">170.64.0.70</td><td class="col2">170.64.0.73</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">relay2</td><td class="col1">170.64.0.71</td><td class="col2">170.64.0.79</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">ns1</td><td class="col1">170.64.0.94</td><td class="col2">170.64.0.95</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">ns2</td><td class="col1">170.64.0.150</td><td class="col2">170.64.0.152</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [109-261] --><ol>
+<li class="level1"><div class="li"> Shut down old server(s) OR change their IPs to the temporary IPs and shutdown.</div>
+</li>
+<li class="level1"><div class="li"> Login to the new server and backup config files<pre class="code">mkdir backups
+sudo cp /etc/hosts backups/
+sudo cp /etc/sysconfig/network-scripts/ifcfg-eth0 backups/
+sudo cp /etc/sysconfig/network backups/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the IP address<pre class="code">sudo vi /etc/sysconfig/network-scripts/ifcfg-eth0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the hostname<pre class="code">sudo vi /etc/sysconfig/network</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the hosts file<pre class="code">sudo vi /etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> From the console, restart the network<pre class="code">sudo service network restart</pre>
+
+<p>
+OR just reboot
+</p>
+<pre class="code">sudo init 6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Re-define the hosts on Kickstart / Cobbler.</div>
+</li>
+<li class="level1"><div class="li"> Cleanup the host <abbr title="Secure Shell">SSH</abbr> keys on NIM server and the build server.</div>
+</li>
+</ol>
+
+<p>
+<strong> Backout </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Drive to data-centre and power on relay1 and relay2 , probably ns1 ns2 as well ?</div>
+</li>
+</ol>
+
+</div>

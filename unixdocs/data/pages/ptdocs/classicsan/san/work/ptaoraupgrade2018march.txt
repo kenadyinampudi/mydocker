@@ -1,0 +1,79 @@
+====== Snapshot backup during the downtime phase ======
+
+  - Wait until the PTA database goes down and you are asked to take a snapshot.
+  - Login to pgunap01
+  - Take a snapshot of the  database on Pure storage array<code>sudo -u sanmontr ssh pureuser@ldcpm70v1 purepgroup snap --suffix oraupg PTAPRMYDR</code>
+  - Verify the snapshot is complete<code>sudo -u sanmontr ssh pureuser@ldcpm70v1 purepgroup list --snap PTAPRMYDR.oraupg</code>Or check from GUI.
+  - Give confirmation to the project team ( DBA ) that snapshot backup is complete.
+
+===== Backout plan using Snapshot (Pure Storage ) =====
+
+  - export some variables<code>
+export ARRAY="ldcpm70v1"
+export PGRP="PTAPRMYDR"
+export SSH2PURE="sudo -u sanmontr ssh pureuser@${ARRAY}"</code>
+  - Log in to to pgunap01<code>ssh pgunap01</code>
+  - Store the snapshot as a variable<code>export SNAP="PTAPRMYDR.oraupg"</code>
+  - Copy the snapshots to target volumes
+    - Export a start number for volume<code>export vol_no=700</code>
+    - Store the snapshot volumes in a variable<code>export snapshots=$(${SSH2PURE} purevol list --snap --pgrouplist ${SNAP} --notitle | grep -v 138G | awk '{print $1}' | tr "\n" " ")</code>
+    - Copy the snapshots to volumes<code>target_vols=""
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol copy ${snapshot} tapr1d01_${vol_no}
+   target_vols="${target_vols} tapr1d01_${vol_no}"
+   vol_no=$((vol_no+1))
+done</code>
+     - Preserve the target volumes in a file<code>echo ${target_vols} > PTA.poc.volumes</code>
+  - Connect the volumes to tapr1d01<code>${SSH2PURE} purevol connect --host tapr1d01 ${target_vols}</code>
+  - Login to tapr1d01 host<code>ssh tapr1d01</code>
+  - Get the LUN map from tapr1d01<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.recovery</code>
+  - Dismount and export the old purevolumes<code>for vg in  redovg01 datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 binvg01
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount $fs > /dev/null 2>&1
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -kuc ${fs} > /dev/null 2>&1
+         sudo umount ${fs}
+         if [ ${?} -ne 0 ]
+         then
+            echo "Unable to unmount ${vg} -- ${fs} -- Manual intervention needed"
+         fi   
+   done
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+done</code>
+  - Take a snapshot of the existing disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Remove old pure devices<code>grep PURE lsvpcfg.out.1| awk -F: '{print $1}'|xargs -n1 sudo rmdev -dl</code>
+  - Login to pgunap01 and disconnect the old pure luns from tapr1d01<code>for lun in {001..043}
+do 
+  ${SSH2PURE} purevol disconnect --host tapr1d01 ptadbdata_${lun}
+done
+
+for lun in {001..014}
+do 
+  ${SSH2PURE} purevol disconnect --host tapr1d01 tapr1d01_${lun}
+done</code>
+  - Login to tapr1d01 and Discover new devices<code>sudo cfgmgr</code>
+  - Take a snapshot of the new disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Recreate the VGs and change the PVIDs<code>cat lsvpcfg.out.recovery | grep hdisk | grep -v rootvg > diskmap</code>
+  - fsck and mount them<code>for VG in binvg01 redovg01 datavg01 datavg02 datavg03 datavg04 datavg05 datavg06
+do
+   echo "$(date) :: Working on ${VG}"
+   grep ":${VG}$" diskmap | awk -F: '{print $2}' > ${VG}.pvids
+   disks=$(lspv | grep -wf ${VG}.pvids | awk '{print $1}' | tr "\n" " " )
+   echo "$(date) :: Working on ${VG} -- recreatevg in progress"
+   sudo recreatevg -Y/ -L/ -y ${VG} ${disks}
+   for fs in $(lsvgfs ${VG} | sort )
+   do
+   echo "$(date) :: Working on ${VG} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>
+  - Handover the system  to DBA for recovery.
+  - DBA to recover DB on tapr1d01.
+  - Inform DBA team to disable the daily hot backup of PTA.

@@ -1,0 +1,120 @@
+===== Update OpenSSL and OpenSSH ======
+ This proceedure is for upgrading OpenSSL and OpenSSH on the AIX servers. You will need to update OpenSSL first as OpenSSH depends on it being the correct level. 
+ Logon to the NIM server pgnmsv01 and copy the /usr/local/update directory from the nim server to the server being updated 
+<code>  sudo scp -r /usr/local/update {hostname}:/usr/local/ </code>
+    
+ Make sure you run the backup-ssh-ssl.sh script to preserve the /etc/ssh directory. 
+ Failng to do so means that you will not have a clean backout proceedure
+ Logon to the server to be patchrd and cd to the /usr/local/update directory and run the backup-ssh-ssl.sh script <code> cd /usr/local/update </code> <code> sudo ./backup-ssh-ssl.sh </code>
+
+ The backup-ssh-ssl.sh script creates a directory called hostname-SAVED-SSH-timestamp. Example atlasdr-SAVED-SSH.20180110163306. 
+ The script can be run multiple times as each directory is unique. The script also create a recovery scripts Recover-ssl and Recover-SSH in that directory.
+
+ A reminder.  ** Make sure you run the backup-ssh-ssl.sh script to save the /var/ssl and, /etc/ssh directories. **
+
+  - Backup the /etc/ssh directory in case of a backout.
+    - On the server to be upgraded, <code> /usr/local/update/backup-ssh-ssl.sh </code> Cd to the /usr/local/update direcory and verify that the hstname-SAVED-SSH-timestamp directorywas cuccessfully created <code> cd /usr/local/update </code>
+    - Change directory to the hstname-SAVED-SSH-timestamp direcotey and run the ls -liaR command to verify that the /var/ssl and/etc/ssh directories was succesfully copied.<code> ls -liatR  </code> The output shoudl look like the following <code> 
+total 32
+193320 -rw-r--r--    1 root     system          141 Jan 18 16:21 Recover-SSL
+193319 -rw-r--r--    1 root     system          141 Jan 18 16:21 Recover-SSH
+193289 drwxr-xr-x    5 root     system          256 Jan 18 16:21 .
+193290 -rw-r--r--    1 root     system          408 Jan 18 16:21 log.txt
+193292 drwxr-xr-x    3 root     system          256 Jan 18 16:21 var
+193291 drwxr-xr-x    3 root     system          256 Jan 18 16:21 etc
+82368 drwxr-xr-x    7 root     system         4096 Jan 18 16:21 ..
+193293 drwx------    2 root     system          256 Oct 09 2013  ROOT-SSH-KEYS
+./var:
+total 0
+193289 drwxr-xr-x    5 root     system          256 Jan 18 16:21 ..
+193292 drwxr-xr-x    3 root     system          256 Jan 18 16:21 .
+193568 drwxr-xr-x    3 root     system          256 Mar 28 2017  ssl
+
+./var/ssl:
+total 24
+193292 drwxr-xr-x    3 root     system          256 Jan 18 16:21 ..
+193568 drwxr-xr-x    3 root     system          256 Mar 28 2017  .
+193309 drwxr-xr-x    2 root     system          256 Mar 28 2017  misc
+193569 -rw-r--r--    1 root     system         9827 Jan 30 2008  openssl.cnf
+
+./var/ssl/misc:
+total 80
+193309 drwxr-xr-x    2 root     system          256 Mar 28 2017  .
+193568 drwxr-xr-x    3 root     system          256 Mar 28 2017  ..
+193310 -rwxr-xr-x    1 root     system         5679 Mar 28 2017  CA.pl
+193311 -rwxr-xr-x    1 root     system         5175 Mar 28 2017  CA.sh
+193314 -rwxr-xr-x    1 root     system          119 Mar 28 2017  c_hash
+193315 -rwxr-xr-x    1 root     system          152 Mar 28 2017  c_info
+193316 -rwxr-xr-x    1 root     system          112 Mar 28 2017  c_issuer
+193317 -rwxr-xr-x    1 root     system          110 Mar 28 2017  c_name
+193318 -rwxr-xr-x    1 root     system         6865 Mar 28 2017  tsget
+
+./etc:
+total 8
+193289 drwxr-xr-x    5 root     system          256 Jan 18 16:21 ..
+193291 drwxr-xr-x    3 root     system          256 Jan 18 16:21 .
+193297 drwxr-xr-x    2 root     system         4096 Mar 28 2017  ssh
+
+./etc/ssh:
+total 352
+193291 drwxr-xr-x    3 root     system          256 Jan 18 16:21 ..
+193297 drwxr-xr-x    2 root     system         4096 Mar 28 2017  .
+193298 -rw-------    1 root     system       132839 Mar 28 2017  moduli
+193302 -rw-------    1 root     system          227 Mar 28 2016  ssh_host_ecdsa_key
+193303 -rw-r--r--    1 root     system          162 Mar 28 2016  ssh_host_ecdsa_key.pub
+193299 -rw-r--r--    1 root     system          512 Jul 15 2014  ssh_config
+193300 -rw-------    1 root     system          672 Jul 18 2012  ssh_host_dsa_key
+193301 -rw-r--r--    1 root     system          590 Jul 18 2012  ssh_host_dsa_key.pub
+193304 -rw-------    1 root     system          965 Jul 18 2012  ssh_host_key
+193305 -rw-r--r--    1 root     system          630 Jul 18 2012  ssh_host_key.pub
+193306 -rw-------    1 root     system         1679 Jul 18 2012  ssh_host_rsa_key
+193307 -rw-r--r--    1 root     system          382 Jul 18 2012  ssh_host_rsa_key.pub
+193308 -rw-r--r--    1 root     system         3060 Aug 18 2011  sshd_config
+
+./ROOT-SSH-KEYS:
+ls: ./ROOT-SSH-KEYS: The file access permissions do not allow the specified action.
+total 0
+</code>
+ - On the Server to be patched, create the target mount point  location<code>sudo mkdir -p /mnt/aixupdates </code>
+
+    - On the Server to be patched, NFS mount the lppsrc location <code> sudo mount pgnmsv01:/prod/images/service-packs/LATEST-SSL-SSH /mnt/aixupdates </code>  To list all updates that  need to be installed cd to the directory you just mounted<code> cd /mnt/aixupdates; ls </code> Use the code that follows to install the updates.
+    - Install the SSL update first <code>sudo installp -aXYd OpenSSL/VRMF-1.0.2.1300_1.0.2m/openssl-1.0.2.1300 openssl</code> The output should look like the following<code> +-----------------------------------------------------------------------------+
+                                Summaries:
++-----------------------------------------------------------------------------+
+
+Installation Summary
+--------------------
+Name                        Level           Part        Event       Result
+-------------------------------------------------------------------------------
+openssl.man.en_US           1.0.2.1300      USR         APPLY       SUCCESS
+openssl.license             1.0.2.1300      USR         APPLY       SUCCESS
+openssl.base                1.0.2.1300      USR         APPLY       SUCCESS
+openssl.base                1.0.2.1300      ROOT        APPLY       SUCCESS
++-----------------------------------------------------------------------------+
+</code>
+    - Install the SSH update x <code>sudo installp -aXYd OpenSSH/VRMF-7.5.102.1100/OpenSSH_7.5.102.1100 openssh </code> A success full installation output shoudl look like this <code> +-----------------------------------------------------------------------------+
+                                Summaries:
++-----------------------------------------------------------------------------+
+
+Installation Summary
+--------------------
+Name                        Level           Part        Event       Result
+-------------------------------------------------------------------------------
+openssh.license             7.5.102.1100    USR         APPLY       SUCCESS
+openssh.base.client         7.5.102.1100    USR         APPLY       SUCCESS
+openssh.base.client         7.5.102.1100    ROOT        APPLY       SUCCESS
+openssh.msg.EN_US           7.5.102.1100    USR         APPLY       SUCCESS
+openssh.man.en_US           7.5.102.1100    USR         APPLY       SUCCESS
+openssh.base.server         7.5.102.1100    USR         APPLY       SUCCESS
+openssh.base.server         7.5.102.1100    ROOT        APPLY       SUCCESS
++-----------------------------------------------------------------------------+
+</code>
+ - Update the sshd_config file to allow DSA keys to still function 
+    -Execute the following commands to add the  DSA patch to the sshd_config file <code>echo "" | sudo tee -a /etc/ssh/sshd_config
+echo "#If you are stuck with DSA keys, you can re-enable support locally" | sudo tee -a /etc/ssh/sshd_config
+echo "PubkeyAcceptedKeyTypes=+ssh-dss"  | sudo tee -a  /etc/ssh/sshd_config
+</code>
+    - Restart SSH to activate the update and the changes to the sshd_config file <code> sudo stopsrc -s sshd </code> <code> sudo startsrc -s sshd </code> 
+  - Unmount the file system <code> cd 
+sudo umount /mnt/aixupdates</code>
+  - On the NIM Server, remove the exported lppsource file system from the exports list  <code> /usr/sbin/rmnfsexp -d '/prod/images/service-packs/LATEST-SSL-SSH' '-B' </code>

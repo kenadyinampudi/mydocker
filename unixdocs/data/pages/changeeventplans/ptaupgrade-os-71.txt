@@ -1,0 +1,51 @@
+====== Change Work Plan for PTA OS upgrades, ODM, Firmware and Powerpath upgrade. ======
+
+==== AIX upgrade process. ====
+
+    - AIX upgrade from 5.3 to 7.1 follow documentation from Chris.
+    - Firmware upgrade on Blade servers and MMA - Documentation from Chris.
+
+==== ODM installation on App servers ====
+
+  - NFS mount the software repository<code>sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</code>
+  - Install the ODM<code>sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</code>
+  - Correct the HBA settings for next reboot<code>for FSCSI in $(lscfg | grep fscsi | awk '{print $2}' )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</code>
+  - Reboot the server<code>sudo shutdown -Fr</code>
+  - Enable roundrobin and turn off reservelock for next reboot<code>lsdev -Ccdisk | grep MPIO | awk '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</code>
+  - Remove old device files<code>lsdev -Ccdisk | grep Defined | awk '{print $1}' | xargs -n1 rmdev -dl</code>
+  - Reboot the server<code>sudo shutdown -Fr</code>
+==== ODM upgrade on PTA DB server, taprvio30, taprvio31 ====
+
+  - NFS mount the software repository<code>sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</code>
+  - Upgrade the ODM<code>cd /mnt/emc/ODM/$(oslevel)-latest</code><code>sudo smitty update_all</code>Then select "." as the path.
+  - Install the Clariion device drivers<code>sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte</code>
+  - Reboot the server<code>sudo shutdown -Fr</code>
+
+==== Powerpath upgrade on PTA DB server, taprvio30, taprvio31 ====
+
+  - NFS mount the software repository<code>sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</code>
+  - Upgrade Powerpath<code>cd /mnt/emc/PowerPath/5.5-P04</code><code>sudo smitty update_all</code>Then select "." as the path.
+    - If it complains about hdiskpower devices active, do this.
+      - tapr1d01
+        - Disable SAN paging<code>lsps -a | grep sanpagevg01 | awk '{print "/dev/"$1}' | xargs -n1 sudo swapoff</code>
+        - Varyoff all SAN VGs<code>for vg in $(lsvg | grep -v rootvg)
+do
+   for fs in $(lsvgfs ${vg} | sort -r)
+   do
+      sudo umount ${fs}
+   done
+   sudo varyoffvg ${vg}
+done</code>
+        - Define all hdiskpowers<code>lspv | grep hdiskpower | awk '{print $1}' | xargs -n1 sudo rmdev -l</code>
+      - VIOS
+        - Document the mapping<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.07132013</code><code>awk -F: '{print $1}' lsdiskcfg.out.07132013 > /var/tmp/allviomappeddsks</code>
+        - Define the mapped devices as padmin ''sudo su - padmin''<code>for dev in $(cat /var/tmp/allviomappeddsks)
+do
+   rmvdev -vdev ${dev} -ucfg
+done</code>
+    - Upgrade Powerpath<code>cd /mnt/emc/PowerPath/5.5-P04</code><code>sudo smitty update_all</code>Then select "." as the path.
+  - Reboot the server<code>sudo shutdown -Fr</code>
+  - On VIO servers, make sure the mapping and reserve locks are turned off.

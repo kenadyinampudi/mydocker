@@ -1,0 +1,65 @@
+
+<h1 class="sectionedit1" id="aix_initial_configuration_of_san_connected_systems">AIX initial configuration of SAN connected systems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Configure FC <abbr title="Small Computer System Interface">SCSI</abbr> attributes<pre class="code">for FSCSI in $(lscfg | grep fscsi | awk &#039;{print $2}&#039; )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "AIX initial configuration of SAN connected systems" [1-242] -->
+<h2 class="sectionedit2" id="storage_array_specific_device_drivers">Storage Array specific device drivers</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> What type of operating system is this ?</div>
+<ol>
+<li class="level2"><div class="li"> AIX</div>
+<ol>
+<li class="level3"><div class="li"> What type of disks are we using on this LPAR ?</div>
+<ol>
+<li class="level4"><div class="li"> vSCSI </div>
+<ol>
+<li class="level5"><div class="li"> Do not install any device drivers</div>
+</li>
+</ol>
+</li>
+<li class="level4"><div class="li"> NPIV</div>
+<ol>
+<li class="level5"><div class="li"> <a href="/doku.php?id=unix:installstgdevicedrivers" class="wikilink1" title="unix:installstgdevicedrivers">Install storage array specific device drivers on AIX/VIOS</a></div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> VIOS</div>
+<ol>
+<li class="level3"><div class="li"> What type of I/O virtualization are we planning to use on this frame/VIOS ?</div>
+<ol>
+<li class="level4"><div class="li"> vSCSI </div>
+<ol>
+<li class="level5"><div class="li"> <a href="/doku.php?id=unix:installstgdevicedrivers" class="wikilink1" title="unix:installstgdevicedrivers">Install storage array specific device drivers on AIX/VIOS</a></div>
+</li>
+</ol>
+</li>
+<li class="level4"><div class="li"> NPIV</div>
+<ol>
+<li class="level5"><div class="li"> Do not install any device drivers</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Storage Array specific device drivers" [243-] -->

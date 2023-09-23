@@ -1,0 +1,74 @@
+
+<h1 class="sectionedit1" id="standalone_nbu_home_made_appliance">Standalone NBU home made appliance</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Mount the virtual media on iLO Virtual Media</div>
+<ul>
+<li class="level2"><div class="li"> HP DL3*</div>
+<ul>
+<li class="level3"><div class="li"> Login to the iLO<pre class="code">ssh LAN@${shortname}rmb</pre>
+
+<p>
+Use the standard password for “<abbr title="Local Area Network">LAN</abbr>”.
+</p>
+</div>
+</li>
+<li class="level3"><div class="li"> Mount the Media<pre class="code">vm cdrom insert http://pcdcunxlxap01.driv.com/servers/HOSTNAME.iso
+vm cdrom set connect</pre>
+
+<p>
+Replace <code>HOSTNAME</code> with the actual hostname you are building.
+</p>
+</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> DELL Power Ridge</div>
+<ul>
+<li class="level3"><div class="li"> Login to iDRAC<pre class="code">ssh root@${shortname}rmb</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Login to iDRAC<pre class="code">ssh LAN@${shortname}rmb</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Disconnect any previous connections<pre class="code">racadm vmdisconnect</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Connect the media<pre class="code">racadm remoteimage -c -l http://pcdcunxlxap01.driv.com/servers/HOSTNAME.iso</pre>
+
+<p>
+Replace <code>HOSTNAME</code> with the actual hostname you are building.
+</p>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Login to the Remote Console <code><a href="https://HOSTNAMErmb" class="urlextern" title="https://HOSTNAMErmb"  rel="nofollow">https://HOSTNAMErmb</a></code> –&gt; Login with <abbr title="Local Area Network">LAN</abbr> –&gt; Remote console</div>
+</li>
+<li class="level1"><div class="li"> Power on the server <code>Virtual Power</code></div>
+</li>
+<li class="level1"><div class="li"> When the system boots –&gt; At the BIOS screen –&gt; Press “F11” –&gt; </div>
+<ul>
+<li class="level2"><div class="li"> HP DL3</div>
+<ul>
+<li class="level3"><div class="li">Select the Virtual CDROM to boot from –&gt; Hit enter.</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> DELL Power Ridge</div>
+<ul>
+<li class="level3"><div class="li">Select EUFI Boot –&gt; Select Virtual DVD Device</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> At the grub menu, it will display the HOSTNAME –&gt; hit enter to start the installation.</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat" class="wikilink1" title="unix:postinstallationsteps-redhat">Proceed to post install steps</a></div>
+</li>
+</ul>
+
+</div>

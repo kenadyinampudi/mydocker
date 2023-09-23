@@ -1,0 +1,69 @@
+
+<h1 class="sectionedit1" id="vlan_tagging_on_dual_vios_taprvio90_and_taprvio91_in_the_dmz">VLAN Tagging on dual VIOS (taprvio90 and taprvio91) in the DMZ</h1>
+<div class="level1">
+
+<p>
+<strong>The procedure assumes that the cabling is done as follows</strong>
+</p>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<td class="col0">Patch Panels</td><td class="col1">Switch</td><td class="col2">Port</td><td class="col3">Host</td><td class="col4">Details</td><td class="col5">Host&#039;s ethernet</td>
+	</tr>
+	<tr class="row1">
+		<td class="col0">U3.1-13 to 2.6-31</td><td class="col1">ITCSWDMZ01</td><td class="col2">port 29</td><td class="col3">taprvio90</td><td class="col4">Port Channel 10</td><td class="col5">ent0</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">U3.1-14 to 2.6-01</td><td class="col1">ITCSWDMZ01</td><td class="col2">port 30</td><td class="col3">taprvio90</td><td class="col4">Port Channel 10</td><td class="col5">ent4</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">U3.1-16 to 2.6-04</td><td class="col1">ITCSWDMZ02</td><td class="col2">port 29</td><td class="col3">taprvio91</td><td class="col4">Port Channel 10</td><td class="col5">ent0</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">U3.1-17 to 2.6-48</td><td class="col1">ITCSWDMZ02</td><td class="col2">port 30</td><td class="col3">taprvio91</td><td class="col4">Port Channel 10</td><td class="col5">ent4</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [142-477] --><ol>
+<li class="level1"><div class="li"> Completely remove network configuration.</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interface<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -C | grep ^en | awk &#039;{print $1}&#039; )
+do
+   rmdev -dl ${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create Etherchannel (trunk - LACP) with a backup adapter.</div>
+<ol>
+<li class="level2"><div class="li"> Front-end network<pre class="code">mkvdev -lnagg ent0 ent4 -attr mode=8023ad</pre>
+
+<p>
+Creates ent10
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create Shared Ethernet Adapter</div>
+<ol>
+<li class="level2"><div class="li"> Front end SEA<pre class="code">mkvdev -sea ent10 -vadapter ent8 -default ent8 -defaultid 1 -attr ha_mode=auto ctl_chan=ent9</pre>
+
+<p>
+Creates ent11
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Due to lack of dedicated native VLAN in DMZ, the IP is NOT assigned to SEA, we created a virtual NIC and assigned IP to it 170.64.0.80/255.255.255.192/GW 170.64.0.65</div>
+</li>
+</ol>
+
+</div>

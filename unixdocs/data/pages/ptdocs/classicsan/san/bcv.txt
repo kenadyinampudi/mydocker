@@ -1,0 +1,103 @@
+====== BCV notes ======
+
+
+** PTA uses BCV for backups **
+
+
+  * [[san:creatingbcvvmax|Creating BCV device groups on VMAX]]
+
+
+===== Allocating storage to PTA =====
+
+** This doc was made when I added these luns for the first time **
+
+^Source LUNs/PTA^Target LUNs^
+|18FE 1902 1906 190A|0DAD 0DB1 0DB5 0DB9|
+
+  * Goto http://itchome -> Storage and find out free LUNs.
+    * Current PTA standard LUN size is 34G R1.
+    * Also find out BCV R5 volume ( equal number )
+
+**Perform the following steps from taqa1d01 unless otherwise advised**
+
+  * Login to taqa1d01 and verify both the luns are not presented elsewhere<code>sudo symmaskdb -sid 71 list assignment -dev 18FE,1902,1906,190A
+sudo symmaskdb -sid 71 list assignment -dev 0DAD,0DB1,0DB5,0DB9</code>The output should be<code>
+No device masking database records could be found for the specified input parameters
+
+</code>
+  * Add the PTA devices to the Symmetrix diskgroup "PTA_BKUP_NEW_group"<code>sudo symld -g PTA_BKUP_NEW_group add dev 18FE
+sudo symld -g PTA_BKUP_NEW_group add dev 1902
+sudo symld -g PTA_BKUP_NEW_group add dev 1906
+sudo symld -g PTA_BKUP_NEW_group add dev 190A</code>
+  * Associate the equal number of BCV devices to the diskgroup<code>sudo symbcv -g PTA_BKUP_NEW_group associate dev 0DAD
+sudo symbcv -g PTA_BKUP_NEW_group associate dev 0DB1
+sudo symbcv -g PTA_BKUP_NEW_group associate dev 0DB5
+sudo symbcv -g PTA_BKUP_NEW_group associate dev 0DB9</code>
+  * Verify the diskgroup config<code>sudo symdg show PTA_BKUP_NEW_group</code>It should show something like this<code>Group Name:  PTA_BKUP_NEW_group
+
+    Group Type                                   : REGULAR
+    Device Group in GNS                          : No
+    Valid                                        : Yes
+    Symmetrix ID                                 : 000190103471
+    Group Creation Time                          : Wed Jan 18 11:35:16 2012
+    Vendor ID                                    : EMC Corp
+    Application ID                               : SYMCLI
+
+    Number of STD Devices in Group               :  187
+    Number of Associated GK's                    :    0
+    Number of Locally-associated BCV's           :  187
+    Number of Locally-associated VDEV's          :    0
+    Number of Locally-associated TGT's           :    0
+    Number of Remotely-associated VDEV's(STD RDF):    0
+    Number of Remotely-associated BCV's (STD RDF):    0
+    Number of Remotely-associated TGT's(TGT RDF) :    0
+    Number of Remotely-associated BCV's (BCV RDF):    0
+    Number of Remotely-assoc'd RBCV's (RBCV RDF) :    0
+    Number of Remotely-assoc'd BCV's (Hop-2 BCV) :    0
+    Number of Remotely-assoc'd VDEV's(Hop-2 VDEV):    0
+    Number of Remotely-assoc'd TGT's (Hop-2 TGT) :    0
+    Number of Composite Groups                   :    0
+    Composite Group Names                        : N/A
+
+    Standard (STD) Devices (187):
+        {
+        ----------------------------------------------------------------------------------
+                                                      Sym  Device                     Cap
+        LdevName              PdevName                Dev  Config        Att. Sts     (MB)
+        ----------------------------------------------------------------------------------
+        DEV013                N/A                     1C87 2-Way Mir     (M)  RW     34523
+        DEV014                N/A                     1C8B 2-Way Mir     (M)  RW     34523
+......
+......
+Lines Removed
+......
+......
+        DEV006                N/A                     18FE 2-Way Mir     (M)  RW     34523
+        DEV007                N/A                     1902 2-Way Mir     (M)  RW     34523
+        DEV008                N/A                     1906 2-Way Mir     (M)  RW     34523
+        DEV009                N/A                     190A 2-Way Mir     (M)  RW     34523
+        }
+
+    BCV Devices Locally-associated (187):
+        {
+        ----------------------------------------------------------------------------------
+                                                      Sym  Device                     Cap
+        LdevName              PdevName                Dev  Config        Att. Sts     (MB)
+        ----------------------------------------------------------------------------------
+        BCV013                /dev/rhdiskpower70      2467 BCV+R-5       (M)  RW     34523
+        BCV014                /dev/rhdiskpower71      246B BCV+R-5       (M)  RW     34523
+        BCV015                /dev/rhdiskpower72      246F BCV+R-5       (M)  RW     34523
+.....
+.....                
+Lines removed ....
+.....
+.....
+        BCV005                /dev/rhdiskpower65      2453 BCV+R-5       (M)  RW     34523
+        BCV006                N/A                     0DAD BCV+R-5       (M)  RW     34523
+        BCV007                N/A                     0DB1 BCV+R-5       (M)  RW     34523
+        BCV008                N/A                     0DB5 BCV+R-5       (M)  RW     34523
+        BCV009                N/A                     0DB9 BCV+R-5       (M)  RW     34523
+        }</code>
+  * Mask the PTA devices to tapr1d01 and the BCV devices to taqa1d01. Refer to this document for that work... [[san:dmx-allocation]]
+  * Run cfgmgr on tapr1d01 and taqa1d01.
+    * Run mkbcv on taqa1d01<code>sudo /usr/lpp/EMC/Symmetrix/bin/mkbcv -a</code>

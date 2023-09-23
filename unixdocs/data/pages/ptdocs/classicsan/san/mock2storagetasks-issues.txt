@@ -1,0 +1,14 @@
+====== Mock 2 - Issues and lessons learned ======
+
+  - The task 'Validate Firewall separation needs to be fine tuned'
+    - It can start earlier i.e. before the snapshot
+    - It may be modified to ping the source system rather than ping to default gateways of Legacy Tenneco subnets.
+  - Wintel task to shutdown and clone needs to be split
+    - It should be 'shut down' --> snapshot --> 'import datastore and start DRiV clone'
+  - Increase time for storage provisioning.
+  - NFS looks like out of sequence.
+  - ''/sapmedia'' should not be in /etc/filesystems or /etc/fstab - It is mounted using a shell script that DBA or Basis team runs on demand.
+    - Add a step in the build document to remove it.
+  - First 16 hours if you have any activity - you must be in the office or with an extremely reliable internet.
+  - We need more Unix resources in the first 16 hours.
+  - Snapshot at Wave level, but split the provisioning per instance and one for Wintel.

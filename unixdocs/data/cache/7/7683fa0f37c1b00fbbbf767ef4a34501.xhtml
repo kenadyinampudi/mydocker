@@ -1,0 +1,221 @@
+
+<h1 class="sectionedit1" id="host_based_storage_migration_to_pure_storage_--_lincolnshire">Host based storage migration  to Pure Storage -- Lincolnshire</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Host based storage migration  to Pure Storage -- Lincolnshire" [1-77] -->
+<h2 class="sectionedit2" id="preperation">Preperation</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create change controls and get approvals necessary. [ In most cases - this is done by Storage team ]</div>
+</li>
+<li class="level1"><div class="li"> Figure out the storage requirement and email them to Storage team in advance.</div>
+<ol>
+<li class="level2"><div class="li"> Login to the server<pre class="code">ssh &lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Define this function<pre class="code">function find_disks {
+sudo /usr/local/scripts/lsvpcfg.sh | grep -v ^&quot;Disk&quot; | awk -F: &#039;{if ($5!=&quot;2&quot;) print $0}&#039; &gt; lsvpcfg.out.1
+echo &quot;VG                   Count      Size(GB)&quot;
+
+for VG in $(awk -F: &#039;{print $NF}&#039; lsvpcfg.out.1 | sort -u | grep -v ^$ )
+do
+   grep :${VG}$ lsvpcfg.out.1 &gt; ${VG}.out.1
+   for size in $(awk -F: &#039;{print $5}&#039; ${VG}.out.1 | sort -u )
+   do
+      count=$(grep :${size}: ${VG}.out.1 | wc -l )
+      siZe=$(echo ${size} | awk &#039;{printf &quot;%.2f&quot;,$1/1024}&#039;)
+      echo &quot;${VG} ${count} ${siZe}&quot; | awk &#039;{printf &quot;%-20s %-10s %-10s \n&quot;,$1,$2,$3}&#039;
+   done
+   rm ${VG}.out.1
+done
+}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Execute it<pre class="code">find_disks</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Email the result to SAN Storage team and request the storage to be allocated. </div>
+<ol>
+<li class="level3"><div class="li"> Exclude local disks used for paging or boot disks</div>
+</li>
+<li class="level3"><div class="li"> If the system is vSCSI, please find out the VIOS servers and ask for storage on the VIOS servers. Do include the hostname/guestname.</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Use the following table to figure out if we need Pure ODM drivers<pre class="code">Virtualized SCSI disks - Do not install on the Guest( Instead, install them on the VIOS servers )
+NPIV Virtualised disks - Install the device drivers
+Direct Connect         - Install the device drivers</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Check if pure ODM has been installed.<pre class="code">lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte</pre>
+
+<p>
+You should see this if ODM is installed
+</p>
+<pre class="code"> Fileset                      Level  State      Description         
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  devices.fcp.disk.pure.flasharray.mpio.rte
+                             1.0.0.4  COMMITTED  AIX MPIO Support for PURE
+                                                 Flash Arrays(New Install)</pre>
+
+<p>
+If Pure ODM is not installed, you would find something like this
+</p>
+<pre class="code">lslpp: 0504-132  Fileset devices.fcp.disk.pure.flasharray.mpio.rte not installed.</pre>
+</div>
+<ol>
+<li class="level3"><div class="li"> If Pure ODM is not installed, install it now.</div>
+</li>
+<li class="level3"><div class="li"> NFS mount the source for packages<pre class="code">sudo mkdir -p /mnt/pure ;sudo  mount pgnmsv01:/prod/images/storage /mnt/pure</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Install the ODM<pre class="code">sudo installp -acX -d /mnt/pure/PureODM all</pre>
+
+<p>
+It will say reboot, but don&#039;t reboot. i.e. Please ignore this message
+</p>
+<pre class="code">    * * *  A T T E N T I O N  * * *
+    System boot image has been updated. You should reboot the
+    system as soon as possible to properly integrate the changes
+    and to avoid disruption of current functionality.</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Unmount the nfs mount<pre class="code">sudo umount /mnt/pure</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Preperation" [78-2890] -->
+<h2 class="sectionedit3" id="migration">Migration</h2>
+<div class="level2">
+
+<p>
+<em><img src="/lib/images/smileys/fixme.gif" class="icon" alt="FIXME" /></em> This procedure was modified on Feb 2 2019 — Please test at least once, make necessary modifications and then remove this warning.
+</p>
+<ol>
+<li class="level1"><div class="li"> Assuming storage admins have allocated the disks. Run cfgmgr</div>
+<ol>
+<li class="level2"><div class="li"> Capture the before state<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Cfgmgr<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Capture the after state<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Validate the number of required drives are present.<pre class="code">diff lsvpcfg.out.1 lsvpcfg.out.2</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Store the disks in different variables</div>
+<ol>
+<li class="level2"><div class="li"> rootvg disk in a variable<pre class="code">export targetrootvgdisk=&quot;hdiskA&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> alt_rootvg disk in a variable<pre class="code">export targetaltrootvgdisk=&quot;hdiskB&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a file for each VG that needs migration<pre class="code">vi datavgmigration.txt</pre>
+
+<p>
+Something like this. Syntax is “vgname:target disk”
+</p>
+<pre class="code">binvg01:hdiskC
+binvg01:hdiskD
+datavg01:hdiskE
+datavg01:hdiskF</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Capture current rootvg disks</div>
+<ol>
+<li class="level3"><div class="li"> rootvg<pre class="code">export currentrootvgdisk=$(lspv | grep -w rootvg | awk &#039;{print $1}&#039; )</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> altinst_rootvg<pre class="code">export currentaltinstrootvgdisk=$(lspv | grep -w altinst_rootvg | awk &#039;{print $1}&#039;)</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Execute this command to prepare commands to mirror, migrate, unmirror and reducevg, verify and execute<pre class="code">for vgname in $(awk -F: &#039;{print $1}&#039; datavgmigration.txt | sort -u )
+do
+   export targetdisks=$(grep -w ^${vgname} datavgmigration.txt | awk -F: &#039;{print $NF}&#039; | tr &quot;\n&quot; &quot; &quot; )
+   export sourcedisks=$(lsvg -p ${vgname} | grep ^hdisk | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot; )
+   echo &quot;sudo extendvg ${vgname} ${targetdisks}&quot;
+   echo &quot;sudo mirrorvg -S ${vgname} ${targetdisks}&quot;
+   echo &quot;sudo unmirrorvg ${vgname} ${sourcedisks}&quot;
+   echo &quot;sudo reducevg ${vgname} ${sourcedisks}&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> To check progress of mirroring<pre class="code">while [ $(ps -ef | grep &quot;syncvg&quot; | grep -v grep | wc -l ) -gt 0 ]
+do
+   for vgname in $(awk -F: &#039;{print $1}&#039; datavgmigration.txt | sort -u )
+   do
+      echo $(date) :: ${vgname} :: $(lsvg ${vgname} | grep &quot;STALE PPs&quot; | awk &#039;{print $6}&#039;) of $(lsvg ${vgname} | grep &quot;USED PPs&quot; | awk &#039;{print int($5)/2 &quot; PPs remaining&quot;}&#039; )
+   done
+   sleep 20
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare commands for delete and communication to Storage team. Carefully examine and execute<pre class="code">for vgname in $(awk -F: &#039;{print $1}&#039; datavgmigration.txt | sort -u )
+do
+   grep -w ${vg_name} lsvpcfg.out.1 | awk -F: &#039;{print $1}&#039; | xargs -n1 echo &quot;sudo rmdev -dl &quot;
+   echo &quot;Please send these disks to storage team to reclaim&quot;
+   grep -w ${vg_name} lsvpcfg.out.1 
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Migrate rootvg</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=kapil:function2migraterootvg" class="wikilink1" title="kapil:function2migraterootvg">A function that let&#039;s you migrate rootvg</a></div>
+</li>
+<li class="level2"><div class="li"> Mirror rootvg too<pre class="code">export LVM_HOTSWAP_BOOTDISK=1
+sudo extendvg rootvg ${targetrootvgdisk}
+sudo mirrorvg rootvg ${targetrootvgdisk}
+sudo bosboot -ad /dev/${targetrootvgdisk}
+sudo bosboot -ad /dev/${currentrootvgdisk}
+sudo bootlist -m normal ${targetrootvgdisk}
+sudo unmirrorvg rootvg ${currentrootvgdisk}
+sudo migratepv  ${currentrootvgdisk}
+sudo reducevg rootvg ${currentrootvgdisk}
+sudo bosboot -ad /dev/${targetrootvgdisk}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Migrate the alt_disk. This step does not delete the data off of alt_rootvg<pre class="code">sudo alt_rootvg_op -X altinst_rootvg</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Delete the old disks<pre class="code">sudo rmdev -dl ${currentrootvgdisk}
+sudo rmdev -dl ${currentaltinstrootvgdisk}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a new alt_disk_copy<pre class="code">sudo alt_disk_copy -g -B -d ${targetaltrootvgdisk}</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Migration" [2891-6364] -->
+<h2 class="sectionedit4" id="cleanup">Cleanup</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> After sufficient wait time ( say a week ) please send a request to Storage admins to cleanup old storage and zoning etc. <strong> Ignore this step for now </strong> We will cleanup all of them together at a later date.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Cleanup" [6365-] -->

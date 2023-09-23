@@ -1,0 +1,323 @@
+
+<h1 class="sectionedit1" id="aix_7100-05-01_technology_level_upgrade">AIX 7100-05-01 Technology Level Upgrade</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create proper change controls and paper work, get approvals from business, get apps contacts to manage applications etc. As Chris say, <strong>the whole nine yards</strong></div>
+</li>
+<li class="level1"><div class="li"> <a href="http://itchome/cgi-bin/active_bo.cgi" class="urlextern" title="http://itchome/cgi-bin/active_bo.cgi"  rel="nofollow">Verify blackouts are in place for all the servers we plan to work on</a> </div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:backupconfig" class="wikilink1" title="unix:backupconfig">Perform the configuration backup</a></div>
+</li>
+<li class="level1"><div class="li"> At this point open a console window to the server being upgraded.  These reboots to / from the alt disk should be done from the console.</div>
+</li>
+<li class="level1"><div class="li"> Check that your alt_disk_copy is bootable  Note this is extremely important - do not skip this step this is your backout !!!</div>
+<ol>
+<li class="level2"><div class="li"> Find the altinst_rootvg disk <pre class="code"> lspv | grep altinst_rootvg </pre>
+
+<p>
+ and set the boot list so the server boots from it
+</p>
+<pre class="code"> sudo bootlist -m normal -o {hdisk from previous command}</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform a reboot at this time<pre class="code">sudo shutdown -Fr</pre>
+
+<p>
+ Verify that the server has booted correcly to the alternate disk. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Rest the bootlist or boot back to the original disk and reboot.  <pre class="code"> lspv | grep old_rootvg </pre>
+
+<p>
+ and set the boot list so the server boots from it
+</p>
+<pre class="code">sudo bootlist -m normal -o {hdisk from previous command}</pre>
+
+<p>
+ and boot back to it 
+</p>
+<pre class="code">sudo shutdown -Fr </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=changeeventplans:cleanupusrsap" class="wikilink1" title="changeeventplans:cleanupusrsap">Cleanup /usr/sap/ filesytem</a></div>
+</li>
+<li class="level1"><div class="li"> Check for and commit any uncommitted LPP&#039;s left from past upgrades. </div>
+<ol>
+<li class="level2"><div class="li"> List any uncommited LPPS <pre class="code">sudo installp -s</pre>
+
+<p>
+ If there are no uncommitted LPP&#039;s the output should be 
+</p>
+<pre class="code">     0503-459 installp:  No filesets were found in the Software
+        Vital Product Database in the APPLIED state.</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Commit all LPP&#039;s (if any) listed in output from installp -s commnd <pre class="code">sudo installp -c all</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check and remove e-Fixes if any on system Below is an example Efixes may vary by release and server depending upon requirements</div>
+<ol>
+<li class="level2"><div class="li"> List e-Fixes if any<pre class="code">sudo /usr/sbin/emgr -P</pre>
+
+<p>
+You should see something similar if the system has e-Fixes
+</p>
+<pre class="code">xeerap01:/root&gt; /usr/sbin/emgr -P
+
+PACKAGE                                                  INSTALLER   LABEL
+======================================================== =========== ==========
+bos.net.tcp.client                                       installp    IV85296s2a
+bos.net.tcp.client                                       installp    IV84458s2a
+bos.net.tcp.server                                       installp    IV84458s2a
+openssl.base                                             installp    102m_ifix
+
+    = Do Not Remove the IFix for ssl openssl.base  installp    102m_ifix This is required for ssl and does not impact the upgrade. 
+    - Remove them&lt;code&gt;sudo /usr/sbin/emgr -r -L e-Fix Label</pre>
+
+<p>
+Something like
+</p>
+<pre class="code">xeerap01:/root&gt; sudo /usr/sbin/emgr -r -L IV85296s2a
+xeerap01:/root&gt; sudo /usr/sbin/emgr -r -L IV84458s2a</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Make sure /var/log/aso exists</div>
+<ol>
+<li class="level2"><div class="li"> Check if bos.aso is installed<pre class="code">lslpp -l bos.aso</pre>
+
+<p>
+If it exists, you should see something similar
+</p>
+<pre class="code">lslpp -l bos.aso
+  Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  bos.aso                   7.1.2.15  COMMITTED  Active System Optimizer
+
+Path: /etc/objrepos
+  bos.aso                   7.1.2.15  COMMITTED  Active System Optimizer</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If it does, then make sure there is a log directory for it.<pre class="code">ls -ld /var/log/aso</pre>
+
+<p>
+If the directory does not exist, create it
+</p>
+<pre class="code">sudo mkdir -p /var/log/aso
+sudo chown root:system /var/log/aso</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On the NIM server find the correct lppsrc and export the directory to the target server.</div>
+<ol>
+<li class="level2"><div class="li"> To export AIX 7.1 TL 05 SP01<pre class="code">sudo exportfs -i /prod/images/lppsrc/710TL05-01</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On the Server to be patched, NFS mount the lppsrc location<pre class="code">sudo mkdir -p /mnt/aixupdates
+sudo mount pgnmsv01:/prod/images/lppsrc/710TL05-01 /mnt/aixupdates</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> For the smitty lovers,</div>
+<ol>
+<li class="level3"><div class="li"> Change to the mount point<pre class="code">cd /mnt/aixupdates</pre>
+
+<p>
+Invoke smitty
+</p>
+<pre class="code">sudo smitty update_all</pre>
+
+<p>
+Then select ”.”
+</p>
+</div>
+<ul>
+<li class="level4"><div class="li"> PREVIEW only - should be set to no</div>
+</li>
+<li class="level4"><div class="li"> COMMIT software updates must be set to yes</div>
+</li>
+<li class="level4"><div class="li"> ACCEPT new license agreements? must be set to yes</div>
+</li>
+<li class="level4"><div class="li"> Then hit enter :)</div>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> For the CLI lovers</div>
+<ol>
+<li class="level2"><div class="li"> Perform a preview upgrade<pre class="code">cd /mnt/aixupdates
+sudo install_all_updates -d . -c -p -r -V -Y</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If no errors found, perform the upgrade<pre class="code">cd /mnt/aixupdates
+sudo install_all_updates -d . -c -r -V -Y</pre>
+
+<p>
+More details on the arguments
+</p>
+</div>
+</li>
+</ol>
+<ul>
+<li class="level2"><div class="li"> d  —&gt; Location</div>
+</li>
+<li class="level2"><div class="li"> c  —&gt; Commit the updates</div>
+</li>
+<li class="level2"><div class="li"> p  —&gt; Preview</div>
+</li>
+<li class="level2"><div class="li"> r  —&gt; Update rpms as well</div>
+</li>
+<li class="level2"><div class="li"> V  —&gt; Verbose output</div>
+</li>
+<li class="level2"><div class="li"> Y  —&gt; Accept license agreements</div>
+</li>
+</ul>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> NOTE #&lt;&gt;# Before Rebooting the server execute the following command to remove the xmdaily entry from /etc/inittab. This will prevent it from starting after reboot of the server <pre class="code">sudo rmitab &quot;xmdaily&quot;</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Run the following command to remove IBM Electrornic Service Agent Annoying Constant Reminder that fills root mail <pre class="code">sudo /usr/esa/sbin/rmESAReminder</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check for and commit any uncommitted LPP&#039;s left from upgrade. </div>
+<ol>
+<li class="level2"><div class="li"> List any uncommited LPPS <pre class="code">sudo installp -s</pre>
+
+<p>
+ If there are no uncommitted LPP&#039;s the outpt should be 
+</p>
+<pre class="code">     0503-459 installp:  No filesets were found in the Software
+        Vital Product Database in the APPLIED state.</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Commit all LPP&#039;s (if any) listed in output from installp -s commnd <pre class="code">sudo installp -c all</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> After the upgrade has successfully completed, reboot the server to complete the upgrade<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Once the server has successfully rebooted login and check to see that the upgrade completed successfully</div>
+<ol>
+<li class="level2"><div class="li"> Check oslevel<pre class="code">oslevel -s </pre>
+
+<p>
+ Verify against the expected results. 
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Check lppchk<pre class="code">sudo lppchk -vm3</pre>
+
+<p>
+No output is good.
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check the /etc/sendmail/mail/sedndmsil.cf configuration file for to see if the Smart mailer Relay “DS” has changed.<pre class="code">sudo grep DS /etc/mail/sendmail.cf</pre>
+
+<p>
+If the DS entry is blank then check the copy created when you performed the Configuration Backup in Step 2 above. Update the DS entry in the current /etc/sendmail/mail/sendmail.cf file. Do NOT Overlay the current sendmail.cf file as it is compiled for the new version of sendmail.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that the <abbr title="Secure Shell">SSH</abbr> host keys are not overwritten. Login to pgnmsv01, ssh to the server you just upgraded.<pre class="code"> sudo ssh SERVERNAME ls -ld /tmp/</pre>
+
+<p>
+If successful, <abbr title="Secure Shell">SSH</abbr> keys were not over written, we are good. In case of failure due to <abbr title="Secure Shell">SSH</abbr> keys, Restore the <abbr title="Secure Shell">SSH</abbr> keys
+</p>
+<pre class="code">sudo cp -p BACKUPDIR/etc/ssh/ssh_host_dsa_key /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_dsa_key.pub /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_key /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_key.pub /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_rsa_key /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_rsa_key.pub /etc/ssh/</pre>
+
+<p>
+BACKUPDIR is the directory you created by running the save_env.sh – probably still in your home directory
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the All E-Fix </div>
+<ol>
+<li class="level2"><div class="li"> On the NIM server find the correct lppsrc and export the directory to the target server.</div>
+</li>
+<li class="level2"><div class="li"> To export Efix&#039;s <pre class="code">sudo exportfs -i /prod/images/service-packs/7100-04-02-1614-Efixes/Efix-To-Be-Applied</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> On the Server to be patched, NFS mount the lppsrc location<pre class="code">sudo mount  pgnmsv01:/prod/images/service-packs/7100-04-02-1614-Efixes/Efix-To-Be-Applied /mnt/aixupdates</pre>
+
+<p>
+  To list all Efix&#039;s that need to be installed cd to the directory you just mounted
+</p>
+<pre class="code"> cd /mnt/aixupdates; ls </pre>
+
+<p>
+ Use the example code that follows to install each E-Fix.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the E-fix <pre class="code">sudo emgr -e IV85296s2a.160616.epkg.Z -X 
+sudo emgr -e IV84458s2a.160608.epkg.Z -X</pre>
+
+<p>
+The output for each E-Fix&#039;s should be similar to the following 
+</p>
+<pre class="code">+-----------------------------------------------------------------------------+
+Operation Summary
++-----------------------------------------------------------------------------+
+Log file is /var/adm/ras/emgr.log
+
+EPKG NUMBER       LABEL               OPERATION              RESULT
+===========       ==============      =================      ==============
+1                 IV85296s2a          INSTALL                SUCCESS</pre>
+<pre class="code">sudo shutdown -Fr </pre>
+
+<p>
+<strong>Be Sure to REBOOT the server after installing the E-Fix&#039;s. One of them requires a reboot to take effect.</strong>
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Unmount the file system <pre class="code"> cd 
+sudo umount /mnt/aixupdates</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On the NIM Server, remove the exported lppsource file system from the exports list  example /usr/sbin/rmnfsexp -d &#039;/prod/images/lppsrc/710TL05-01&#039; &#039;-B&#039; <pre class="code"> sudo /usr/sbin/rmnfsexp -d &#039;/prod/images/lppsrc/{loosource that was exported for upgrade}&#039; &#039;-B&#039; </pre>
+
+<p>
+  example /usr/sbin/rmnfsexp -d &#039;/prod/images/lppsrc/710TL04-02&#039; &#039;-B&#039;
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> On the NIM Server, remove the exported lppsource file system from the exports list  example /usr/sbin/rmnfsexp -d &#039;/prod/images/service-packs/710TL04-02-Efixes/bind-fix12&#039; &#039;-B&#039; <pre class="code"> s sudo /usr/sbin/rmnfsexp -d &#039;/prod/images/service-packs/7100-04-02-1614-Efixes/Efix-To-Be-Applied&#039; &#039;-B&#039;</pre>
+
+<p>
+  example /usr/sbin/rmnfsexp -d &#039;/prod/images/service-packs/7100-04-02-1614-Efixes/Efix-To-Be-Applied&#039; &#039;-B&#039;
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+- <a href="/doku.php?id=unix:fix-failed-aso" class="wikilink1" title="unix:fix-failed-aso">FIX bos.aso issues - lppchk -vm3</a>
+</p>
+
+</div>

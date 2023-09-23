@@ -1,0 +1,67 @@
+====== H1D Migration Plan ======
+
+The plan is to move H1D database server from MMA to the new P720 frame.
+
+==== Unix Steps ====
+
+  * Make sure H1D application ( SAP & Database ) is down.
+  * Shutdown dehrdb01 server
+    * Unmount filesystems<code>for fs in $(lsvgfs datavg01 | sort -r)
+do
+   sudo umount ${fs}
+done</code>
+    * Export the VG<code>sudo cp /etc/filesystems /etc/filesystems.02072013
+sudo exportvg datavg01</code>
+    * Shutdown the OS<code>sudo shutdown -F</code>
+  * Details of devices<code>hdisk18:147456:dehrdb01:4:vhost3:00cbf651f209994d:CKM00103000222:0200
+hdisk19:147456:dehrdb01:4:vhost3:00cbf651ee24d9d5:CKM00103000222:0202
+hdisk20:147456:dehrdb01:4:vhost3:00cbf651ee24f3b0:CKM00103000222:0204
+hdisk21:147456:dehrdb01:4:vhost3:00cbf651ee25092b:CKM00103000222:0300
+hdisk29:147456:dehrdb01:4:vhost3:00cbf651740f87a9:CKM00103000222:0030</code>Clariion LUN information<code>hdisk18:00cbf651f209994d:CKM00103000222:0200:147456::00cbf65100004c00000001191af9229c
+hdisk19:00cbf651ee24d9d5:CKM00103000222:0202:147456::00cbf65100004c00000001191af9229c
+hdisk20:00cbf651ee24f3b0:CKM00103000222:0204:147456::00cbf65100004c00000001191af9229c
+hdisk21:00cbf651ee25092b:CKM00103000222:0300:147456::00cbf65100004c00000001191af9229c
+hdisk29:00cbf651740f87a9:CKM00103000222:0030:147456::00cbf65100004c00000001191af9229c</code>
+  * Unmap the devices from VIOS server teprvio1
+    * Switch to padmin account<code>sudo su - padmin</code>
+    * Unmap them<code>for dev in hdisk18 hdisk19 hdisk20 hdisk21 hdisk29
+do
+   rmvdev -vdev ${dev}
+done</code>
+  * Delete the devices from kernel as your own account (tip switch back from the padmin id)<code>for dev in hdisk18 hdisk19 hdisk20 hdisk21 hdisk29
+do
+   sudo rmdev -dl ${dev}
+done</code>
+
+==== Storage Steps ====
+
+  * Remove the luns from TEPRVIO1 storage group<code>for HLU in 0 1 2 3 11
+do
+   echo "navicli -h inxns480spa storagegroup -removehlu -gname TEPRVIO1 -hlu ${HLU}"
+done</code>Verify the commands and execute them one at a time. **CAREFULLY**
+  * Add the LUNs to DEHRDB99 storage group<code>i=2
+for ALU in 200 202 204 300 30
+do
+   echo "navicli -h inxns480spa storagegroup -addhlu -gname DEHRDB99 -alu ${ALU} -hlu ${i}"
+   i=$(echo "${i} + 1" | bc)
+done</code>Verify the commands and execute them one at a time. **CAREFULLY**
+
+==== Unix Steps ====
+
+  * Make sure teprvio1 **can not** see the LUNs anymore.<code>lsdev -Ccdisk > /var/tmp/diskbefore
+sudo cfgmgr
+lsdev -Ccdisk > /var/tmp/diskafter</code>Do a diff<code>diff /var/tmp/diskbefore /var/tmp/diskafter</code>
+  * Make sure dehrdb99 **can** see the LUNs<code>lsdev -Ccdisk > /var/tmp/diskbefore
+sudo cfgmgr
+lsdev -Ccdisk > /var/tmp/diskafter</code>Do a diff<code>diff /var/tmp/diskbefore /var/tmp/diskafter</code>
+  * Change the device attributes<code>for disk in $(lsdev -Ccdisk | awk '{print $1}' )
+do
+   sudo chdev -a reserve_policy=no_reserve -a algorithm=round_robin -l ${disk}
+done</code>
+  * Import the VG<code>sudo importvg -y datavg01 00cbf651ee25092b</code>
+  * Mount the filesystems<code>for fs in $(lsvgfs datavg01)
+do
+   sudo fsck ${fs}
+   sudo mkdir -p ${fs}
+   sudo mount ${fs}
+done</code>

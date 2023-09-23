@@ -1,0 +1,22 @@
+There could be times that DPT will ask us to check the logs for NDMP based backups. 
+Command to browse the logs is:<code>
+server_log server_2 |grep -i -e ndmp -e pax</code>
+But sometimes the default logging level will not tell what is wrong then we need to enable more verbose logging:<code>
+.server_config server_2 -v "logsys set severity PAX=LOG_DBG3"
+.server_config server_2 -v "logsys set severity NDMP=LOG_DBG3"</code>
+Once done with troubleshooting we need to disbable back these verbosity logging:<code>
+.server_config server_2 -v "logsys set severity PAX=LOG_ERR"
+.server_config server_2 -v "logsys set severity NDMP=LOG_ERR"</code>
+Please remeber about this dot in the beggining of command....
+To see if there is running backup from control station we can use the following:<code>
+server_pax server_2 -stats</code>
+Sometimes when backups is failing and can not create snapshot (automatic one), please follow this TN from EMC: https://support.emc.com/kb/467352 [[emctransscript|EMC web site content]]
+If there are orphaned checkpoints - ie no backups are running and command:<code>
+server_df server_2|grep auto</code> is still showing some file systems, please make sure again no backups do run <code>server_pax server_2 -stats</code> and if you are 100% sure there are no backups then get rid of these checkpoints by running this for IE:<code>
+nas_fs -delete automaticTempNDMPCkpt1739-188-1484982942 -umount=yes
+nas_fs -delete automaticTempNDMPCkpt1739-188-1484982942 -o umount=yes
+nas_fs -delete automaticTempNDMPCkpt32-19-1485632223 -o umount=yse
+nas_fs -delete automaticTempNDMPCkpt32-19-1485632223 -o umount=yes
+nas_fs -delete automaticTempNDMPCkpt1741-25-1485069374 -o umount=yes
+nas_fs -delete automaticTempNDMPCkpt31-188-1485587795 -o umount=yes</code>
+How to check which NIC is being used on data mover for backup traffic<code> server_stats server_2 -m net.device</code>

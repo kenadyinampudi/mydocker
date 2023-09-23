@@ -1,0 +1,131 @@
+
+<h1 class="sectionedit1" id="perform_an_adhoc_replication_and_provision_storage_at_cdc_ptt">Perform an adhoc replication, and provision storage at CDC/PTT</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Perform an adhoc replication, and provision storage at CDC/PTT" [1-78] -->
+<h2 class="sectionedit2" id="adhoc_sync">Adhoc sync</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Sync to be executed on LDCPM70<pre class="code">export SSH2PURE=&quot;sudo -u sanmontr ssh pureuser@ldcpm20v1&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export the list of hosts<pre class="code">export hosts=&quot;host1 host2&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export a variable to use as suffix for today&#039;s snapshot<pre class="code">export suffix=$(date +%b%d%Y%H%M)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add volumes to “autobahn-ldc-cdc-ptt” protection group<pre class="code">for host in ${hosts}
+do
+   volumes=$(${SSH2PURE} purevol list | grep ^${host}_ | awk &#039;{print $1}&#039;|tr &quot;\n&quot; &quot;,&quot; | sed &quot;s;,$;;g&quot;)
+   echo &quot;Adding ${volumes} to autobahn-ldc-cdc-ptt protection group&quot;
+   ${SSH2PURE} purepgroup setattr --addvollist ${volumes} autobahn-ldc-cdc-ptt
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add additional LUNS ( Wintel LUNS to be replicated )</div>
+<ol>
+<li class="level2"><div class="li"> Store the wintel luns in a variable<pre class="code">export wintel_luns=&quot;wintel_esx_wave...,wintel_esx_wave.....&quot; </pre>
+
+<p>
+List by space
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Add them to protection group<pre class="code">${SSH2PURE} purepgroup setattr --addvollist ${wintel_luns} autobahn-ldc-cdc-ptt</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform an adhoc sync on protection groups from LDC Pure storage array<pre class="code">${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Adhoc sync" [79-1213] -->
+<h2 class="sectionedit3" id="provision_storage">Provision storage</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Provisioning to be done on PTT Pure<pre class="code">export SSH2PURE=&quot;ssh taprpur001.pt.int.tenneco.com&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check progress of the snapshot<pre class="code">${SSH2PURE} purevol list --total --snap --transfer --pgrouplist ldcpm20v1:autobahn-ldc-cdc-ptt.${suffix}</pre>
+
+<p>
+Wait until all volumes become 100%
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Store all snapshots to a file<pre class="code">${SSH2PURE} purevol list --snap --pgrouplist ldcpm20v1:autobahn-ldc-cdc-ptt.${suffix} &gt; snapshots.mp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Provision storage</div>
+<ol>
+<li class="level2"><div class="li"> Define this function<pre class="code">function copysnapshots {
+for host in ${*}
+do
+   grep &quot;${host}_&quot; snapshots.mp &gt; ${host}.snapshots
+   for snapshot in $(awk &#039;{print $1}&#039; ${host}.snapshots )
+   do
+      volumename=$(echo ${snapshot} | awk -F&quot;.&quot; &#039;{print $NF}&#039; )
+      ${SSH2PURE} purevol copy ${snapshot} ${volumename}
+   done
+   volumes=$(awk &#039;{print $1}&#039; ${host}.snapshots | awk -F&quot;.&quot; &#039;{print $NF}&#039; | tr &quot;\n&quot; &quot; &quot; )
+   ${SSH2PURE} purevol connect --host ${host} ${volumes}
+done
+}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Provision storage to hosts<pre class="code">copysnapshots ${hosts}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Copy snapshots &amp; Provision storage to Wintel clusters ( Use <abbr title="Graphical User Interface">GUI</abbr> ). Provide the host LUN numbers to Wintel team.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Add production systems to replication scope</div>
+<ol>
+<li class="level2"><div class="li"> Store the host names in a variable<pre class="code">export dr_hosts=&quot;host1 host2&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add the DR hosts to replication scope<pre class="code">for host in ${dr_hosts}
+do
+   ${SSH2PURE} purepgroup setattr --addhostlist ${host} dr-powervm-fdc
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Provision storage" [1214-2664] -->
+<h2 class="sectionedit4" id="cleanup_the_snapshots">Cleanup the snapshots</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Clean up snapshots on LDCPM70V1<pre class="code">export SSH2PURE=&quot;sudo -u sanmontr ssh pureuser@ldcpm20v1&quot;</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Remove the snapshot<pre class="code">${SSH2PURE} purepgroup destroy autobahn-ldc-cdc-ptt.${suffix}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove volumes from “autobahn-ldc-cdc-ptt” protection group<pre class="code">volumes=$(${SSH2PURE} purepgroup list autobahn-ldc-cdc-ptt --csv --notitle | awk -F &quot;,&quot; &#039;{print $6}&#039; | tr &quot;/&quot; &quot;,&quot;)
+${SSH2PURE} purepgroup setattr --remvollist ${volumes} autobahn-ldc-cdc-ptt</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Clean up snapshots on taprpur001<pre class="code">export SSH2PURE=&quot;ssh taprpur001.pt.int.tenneco.com&quot;</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Remove the snapshot<pre class="code">${SSH2PURE} purepgroup destroy ldcpm20v1:autobahn-ldc-cdc-ptt.${suffix}</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Cleanup the snapshots" [2665-] -->

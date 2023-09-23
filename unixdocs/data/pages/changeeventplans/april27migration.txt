@@ -1,0 +1,26 @@
+====== April 27th Storage tasks ======
+
+===== Prior to the outage windows =====
+
+  - Login to pgunap01
+  - Execute a replication in advance<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"
+export suffix=$(date +%b%d%Y%H%M)
+export wintel_luns="wintel_esx_wave3_009 wintel_esx_wave3_010 wintel_esx_wave3_011 wintel_esx_wave3_012 wintel_esx_wave3_014 wintel_esx_wave3_015"
+${SSH2PURE} purepgroup setattr --addvollist ${wintel_luns} autobahn-ldc-cdc-ptt
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt</code>
+
+===== During the outage after all VMs are down. =====
+
+  - Login to pgunap01
+  - Execute replication<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"
+export suffix=$(date +%b%d%Y%H%M)
+export wintel_luns="wintel_esx_wave3_009 wintel_esx_wave3_010 wintel_esx_wave3_011 wintel_esx_wave3_012 wintel_esx_wave3_014 wintel_esx_wave3_015"
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt</code>
+  - Check progress<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"
+${SSH2PURE} purevol list --total --snap --transfer --pgrouplist LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix}</code>
+  - Once all volumes are 100%, provision storage<code>for volume in ${wintel_luns}
+do
+   ${SSH2PURE} purevol copy LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix}.${volume} ${volume}
+done
+
+${SSH2PURE} purevol connect --hgroup PROD-MS2 ${wintel_luns}</code>

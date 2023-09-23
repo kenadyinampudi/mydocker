@@ -1,0 +1,365 @@
+
+<h1 class="sectionedit1" id="allocating_storage_on_a_dual_vio_environment">Allocating storage on a dual VIO environment</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Allocating storage on a dual VIO environment" [1-60] -->
+<h2 class="sectionedit2" id="powerpath_environment">Powerpath environment</h2>
+<div class="level2">
+
+<p>
+A dual VIO server works as a clustered container for storage and network for the VIO guests. Maintenance gets a little tricky in every clustered solution. Here is a note on how to allocate disks in a clustered VIO environment.
+</p>
+
+<p>
+This document was written when I was asked to allocate 5 * 34 <abbr title="Gigabyte">GB</abbr> disks to taitc102.
+</p>
+<ol>
+<li class="level1"><div class="li"> Find out the parent VIO server(s). In most cases a frame only has one set of VIO cluster(s). If it has more than one - use the following script to find the parent VIO server. Login to one of the VIO server(s). In this case, the VIO client is taitc102 and the VIO servers are vio60/70.<pre class="code">export PS1=&quot;$LOGNAME on &quot;`hostname`&quot;:&quot;&#039;$PWD&gt; &#039;
+/usr/local/scripts/lsdiskcfg &gt; /var/tmp/viostgconfig.out</pre>
+
+<p>
+Look for the VIO guest
+</p>
+<pre class="code">grep taitc102 /var/tmp/viostgconfig.out | head -4
+hdiskpower241:00f72d67fc48f4d2:000190103339:05C6:138105:9:vhost5:taitc102:hdisk524:hdisk558
+hdiskpower242:00f72d67fc47c897:000190103339:1226:138105:9:vhost5:taitc102:hdisk525:hdisk559
+hdiskpower243:00f72d67fc46f508:000190103339:188A:34526:9:vhost5:taitc102:hdisk526:hdisk560
+hdiskpower244:00f72d67fc45e258:000190103339:188E:34526:9:vhost5:taitc102:hdisk527:hdisk561</pre>
+
+<p>
+This means vio60 does provide storage to taitc102.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Request for storage on the correct VIO servers. Submit a request to the storage team requesting storage to be presented on both the VIO servers.</div>
+</li>
+<li class="level1"><div class="li"> Once the disks are presented, document the VIO storage config on both the VIO servers.</div>
+<ol>
+<li class="level2"><div class="li"> taprvio60 <pre class="code">/usr/local/scripts/lsdiskcfg &gt; /var/tmp/viostgconfig.out</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> taprvio70 <pre class="code">/usr/local/scripts/lsdiskcfg &gt; /var/tmp/viostgconfig.out</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Verify them on the VIO servers. Please note that VIOS on the clustered VIO servers may not allocate the same devicefile names. So double check with Moon and get the LUN numbers where possible.</div>
+<ol>
+<li class="level2"><div class="li"> In this case, these are the disks presented on vio60<pre class="code">lspv | grep hdiskpower30[3-7]
+hdiskpower303   none                                None
+hdiskpower304   none                                None
+hdiskpower305   none                                None
+hdiskpower306   none                                None
+hdiskpower307   none                                None</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Document the LUN numbers and EMC frame serial numbers for these devices.<pre class="code">/usr/local/scripts/lsvpcfg.sh | grep hdiskpower30[3-7]
+hdiskpower303:None:000190103339:18BA:34526:hdisk650:hdisk665:none
+hdiskpower304:None:000190103339:18BE:34526:hdisk651:hdisk666:none
+hdiskpower305:None:000190103339:18C2:34526:hdisk652:hdisk667:none
+hdiskpower306:None:000190103339:18C6:34526:hdisk653:hdisk668:none
+hdiskpower307:None:000190103339:18CA:34526:hdisk654:hdisk669:none</pre>
+
+<p>
+The 3rd field is the frame serial number and the 4th is LUN number
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Now login to taprvio70 and confirm the LUN numbers match the devicefilenames. If this is not matching, please correct it before proceeding it becomes a nightmare dealing with a VIO cluster with different devicefilenames.<pre class="code">/usr/local/scripts/lsvpcfg.sh | egrep &quot;18BA|18BE|18C2|18C6|18CA&quot;
+hdiskpower303:None:000190103339:18BA:34526:hdisk650:hdisk665:none
+hdiskpower304:None:000190103339:18BE:34526:hdisk651:hdisk666:none
+hdiskpower305:None:000190103339:18C2:34526:hdisk652:hdisk667:none
+hdiskpower306:None:000190103339:18C6:34526:hdisk653:hdisk668:none
+hdiskpower307:None:000190103339:18CA:34526:hdisk654:hdisk669:none</pre>
+
+<p>
+As you see the devicefiles are all matching. This is good.
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Turn off reserve_lock policy on the devices<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  chdev -l ${disk} -a reserve_lock=no
+done
+hdiskpower303 changed
+hdiskpower304 changed
+hdiskpower305 changed
+hdiskpower306 changed
+hdiskpower307 changed</pre>
+
+<p>
+Verify the policy
+</p>
+<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  lsattr -E -l ${disk} -a reserve_lock
+done
+reserve_lock no Reserve device on open True
+reserve_lock no Reserve device on open True
+reserve_lock no Reserve device on open True
+reserve_lock no Reserve device on open True
+reserve_lock no Reserve device on open True</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Assign pvid to the disks from one of the VIO servers.DO NOT COPY PASTE THIS ONTO PUTTY !!<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  chdev -l ${disk} -a pv=yes
+done
+hdiskpower303 changed
+hdiskpower304 changed
+hdiskpower305 changed
+hdiskpower306 changed
+hdiskpower307 changed</pre>
+
+<p>
+Verify the pvids
+</p>
+<pre class="code">lspv | grep hdiskpower30[3-7]
+hdiskpower303   00f72d677fd958a4                    None
+hdiskpower304   00f72d677fdab206                    None
+hdiskpower305   00f72d677fdbcf5d                    None
+hdiskpower306   00f72d677fcd7b7d                    None
+hdiskpower307   00f72d677fce7abd                    None</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now login to the other VIO server and turn off reserve lock.<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  chdev -l ${disk} -a reserve_lock=no
+done
+hdiskpower303 changed
+hdiskpower304 changed
+hdiskpower305 changed
+hdiskpower306 changed
+hdiskpower307 changed</pre>
+
+<p>
+Verify
+</p>
+<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  lsattr -E -l ${disk} -a reserve_lock
+done
+reserve_lock no Reserve device on open True
+reserve_lock no Reserve device on open True
+reserve_lock no Reserve device on open True
+reserve_lock no Reserve device on open True
+reserve_lock no Reserve device on open True</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On the second VIO server, read pvids from the disks.<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  rmdev -l ${disk}
+  sleep 1
+  mkdev -l ${disk}
+done
+hdiskpower303 Defined
+hdiskpower303 Available
+hdiskpower304 Defined
+hdiskpower304 Available
+hdiskpower305 Defined
+hdiskpower305 Available
+hdiskpower306 Defined
+hdiskpower306 Available
+hdiskpower307 Defined
+hdiskpower307 Available</pre>
+
+<p>
+Verify the pvids.
+</p>
+<pre class="code">lspv | grep hdiskpower30[3-7]
+hdiskpower303   00f72d677fd958a4                    None
+hdiskpower304   00f72d677fdab206                    None
+hdiskpower305   00f72d677fdbcf5d                    None
+hdiskpower306   00f72d677fcd7b7d                    None
+hdiskpower307   00f72d677fce7abd                    None</pre>
+
+<p>
+Everything looks good so far.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the vhost name on each VIO server</div>
+<ol>
+<li class="level2"><div class="li"> taprvio60<pre class="code">grep -w taitc102 /var/tmp/viostgconfig.out | head -1 | awk -F: &#039;{print $7}&#039;
+vhost5</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> taprvio70<pre class="code">grep -w taitc102 /var/tmp/viostgconfig.out | head -1 | awk -F: &#039;{print $7}&#039;
+vhost5</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Assign the disks to VIO guests</div>
+<ol>
+<li class="level2"><div class="li"> taprvio60 as padmin<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  mkvdev -vdev ${disk} -vadapter vhost5
+done
+vtscsi303 Available
+vtscsi304 Available
+vtscsi305 Available
+vtscsi306 Available
+vtscsi307 Available</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> taprvio70 as padmin<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  mkvdev -vdev ${disk} -vadapter vhost5
+done
+vtscsi303 Available
+vtscsi304 Available
+vtscsi305 Available
+vtscsi306 Available
+vtscsi307 Available</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Discover the devices on the VIO guest. Login to taitc102 as root<pre class="code">lspv &gt; /var/tmp/lspv.before.out
+cfgmgr
+lspv &gt; /var/tmp/lspv.after.out
+diff /var/tmp/lspv.before.out /var/tmp/lspv.after.out
+26a27,31
+&gt; hdisk26         00f72d677fd958a4                    None
+&gt; hdisk27         00f72d677fdab206                    None
+&gt; hdisk28         00f72d677fdbcf5d                    None
+&gt; hdisk29         00f72d677fcd7b7d                    None
+&gt; hdisk30         00f72d677fce7abd                    None</pre>
+
+<p>
+Please make sure to check and match the pvids.
+</p>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Powerpath environment" [61-7785] -->
+<h2 class="sectionedit3" id="mpio_environment">MPIO environment</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Request for storage on the correct VIO servers. Submit a request to the storage team requesting storage to be presented on both the VIO servers.</div>
+</li>
+<li class="level1"><div class="li"> Once the disks are presented, document the VIO storage config on both the VIO servers.</div>
+<ol>
+<li class="level2"><div class="li"> taprvio40 <pre class="code">/usr/local/scripts/lsdiskcfg &gt; /var/tmp/viostgconfig.out</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> taprvio41 <pre class="code">/usr/local/scripts/lsdiskcfg &gt; /var/tmp/viostgconfig.out</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Verify them on the VIO servers. Please note that VIOS on the clustered VIO servers may not allocate the same devicefile names. So double check with Moon and get the LUN numbers where possible.</div>
+<ol>
+<li class="level2"><div class="li"> In this case, these are the disks presented<pre class="code">egrep &quot;hdisk79|hdisk80|hdisk81|hdisk82&quot; /var/tmp/viostgconfig.out
+hdisk79:34522:taprvio40:free:None
+hdisk80:34522:taprvio40:free:None
+hdisk81:34522:taprvio40:free:None
+hdisk82:34522:taprvio40:free:None</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Change reserve_policy on the devices<pre class="code">for dev in  hdisk79 hdisk80 hdisk81 hdisk82
+do
+   chdev -l ${dev} -a reserve_policy=no_reserve
+done
+hdisk79 changed
+hdisk80 changed
+hdisk81 changed
+hdisk82 changed</pre>
+
+<p>
+Do this on both the VIO servers.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Assign pvid to the disks from one of the VIO servers.DO NOT COPY PASTE THIS ONTO PUTTY !!<pre class="code">for dev in  hdisk79 hdisk80 hdisk81 hdisk82
+do
+   chdev -l ${dev} -a pv=yes
+done
+hdisk79 changed
+hdisk80 changed
+hdisk81 changed
+hdisk82 changed</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On the second VIO server, read pvids from the disks.<pre class="code">for dev in  hdisk79 hdisk80 hdisk81 hdisk82
+do
+rmdev -l ${dev}
+sleep 1
+mkdev -l ${dev}
+done
+hdisk79 Defined
+hdisk79 Available
+hdisk80 Defined
+hdisk80 Available
+hdisk81 Defined
+hdisk81 Available
+hdisk82 Defined
+hdisk82 Available</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the vhost name on each VIO server</div>
+<ol>
+<li class="level2"><div class="li"> taprvio60<pre class="code">grep -w taitc102 /var/tmp/viostgconfig.out | head -1 | awk -F: &#039;{print $7}&#039;
+vhost5</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> taprvio70<pre class="code">grep -w taitc102 /var/tmp/viostgconfig.out | head -1 | awk -F: &#039;{print $7}&#039;
+vhost5</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Assign the disks to VIO guests</div>
+<ol>
+<li class="level2"><div class="li"> taprvio60 as padmin<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  mkvdev -vdev ${disk} -vadapter vhost5
+done
+vtscsi303 Available
+vtscsi304 Available
+vtscsi305 Available
+vtscsi306 Available
+vtscsi307 Available</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> taprvio70 as padmin<pre class="code">for disk in hdiskpower303 hdiskpower304 hdiskpower305 hdiskpower306 hdiskpower307
+do
+  mkvdev -vdev ${disk} -vadapter vhost5
+done
+vtscsi303 Available
+vtscsi304 Available
+vtscsi305 Available
+vtscsi306 Available
+vtscsi307 Available</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Discover the devices on the VIO guest. Login to taitc102 as root<pre class="code">lspv &gt; /var/tmp/lspv.before.out
+cfgmgr
+lspv &gt; /var/tmp/lspv.after.out
+diff /var/tmp/lspv.before.out /var/tmp/lspv.after.out
+26a27,31
+&gt; hdisk26         00f72d677fd958a4                    None
+&gt; hdisk27         00f72d677fdab206                    None
+&gt; hdisk28         00f72d677fdbcf5d                    None
+&gt; hdisk29         00f72d677fcd7b7d                    None
+&gt; hdisk30         00f72d677fce7abd                    None</pre>
+
+<p>
+Please make sure to check and match the pvids.
+</p>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "MPIO environment" [7786-] -->

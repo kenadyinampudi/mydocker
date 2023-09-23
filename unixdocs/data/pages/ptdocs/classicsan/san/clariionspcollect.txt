@@ -1,0 +1,20 @@
+====== Running SPCOLLECT on CLI ======
+
+  - To run SPCOLLECT through CLI, Login to one of the systems that has NAVICLI installed. e.g. pgunap01
+  - Define SPA<code>export SPA=ldcvnx53001spa</code>In this example, we are running it against Lincolnshire VNX5300
+  - Define SPB<code>export SPB=ldcvnx53001spb</code>In this example, we are running it against Lincolnshire VNX5300
+  - Run SPCOLLECT<code>naviseccli -h ${SPA} spcollect
+naviseccli -h ${SPB} spcollect</code>
+  - After about 10 mins, the fileshould be ready. Check it using<code>naviseccli -h ${SPA} managefiles -list | grep "data.zip"
+naviseccli -h ${SPB} managefiles -list | grep "data.zip"</code>Look for a file that has today's time stamp and a .zip extention. For example, <code>10    54613     02/08/16 11:29:10    CKM00115100018_SPA_2016-02-08_17-19-35_2f1138_data.zip</code>
+  - Now retrieve that file to pgunap01 using this command.<code>naviseccli -h ${SPA} managefiles -retrieve -path . -file CKM00115100018_SPA_2016-02-08_17-19-35_2f1138_data.zip -o
+naviseccli -h ${SPB} managefiles -retrieve -path . -file CKM00115100018_SPA_2016-02-08_17-19-35_2f1138_data.zip -o</code>
+
+====== Running SPCOLLECT on CLI - easy way ======
+  - Loging to given vnx
+  - check if there is not exisiting following file<code> ls -la collect_sp.sh
+-rwxrw-r-- 1 nasadmin nasadmin 55 Apr 19  2013 collect_sp.sh</code>
+  - If it is - just run it - once script will end you will be in the directory where spcollect.zip file is
+  - If not run this one:<code>/nas/tools/.get_spcollect
+cd /nas/var/log</code> this will do the same as above script.
+  - upload the outcome file to vendor.

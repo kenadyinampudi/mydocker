@@ -1,0 +1,33 @@
+====== AIX recovery instructions ======
+
+==== Perform the NIM installation ====
+
+  - Pick your server, update the DR database for the server's Restore base operating system task to ''In Progress''.
+  - Reboot the server to SMS - make sure you select DEFAULT PROFILE - NOT CURRENT CONFIGURATION,
+{{:dr:boot-server-hardware-management-console.png}}
+  5. Select Boot Options, 1. Select Install/Boot Device, 5. List all Devices. wait for all devices to be scanned, this will take some time, select the device number with the output similiar to the following <code>         1      148 GB   FC Harddisk, part=2 (AIX 7.2.0)</code>
+  - {{:dr:areyousure.png?100|}}
+  - {{:dr:really-are-you-sure-about-that.jpg?200|}}
+  - ** Are you really sure you are on the DR host ??? **
+  - Continue ......
+  - Login as root on the console.
+  - Change PS1 variable. Make a backup copy<code>sudo cp /etc/profile /etc/profile.copyforDR</code>Then<code>sudo vi /etc/profile</code>Add this towards the end ( last line )<code>HOST=$(uname -n)
+PS1='DR test -- $HOST:$PWD>'
+readonly PS1</code>
+  - Enable NTP. Stop daemon. <code>sudo stopsrc -s xntpd</code>Backup the config<code>sudo mv /etc/ntp.conf /etc/ntp.conf.DRtest</code>Put the new config<code>cat << EOF >> /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server pcdcunxaxap01
+EOF</code>Start the daemons<code>sudo chrctcp -S -a xntpd</code>Set the correct time from NIM server<code>date ; sudo ntpdate -u nim ; date</code>
+  - Remove cron entry from inittab <code>rmitab cron </code>
+  - Check cron<code>ps -ef | grep cron</code>It should not be running. If cron is runing kill it. 
+  - Change itocroot password<code>echo "itocroot:ka95aLbJ7WER6" | chpasswd -e
+pwdadm -c itocroot</code>Password will now be "abcd1234"
+  - Check the timezone from filesystems.txt and make sure it matches<code>grep TZ /etc/environment</code>Now compare it to the filesystems.txt<code>grep -i tz /usr/local/scripts/file_systems.txt</code>
+  - If your are recovering an Oracle database server, configure IOCP<code>sudo chdev -l iocp0 -a autoconfig=available</code>Make it available<code>sudo mkdev -l iocp0</code>
+  - Perform a reboot<code>sudo shutdown -Fr</code>
+** When in doubt, ask **
+
+{{:dr:whenindoubtask.jpg?400|}}
+
+** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremly careful ) **

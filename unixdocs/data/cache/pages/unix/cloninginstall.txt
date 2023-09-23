@@ -1,0 +1,20 @@
+====== Setting up nim resources for a mksysb installation ======
+
+**This documentation was written while building peerap09 using the mksysb of peerap07**
+
+  - Login to the NIM Server (pgnmsv01 - LDC and penmsv01 - Interexion) and identify the mksysb.<code>ls -ld /mksysb-images/bos.obj.peerap07.*
+-rw-r-----    1 mksysftp system   1573758245 Aug 11 17:06 /mksysb-images/bos.obj.peerap07.gz</code>
+  - Copy the mksysb to a temp location<code>sudo cp /mksysb-images/bos.obj.peerap07.gz /preupgrade/mksysb/</code>
+  - Unzip the mksysb file<code>cd /preupgrade/mksysb/ ; sudo gunzip bos.obj.peerap07.gz</code>
+  - Define a mksysb resource(if doesn't exist already) using the unzipped mksysb file<code>sudo nim -o define -t mksysb -a server=master -a location=/preupgrade/mksysb/bos.obj.peerap07 peerap07-mksysb</code>
+  - Find out the OSLEVEL on the system that we plan to clone<code>ssh peerap07 oslevel -s
+5300-12-01-1016</code>
+  - Find out the correct Spot and LPPSRC for the above AIX release level. In this case they are,<code>530TL12-01_spot
+530TL12-01_lppsrc</code>
+  - Define the new server as a NIM client.
+    - CLI method<code>sudo nim -o define -t standalone -a platform=chrp -a if1="find_net peerap09 0" -a netboot_kernel=mp peerap09</code>
+    - smitty method<code>sudo smitty nim --> Perform NIM Administration Tasks --> Manage Machines --> Define a Machine --> Type in the hostname (hit enter) --> select "ent" --> Fill in and hit enter</code>
+  - Configure the server for a bosinst operation<code>sudo nim -o bos_inst -a source=mksysb -a spot=530TL12-01_spot -a lpp_source=530TL12-01_lppsrc -a no_client_boot=yes -a script=postinstallCloning -a mksysb=peerap07-mksysb peerap09</code>
+  - If the server being built is in the 10.32.50 network and NIM server is taitc118 (This is a bad network configuration on taitc118), fix these files ** If you are building the system from pgnmsv01, ignore the following fixes **
+    - /etc/bootptab Change this line<code>peerap09.amer.int.tenneco.com:bf=/tftpboot/peerap09.amer.int.tenneco.com:ip=10.32.50.94:ht=ethernet:sa=10.32.51.118:gw=10.32.50.1:sm=255.255.255.0:</code>as<code>peerap09.amer.int.tenneco.com:bf=/tftpboot/peerap09.amer.int.tenneco.com:ip=10.32.50.94:ht=ethernet:sa=10.32.50.7:gw=10.32.50.1:sm=255.255.255.0:</code>
+    - /tftpboot/peerap09.amer.int.tenneco.com.info - Change this<code>export NIM_HOSTS=" 127.0.0.1:loopback:localhost  10.32.50.94:peerap09.amer.int.tenneco.com  10.32.51.118:pgnmsv01.amer.int.tenneco.com</code>as<code>export NIM_HOSTS=" 127.0.0.1:loopback:localhost  10.32.50.94:peerap09.amer.int.tenneco.com  10.32.50.7:pgnmsv01.amer.int.tenneco.com "</code>

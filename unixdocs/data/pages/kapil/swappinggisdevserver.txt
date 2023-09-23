@@ -1,0 +1,41 @@
+====== Notes about Changing identity of xagi3p01 and dagi3p01 ======
+
+Swap identity of xagi3p01 and dagi3p01.
+
+  - Before making any changes
+    - xagi3p01 - IPs<code>en2 - 10.0.49.57
+en3 - 10.0.48.58</code>
+    - dagi3p01 - IPs<code>en2 - 10.0.49.28
+en3 - 10.0.48.191</code>
+  - Backed up the hosts file on both the systems<code>/etc/hosts.Original.10082012</code>
+  - When ready unmount /taedi filesystem on qaap3p01<code>ssh qaap3p01 umount /taedi</code>
+  - Login to console 
+    - xagi3p01<code>getconsole xagi3p01</code>
+    - dagi3p01<code>getconsole dagi3p01</code>
+      - Unexport filesystem from dagi3p01<code>cp /etc/exports /etc/exports.10082012
+rmnfsexp -d /taedi</code>
+  - Unmount all filesystems from dagi3p01<code>df -k | grep : | awk '{print $NF}' | xargs -n1 umount</code>
+  - Unmount all filesystems from xagi3p01<code>df -k | grep : | awk '{print $NF}' | xargs -n1 umount</code>
+  - Backup host ssh keys to taitc118 from dagi3p01<code>tar cf /var/tmp/dagi3p01.ssh.keys.tar /etc/ssh/ssh_host*
+scp /var/tmp/dagi3p01.ssh.keys.tar taitc118:/var/tmp/
+scp /var/tmp/dagi3p01.ssh.keys.tar xagi3p01:/var/tmp/</code>
+  - Backup host ssh keys to taitc118 from xagi3p01<code>tar cf /var/tmp/xagi3p01.ssh.keys.tar /etc/ssh/ssh_host*
+scp /var/tmp/xagi3p01.ssh.keys.tar taitc118:/var/tmp/
+scp /var/tmp/xagi3p01.ssh.keys.tar dagi3p01:/var/tmp/</code>
+  - From the console deconfigure network on dagi3p01<code>ifconfig en2 down detach
+ifconfig en3 down detach</code>
+  - From the console deconfigure network on xagi3p01<code>ifconfig en2 down detach
+ifconfig en3 down detach</code>
+  - From the console change identity of dagi3p01<code>/usr/sbin/mktcpip -h'xagi3p01' -a'10.0.48.58' -m'255.255.255.0' -i'en3' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''
+chdev -l en2 -a netaddr=10.0.49.57 -a netmask=255.255.255.0 -a state=up</code>
+  - From the console change identity of xagi3p01<code>/usr/sbin/mktcpip -h'dagi3p01' -a'10.0.48.191' -m'255.255.255.0' -i'en3' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''
+chdev -l en2 -a netaddr=10.0.49.28 -a netmask=255.255.255.0 -a state=up</code>
+  - Inspect /etc/hosts on both the systems and make sure that the hosts file has entries like this.<code>egrep "dagi3p01|xagi3p01" /etc/hosts
+10.0.48.191     dagi3p01.amer.int.tenneco.com  dagi3p01 gblap01
+10.0.48.58      xagi3p01.amer.int.tenneco.com  xagi3p01</code>
+  - Reboot both the systems<code>shutdown -Fr</code>
+  - Restore SSH keys on dagi3p01<code>tar xf /var/tmp/dagi3p01.ssh.keys.tar</code>
+  - Restore SSH keys on xagi3p01<code>tar xf /var/tmp/xagi3p01.ssh.keys.tar</code>
+  - NFS mount the filesystem on qaap3p01<code>ssh qaap3p01 mount /taedi</code>
+  - On taitc118, update console database<code>sudo vi /prod/images/unix_sys_console</code>
+  - On the HMC/IVM - Rename the lpar names.

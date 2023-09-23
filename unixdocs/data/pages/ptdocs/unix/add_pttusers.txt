@@ -1,0 +1,42 @@
+====== AIX / VIOS ======
+
+  * Create these users<code>sudo mkuser "id=6951" "pgrp=taunix"  "home=/home/hilla016" "gecos=Andy Hill=FM-PTT"    hilla016 
+sudo mkuser "id=6888" "pgrp=taunix"  "home=/home/labrar29" "gecos=Robert Labranche=FM-PTT"   labrar29
+sudo mkuser "id=6699" "pgrp=taunix"  "home=/home/leedsn16" "gecos=Nathan Leeds=FM-PTT"    leedsn16</code>
+
+  * Set the simple password
+
+<code>echo "hilla016:saTxrfVn.jGMs"| sudo chpasswd -e</code>
+<code>echo "labrar29:saEVc4lmoEEFY" | sudo chpasswd -e</code>
+<code>echo "leedsn16:saTLnaGYqOo7Q" | sudo chpasswd -e</code>
+
+  * Set to no change at first login<code>sudo pwdadm -c hilla016 
+sudo pwdadm -c labrar29
+sudo pwdadm -c leedsn16</code>
+
+====== Linux ======
+
+  * Create these users<code>sudo useradd -g taunix -d /home/hilla016 -c "Andy Hill " -m -u 6951 hilla016
+sudo useradd -g taunix -d /home/labrar29 -c "Andy Hill " -m -u 6888 labrar29
+sudo useradd -g taunix -d /home/leedsn16 -c "Andy Hill " -m -u 6699 leedsn16</code>
+
+  * Set the simple password
+
+<code>echo "hilla016:saTxrfVn.jGMs"| sudo chpasswd -e</code>
+<code>echo "labrar29:saEVc4lmoEEFY" | sudo chpasswd -e</code>
+<code>echo "leedsn16:saTLnaGYqOo7Q" | sudo chpasswd -e</code>
+
+  * Set the password expiration<code><code>sudo chage -I -1 -m 0 -M 60 -E -1 hilla016
+sudo chage -I -1 -m 0 -M 60 -E -1 labrar29
+sudo chage -I -1 -m 0 -M 60 -E -1 leedsn16</code>
+
+  * Unlock the ids<code>sudo usermod -U hilla016
+sudo passwd -uhilla016
+sudo usermod -U labrar29
+sudo passwd -u labrar29
+sudo usermod -U leedsn16
+sudo passwd -u leedsn16</code>
+
+
+
+

@@ -1,0 +1,63 @@
+
+<h1 class="sectionedit1" id="configure_aix_odm_so_that_new_symmetrix_devices_will_have_reserve_lock_turned_off_by_default">Configure AIX ODM so that new symmetrix devices will have reserve_lock turned off by default</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> The first note<pre class="code">for dev in $(odmget -q &quot;attribute = reserve_lock&quot; PdAt | egrep &quot;SYM|CLAR&quot; | awk &#039;{print $NF}&#039; | sed &quot;s;\&quot;;;g&quot; )
+do
+echo &quot;Changing ${dev} &quot;
+odmchange -o PdAt -q &quot;attribute = reserve_lock and uniquetype like ${dev}&quot; &lt;&lt;EOF
+PdAt:
+        deflt = &quot;no&quot;
+EOF
+done</pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Second amendment. </div>
+<ul>
+<li class="level2"><div class="li"> <strong>reserve_lock</strong> Check first<pre class="code">sudo odmget -q &quot;attribute = reserve_lock&quot; PdAt | grep -p &quot;deflt = \&quot;yes\&quot;&quot;</pre>
+
+<p>
+Then change
+</p>
+<pre class="code">for dev in $(sudo odmget -q &quot;attribute = reserve_lock&quot; PdAt | grep uniquetype | sort -u | egrep -v &quot;rwoptical|iscsi|cdrom&quot; | awk &#039;{print $NF}&#039; | sed &quot;s;\&quot;;;g&quot;)
+do
+echo &quot;Changing ${dev} &quot;
+sudo odmchange -o PdAt -q &quot;attribute = reserve_lock and uniquetype like ${dev}&quot; &lt;&lt;EOF
+PdAt:
+        deflt = &quot;no&quot;
+EOF
+done</pre>
+
+<p>
+Now check again
+</p>
+<pre class="code">sudo odmget -q &quot;attribute = reserve_lock&quot; PdAt | grep -p &quot;deflt = \&quot;yes\&quot;&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> <strong>reserve_policy</strong> Check first<pre class="code">sudo odmget -q &quot;attribute = reserve_policy&quot; PdAt | grep -p &quot;/fcp&quot; | grep -vp &quot;deflt = \&quot;no_reserve\&quot;&quot;</pre>
+
+<p>
+Then change
+</p>
+<pre class="code">for dev in $(sudo odmget -q &quot;attribute = reserve_policy&quot; PdAt | grep -p &quot;/fcp&quot;| grep uniquetype | sort -u | egrep -v &quot;rwoptical|iscsi|cdrom&quot; | awk &#039;{print $NF}&#039; | sed &quot;s;\&quot;;;g&quot;)
+do
+echo &quot;Changing ${dev} &quot;
+sudo odmchange -o PdAt -q &quot;attribute = reserve_policy and uniquetype like ${dev}&quot; &lt;&lt;EOF
+PdAt:
+        deflt = &quot;no_reserve&quot;
+EOF
+done</pre>
+
+<p>
+Check again
+</p>
+<pre class="code">sudo odmget -q &quot;attribute = reserve_policy&quot; PdAt| grep -p &quot;/fcp&quot; | grep -vp &quot;deflt = \&quot;no_reserve\&quot;&quot;</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>

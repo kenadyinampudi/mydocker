@@ -1,0 +1,78 @@
+====== Procedure :- License additional ports on Brocade ======
+
+  - Additional licenses comes in a package that contain documentation. Please make a note of "Your unique Transaction Key is:"
+  - Login to https://fusion.emc.com/assetMgmt/, this will probably need an EMC support id.
+    - If the switch is not already listed in there, please add it. You will need serial number<code>chassisshow | grep ^"Serial Num:"</code>And the WWN<code>switchshow | grep ^"switchWwn"</code>
+    - You can enter the transaction key there itself.
+    - This will generate the License Key, make a note of it.
+  - Add the license<code>licenseadd "<license key>"</code>
+  - Check the status of ports<code>switchshow</code>Should see something like this<code>switchName:     rybds300a
+switchType:     71.2
+switchState:    Online
+switchMode:     Native
+switchRole:     Principal
+switchDomain:   1
+switchId:       fffc01
+switchWwn:      10:00:50:eb:1a:29:4a:9c
+zoning:         ON (Production_A)
+switchBeacon:   OFF
+
+Index Port Address Media Speed       State   Proto
+==================================================
+   0   0   010000   id    N8       Online      FC  F-Port  50:06:01:66:08:64:51:e4
+   1   1   010100   id    N8       Online      FC  F-Port  50:06:01:6f:08:64:51:e4
+   2   2   010200   id    N4       Online      FC  F-Port  10:00:00:00:c9:89:52:56
+   3   3   010300   id    N8       Online      FC  F-Port  50:01:43:80:16:03:98:f3
+   4   4   010400   id    N8       No_Light    FC
+   5   5   010500   id    N8       No_Light    FC
+   6   6   010600   id    N8       Online      FC  F-Port  50:06:01:62:47:60:57:e6
+   7   7   010700   id    N8       Online      FC  F-Port  21:00:00:24:ff:55:d9:f9
+   8   8   010800   id    N8       No_Light    FC  (No POD License) Disabled
+   9   9   010900   id    N8       No_Light    FC  (No POD License) Disabled
+  10  10   010a00   id    N8       No_Light    FC  (No POD License) Disabled
+  11  11   010b00   id    N8       No_Light    FC  (No POD License) Disabled
+  12  12   010c00   id    N8       No_Light    FC  (No POD License) Disabled
+  13  13   010d00   id    N8       No_Light    FC  (No POD License) Disabled
+  14  14   010e00   id    N8       No_Light    FC  (No POD License) Disabled
+  15  15   010f00   id    N8       No_Light    FC  (No POD License) Disabled
+  16  16   011000   --    N8       No_Module   FC  (No POD License) Disabled
+  17  17   011100   --    N8       No_Module   FC  (No POD License) Disabled
+  18  18   011200   --    N8       No_Module   FC  (No POD License) Disabled
+  19  19   011300   --    N8       No_Module   FC  (No POD License) Disabled
+  20  20   011400   --    N8       No_Module   FC  (No POD License) Disabled
+  21  21   011500   --    N8       No_Module   FC  (No POD License) Disabled
+  22  22   011600   --    N8       No_Module   FC  (No POD License) Disabled
+  23  23   011700   --    N8       No_Module   FC  (No POD License) Disabled</code>
+  - Once done disable and enable the switch ports<code>for port in 8 9 10 11 12 13 14 15
+do
+   portdisable $port
+   portenable $port
+done</code>Verify with switchshow<code>switchshow</code>And should see this<code>switchName:     rybds300a
+switchType:     71.2
+switchState:    Online
+switchMode:     Native
+switchRole:     Principal
+switchDomain:   1
+switchId:       fffc01
+switchWwn:      10:00:50:eb:1a:29:4a:9c
+zoning:         ON (Production_A)
+switchBeacon:   OFF
+
+Index Port Address Media Speed       State   Proto
+==================================================
+   0   0   010000   id    N8       Online      FC  F-Port  50:06:01:66:08:64:51:e4
+   1   1   010100   id    N8       Online      FC  F-Port  50:06:01:6f:08:64:51:e4
+   2   2   010200   id    N4       Online      FC  F-Port  10:00:00:00:c9:89:52:56
+   3   3   010300   id    N8       Online      FC  F-Port  50:01:43:80:16:03:98:f3
+   4   4   010400   id    N8       No_Light    FC
+   5   5   010500   id    N8       No_Light    FC
+   6   6   010600   id    N8       Online      FC  F-Port  50:06:01:62:47:60:57:e6
+   7   7   010700   id    N8       Online      FC  F-Port  21:00:00:24:ff:55:d9:f9
+   8   8   010800   id    N8       No_Light    FC
+   9   9   010900   id    N8       No_Light    FC
+  10  10   010a00   id    N8       No_Light    FC
+  11  11   010b00   id    N8       No_Light    FC
+  12  12   010c00   id    N8       No_Light    FC
+  13  13   010d00   id    N8       No_Light    FC
+  14  14   010e00   id    N8       No_Light    FC
+  15  15   010f00   id    N8       No_Light    FC</code>As you see ports 8 thorugh 15 are now enabled.

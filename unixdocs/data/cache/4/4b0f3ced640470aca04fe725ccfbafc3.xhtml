@@ -1,0 +1,98 @@
+
+<h1 class="sectionedit1" id="aix_mksysb_process_documentation">AIX MKSYSB process documentation</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "AIX MKSYSB process documentation" [1-48] -->
+<h2 class="sectionedit2" id="mksysb_scripts">MKSYSB Scripts</h2>
+<div class="level2">
+<div class="table sectionedit3"><table class="inline">
+	<tr class="row0">
+		<td class="col0">/usr/local/scripts/mksysb.sh</td><td class="col1">Perform mksysb to a file, store the copy on the Primary MKSYSB target</td>
+	</tr>
+	<tr class="row1">
+		<td class="col0">/usr/local/scripts/mksysb-dr.sh</td><td class="col1">Copy the mksysb file to a DR location</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">/usr/local/scripts/mksysb-tape.sh</td><td class="col1">Perform mksysb to a locally attached tape</td>
+	</tr>
+</table></div>
+<!-- EDIT3 TABLE [76-326] -->
+</div>
+<!-- EDIT2 SECTION "MKSYSB Scripts" [49-327] -->
+<h2 class="sectionedit4" id="mksysb_setup">MKSYSB Setup</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Install the standard exclude.rootvg<pre class="code">scp pgnmsv01:/prod/images/etc/exclude.rootvg /etc/exclude.rootvg</pre>
+</div>
+</li>
+</ul>
+
+<p>
+<strong>Lincolnshire</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Copy the mksysb ssh key<pre class="code">scp -p pgnmsv01:/prod/images/etc/id_dsa.mksysb /usr/local/scripts/id_dsa.mksysb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the latest mksysb script from pgnmsv01<pre class="code">scp pgnmsv01:/prod/images/scripts/mksysb.sh /usr/local/scripts/mksysb.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Test the mksysb once.<pre class="code">nohup /usr/local/scripts/mksysb.sh &amp;</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong>Interexion</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Copy the mksysb ssh key<pre class="code">scp -p pgnmsv01:/prod/images/etc/id_dsa.mksysb /usr/local/scripts/id_dsa.mksysb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the latest mksysb script from pgnmsv01<pre class="code">scp pgnmsv01:/prod/images/scripts/mksysb.sh /usr/local/scripts/mksysb.sh</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "MKSYSB Setup" [328-1087] -->
+<h2 class="sectionedit5" id="mksysb_process">MKSYSB Process</h2>
+<div class="level2">
+<div class="table sectionedit6"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Servers</th><th class="col1">Primary MKSYSB target</th><th class="col2">DR mksysb target</th><th class="col3">Local tape mksysb</th><th class="col4">Status</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">All Lincolnshire Servers</td><td class="col1">pgnmsv01</td><td class="col2">Tape offsite</td><td class="col3">Some of them do</td><td class="col4">Work in Progress</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">All Interexion Servers</td><td class="col1">penmsv01</td><td class="col2">tastr05? (Need to decide)</td><td class="col3">Some of them do</td><td class="col4">Work in Progress</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">NA - Atlas production servers ta???055</td><td class="col1">Local backup server ta???057</td><td class="col2">pgnmsv01</td><td class="col3">All of them do</td><td class="col4">Work in Progress</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">NA - Atlas backup servers ta???057</td><td class="col1">Local production server ta???055</td><td class="col2">pgnmsv01</td><td class="col3">All of them do</td><td class="col4">Work in Progress</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">EU - Atlas production servers ta???055</td><td class="col1">Local backup server ta???057</td><td class="col2">penmsv01</td><td class="col3">All of them do</td><td class="col4">Work in Progress</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">EU - Atlas backup servers ta???057</td><td class="col1">Local production server ta???055</td><td class="col2">penmsv02</td><td class="col3">All of them do</td><td class="col4">Work in Progress</td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">South African Server(s)</td><td class="col1">penmsv01</td><td class="col2">penmsv01</td><td class="col3">All of them do</td><td class="col4">Work in Progress</td>
+	</tr>
+</table></div>
+<!-- EDIT6 TABLE [1116-1884] -->
+<p>
+<strong> Visual of the above information </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=dr%3Amksysbs-tenneco&amp;media=dr:tenneco_mksysb.jpg" class="media" title="dr:tenneco_mksysb.jpg"><img src="/lib/exe/fetch.php?media=dr:tenneco_mksysb.jpg" class="media" alt="" /></a>
+</p>
+
+</div>
+<!-- EDIT5 SECTION "MKSYSB Process" [1088-] -->

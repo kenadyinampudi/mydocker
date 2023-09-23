@@ -1,0 +1,234 @@
+
+<h1 class="sectionedit1" id="pagi3p01_migration_to_new_home_on_9119-mme">pagi3p01 migration to NEW home on 9119-MME</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Checked with James.</div>
+</li>
+<li class="level1"><div class="li"> standard hot backup run at 6 PM Standard hot  pagi3p01bck runs up to 2 hours or less </div>
+</li>
+<li class="level1"><div class="li"> also EDI hot backups start at 1 AM. EDI about 30-45 minutes</div>
+</li>
+<li class="level1"><div class="li"> archive_gentran starts at about 7 AM and runs for about 30 min</div>
+</li>
+<li class="level1"><div class="li"> Move starts 07 July 10:00 PM DST ⇒ 08 July 2018 08:00 AM BST.  </div>
+</li>
+<li class="level1"><div class="li"> As expected and planned  no issues with backups running. </div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "pagi3p01 migration to NEW home on 9119-MME" [1-434] -->
+<h2 class="sectionedit2" id="pre-migration_tasks">Pre-migration tasks</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create the target LPAR (xaerap02) on 9119-MME system.</div>
+</li>
+<li class="level1"><div class="li"> Email the wwn number to SAN team(Storage team) and ask for bootdisks.</div>
+</li>
+<li class="level1"><div class="li"> Build Aix using a temporary name,IP and use pagi3p01-mksysb, also use mksysbmigration script for postinstall</div>
+</li>
+<li class="level1"><div class="li"> Login to console and finish the installation</div>
+</li>
+<li class="level1"><div class="li"> Login to the target system(xaerap02)</div>
+</li>
+<li class="level1"><div class="li"> Update to 710TL05-02</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:7100-05-02" class="wikilink1" title="unix:7100-05-02"> AIX V7100 Teechnology Level 05 Service Pack 02</a></div>
+</li>
+<li class="level1"><div class="li"> Configure IOCP for DB system<pre class="code">sudo chdev -l iocp0 -a autoconfig=available
+sudo mkdev -l iocp0
+lsdev -Cc iocp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check Time Zone in /etc/environment <pre class="code"> grep TZ /etc/environment</pre>
+
+<p>
+ it should be 
+</p>
+<pre class="code">TZ=CST6CDT</pre>
+
+<p>
+ IF Time Zone  IS WRONG FIX IT NOW !!!
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Create New alt_disk_copy<pre class="code">sudo alt_disk_copy -B -d hdisk1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure time is in sync<pre class="code">date ; sudo ntpdate -u xaerap02.amer.int.tenneco.com ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Pre-migration tasks" [435-1394] -->
+<h2 class="sectionedit3" id="during_the_migration">During the migration</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> On source server pagi3p01 - 8205-E6D-SN108CCAT do lspv and copy to NIM Server Repository Hold Directory<pre class="code">lspv | grep -v san | grep -v root</pre>
+<pre class="code">lspv | grep -v san | grep -v root | wc -l </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount all the file systems - use script </div>
+</li>
+<li class="level1"><div class="li"> Make a copy of the mksysb image on pgnmsv01<pre class="code">sudo cp -p /mksysb-images/bos.obj.pagi3p01.gz /preupgrade/mksysb/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown application(s) GIS  EDI TEAM </div>
+</li>
+<li class="level1"><div class="li"> Unmount all file systems</div>
+</li>
+<li class="level1"><div class="li"> Varyoff volume groups</div>
+</li>
+<li class="level1"><div class="li"> Export volume groups</div>
+</li>
+<li class="level1"><div class="li"> Reset the IP address to 10.32.6.202 Gateway 10.32.6.1</div>
+</li>
+<li class="level1"><div class="li"> Reset the backup IP - to 10.32.51.34 xeerdb03bck</div>
+</li>
+<li class="level1"><div class="li"> Set the hostname to xaerap02</div>
+</li>
+<li class="level1"><div class="li"> Shutdown pagi3p01 server on 8205-E6D-SN108CCAT</div>
+</li>
+<li class="level1"><div class="li"> Rename the lpar name from pagi3p01 to xaerap02-Do not start</div>
+</li>
+<li class="level1"><div class="li"> wwns from 8205-E6D-SN108CCAT pagi3p01 <pre class="code">HOST NAME ==&gt;&gt; pagi3p01
+fcs0   Available C4-T1 Virtual Fibre Channel Client Adapter
+fcs1   Available C5-T1 Virtual Fibre Channel Client Adapter
+fcs2   Available C6-T1 Virtual Fibre Channel Client Adapter
+fcs3   Available C7-T1 Virtual Fibre Channel Client Adapter
+
+Adapter = fcs0         Network Address.............C0507606CF0C008A
+Adapter = fcs1         Network Address.............C0507606CF0C008C
+Adapter = fcs2         Network Address.............C0507606CF0C008E
+Adapter = fcs3         Network Address.............C0507606CF0C0090</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ask storage team to move the following Pure storage devices from source 8205-E6D-SN108CCAT pagi3p01 server to target 9119-MME xaerap02<pre class="code">hdisk9:00f88cca367be8a5:PURE-FLASH-BBABD90D93D542ED:0004B2BE:104448::datavg01
+hdisk10:00f88cca367be940:PURE-FLASH-BBABD90D93D542ED:0004B2BF:104448::datavg01
+hdisk11:00f88cca367be9db:PURE-FLASH-BBABD90D93D542ED:0004B2C0:104448::datavg01
+hdisk12:00f88cca367bea76:PURE-FLASH-BBABD90D93D542ED:0004B2C1:104448::datavg01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> second check use PVIDS to confirm disks are OK<pre class="code">hdisk9          00f88cca367be8a5                    datavg01        active
+hdisk10         00f88cca367be940                    datavg01        active
+hdisk11         00f88cca367be9db                    datavg01        active
+hdisk12         00f88cca367bea76                    datavg01        active</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> wwns from target 9119-MME server xaerap02 <pre class="code">HOST NAME ==&gt;&gt; xaerap02
+fcs0   Available C4-T1 Virtual Fibre Channel Client Adapter
+fcs1   Available C5-T1 Virtual Fibre Channel Client Adapter
+
+Adapter = fcs0         Network Address.............C05076090B8B001C
+Adapter = fcs1         Network Address.............C05076090B8B001E</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> After storage team has moved the LUNs</div>
+</li>
+<li class="level1"><div class="li"> Login to xaerap02</div>
+</li>
+<li class="level1"><div class="li"> Capture the current state<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.before</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Discover new devices on xaerap02<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Capture the current state<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now check if all the devices are moved<pre class="code">diff lsvpcfg.before lsvpcfg.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable round robin and reserve_lock<pre class="code">lsdev -Ccdisk | grep MPIO | awk &#039;{print $1}&#039; | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import datavg01<pre class="code">sudo importvg -y datavg01 00f88cca367be8a5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount all the fs<pre class="code">lsvgfs datavg01 | sort | xargs -n1 sudo mount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check for NFS Mounts. <pre class="code">df -g | grep :</pre>
+
+<p>
+ Output should be 
+</p>
+<pre class="code">paap3p01bck:/taedi61     200.12     24.99   88%  2852219    31% /taedi61
+paap3p01bck:/comm      54.19     36.05   34%    72053     1% /comm
+paap3p01bck:/taedi61     200.12     24.99   88%  2852219    31% /taedi/taedi61</pre>
+
+<p>
+ If they are not there, backup  /etc/filesystems
+</p>
+<pre class="code"> cp -p /etc/filesystems /etc/filesystems$(date +%Y%m%d-%H:%M:%S)</pre>
+
+<p>
+ edit the file and put in the following stanzas 
+</p>
+<pre class="code">sudo  vi /etc/filesytems</pre>
+<pre class="code">/taedi61:
+        dev             = &quot;/taedi61&quot;
+        vfs             = nfs
+        nodename        = paap3p01bck
+        mount           = true
+        options         = bg,soft,intr,sec=sys
+        account         = false
+
+/comm:
+        dev             = &quot;/comm&quot;
+        vfs             = nfs
+        nodename        = paap3p01bck
+        mount           = true
+        options         = bg,soft,intr,sec=sys
+        account         = false
+
+/taedi/taedi61:
+        dev             = &quot;/taedi61&quot;
+        vfs             = nfs
+        nodename        = paap3p01bck
+        mount           = true
+        options         = bg,soft,intr,sec=sys
+        account         = false
+</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the IP and hostname of the target system ( xaerap02 ) from 10.32.6.202 to 10.32.6.117<pre class="code">sudo /usr/sbin/mktcpip -h pagi3p01 -a 10.32.6.117 -m 255.255.255.0 -i en0 -g 10.32.6.1 -A no -s</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the backup IP address<pre class="code">sudo chdev -l en1 -a netaddr=10.32.51.49 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron and openview ( they were disabled by the mksysbmigration post installation script )<pre class="code">sudo mkitab cron:23456789:respawn:/usr/sbin/cron  
+sudo mkitab &#039;OVCtrl:2:wait:/etc/rc.d/OVCtrl start &gt;/dev/console  # Start Agent&#039;
+sudo mkitab &#039;ovpa:2:wait:/etc/rc.ovpa start &gt;/dev/console  # Start OV Performance Agent &#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable NFS exports<pre class="code">sudo mv /etc/exports.premigration /etc/exports</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server.<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check NFS mounts are good on clients if any. If required, remount them.</div>
+</li>
+<li class="level1"><div class="li"> Ask the EDI  Team to start GIS  applications</div>
+</li>
+<li class="level1"><div class="li"> Update /prod/images/etc/unix_sys_console<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Swap xaerap02 with pagi3p01
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Wait for 7 days  and then remove the bootdisk from 8205-E6D-SN108CCAT  and email the Storage Team to reclaim the disk</div>
+</li>
+<li class="level1"><div class="li"> Remove the old lpar from the frame. 8205-E6D-SN108CCAT  <code>xaerap02-Do not start</code></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "During the migration" [1395-] -->

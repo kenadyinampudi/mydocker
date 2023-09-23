@@ -1,0 +1,112 @@
+
+<h1 class="sectionedit1" id="migration_procedure_from_inx_ns480_to_pure_m20">Migration procedure from INX NS480 to Pure M20</h1>
+<div class="level1">
+
+<p>
+<strong> Scope is limited to ODM installation and rootvg migration. Rest of the volumes, follow standard LVM migration procedures </strong>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Migration procedure from INX NS480 to Pure M20" [1-190] -->
+<h2 class="sectionedit2" id="preperation">Preperation</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create change controls and get approvals necessary.</div>
+</li>
+<li class="level1"><div class="li"> Figure out the storage requirement and email them to Storage team in advance.</div>
+</li>
+<li class="level1"><div class="li"> Wait for confirmation from storage team that storage has been allocated.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Preperation" [191-431] -->
+<h2 class="sectionedit3" id="migration">Migration</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Install Pure ODM filesets <strong>Not required on the VIO server if using NPIV. But it is needed on the VIO guests</strong></div>
+<ol>
+<li class="level2"><div class="li"> NFS mount the source for packages</div>
+<ol>
+<li class="level3"><div class="li"> Lincolnshire<pre class="code">sudo mkdir -p /mnt/pure ;sudo  mount pgnmsv01:/prod/images/storage /mnt/pure</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Interexion<pre class="code">sudo mkdir -p /mnt/pure ;sudo  mount penmsv01:/prod/images/storage /mnt/pure</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Install the ODM<pre class="code">sudo installp -acX -d /mnt/pure/PureODM all</pre>
+
+<p>
+It will say reboot, but don&#039;t reboot. i.e. Please ignore this message
+</p>
+<pre class="code">    * * *  A T T E N T I O N  * * *
+    System boot image has been updated. You should reboot the
+    system as soon as possible to properly integrate the changes
+    and to avoid disruption of current functionality.</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmount the nfs mount<pre class="code">sudo umount /mnt/pure</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Assuming storage admins have allocated the disks. Run cfgmgr</div>
+<ol>
+<li class="level2"><div class="li"> Capture the before state<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Cfgmgr<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Capture the after state<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Validate the number of required drives are present.<pre class="code">diff lsvpcfg.out.1 lsvpcfg.out.2</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Migrate the data disks first using mirror and unmirror – This is documented elsewhere.</div>
+</li>
+<li class="level1"><div class="li"> Migrate rootvg</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=kapil:function2migraterootvg" class="wikilink1" title="kapil:function2migraterootvg">A function that let&#039;s you migrate rootvg</a></div>
+</li>
+<li class="level2"><div class="li"> Mirror rootvg too<pre class="code">export LVM_HOTSWAP_BOOTDISK=1
+sudo extendvg rootvg hdiskY
+sudo mirrorvg rootvg hdiskY
+sudo bosboot -ad /dev/hdiskX
+sudo bosboot -ad /dev/hdiskY
+sudo bootlist -m normal hdiskY
+sudo unmirrorvg rootvg hdiskX
+sudo reducevg rootvg hdiskX
+sudo bosboot -ad /dev/hdiskY</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Migrate the alt_disk. This step does not delete the data off of alt_rootvg<pre class="code">sudo alt_disk_install -X altinst_rootvg</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Delete the old disks<pre class="code">sudo rmdev -dl hdiskX # Old root disk
+sudo rmdev -dl hdiskZ # Old alt_rootvg disk</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a new alt_disk_copy<pre class="code">sudo alt_disk_copy -g -B -d hdisk13</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Migration" [432-2482] -->
+<h2 class="sectionedit4" id="cleanup">Cleanup</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> After sufficient wait time ( say a week ) please send a request to Storage admins to cleanup old storage and zoning etc.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Cleanup" [2483-] -->

@@ -1,0 +1,20 @@
+====== DRiV - Change sidadm password to default for DRiV Clones ======
+
+  - Login to ''pcdcunxaxap01'' and run this script to change their password to something that they know ''or atleast Leandro knows''<code>for host in $(cat /prod/images/etc/allhosts.driv )
+do
+   echo "Working on ${host} "
+   ping -c1 -w1 ${host} > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      type_os=$(ssh ${host} uname )
+      [[ "${type_os}" = "AIX" ]] && export CHPASSWD="/usr/bin/chpasswd" || export CHPASSWD="/usr/sbin/chpasswd"
+      for sidadm in $(ssh ${host} "cat /etc/passwd " | awk -F: '{print $1}'  | grep "...adm$" )
+      do
+         echo "Changing password ${host} - ${sidadm} "
+         ssh ${host} "echo ${sidadm}:sa28HPVPB90d. | sudo ${CHPASSWD} -e"
+         [[ "${type_os}" = "AIX" ]] && ssh ${host} "sudo /usr/bin/pwdadm -c ${sidadm}"
+      done
+   fi
+done
+
+</code>

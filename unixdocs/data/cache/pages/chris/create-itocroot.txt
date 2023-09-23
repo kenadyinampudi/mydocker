@@ -1,0 +1,17 @@
+====== Instructions for creating Missing itocroot user for Disaster Recovery ======
+
+** PEERAP01 is Primary Server   **
+
+  * Make a copy of /etc/security/passwd <code> sudo cp /etc/security/passwd /etc/security/passwd-copyforDR </code>
+  * Mkae a copy of /etc/password <code> sudo cp /etc/passwd /etc/passwd-copyforDR </code>
+  * Edit the /etc/security/password file <code> vi /etc/security/passwd </code>
+  * add the following lines make sure that there is a blank line between the last line in the file and the first line you are adding  <code> itocroot:
+        password = 9TnTctGVVeYok
+        lastupdate = 1445455893
+</code>
+  * Save the file
+  * Edit the /etc/passwrd file <code> sudo vi /etc/passwd </code>
+  * Add the following line to the end of the file <code> itocroot:!:0:0:Itocroot:/home/itocroot:/usr/bin/ksh </code>
+  * Save the file
+  * Create the itocroot users home directory <code> sudo mkir /home/itocroot </code>
+  * Continue with the DR instructions for setting the itocroot password

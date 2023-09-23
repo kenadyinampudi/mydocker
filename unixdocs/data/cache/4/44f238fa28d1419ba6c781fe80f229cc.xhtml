@@ -1,0 +1,50 @@
+
+<h1 class="sectionedit1" id="install_sysinter">Install sysinter</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Install sysinter" [1-32] -->
+<h2 class="sectionedit2" id="aix_vios">AIX &amp; VIOS</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Make this directory<pre class="code">mkdir -p /usr/local/bin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy this<pre class="code">[[ &quot;$(uname)&quot; = &quot;AIX&quot; ]] &amp;&amp; scp taitc118:/prod/images/csi/sysinter.aix5 /usr/local/bin/sysinter.aix5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">[[ &quot;$(uname)&quot; = &quot;AIX&quot; ]] &amp;&amp; echo &quot;sysinter                40035/tcp&quot; &gt;&gt; /etc/services</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">[[ &quot;$(uname)&quot; = &quot;AIX&quot; ]] &amp;&amp; echo &quot;sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5&quot; &gt;&gt; /etc/inetd.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now restart inetd<pre class="code">[[ &quot;$(uname)&quot; = &quot;AIX&quot; ]] &amp;&amp; refresh -s inetd</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "AIX & VIOS" [33-598] -->
+<h2 class="sectionedit3" id="linux">Linux</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Make this directory<pre class="code">mkdir -p /usr/local/bin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy this<pre class="code">scp taitc118:/prod/images/csi/sysinter.redhat /usr/local/bin/sysinter.redhat</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">[[ &quot;$(uname)&quot; = &quot;Linux&quot; ]] &amp;&amp; echo &quot;sysinter                40035/tcp&quot; &gt;&gt; /etc/services</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">[[ &quot;$(uname)&quot; = &quot;Linux&quot; ]] &amp;&amp; scp taitc118:/prod/images/csi/sysinter-xinetd /etc/xinetd.d</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now restart inetd<pre class="code">[[ &quot;$(uname)&quot; = &quot;Linux&quot; ]] &amp;&amp; service xinetd reload</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Linux" [599-] -->

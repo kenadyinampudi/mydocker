@@ -1,0 +1,177 @@
+
+<h1 class="sectionedit1" id="applying_vios_22520_updates_from_a_new_base_mksysb_mage">Applying VIOS 2.2.5.20 updates from a New Base mksysb mage</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Applying VIOS 2.2.5.20 updates from a New Base mksysb mage" [1-75] -->
+<h2 class="sectionedit2" id="work_to_be_done_prior_to_the_vios_upgrade">Work to be done prior to the VIOS upgrade</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the host and preserve a copy of rootvg</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=chris:vio-preupgrade-instructions" class="wikilink1" title="chris:vio-preupgrade-instructions">Save the VIOS Configuration Information</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=chris:upgrade-to-vios-2.2.5.10internaldisks" class="wikilink1" title="chris:upgrade-to-vios-2.2.5.10internaldisks">Power8 Servers are booting from Internal Disks (Mirrored Disks)</a></div>
+</li>
+<li class="level2"><div class="li"> Disable the alt_disk_copy script<pre class="code">sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Make sure that NIM server has a latest copy of mksysb</div>
+<ol>
+<li class="level2"><div class="li"> On the server to be upgraded, find out the NIM server<pre class="code">grep mksysb /var/adm/.information
+mksysbhost:pgnmsv01</pre>
+
+<p>
+In this case, it is pgnmsv01
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Login to the NIM server we figured out above, make sure a latest copy of mksysb image backup exists<pre class="code">sudo ls -l /mksysb-images/bos.obj.&lt;hostname&gt;.gz</pre>
+
+<p>
+<strong>Check the timestamp on the file, it has to be less than 3 days old.</strong>  If the mksysb is 3 days old or less Proceed to Step 4
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> On the server to be upgraded create a new mksysb image. When the command has completed proceed to next step<pre class="code">sudo /usr/local/scripts/mksysb.sh adhoc</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On NIM server copy the mksysb image to the repository.<pre class="code">sudo cp -p /mksysb-images/bos.obj.&lt;hostname&gt;.gz /preupgrade/mksysb/</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Work to be done prior to the VIOS upgrade" [76-1308] -->
+<h2 class="sectionedit3" id="work_to_be_done_during_the_vios_upgrade">Work to be done during the VIOS upgrade</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create necessary paperwork, secure outages if necessary</div>
+<ol>
+<li class="level2"><div class="li"> Ensure necessary blackouts are in place.</div>
+</li>
+<li class="level2"><div class="li"> As Power8 VIOS cluster has LPM capability. We will evacuate the frame, by migrating the LPAR one by one. (Please validate first before migrating any LPAR to another Frame)</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check that your alt_disk_copy is bootable  Note this is extremely important - do not skip this step this is your backout !!!</div>
+<ol>
+<li class="level2"><div class="li"> Find the altinst_rootvg disk <pre class="code"> lspv | grep altinst_rootvg </pre>
+
+<p>
+ and set the boot list so the server boots from it
+</p>
+<pre class="code"> bootlist -m normal -o {hdisk from previous command}</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform a reboot at this time<pre class="code">sudo shutdown -Fr</pre>
+
+<p>
+Verify that the server has booted correctly to the alternate disk. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Reset the bootlist or boot back to the original disk and reboot.<pre class="code">lspv | grep old_rootvg </pre>
+
+<p>
+ and set the boot list so the server boots from it
+</p>
+<pre class="code"> bootlist -m normal -o {hdisk from previous command}</pre>
+
+<p>
+ and boot back to it 
+</p>
+<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Installing the Update Release</div>
+<ol>
+<li class="level2"><div class="li"> There is now a method to verify the VIOS update files before installation. This process requires access to openssl by the &#039;padmin&#039; User, which can be accomplished by creating a link. To verify the VIOS update files, follow these steps:</div>
+</li>
+<li class="level2"><div class="li"> Login to the respective VIO server and execute this command.<pre class="code">oem_setup_env</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a link to openssl<pre class="code">ln -s /usr/bin/openssl /usr/ios/utils/openssl</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Verify the link to openssl was created<pre class="code">ls -alL /usr/bin/openssl /usr/ios/utils/openssl</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Both files should display similar owner and size and then exit<pre class="code">exit</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create a directory and Mount the remote directory onto the Virtual I/O Server<pre class="code">sudo mkdir -p /mnt/viosupdates</pre>
+
+<p>
+Then
+</p>
+<pre class="code">sudo mount 10.0.48.12:/prod/images/vio/vios2/fixpacks /mnt/viosupdates</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login as padmin user and commit previous updates by running the updateios command<pre class="code">sudo su - padmin</pre>
+<pre class="code">updateios -commit</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the updates by running the updateios command.<pre class="code">updateios -accept -install -dev /mnt/viosupdates/VIOS_FP_2.2.5.10</pre>
+
+<p>
+<strong>NOTE: Depending on the VIOs level, one or more of the LPPs below may be reported as “Missing Requisites”, and they may be ignored.</strong>
+</p>
+<pre class="code"> MISSING REQUISITES:
+      
+X11.loc.fr_FR.base.lib 4.3.0.0        # Base Level Fileset
+bos.INed 6.1.6.0                      # Base Level Fileset
+bos.loc.pc.Ja_JP 6.1.0.0              # Base Level Fileset
+bos.loc.utf.EN_US 6.1.0.0             # Base Level Fileset
+bos.mls.rte 6.1.x.x                   # Base Level Fileset
+bos.mls.rte 6.1.9.200                 # Base Level Fileset or #Fileset Update
+bos.svprint.rte 6.1.9.200             # Fileset Update</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> To activate the changes, reboot the VIOS server as user padmin .<pre class="code">shutdown -force -restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.5.10.<pre class="code">ioslevel</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Accept the license command for all upgrades<pre class="code">license -accept</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Commit all the updates <pre class="code">updateios -commit</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Work to be done during the VIOS upgrade" [1309-4560] -->
+<h2 class="sectionedit4" id="work_to_be_done_after_the_vios_upgrade">Work to be done after the VIOS upgrade</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Migrate one non production system back and run it for few hours before we migrate all workloads.</div>
+</li>
+<li class="level1"><div class="li"> Validate the paths are online for all the guests running on that frame<pre class="code">for host in host1 host2 host3
+do
+   ssh ${host} /usr/local/scripts/chkdsk
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Capture a snap of the upgraded VIOS system, and send it to IBM to generate iFixes<pre class="code">sudo su - padmin</pre>
+<pre class="code">snap -r</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The snap will be stored under /tmp/ibmsupt/snap.pax.Z</div>
+</li>
+<li class="level1"><div class="li"> Remove blackouts</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Work to be done after the VIOS upgrade" [4561-] -->

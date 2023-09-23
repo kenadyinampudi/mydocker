@@ -1,0 +1,2216 @@
+====== **NA_DR_Procedures_For_LDC** ======
+FIXME - **this is still being produced!!**
+
+**To be executed only we are having DR or DR tests**
+List of things to be done:
+  - Login to remote NBU domain [[#remote_login|steps]]
+  - Update /etc/hosts files on both NBU 5230 appliances and disable DNS resolution [[#etc_hosts|steps]]
+  - Check NBU for tape libraries connectivity - all tape drives should be shared in between both NBU appliances [[#tapes_config|steps]]
+  - Allowing redirected restores [[#Enabling_Redirected_Restores|steps]]
+  - Forbid the NBU appliances to communicate with the clients in productions site - iptables FIXME
+  - Restore production domain information from backup to /tmp - will be needed later on [[#nbu_info|steps]]
+  - Check if last automatic restore job of mksysb images was made, if so export the directory having these images to NIM servers - list of these to be provided by IBM BCRS [[#mksysb|steps]]
+  - Install NBU client software on AIX machines [[#NBU_Software_Installation|steps]]
+  - Restore TA2/PTA binaries [[#AIX_restore|steps]]
+  - Start TA2 restore [[#TA2_Restore|steps]]
+  - Start PTA restore (for these restores maybe suspend production replication so we can have max performance out of NBU 5230's) [[#PTA_Restore|steps]]
+  - Restoring TA2 and PTA archive logs [[#Archive_logs_Restore|steps]]
+  - Restore other clients binaries - from standard backups [[#Binaries_Restore|steps]]
+  - Allow DBA to recover SAP and Oracle DBs - once a restore for given client from Standard backup is done - just tell this to DBA so they can start their job.
+  - Configure NBU access to VMWARE farm [[#VMWARE_Configuration|steps]]
+  - Restore VMWARE machines [[#VMWARE_Restore|steps]]
+  - Import tapes from DMZ [[#Tapes_Import |steps]]
+  - Revert back any changes which were made for DR TESTS [[#Revert_back_all_changes|steps]]
+  - How to access NBU 5230 via IPMI interface [[#NBU5230_IPMI|steps]]
+  - DR Client install progress in 2016 [[#DR_clnt_prog|steps]]
+  - Example script how to perform cross check with DR scope and what is actually in backups [[#drscope_vs_backups|steps]]
+
+==== remote_login ====
+  - open a SSH client, ie Putty https://the.earth.li/~sgtatham/putty/latest/x86/putty.exe
+  - create session for ibmnbu5230ams (master server), enable session logging, etc
+  - use admin user ID to access this NBU app
+  - same can be done for ibmnbu5230amd (media server)
+  - elevate to CLISH by executing <code>Support
+Maintenance
+/opt/Symantec/sdcssagent/IPS/sisipsoverride.sh
+elevate</code>
+This will bring you to Linux shell from which any NBU related command can be executed. Real life example:<code>
+ibmnbu5230ams.Main_Menu> Support
+Entering NetBackup support view...
+
+Checkpoint      Appliance Checkpoint Management.
+Cleanup         Clear monitoring data that is associated with the decommissioned storage shelves
+DataCollect     Gather device logs.
+Disk            Gather disk information.
+Errors          Display NetBackup errors.
+Exit            Log out and exit from the current shell.
+FactoryReset    Reset this system to factory install image
+FibreTransport  Advanced settings.
+InfraServices   Show/control infrastructure services.
+iostat          Execute the iostat command.
+IPMI            Remote management port configuration.
+KillRemoteCall  Terminate running or hung remote calls on peer compute nodes.
+Logs            Set level, share, unshare, view, and upload debug logs.
+Maintenance     Launch maintenance shell.
+Messages        Display the messages file.
+NBDNA           Network traces with NBDNA tool (Select Create or Remove).
+Nbperfchk       Execute the disk IO or network bandwidth check.
+NBSU            Manage NetBackup support data files (Select Create or Remove).
+Processes       Show/control NetBackup and Admin Console processes.
+Reboot          Reboot the system.
+RecoverStorage  View or delete directories backed up during appliance re-image.
+Return          Return to the previous menu.
+Service         Service management.
+Shell           Shell operations.
+Show            Display information.
+Shutdown        Power off the system.
+Storage         Storage data and configuration
+Test            Test the current status of various appliance components.
+
+ibmnbu5230ams.Support> Maintenance
+<!-- Maintenance Mode --!>
+maintenance's password:
+
+maintenance-!> /opt/Symantec/sdcssagent/IPS/sisipsoverride.sh
+Symantec Data Center Security Server Policy Override
+
+    Agent Version: 6.5.0 (build 355)
+   Current Policy: NetBackup Appliance Prevention Policy, r38
+Policy Prevention: Enabled
+  Policy Override: Allowed
+   Override State: Not overridden
+
+To override the policy and disable protection, enter your login password.
+Password:
+
+Choose the type of override that you wish to perform:
+ 1. Override Prevention except for Self-Protection
+ 2. Override Prevention Completely
+Choice? [1] 1
+
+Choose the amount of time after which to automatically re-enable:
+ 1. 15 minutes
+ 2. 30 minutes
+ 3. 1 hour
+ 4. 2 hours
+ 5. 4 hours
+ 6. 8 hours
+Choice? [1] 6
+
+Enter a comment. Press Enter to continue.
+
+
+Please wait while the policy is being overridden.
+.........
+
+The policy was successfully overridden.
+maintenance-!> elevate
+ibmnbu5230ams:/home/maintenance #
+</code> Keep in mind that the /opt/Symantec/sdcssagent/IPS/sisipsoverride.sh should be only executed once and during its duration - no need to rerun it only once it will expire.
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+
+==== etc_hosts ====
+  - Gather from network team hosts file with IPs from DR site range
+  - save current /etc/hosts on both nbu appliances <code>cp /etc/hosts /etc/hosts.orig
+ls -la /etc/hosts*</code> to check if copy was made
+  - Make sure that ibmnbu5230ams, ibmnbu5230amd, ldcnbu5230ams, ldcnbu5230amd and taqa1d01 entries are there - needed for on going replication to be successful<code>10.0.49.127 taqa1d01
+10.39.9.110 ibmnbu5230ams
+10.39.9.120 ibmnbu5230amd
+10.0.49.139 ldcnbu5230bmd.amer.int.tenneco.com
+10.0.49.129 ldcnbu5230amd.amer.int.tenneco.com</code>
+  - Append to the end of /etc/hosts on **both** appliances content which was received from network team.<code>vi /etc/hosts</code>Than press shift+g to go to last line, enter o to open new line and than paste the contents of file received from network team. Once done ESC, :wq! - to save and exit.
+  - Let's disable now DNS resolution by renaming the resolv.conf file on **both** NBU appliances<code>mv /etc/resolv.conf /etc/resolv.conf_DR_tests</code> Please just make sure that each appliance can ping each other, also if it can ping master server taqa1d01 and its media servers: ldcnbu5230amd and ldcnbu5230bmd.
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== tapes_config ====
+The best would be to open GUI and run Device configuration manager - this is recommended way by Veritas. Prior to this you can check if IBM BCRS correctly did zone LTO6 drives
+to both appliances, by executing following:<code>
+ibmnbu5230ams.Main_Menu> Manage
+Entering appliance management view...
+
+
+ibmnbu5230ams.Manage> FibreChannel
+Entering appliance management view...
+
+ibmnbu5230ams.FC> Scan
+
+ibmnbu5230ams.FC> Show
+- [Info] FTMS mode: none
+**** FC HBA Cards ****
+07:00.0 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+07:00.1 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+08:00.0 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+08:00.1 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+81:00.0 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+81:00.1 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+82:00.0 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+82:00.1 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+
+**** Drivers ****
+qla2xxx     is loaded
+windrvr6    is not loaded
+
+**** Ports ****
+Bus ID  Slot  Port WWN                Status        Mode          Speed    Remote Ports
+07:00.0 Slot5 21:00:00:24:FF:8B:05:FE Linkdown      Initiator*    8 gbit/s
+07:00.1 Slot5 21:00:00:24:FF:8B:05:FF Linkdown      Initiator     8 gbit/s
+08:00.0 Slot6 21:00:00:24:FF:8B:06:18 Linkdown      Initiator*    8 gbit/s
+08:00.1 Slot6 21:00:00:24:FF:8B:06:19 Linkdown      Initiator     8 gbit/s
+81:00.0 Slot4 21:00:00:24:FF:8A:30:C0 Linkdown      Initiator     8 gbit/s
+81:00.1 Slot4 21:00:00:24:FF:8A:30:C1 Linkdown      Initiator     8 gbit/s
+82:00.0 Slot2 21:00:00:24:FF:8A:2D:CE Linkdown      Initiator     8 gbit/s
+82:00.1 Slot2 21:00:00:24:FF:8A:2D:CF Linkdown      Initiator     8 gbit/s
+
+**** Devices ****
+Device    Vendor    ID                            Type                   Remote Port
+
+**** Remote Appliances over FC ****
+Please scan for remote appliances over FC first
+ibmnbu5230ams.FC></code>
+In show section the Status for one HBA should be On-Line and next to it some WWPN visible and under Devices section - tape drives plus robotic arm. 
+Below please see example taken from the other appliance:<code>pe2nbu5240ams.FC> Show
+- [Info] FTMS mode: none
+- [Info] Fibre Transport Deduplication state: disabled
+**** FC HBA Cards ****
+07:00.0 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+07:00.1 Fibre Channel: QLogic Corp. ISP2532-based 8Gb Fibre Channel to PCI Express HBA (rev 02)
+
+**** Drivers ****
+qla2xxx     is loaded
+windrvr6    is not loaded
+qla2x00tgt  is loaded
+scst        is loaded
+scst_user   is loaded
+
+**** Ports ****
+Bus ID  Slot  Port  Port WWN                Status        Physical State   Configuration Type  Speed    Remote Ports
+07:00.0 Slot6 1     21:00:00:24:FF:7C:26:D6 Online        Initiator        Initiator           8 gbit/s 0x50014380272bb61a
+07:00.1 Slot6 2     21:00:00:24:FF:7C:26:D7 Online        Initiator        Initiator           8 gbit/s 0x50014380272bb61d
+
+**** Devices ****
+Device    Vendor    ID                            Type                   Remote Port
+/dev/sg7  HP                                      Ultrium 5-SCSI         0x50014380272bb61a
+/dev/sg8  HP                                      MSL G3 Series          0x50014380272bb61a
+/dev/sg9  HP                                      Ultrium 5-SCSI         0x50014380272bb61d
+
+**** Remote Appliances over FC ****
+Please scan for remote appliances over FC first
+pe2nbu5240ams.FC>
+</code>
+
+Once this is visible GUI 
+Configure Storage Devices should be ran [we do not need to do it in this DR tests]:
+{{ :dp:storage_device_config_1.png |}}
+{{ :dp:storage_device_config_2.png |}}
+{{ :dp:storage_device_config_3.png |}}
+
+Once all storage units are created (for LTO4 and LTO6 - please make not which is which - will be needed with DMZ tapes import) - please create barcode rules and inventory both libraries.
+Have IBM BCRS to load LTO3 tapes (the only one used at DR site) to LTO4 based library.
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== Enabling_Redirected_Restores ====
+On master server - ibmnbu5230ams perform the following steps from CLISH (ordinary Linux prompt [[#remote_login|steps]]), make sure No.Restirictions file is not exisiting:
+<code>ibmnbu5230ams:/home/maintenance # ls -la /usr/openv/netbackup/db/altnames/
+total 8
+drwxr-xr-x  2 root root   96 Nov  2 05:57 .
+drwxr-xr-x 21 root bin  8192 Jun  8 09:02 ..
+ibmnbu5230ams:/home/maintenance # touch /usr/openv/netbackup/db/altnames/No.Restrictions</code>
+Make sure the file was created out there<code>
+ibmnbu5230ams:/home/maintenance # ls -la /usr/openv/netbackup/db/altnames/
+total 8
+drwxr-xr-x  2 root root   96 Nov  2 05:57 .
+drwxr-xr-x 21 root bin  8192 Jun  8 09:02 ..
+-rw-r--r--  1 root root    0 Nov  2 05:57 No.Restrictions
+ibmnbu5230ams:/home/maintenance #</code>
+Now we do allow for so called Redirected Restores - in ours case this will be needed to perform TA2 and PTA DB data files restores. All other NBU clients should be restoring data 
+from backup taken and restored to the same hostname.
+
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+
+==== nbu_info ====
+On LDC domain there was configured policy STD_NBU_INFO which is gathering on daily basis some important NBU configuration of this NBU domain to files. 
+This policy is using the following pre start script:<code>#!/usr/bin/ksh
+#Date 09/29/2016
+#Author Pawel Tkaczyk - ptkaczyk@tenneco.com
+#This script will generate information about current policies, clients in NBU domain at LDC
+#It will be called with pre_backup script and then its outcome will be backed up and replicated to remote NBU domain
+#
+#set some variables
+BPPLLIST=/usr/openv/netbackup/bin/admincmd/bppllist
+BPPLCLIENTS=/usr/openv/netbackup/bin/admincmd/bpplclients
+BPIMAGELIST=/usr/openv/netbackup/bin/admincmd/bpimagelist
+WORKDIR=/tmp/STD_NBU_INFO
+
+if [ ! -d ${WORKDIR} ] ; then
+        mkdir ${WORKDIR}
+fi
+
+> ${WORKDIR}/bppllist-U.txt
+> ${WORKDIR}/bppllist-U_detailed.txt
+
+$BPPLLIST -U > ${WORKDIR}/bppllist-U.txt
+for i in `${BPPLLIST} -U |awk '{print $NF}'` ; do
+        ${BPPLLIST} $i -U  >> ${WORKDIR}/bppllist-U_detailed.txt
+done
+${BPPLCLIENTS} -allunique > ${WORKDIR}/bpplclients_all.txt
+
+for i in SAP_TA2 SAP_PTA BRA_TA2 BRA_PTA ; do
+        ${BPIMAGELIST} -media -policy ${i} -U -hoursago 24 > ${WORKDIR}/mediaused_with_${i}.txt
+done
+sleep 5
+</code>
+This above script is called from this one:/usr/openv/netbackup/bin/bpstart_notify.STD_NBU_INFO which contents is below:<code>
+#! /bin/sh
+# $Header: bpstart_notify.sh,v 1.4 2005/06/28 15:22:02 $
+#
+#bcpyrght
+#***************************************************************************
+#* $VRTScprght: Copyright 2015 Symantec Corporation, All Rights Reserved SY39-6648-5573-26-15-5  $ *
+#***************************************************************************
+#ecpyrght
+#
+# bpstart_notify.sh
+#
+# This script is called by NetBackup when bpbkar is started up on the client
+# to do a backup or archive.
+#
+# This script:
+#       receives 4 parameters: CLIENTNAME POLICYNAME SCHEDNAME SCHEDTYPE
+#       must be executable by the root user
+#       should exit with 0 upon successful completion
+#
+# If this script will not complete within a few seconds, you should set
+# the BPSTART_TIMEOUT in the /usr/openv/netbackup/bp.conf file on the server.
+#
+# This script should be installed with mode 555 so that user directed
+# backups and archives will be able to execute this script.
+#
+# CAUTION:  writing anything to stdout or stderr will cause backup problems
+#
+
+
+
+
+# --------------------------------------------------------------------
+# main script starts here
+# --------------------------------------------------------------------
+
+umask 022
+
+if [ "$#" -ne 4 ]
+then
+        exit 1
+fi
+
+if [ "$4" = "FULL" -o "$4" = "INCR" -o "$4" = "CINC" ]
+then
+        OUTF=/usr/openv/netbackup/bin/BPSTART_CALLED
+
+        # You may want to delete the output file elsewhere in order to
+        # accumulate successful backup information.
+        # If so, comment out the following 4 lines.
+        if [ -s $OUTF ]
+        then
+                /bin/rm -rf $OUTF
+        fi
+
+        if [ ! -f $OUTF ]
+        then
+                touch $OUTF
+        fi
+
+        case "$4"
+        in
+                "FULL")
+                        echo `date` full backup started on $1 - policy $2 schedule $3 >> $OUTF
+                        ;;
+                "INCR")
+                        echo `date` differential incremental backup started on $1 - policy $2 schedule $3 >> $OUTF
+                        ;;
+                "CINC")
+                        echo `date` cumulative incremental backup started on $1 - policy $2 schedule $3 >> $OUTF
+                        ;;
+        esac
+        /usr/openv/netbackup/scripts/STD_NBU_INFO.sh
+        #
+        # might want to mail this info to someone
+        #
+        # cat $OUTF | mail -s "NetBackup backup started" someone_who_cares
+        #
+        # CAUTION:  some platforms do not allow the -s parameter on mail
+        #
+fi
+
+exit 0
+</code>
+These files needs to be restored on remote - DR - NBU domain in order 
+to have most recent data. Here is procedure how to do it: <code>bpimagelist -policy STD_NBU_INFO -hoursago 240 -U
+bplist -k STD_NBU_INFO -C taqa1d01 -R -s 10/31/2016 01:00:00 /
+bprestore -L /tmp/restore_log_STD_NBU_INFO -p STD_NBU_INFO -C taqa1d01 -D ibmnbu5230ams -s 10/31/2016 01:00:00 /tmp/
+taqa1d01:/tmp/STD_NBU_INFO>ls -la
+total 2656
+drwxr-xr-x    2 root     system         4096 Feb 08 03:38 .
+drwxrwxrwt  137 bin      bin          430080 Feb 08 03:39 ..
+-rw-r--r--    1 root     system        19909 Feb 08 03:38 bpplclients_all.txt
+-rw-r--r--    1 root     system         9315 Feb 08 03:35 bppllist-U.txt
+-rw-r--r--    1 root     system       869470 Feb 08 03:38 bppllist-U_detailed.txt
+-rw-r--r--    1 root     system          407 Feb 08 03:38 mediaused_with_BRA_PTA.txt
+-rw-r--r--    1 root     system          407 Feb 08 03:38 mediaused_with_BRA_TA2.txt
+-rw-r--r--    1 root     system          147 Feb 08 03:38 mediaused_with_SAP_PTA.txt
+-rw-r--r--    1 root     system          303 Feb 08 03:38 mediaused_with_SAP_TA2.txt
+</code> To check this restore job status run this<code>tail -f /tmp/restore_log_STD_NBU_INFO </code>In bpplclients_all.txt we do have all defined client names in LDC - will be used to install NBU client software in order to preserve the same client name at DR site! Other two files can be used to recreate the policies we are using at LDC NBU domain. Once The production domain will match the DR one - policies will be recreated by me and will be in deactivated status.
+Example how to find defined client name for particular hostname. Files starting with mediaused* are indicating what tapes do have backups of PTA and TA2 full and archive logs for last 48 hours. These should be used only in last resort, really last...<code>ibmnbu5230ams:/home/maintenance # ls -la /tmp/STD_NBU_INFO/                                        total 824
+drwxr-xr-x   2 root root   4096 Sep 29 04:25 .
+drwxrwxrwt. 19 root root  12288 Nov 14 09:37 ..
+-rw-r--r--   1 root root  19727 Nov 14 01:03 bpplclients_all.txt
+-rw-r--r--   1 root root 790997 Nov 14 01:03 bppllist-U_detailed.txt
+-rw-r--r--   1 root root   8235 Nov 14 01:00 bppllist-U.txt
+ibmnbu5230ams:/home/maintenance # grep daerap01 /tmp/STD_NBU_INFO/bpplclients_all.txt
+RS6000           AIX6                       daerap01bck
+ibmnbu5230ams:/home/maintenance #
+</code>In NBU 8.0 it appears that the relevant SAP_ policies should have been created as are on production site. In order to do it perform following<code>ibmnbu5230ams:/tmp/STD_NBU_INFO # for i in `grep SAP bppllist-U.txt |awk '{print $NF}'` ; do  bppolicynew ${i} ;  bpplinfo ${i} -set -pt SAP  ; done
+</code>
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== mksysb ====
+The pgnmsv01 is being backed up via STD_PGNMSV01 policy which is as everything else duplicated to remote site. On each Monday - we do restore contents of direcotry /mksysb-images/ 
+on server pgnmsv01 to /advanceddisk/dp1/advol/MKSYSB/ on ibmnbu5230amd NBU appliance. So to check if mksysb images are there run this on ibmnbu5230amd
+<code>ibmnbu5230amd:/home/maintenance/ # ls -la /advanceddisk/dp1/advol/MKSYSB/</code> 
+and output should be looking like
+<code>ibmnbu5230amd:/tmp # ls -la /advanceddisk/dp1/advol/MKSYSB/ |head -10
+total 517672080
+drwxr-xr-x 6   12 root       8192 Oct 30 08:45 .
+drwxr-x--- 4 root root      16384 Oct 31 05:10 ..
+-rw-r--r-- 1 root root 3570073600 Sep  1  2015 6100-09_mksysb
+-rw-r--r-- 1 root root        914 Sep  1  2015 bosinst.data
+-rw-r--r-- 1   12 root 2653994028 Jul  1 11:10 bos.obj.atlasdr.gz
+-rw-r--r-- 1   12 root 2134386815 Oct 26 23:20 bos.obj.daap3p01.gz
+-rw-r--r-- 1   12 root 2525353805 Oct 26 23:20 bos.obj.daerap01.gz
+-rw-r--r-- 1   12 root 2389536463 Oct 26 23:21 bos.obj.daerdb01.gz
+-rw-r--r-- 1   12 root 2589465192 Oct 26 23:19 bos.obj.dafoap01.gz
+(...)
+</code>
+To make sure these are coming from most recent backup run this command<code>ibmnbu5230amd:~ # cat /tmp/automated/last_run.log
+Time: Sun 03 Sep 2017 12:00:08 AM CD   ID: pgnmsv01_1504414808   FULL (0)
+0
+ibmnbu5230amd:~ #</code>
+Look after its status as well when it was done.
+If you are still interested with more details about this last job do the following:<code>ibmnbu5230amd:/inst/client/.packages # bpdbjobs -jobid `bpdbjobs |grep Restore|head -1 |awk '{print $1}'` -all_columns|tr "," "\n"
+256879
+2
+3
+0
+
+
+ibmnbu5230amd
+ibmnbu5230amd
+1504519263
+0000001731
+1504520994
+
+1
+
+488986128
+2098
+
+100
+218698
+root
+
+
+
+90000
+root
+ibmnbu5230ams
+
+
+
+
+
+1
+/mksysb-images/
+1
+218698
+
+
+1504519282
+0000001712
+1504520994
+0
+the requested operation was successfully completed
+72
+09/04/2017 05:01:03 - begin Restore operation
+09/04/2017 05:01:04 - Info bprd(pid=218698) Found (514\
+311) files in (1) images for Restore Job ID 256879.xxx
+09/04/2017 05:01:23 - restoring image pgnmsv01_1504414808
+09/04/2017 05:01:23 - Info bprd(pid=218698) Searched (  2\
+098) files of (514\
+311) files for Restore Job ID 256879.xxx
+09/04/2017 05:01:23 - Info bprd(pid=218698) Restoring from copy 1 of image created Sun Sep  3 01:00:08 2017 from policy STD_PGNMSV01
+09/04/2017 05:01:24 - Info bpbrm(pid=172047) ibmnbu5230amd is the host to restore to
+09/04/2017 05:01:24 - Info bpbrm(pid=172047) reading file list for client
+09/04/2017 05:01:24 - Info bpbrm(pid=172047) connecting to bprd to get file list
+09/04/2017 05:01:24 - connecting
+09/04/2017 05:01:24 - Info bpbrm(pid=172047) starting bptm
+09/04/2017 05:01:25 - Info tar(pid=172053) Restore started
+09/04/2017 05:01:25 - connected; connect time: 000:00:01
+09/04/2017 05:01:25 - Info bpbrm(pid=172047) bptm pid: 172055
+09/04/2017 05:01:23 - requesting resource @aaaah
+09/04/2017 05:01:23 - granted resource MediaID=@aaaah;DiskVolume=PureDiskVolume;DiskPool=dp_disk_ibmnbu5230amd;Path=PureDiskVolume;StorageServer=ibmnbu5230amd;MediaServer=ibmnbu5230amd
+09/04/2017 05:01:25 - Info bptm(pid=172055) start
+09/04/2017 05:01:25 - started process bptm (172055)
+09/04/2017 05:01:25 - Info bptm(pid=172055) reading backup image
+09/04/2017 05:01:25 - Info bptm(pid=172055) using 128 data buffers
+09/04/2017 05:01:26 - begin reading
+09/04/2017 05:03:20 - Info bptm(pid=172055) waited for empty buffer 5 times\
+ delayed 44 times
+09/04/2017 05:03:20 - end reading; read time: 000:01:54
+09/04/2017 05:03:20 - begin reading
+09/04/2017 05:05:21 - Info bptm(pid=172055) waited for empty buffer 7 times\
+ delayed 34 times
+09/04/2017 05:05:21 - end reading; read time: 000:02:01
+09/04/2017 05:05:21 - begin reading
+09/04/2017 05:07:29 - Info bptm(pid=172055) waited for empty buffer 7 times\
+ delayed 30 times
+09/04/2017 05:07:29 - end reading; read time: 000:02:08
+09/04/2017 05:07:29 - begin reading
+09/04/2017 05:09:00 - Info bptm(pid=172055) waited for empty buffer 5 times\
+ delayed 51 times
+09/04/2017 05:09:00 - end reading; read time: 000:01:31
+09/04/2017 05:09:00 - begin reading
+09/04/2017 05:10:40 - Info bptm(pid=172055) waited for empty buffer 3 times\
+ delayed 21 times
+09/04/2017 05:10:40 - end reading; read time: 000:01:40
+09/04/2017 05:10:41 - begin reading
+09/04/2017 05:12:34 - Info bptm(pid=172055) waited for empty buffer 6 times\
+ delayed 24 times
+09/04/2017 05:12:34 - end reading; read time: 000:01:53
+09/04/2017 05:12:34 - begin reading
+09/04/2017 05:14:22 - Info bptm(pid=172055) waited for empty buffer 4 times\
+ delayed 34 times
+09/04/2017 05:14:22 - end reading; read time: 000:01:48
+09/04/2017 05:14:22 - begin reading
+09/04/2017 05:16:51 - Info bptm(pid=172055) waited for empty buffer 9 times\
+ delayed 130 times
+09/04/2017 05:16:51 - end reading; read time: 000:02:29
+09/04/2017 05:16:52 - begin reading
+09/04/2017 05:18:51 - Info bptm(pid=172055) waited for empty buffer 6 times\
+ delayed 72 times
+09/04/2017 05:18:51 - end reading; read time: 000:01:59
+09/04/2017 05:18:52 - begin reading
+09/04/2017 05:20:47 - Info bptm(pid=172055) waited for empty buffer 6 times\
+ delayed 27 times
+09/04/2017 05:20:47 - end reading; read time: 000:01:55
+09/04/2017 05:20:48 - begin reading
+09/04/2017 05:23:02 - Info bptm(pid=172055) waited for empty buffer 13 times\
+ delayed 131 times
+09/04/2017 05:23:02 - end reading; read time: 000:02:14
+09/04/2017 05:23:03 - begin reading
+09/04/2017 05:24:59 - Info bptm(pid=172055) waited for empty buffer 7 times\
+ delayed 72 times
+09/04/2017 05:24:59 - end reading; read time: 000:01:56
+09/04/2017 05:25:00 - begin reading
+09/04/2017 05:27:23 - Info bptm(pid=172055) waited for empty buffer 7 times\
+ delayed 31 times
+09/04/2017 05:27:23 - end reading; read time: 000:02:23
+09/04/2017 05:27:23 - begin reading
+09/04/2017 05:29:46 - Info bptm(pid=172055) waited for empty buffer 25 times\
+ delayed 100 times
+09/04/2017 05:29:47 - begin reading
+09/04/2017 05:29:51 - Info bptm(pid=172055) waited for empty buffer 0 times\
+ delayed 0 times
+09/04/2017 05:29:51 - begin reading
+09/04/2017 05:29:52 - Info bptm(pid=172055) waited for empty buffer 0 times\
+ delayed 0 times
+09/04/2017 05:29:52 - end reading; read time: 000:00:01
+09/04/2017 05:29:53 - Info tar(pid=172053) done. status: 0
+09/04/2017 05:29:53 - Info bptm(pid=172055) completed reading backup image
+09/04/2017 05:29:53 - Info bptm(pid=172055) EXITING with status 0 <----------
+09/04/2017 05:29:53 - Info ibmnbu5230amd(pid=172055) StorageServer=PureDisk:ibmnbu5230amd; Report=PDDO Stats for (ibmnbu5230amd): read: 488988606 KB\
+ CR received: 486412761 KB\
+ CR received over FC: 0 KB\
+ dedup: 0.0%
+09/04/2017 05:29:53 - Info tar(pid=172053) done. status: 0: the requested operation was successfully completed
+09/04/2017 05:29:54 - restored image pgnmsv01_1504414808 - (the requested operation was successfully completed(0))
+09/04/2017 05:29:54 - end Restore operation; operation time: 000:28:51
+488986128
+2098
+256879
+487
+
+
+
+
+
+
+
+ibmnbu5230amd
+
+
+
+
+
+
+
+
+
+
+
+
+0
+
+
+
+
+
+
+ibmnbu5230amd:/inst/client/.packages #</code>
+In order to mount this share on AIX please follow these commands - please hand these over to AIX administrators<code>mkdir /mnt/nbuappliance
+lssrc -g nfs
+/usr/sbin/nfso -o nfs_use_reserved_ports=1
+mount ibmnbu5230amd:/advanceddisk/dp1/advol/MKSYSB /mnt/nbuappliance</code> Hopefully they will know what to do with these!
+Export the NIM images on AMD device<code>vi /etc/exports</code>
+and uncomment this line<code>/advanceddisk/dp1/advol/MKSYSB * (all_squash,ro,sync,no_subtree_check)</code>
+<code>exportfs -av</code>
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== NBU_Software_Installation ====
+There is a need of UNIX team help - they need to allow password less login to AIX clients at DR site. In order to do this, this public ssh key needs to be added to root's authorized_keys file on each AIX client:
+<code>ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAv8EzRJC/7X2mIkpnVFasEI6zNdwb28hu9LtE7oxBSxc6k3fKeIa0x6DmXA+U246Livk33Q4KrbPJvm1OfS52/tGQH7Y6mX8HZVWqOa3EiWccEZ7cTRYVN3im7aMR4iAfalDMQxuss7871lhi04n4RSyi4B31oJQsM6
+/rmA8No8IyA0i7dHHIp1uMSSf6jTwUNXXI7uNxiqM4Yh/gwbOL7GDE3boVBVjgFDupy9xSdYME9y7m3Ibi25bK8LnY5cL4I+sjsX4DVAUP/ZE/9580frEa7hec33N+mcRHuPCQIrmY/W16YPosDiQiZx9qtn6101PWGB6HYnoNj/aRQq6xiQ== SYM1105173</code>
+<code>ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAwdPWNm48MXVRr4M0dw3E/vGR5w4vnbZp96sOoJG8WVK46JaY97E18yNIp3K2WT669C6WG7xGetS732FkWAy9fqIleigCxZskeyabscPyZjbJ+3b1dfnNogcnmyuJjYIxPA4tEn6/g2Ek9OPKwOIPWtq19mEl92mY1GUKlX0iJBkfzQ1Se60kR6Z8ixPimS83f+7YTIfZjTT34ZcJ7xJfyg835aK1ds325MH7W5hdfstUOYBQHG/Yh8vhOBMENL/TEyNthvxSOgYzfKcf+oGVyfYGVbN6T4Q4NX4Okr4oWIsuioQCobrSmcNAC3PrjJ6LZDKoOZQfF+bcr8Gq2XhFDQ== SYM1105044</code>
+Everything on one line - it was broken by me in order of nice visibility on this web site... 
+Here is command how to get this SSH key:<code>cat /root/.ssh/authorized_keys</code>Should be started on ibmnbu5230ams,
+in case the above did not work out. UNIX team also double check if on each and every AIX client there is /usr/openv filesystem being mounted and it is having no less then 6GB in size.
+
+From DR DB pull out the DR client names known to business 
+The most recent one as of 31 of Oct 2016 is below (only for AIX - column Q from that spreadsheetfile)<code>peerdb99
+peerap01
+peerap03
+peerap04
+peerap05
+peerap99
+TEPR2A02
+peerap06
+tepr2e01
+tapr1d01
+paerap01
+paerap02
+paerap03
+paerap04
+paerap07
+PGSCDB01
+paap3p01
+pagi3p01
+taitc103
+paft3p01
+tspr1d01
+tspr1d02
+pgaidb01
+itcap001
+pggpap01
+pggpdb01
+taitc122
+pggtdb01
+pgimdb01
+pahydb01
+pggwdb01
+pgsndb01
+pgsnap01
+pgasdb01
+pgrmdb01
+peerap07
+paerap06</code>
+Now we need to find out the NBU client names, the best would be to save the above client names to file, ie /tmp/DR_clnt_list and by running the following command <code>
+ibmnbu5230ams:/tmp # grep -i -f /tmp/DR_clnt_list /tmp/STD_NBU_INFO/bpplclients_all.txt  |awk '{print $NF}' > /tmp/NBU_clnt_list</code>
+
+Remeber some clients are being backed up at DMZ - so these needs to be added by hand.
+Once having this NBU_clnt_list file we can try to install NBU client software, but since NBU has to be aware what is the hardware and OS running on these clients we will create fake policy which will include this infromation.
+<code>bppolicynew STD_FAKE_ONE
+for i in `cat /tmp/NBU_clnt_list` ; do bpplclients STD_FAKE_ONE -add ${i} RS6000 AIX6; done
+bpplinfo STD_FAKE_ONE -set -pt Standard
+</code>
+Above three lines will create one policy with all clients we are about to install client software on them. To check this out if it was done correctly run this<code>bpplclients STD_FAKE_ONE -U</code> Once everything is confrimed
+actual client software installation can take place, but first we need to test if each client is pingable:<code>for i in `cat /tmp/NBU_clnt_list `; do ping -c 1 ${i}; done</code>
+If any client is not pingable sort this out with UNIX and NETWORK team. **Also make sure NBU appliance was pining these via IP range from DR site!!**
+Once all are pingable do the following:<code>for i in `cat /tmp/NBU_clnt_list `; do echo /usr/openv/netbackup/bin/install_client_files ssh ${i}; done</code>
+With configured password less authentication you just need to observe the progress and react if failuers are seen.
+On both appliances there are binaries for AIX, but on **ibmnbu5230ams for NBU version 8.0** and on **ibmnbu5230amd for NBU version 7.7.3** just in case we would needed older version of NBU.
+
+The following is an example of NBU client agent installation taken from putty logs od server paerap06
+
+<code>ibmnbu5230ams:/usr/openv/netbackup/bin # ./install_client_files ssh pocafasv01
+       pocafasv01 ...
+Client pocafasv01 -- RS6000 hardware running AIX6
+Installing NetBackup software on pocafasv01
+Warning: Permanently added 'pocafasv01,10.32.6.32' (RSA) to the list of known hosts.
+stty: tcgetattr: A specified file does not support the ioctl system call.
+Warning: Permanently added 'pocafasv01,10.32.6.32' (RSA) to the list of known hosts.
+Warning: Permanently added 'pocafasv01,10.32.6.32' (RSA) to the list of known hosts.
+installpbx                                                                                                                                                 100%   64KB  64.0KB/s   00:00
+PBX.tar.gz                                                                                                                                                 100%   10MB   4.9MB/s   00:02
+pdinstall                                                                                                                                                  100%   35KB  35.1KB/s   00:00
+pddeagent.tar.gz                                                                                                                                           100%   16MB   5.3MB/s   00:03
+JRE.tar.gz                                                                                                                                                 100%  131MB   5.2MB/s   00:25
+.sizes_JRE                                                                                                                                                 100%    7     0.0KB/s   00:00
+NB-Java.tar.gz                                                                                                                                             100%  444MB   5.2MB/s   01:25
+.sizes_NB-Java                                                                                                                                             100%    7     0.0KB/s   00:00
+JAVAnbj.conf.pocafasv01.49687                                                                                                                              100%  686     0.7KB/s   00:00
+version                                                                                                                                                    100%   19     0.0KB/s   00:00
+client_config                                                                                                                                              100%   98KB  97.7KB/s   00:00
+cp_to_client                                                                                                                                               100%   87KB  87.0KB/s   00:00
+extract_java                                                                                                                                               100%   26KB  26.3KB/s   00:00
+install_client                                                                                                                                             100%   36KB  35.7KB/s   00:00
+nbcheck                                                                                                                                                    100%   12MB   5.8MB/s   00:02
+.sizes                                                                                                                                                     100%   15     0.0KB/s   00:00
+.sizes_client_bin                                                                                                                                          100%    7     0.0KB/s   00:00
+pocafasv01_bin_net.tar.49687                                                                                                                               100%   10KB  10.0KB/s   00:00
+client_bin.tar.gz                                                                                                                                          100%  305MB   5.4MB/s   00:57
+Warning: Permanently added 'pocafasv01,10.32.6.32' (RSA) to the list of known hosts.
+Warning: Permanently added 'pocafasv01,10.32.6.32' (RSA) to the list of known hosts.
+Starting NetBackup Deduplication installer
+testing: /tmp/pdde_pkg_dir_24313976
+Checking for SYMCpddea package...
+   Package SYMCpddea found.
+Checking for VRTSpddea package...
+
+NetBackup Deduplication software is installed.
+
+NetBackup Deduplication is not yet configured.
+NetBackup Deduplication preinstall check passed
+
+
+Checking for required system conditions...
+
+ok be_nb_same_host: inapplicable on aix: skipping
+ok unsupported_platform: Passed checks for unsupported platforms.
+
+Checking for recommended system conditions...
+
+ok hotfix_auditor: NetBackup is not installed or there is no hotfix or EEB data present. Skipping HF/EEB Auditor check.
+x .
+x ./bp_servers, 106 bytes, 1 tape blocks
+x ./bp_client_name, 25 bytes, 1 tape blocks
+
+Terminating NetBackup and/or Media Manager processes.
+
+Saving pack history as /usr/openv/pack.7.7.3
+
+Saving client binaries for RS6000/AIX6.
+
+Installing PBX...
+Please wait while installation is in progress...
+Installation completed Successfully
+Installation log located here: /var/tmp/installpbx-24314082-090717083010.log
+
+Checking for pre-existing SYMCnbclt package.
+Removing pre-existing SYMCnbclt package.
+Removal of SYMCnbclt was successful.
+More details regarding SYMCnbclt can be found in file
+/tmp/uninstall_cltpkg_trace.5832950 on pocafasv01.
+
+Unpacking VRTSnbclt package.
+Checking for pre-existing VRTSnbclt package.
+Installing VRTSnbclt package.
+Installation of VRTSnbclt was successful.
+More details regarding VRTSnbclt can be found in file
+/tmp/install_cltpkg_trace.5832950 on pocafasv01.
+
+Terminating NetBackup and/or Media Manager processes.
+
+Send a SIGHUP to (x)inetd so the (x)inetd.conf file will be reread.
+Installing NB-Java.
+Checking for pre-existing SYMCnbjava package.
+Removing pre-existing SYMCnbjava package.
+Removal of SYMCnbjava was successful.
+More details regarding SYMCnbjava can be found in file
+/tmp/uninstall_javapkg_trace.9896190 on pocafasv01.
+
+Unpacking VRTSnbjava package.
+Checking for pre-existing VRTSnbjava package.
+Installing VRTSnbjava package.
+Installation of VRTSnbjava was successful.
+More details regarding VRTSnbjava can be found in file
+/tmp/install_javapkg_trace.9896190 on pocafasv01.
+Checking for pre-existing SYMCnbjre package.
+Removing pre-existing SYMCnbjre package.
+Removal of SYMCnbjre was successful.
+More details regarding SYMCnbjre can be found in file
+/tmp/uninstall_jrepkg_trace.9896190 on pocafasv01.
+
+Unpacking VRTSnbjre package.
+Checking for pre-existing VRTSnbjre package.
+Installing VRTSnbjre package.
+Installation of VRTSnbjre was successful.
+More details regarding VRTSnbjre can be found in file
+/tmp/install_jrepkg_trace.9896190 on pocafasv01.
+
+WARNING: Copying /usr/openv/netbackup/nblog.conf to
+         /usr/openv/netbackup/nblog.conf.09-07-17.08:28:51
+         for future reference.  Any local modifications to
+         /usr/openv/netbackup/nblog.conf should be re-evaluated.
+
+
+Migrating log files in /usr/openv/logs
+Migration of log files complete.
+
+Starting NetBackup Deduplication installer
+testing: /tmp/pdde_pkg_dir_9895966
+Checking for SYMCpddea package...
+   Package SYMCpddea found.
+Checking for VRTSpddea package...
+
+NetBackup Deduplication software is installed.
+
+NetBackup Deduplication is not yet configured.
+Checking for SYMCpddea package...
+   Package SYMCpddea found.
+Removing SYMCpddea package...
+   Package SYMCpddea removed.
+Checking for VRTSpddea package...
+Checking for VRTSpddea package...
+Installing NetBackup Deduplication agent package (/tmp/bp.49687/openv/netbackup/client/RS6000/AIX6/pddeagent.tar.gz)...
+Extracting package VRTSpddea in /tmp/pdde_pkg_dir_9895966.
+   Package VRTSpddea extracted to /tmp/pdde_pkg_dir_9895966.
+Installing package VRTSpddea.
+   Package VRTSpddea installed.
+Running NetBackup Deduplication upgrade script (agent mode)...
+NetBackup Deduplication install finished successfully.
+Version now installed: 10.0000.0016.1025
+Full NetBackup Deduplication installation log saved to: /var/log/puredisk/2017-09-07_08:32-pdde-install.log
+
+
+An automatic startup script, /etc/rc.netbackup.aix has been installed.
+This will cause NetBackup daemons to be automatically restarted
+each time the server boots.
+
+
+Successfully updated the session cache parameters.
+
+Processed 130 files out of 130.
+Starting vnetd...
+Starting bpcd...
+Starting nbftclnt...
+Starting nbdisco...
+Starting bmrbd...
+
+Installation of Java LiveUpdate agent succeeded.  Refer to file
+/tmp/JLU-Log/JavaLiveUpdate-Install.log on pocafasv01
+for installation details.
+
+
+Checking LiveUpdate registration for the following products: CLT
+This may take a few minutes.
+
+Product CLT is installed and will be registered.
+
+Updating LiveUpdate registration now...this may take some time.
+Trying to load jar file from /opt/Symantec/LiveUpdate/cryptix-jce-provider.jar
+
+
+Client install complete.
+       pocafasv01 install complete
+
+ibmnbu5230ams:/usr/openv/netbackup/bin # bpgetconfig -s pocafasv01
+Client of ibmnbu5230ams
+RS6000, AIX6
+8.0.0
+NetBackup
+8.0
+800000
+/usr/openv/netbackup/bin
+AIX 7.1</code>
+
+Once NetBackup software was installed please verify if DR NBU domain can communicate with recently installed client by running:<code>bpgetconfig -s client_name</code>
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== AIX_Restore ====
+In order to restore date from Standard policy type please remeber the following steps:
+  * Always perform restores **from the destination client** - so in first place login to remote AIX box which is going to be restored
+  * **If an AIX restore will be directed to NBU appliances most probably we will damage the NBU appliances and we can wind up and go home**
+  * Double check the entires in /usr/openv/netbackup/bp.conf if do match ours requirements, ie. SERVER and CLIENT_NAME lines
+  * Check if NBU master and media servers are being reachable by this client via ping command<code>ping ibmnbu5230ams
+ping ibmnbu5230amd</code>Also it would not harm if master and media server is able to reach this client via ping by the name defined in CLIENT_NAME entry in bp.conf file
+  * Determine what filesystems are going to be restored by executing following command:<code>
+for i in `lsvg |grep -v rootvg` ;do lsvgfs ${i} |grep -v "/usr/openv" ; done</code>
+Visually inspect the output and if all is OK redirect this output to a file, ie FSes_2_restore.txt<code>
+for i in `lsvg |grep -v rootvg` ;do lsvgfs ${i} |grep -v "/usr/openv"  ; done > /tmp/FSes_2_restore.txt</code>
+So now we do have ours restore selection list in file called FSes_2_restore.txt stored in /tmp/.
+  * Change the working directory to bin of NBU installlation folder on NetBackup destination **client** (in this example peerdb99 - you need to be root there),
+in ours environment it is /usr/openv/netbackup/bin<code>
+peerdb99-TA2-Prime:/home/pawetkac>cd /usr/openv/netbackup/bin/
+peerdb99-TA2-Prime:/usr/openv/netbackup/bin></code>
+  * Check the available backup images on the **master server** - needed to know the date from which backup date the restore should take place - most recent one, have other PuTTy session 
+opened on **master server** and run the following (I will use peerdb99 - TA2 as example - in NBU world this one is know as peerdb99bck - this anme is really important):<code>
+ibmnbu5230ams:/home/maintenance # bpimagelist -client peerdb99bck -policy STD_PEERDB99 -hoursago 240 -U
+Backed Up         Expires       Files       KB  C  Sched Type      On Hold Policy
+----------------  ---------- -------- --------  -  --------------- ------- ------------
+11/01/2016 19:20  11/11/2016   177808 84227709  N  Full Backup     0       STD_PEERDB99
+10/31/2016 19:20  11/10/2016   177586 80570787  N  Full Backup     0       STD_PEERDB99
+10/29/2016 04:00  11/12/2016   177071 88525317  N  Full Backup     0       STD_PEERDB99
+10/28/2016 19:20  11/07/2016   177026 91988800  N  Full Backup     0       STD_PEERDB99
+10/27/2016 19:30  11/06/2016   177681 93507407  N  Full Backup     0       STD_PEERDB99
+10/26/2016 19:30  11/05/2016   177449 93279731  N  Full Backup     0       STD_PEERDB99
+10/25/2016 19:20  11/04/2016   177227 94510904  N  Full Backup     0       STD_PEERDB99
+10/24/2016 19:20  11/03/2016   177298 97024705  N  Full Backup     0       STD_PEERDB99
+ibmnbu5230ams:/home/maintenance #</code>
+Above command asked remote NBU domain for all backups of client peerdb99bck and policy name STD_PEERDB99 made in last 10 days. Most recent one availabe is from 11/01/2016,
+so we will use this one. Let's determine the unix time stamp for this one backup:<code>
+ibmnbu5230ams:/home/maintenance # bpimagelist -client peerdb99bck -policy STD_PEERDB99 -d 11/01/2016 19:20:00 -e 11/01/2016 19:21:00 -idonly
+Time: Tue 01 Nov 2016 07:20:01 PM ED   ID: peerdb99bck_1478042401   FULL (0)
+ibmnbu5230ams:/home/maintenance #</code>
+As we can see the UNIX time stamp is 1478042401 so we now have everything we would needed to perform restore.
+  * To verify if we can see any files from this selected backup run the following:<code>
+ibmnbu5230ams:/home/maintenance # bplist -C peerdb99bck -t 0 -k STD_PEERDB99 -R 1 -X -s 1478042401 -e 1478042401 /
+/
+/.SPOT/
+/.Xauthority
+/.crashhist
+/.dbxhist
+/.dt/
+/.dtprofile
+/.lsof_tapro
+/.profile
+/.rhosts
+/.rhosts.old
+/.sh_history
+/.ssh/
+/.uniovpath
+/ALT_MIG_IMAGES/
+/ALT_MIG_IMD
+/ALT_MIG_SPOT/
+/BCVFDSTLIB/
+/BCVfnsw/
+/BCVoracle/
+/BCVsapcomm/
+/BCVsapmnt/
+/BCVusr/
+/Comm.pl.debug
+/DMX2/
+/DMX4/
+/FDSTLIB1/
+/FDSTLIBIT0/
+/FDSTLIB_ess/
+/FDSTLIB_mss/
+/FSDTLIB/
+/NEW-SAPARCH/
+/NEWFDSTLIB/
+/NEWfnsw/
+/NEWopt/
+/NEWoracle/
+/NEWsapcomm/
+/NEWsapmnt/
+/NEWstats/
+/NEWusers/
+/NEWusr/
+/NEWvar/
+/SEE-TA2ADM-OWNER
+/TT_DB/
+/UC_TA2_commdir
+/admin/
+/appl/
+/application/
+/audit/
+/backTA2.log
+/bin
+/bkpmksb/
+/bkpmksb/
+/bosinst.PROMPT_YES
+/bosinst.data
+/bosinst.data_ORIGINAL
+/ca_lic
+/ch.ch
+/check
+/core
+/dataconv/
+/dbs
+/dead.letter
+/della/
+/dev/
+/dev_rout
+/disp+work.log
+/disp+work.out
+/edipro/
+/esm/
+/etc/
+/exinfocd/
+/export_dir/
+/fnsw_ess/
+/fnsw_mss/
+/get_locations
+/home/
+/home/
+/id.log
+/id.out
+/image.data
+/info/
+/infocd/
+/invscout_1.4.0.0.ldb
+/invscout_1.4.0.0.rte
+/lib
+/lost+found/
+/lpp/
+/mbox
+/mdx4test/
+/mdx4test/
+/mkcd/
+/mnt/
+/mntmksysb/
+/mount.a108574
+/mymnt/
+/nfso_-L.txt
+/nimadm.SPOT/
+/nohup.out
+/old/
+/opt/
+/opt/
+/oracle/
+/oracle/
+/pa/
+/patches/
+/patches/
+/proc/
+/prod/
+/rc.local.new
+/rcdir.tar
+/rcfiles.tar
+/rhosts
+/root/
+/root@taa30
+/rpt_config.sh
+/sap_sp/
+/sapcd/
+/sapcomm/
+/sapcomm1/
+/sapmedia/
+/sapmnt/
+/sapsoft/
+/savevgconf.txt
+/sbin/
+/server/
+/smit.log
+/smit.script
+/smit.transaction
+/software/
+/stabi_containers.txt
+/stats/
+/taediarch/
+/tah1sby.mup
+/tapro_user_list.txt
+/tasby.mup
+/tasby_7026H80F.htm
+/tasby_7026HM80.BIN
+/tat 1
+/temp/
+/tenec
+/tftpboot/
+/tmp/
+/transition/
+/u
+/unix
+/users/
+/usr/
+/usr/
+/var/
+/var/
+/vgdata/
+/vpd
+/wbadsm_software/
+ibmnbu5230ams:/home/maintenance #
+</code>Once bplist command showed us desired output (no errors) we can proceed with the restore.
+  * Actuall restore command using backup taken in this example taken on 11/01/2016 19:20 (unix timestamp 1478042401) will be, **make sure you are running it from destination client**:<code>
+peerdb99-TA2-Prime:/usr/openv/netbackup/bin>./bprestore -C peerdb99bck -D peerdb99bck -L /tmp/peerdb99bck_restore-log.txt -t 0 -p STD_PEERDB99 -X -s 1478042401 -e 1478042401 \
+-f /tmp/FSes_2_restore.txt
+</code>To check restore progress run this command<code>
+peerdb99-TA2-Prime:/usr/openv/netbackup/bin>tail -f /tmp/peerdb99bck_restore-log.txt
+ Restore Job Id=5456241
+Restore started 11/02/2016 11:22:03
+
+11:22:05 (5456241.xxx) Found (198,646) files in (1) images for Restore Job ID 5456241.xxx
+11:22:07 (5456241.xxx) Searched (      1) files of (198,646) files for Restore Job ID 5456241.xxx
+11:22:07 (5456241.001) Restoring from copy 1 of image created Tue Nov  1 18:20:01 CDT 2016 from policy STD_PEERDB99
+11:22:10 (5456241.001) TAR STARTED 42730176
+11:22:12 (5456241.001) INF - Beginning restore from server ldcnbu5230amd to client peerdb99bck.
+11:22:13 (5456241.001) /home/pawetkac/version
+11:22:13 (5456241.001) INF - TAR EXITING WITH STATUS = 0
+11:22:13 (5456241.001) INF - TAR RESTORED 1 OF 1 FILES SUCCESSFULLY
+11:22:13 (5456241.001) INF - TAR KEPT 0 EXISTING FILES
+11:22:13 (5456241.001) INF - TAR PARTIALLY RESTORED 0 FILES
+
+11:22:14 (5456241.001) Status of restore from copy 1 of image created Tue Nov  1 18:20:01 CDT 2016 = the requested operation was successfully completed
+
+11:22:16 (5456241.xxx) INF - Status = the requested operation was successfully completed.
+
+</code>For the test purpose I was having only one file in /tmp/FSes_2_restore.txt ! 
+Once you will see "INF - Status = the requested operation was successfully completed." you can either hand over system to DBA for future work or if this is 
+TA2 or PTA start the data files restore [[#TA2_Restore|link for TA2 DB restore]] or [[#PTA_Restore|Link for PTA DB restore]].
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== TA2_Restore ====
+TA2 backups are replicated to Master server MSPD - ibmnbu5230ams. We need to find out most recent TA2 backups aviable at DR site:<code>
+ibmnbu5230ams:/home/maintenance # bpimagelist -policy SAP_TA2 -hoursago 240 -U
+Backed Up         Expires       Files       KB  C  Sched Type      On Hold Policy
+----------------  ---------- -------- --------  -  --------------- ------- ------------
+11/01/2016 21:28  11/15/2016       13      962  N  User Backup     0       SAP_TA2
+11/01/2016 11:08  11/15/2016      331 1976663213  N  User Backup     0       SAP_TA2
+11/01/2016 11:08  11/15/2016      331 1976691853  N  User Backup     0       SAP_TA2
+11/01/2016 11:08  11/15/2016      333 1976668269  N  User Backup     0       SAP_TA2
+11/01/2016 11:08  11/15/2016      331 1976683885  N  User Backup     0       SAP_TA2
+11/01/2016 11:08  11/15/2016      333 1976689966  N  User Backup     0       SAP_TA2
+11/01/2016 11:08  11/15/2016      331 1976675726  N  User Backup     0       SAP_TA2
+11/01/2016 11:08  11/15/2016      329 1976651885  N  User Backup     0       SAP_TA2
+11/01/2016 11:08  11/15/2016      329 1976642668  N  User Backup     0       SAP_TA2
+10/31/2016 04:26  11/14/2016       13     1026  N  User Backup     0       SAP_TA2
+10/29/2016 10:08  11/12/2016      331 1976680077  N  User Backup     0       SAP_TA2
+10/29/2016 10:08  11/12/2016      331 1976708205  N  User Backup     0       SAP_TA2
+10/29/2016 10:08  11/12/2016      333 1976683661  N  User Backup     0       SAP_TA2
+10/29/2016 10:08  11/12/2016      331 1976691886  N  User Backup     0       SAP_TA2
+10/29/2016 10:08  11/12/2016      331 1976701549  N  User Backup     0       SAP_TA2
+10/29/2016 10:08  11/12/2016      333 1976706830  N  User Backup     0       SAP_TA2
+10/29/2016 10:08  11/12/2016      329 1976667789  N  User Backup     0       SAP_TA2
+10/29/2016 10:08  11/12/2016      329 1976651884  N  User Backup     0       SAP_TA2
+10/28/2016 10:08  11/11/2016      174 1093650216  N  User Backup     0       SAP_TA2
+10/28/2016 10:08  11/11/2016      182 1165392171  N  User Backup     0       SAP_TA2
+10/28/2016 10:08  11/11/2016      150 786752034  N  User Backup     0       SAP_TA2
+10/28/2016 10:08  11/11/2016      132 782589983  N  User Backup     0       SAP_TA2
+10/28/2016 10:08  11/11/2016      331 1976692845  N  User Backup     0       SAP_TA2
+10/28/2016 10:08  11/11/2016      144 778138913  N  User Backup     0       SAP_TA2
+10/28/2016 10:08  11/11/2016      174 1100846889  N  User Backup     0       SAP_TA2
+10/28/2016 10:08  11/11/2016      182 1156278827  N  User Backup     0       SAP_TA2
+10/26/2016 10:09  11/09/2016      331 1976678157  N  User Backup     0       SAP_TA2
+10/26/2016 10:09  11/09/2016      333 1976683214  N  User Backup     0       SAP_TA2
+10/26/2016 10:09  11/09/2016      333 1976661773  N  User Backup     0       SAP_TA2
+10/26/2016 10:08  11/09/2016      329 1976637196  N  User Backup     0       SAP_TA2
+10/26/2016 10:08  11/09/2016      329 1976645389  N  User Backup     0       SAP_TA2
+10/26/2016 10:08  11/09/2016      331 1976657677  N  User Backup     0       SAP_TA2
+10/26/2016 10:08  11/09/2016      331 1976686349  N  User Backup     0       SAP_TA2
+10/23/2016 10:08  11/23/2016      331 1974028046  N  User Backup     0       SAP_TA2
+10/23/2016 10:08  11/23/2016      331 1974069933  N  User Backup     0       SAP_TA2
+10/23/2016 10:08  11/23/2016      329 1974056716  N  User Backup     0       SAP_TA2
+10/23/2016 10:08  11/23/2016      331 1974028045  N  User Backup     0       SAP_TA2
+10/23/2016 10:08  11/23/2016      333 1974052622  N  User Backup     0       SAP_TA2
+10/23/2016 10:08  11/23/2016      331 1974032141  N  User Backup     0       SAP_TA2
+10/23/2016 10:08  11/23/2016      331 1974023949  N  User Backup     0       SAP_TA2
+</code>
+Please note that the SAP_TA2 full backup is made out of 9 streams: 8 for real data files backups and 9th with the meta data. From above output we can tell that the most recent full TA2
+backup available at Hot Site was made starting on 11/01/2016 11:08 and ending on 11/01/2016 21:28 with 9th stream with meta data. Metadata stream can be determined by the really small number of KB
+as well small number of files for it (like 962KB and 13 files). We will start 9 different restores from peerdb99 server.
+To know exact start and end time of each backup stream invoke the following on ibmnbu5230ams:<code>
+ibmnbu5230ams:/home/maintenance # bpimagelist -policy SAP_TA2 -d 11/01/2016 11:08:00 -e 11/01/2016 21:28:59 -idonly
+Time: Tue 01 Nov 2016 09:28:41 PM ED   ID: teprbk01_1478050121   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:41 AM ED   ID: teprbk01_1478012921   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:40 AM ED   ID: teprbk01_1478012920   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:39 AM ED   ID: teprbk01_1478012919   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:38 AM ED   ID: teprbk01_1478012918   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:37 AM ED   ID: teprbk01_1478012917   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:36 AM ED   ID: teprbk01_1478012916   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:35 AM ED   ID: teprbk01_1478012915   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:34 AM ED   ID: teprbk01_1478012914   UBAK (2)
+</code> so now we do have the creation time of each backup straem - the numbers after tepbrk01_. Open up PuTTy console to peerdb99 server. Validate its /usr/openv/netbackup/bp.conf, to
+be frank this should be already done by [[#AIX_Restore|by executing this]]. Go to NBU installation folder:<code>
+cd /usr/openv/netbackup/bin</code>
+Execute bplist against each stream to check if everything is well prepared:<code>
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478050121 -e 1478050121 /
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478012921 -e 1478012921 /
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478012920 -e 1478012920 /
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478012919 -e 1478012919 /
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478012918 -e 1478012918 /
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478012917 -e 1478012917 /
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478012916 -e 1478012916 /
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478012915 -e 1478012915 /
+./bplist -C teprbk01 -t 17 -k SAP_TA2 -R -X -s 1478012914 -e 1478012914 /
+</code>Once above commands will return similar output like in [[TA2_bplist_example.txt|here]] please proceed with the restore.
+
+**Make sure you are on peerdb99 server**, all SAP related filesystems are being mounted and are in appropriate size, the **NIC should be connected at 10Gbps**  - UNIX team to advise,
+then execute the following commands from /usr/openv/netbackup/bin:<code>
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478050121.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478050121 -e 1478050121 /
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478012921.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478012921 -e 1478012921 /
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478012920.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478012920 -e 1478012920 /
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478012919.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478012919 -e 1478012919 /
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478012918.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478012918 -e 1478012918 /
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478012917.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478012917 -e 1478012917 /
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478012916.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478012916 -e 1478012916 /
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478012915.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478012915 -e 1478012915 /
+./bprestore -L /tmp/SAP_TA2_restore-log_stream_1478012914.txt -C teprbk01 -D peerdb99bck -t 17 -p SAP_TA2 -X -s 1478012914 -e 1478012914 /
+</code>
+**KEEP IN MIND THAT THE -s -e switches needs to be adjusted to match the real situation**
+
+If you will put the backup images into a file you can use below to create restores commands<code>
+
+ibmnbu5230amd:/home/maintenance # cat backup_ids_of_ta2
+teprbk01_1480348698
+teprbk01_1480279489
+teprbk01_1480279488
+teprbk01_1480279487
+teprbk01_1480279486
+teprbk01_1480279485
+teprbk01_1480279484
+ibmnbu5230amd:/home/maintenance # cat backup_ids_of_ta2 |awk -F_ '{print "./bprestore -L /tmp/SAP_TA2_restore_" $2," -C",$1," -D peerdb99 -t 17 -p SAP_TA2 -X -s ",$2," -e ",$2, "/"}'
+./bprestore -L /tmp/SAP_TA2_restore_1480348698  -C teprbk01  -D peerdb99 -t 17 -p SAP_TA2 -X -s  1480348698  -e  1480348698 /
+./bprestore -L /tmp/SAP_TA2_restore_1480279489  -C teprbk01  -D peerdb99 -t 17 -p SAP_TA2 -X -s  1480279489  -e  1480279489 /
+./bprestore -L /tmp/SAP_TA2_restore_1480279488  -C teprbk01  -D peerdb99 -t 17 -p SAP_TA2 -X -s  1480279488  -e  1480279488 /
+./bprestore -L /tmp/SAP_TA2_restore_1480279487  -C teprbk01  -D peerdb99 -t 17 -p SAP_TA2 -X -s  1480279487  -e  1480279487 /
+./bprestore -L /tmp/SAP_TA2_restore_1480279486  -C teprbk01  -D peerdb99 -t 17 -p SAP_TA2 -X -s  1480279486  -e  1480279486 /
+./bprestore -L /tmp/SAP_TA2_restore_1480279485  -C teprbk01  -D peerdb99 -t 17 -p SAP_TA2 -X -s  1480279485  -e  1480279485 /
+./bprestore -L /tmp/SAP_TA2_restore_1480279484  -C teprbk01  -D peerdb99 -t 17 -p SAP_TA2 -X -s  1480279484  -e  1480279484 /
+</code>
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== PTA_Restore ====
+PTA backups are replicated to Master server MSPD - ibmnbu5230amd. We need to find out most recent PTA backups aviable at DR site:<code>
+ibmnbu5230ams:/home/maintenance # bpimagelist -policy SAP_PTA -hoursago 240 -U
+Backed Up         Expires       Files       KB  C  Sched Type      On Hold Policy
+----------------  ---------- -------- --------  -  --------------- ------- ------------
+11/04/2016 05:57  11/18/2016       13     1186  N  User Backup     0       SAP_PTA
+11/03/2016 19:32  11/17/2016      101 986834487  N  User Backup     0       SAP_PTA
+11/03/2016 19:32  11/17/2016      103 986781240  N  User Backup     0       SAP_PTA
+11/03/2016 19:32  11/17/2016      101 986106423  N  User Backup     0       SAP_PTA
+11/03/2016 19:32  11/17/2016      103 987739704  N  User Backup     0       SAP_PTA
+11/03/2016 19:32  11/17/2016      101 987339319  N  User Backup     0       SAP_PTA
+11/03/2016 19:32  11/17/2016      103 987910711  N  User Backup     0       SAP_PTA
+11/03/2016 19:32  11/17/2016      105 985740952  N  User Backup     0       SAP_PTA
+11/03/2016 19:32  11/17/2016      103 987907639  N  User Backup     0       SAP_PTA
+11/03/2016 09:20  11/17/2016       13     1186  N  User Backup     0       SAP_PTA
+11/02/2016 23:34  11/16/2016      103 987907639  N  User Backup     0       SAP_PTA
+11/02/2016 23:34  11/16/2016      103 987910711  N  User Backup     0       SAP_PTA
+11/02/2016 23:34  11/16/2016      101 986834487  N  User Backup     0       SAP_PTA
+11/02/2016 23:34  11/16/2016      103 986781240  N  User Backup     0       SAP_PTA
+11/02/2016 23:34  11/16/2016      105 985740952  N  User Backup     0       SAP_PTA
+11/02/2016 23:34  11/16/2016      103 987739704  N  User Backup     0       SAP_PTA
+11/02/2016 23:34  11/16/2016      101 987339319  N  User Backup     0       SAP_PTA
+11/02/2016 23:34  11/16/2016      101 986106423  N  User Backup     0       SAP_PTA
+11/01/2016 08:29  11/15/2016       13     1186  N  User Backup     0       SAP_PTA
+10/31/2016 22:48  11/14/2016      105 985740952  N  User Backup     0       SAP_PTA
+10/31/2016 22:48  11/14/2016      101 986834487  N  User Backup     0       SAP_PTA
+10/31/2016 22:48  11/14/2016      103 987739704  N  User Backup     0       SAP_PTA
+10/31/2016 22:48  11/14/2016      101 986106423  N  User Backup     0       SAP_PTA
+10/31/2016 22:48  11/14/2016      103 987910711  N  User Backup     0       SAP_PTA
+10/31/2016 22:48  11/14/2016      103 987907639  N  User Backup     0       SAP_PTA
+10/31/2016 22:48  11/14/2016      103 986781240  N  User Backup     0       SAP_PTA
+10/31/2016 22:48  11/14/2016      101 987339319  N  User Backup     0       SAP_PTA
+10/31/2016 04:44  11/14/2016       13     1186  N  User Backup     0       SAP_PTA
+10/30/2016 19:33  11/13/2016      101 987339319  N  User Backup     0       SAP_PTA
+10/30/2016 19:33  11/13/2016      103 987739704  N  User Backup     0       SAP_PTA
+10/30/2016 19:33  11/13/2016      105 985740952  N  User Backup     0       SAP_PTA
+10/30/2016 19:33  11/13/2016      101 986834487  N  User Backup     0       SAP_PTA
+10/30/2016 19:33  11/13/2016      101 986106423  N  User Backup     0       SAP_PTA
+10/30/2016 19:33  11/13/2016      103 986781240  N  User Backup     0       SAP_PTA
+10/30/2016 19:33  11/13/2016      103 987907639  N  User Backup     0       SAP_PTA
+10/30/2016 19:33  11/13/2016      103 987910711  N  User Backup     0       SAP_PTA
+10/28/2016 05:51  11/11/2016       13     1186  N  User Backup     0       SAP_PTA
+10/27/2016 19:30  11/10/2016      101 986834487  N  User Backup     0       SAP_PTA
+10/27/2016 19:30  11/10/2016      103 986781240  N  User Backup     0       SAP_PTA
+10/27/2016 19:30  11/10/2016      103 987739704  N  User Backup     0       SAP_PTA
+10/27/2016 19:30  11/10/2016      103 987910711  N  User Backup     0       SAP_PTA
+10/27/2016 19:30  11/10/2016      103 987907639  N  User Backup     0       SAP_PTA
+10/27/2016 19:30  11/10/2016      101 986106423  N  User Backup     0       SAP_PTA
+10/27/2016 19:30  11/10/2016      105 985740952  N  User Backup     0       SAP_PTA
+10/27/2016 19:30  11/10/2016      101 987339319  N  User Backup     0       SAP_PTA
+10/27/2016 09:29  11/10/2016       13     1186  N  User Backup     0       SAP_PTA
+10/26/2016 23:34  11/09/2016      105 985740952  N  User Backup     0       SAP_PTA
+10/26/2016 23:34  11/09/2016      101 986106423  N  User Backup     0       SAP_PTA
+10/26/2016 23:34  11/09/2016      103 987910711  N  User Backup     0       SAP_PTA
+10/26/2016 23:34  11/09/2016      101 986834487  N  User Backup     0       SAP_PTA
+10/26/2016 23:34  11/09/2016      103 986781240  N  User Backup     0       SAP_PTA
+10/26/2016 23:34  11/09/2016      101 987339319  N  User Backup     0       SAP_PTA
+10/26/2016 23:33  11/09/2016      103 987739704  N  User Backup     0       SAP_PTA
+10/26/2016 23:33  11/09/2016      103 987907639  N  User Backup     0       SAP_PTA
+10/25/2016 09:04  11/25/2016       13     1186  N  User Backup     0       SAP_PTA
+</code>
+Please note that the SAP_PTA full backup is made out of 9 streams: 8 for real data files backups and 9th with the meta data. From above output we can tell that the most recent full PTA
+backup available at Hot Site was made starting on 11/03/2016 19:32 and ending on 11/04/2016 05:57 with 9th stream with meta data. We will start 9 different restores from tapr1d01 server.
+To know exact start and end time of each backup stream invoke the following on ibmnbu5230ams:<code>
+ibmnbu5230ams:/home/maintenance # bpimagelist -policy SAP_PTA -d 11/03/2016 19:32:00 -e 11/04/2016 05:58:00 -idonly
+Time: Fri 04 Nov 2016 05:57:05 AM ED   ID: taqa1d01_1478253425   UBAK (2)
+Time: Thu 03 Nov 2016 07:32:14 PM ED   ID: taqa1d01_1478215934   UBAK (2)
+Time: Thu 03 Nov 2016 07:32:13 PM ED   ID: taqa1d01_1478215933   UBAK (2)
+Time: Thu 03 Nov 2016 07:32:12 PM ED   ID: taqa1d01_1478215932   UBAK (2)
+Time: Thu 03 Nov 2016 07:32:11 PM ED   ID: taqa1d01_1478215931   UBAK (2)
+Time: Thu 03 Nov 2016 07:32:10 PM ED   ID: taqa1d01_1478215930   UBAK (2)
+Time: Thu 03 Nov 2016 07:32:09 PM ED   ID: taqa1d01_1478215929   UBAK (2)
+Time: Thu 03 Nov 2016 07:32:08 PM ED   ID: taqa1d01_1478215928   UBAK (2)
+Time: Thu 03 Nov 2016 07:32:07 PM ED   ID: taqa1d01_1478215927   UBAK (2)
+</code> so now we do have the creation time of each backup straem - the numbers after taqa1d01_. Open up PuTTy console to tapr1d01 server. Validate its /usr/openv/netbackup/bp.conf, to
+be frank this should be already done by [[#AIX_Restore|by executing this]]. Go to NBU installation folder:<code>
+cd /usr/openv/netbackup/bin</code>
+Execute bplist against each stream to check if everything is well prepared:<code>
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478253425 -e 1478253425 /
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478215934 -e 1478215934 /
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478215933 -e 1478215933 /
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478215932 -e 1478215932 /
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478215931 -e 1478215931 /
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478215930 -e 1478215930 /
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478215929 -e 1478215929 /
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478215928 -e 1478215928 /
+./bplist -C taqa1d01 -t 17 -k SAP_PTA -R -X -s 1478215927 -e 1478215927 /
+</code>Once above commands will return similar output like in [[PTA_bplist_example.txt|here]] please proceed with the restore.
+
+**Make sure you are on tapr1d01 server**, all SAP related file systems are being mounted and are in appropriate size, the **NIC should be connected at 10Gbps**  - UNIX team to advise,
+then execute the following commands from /usr/openv/netbackup/bin:<code>
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478253425.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478253425 -e 1478253425 /
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478215934.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478215934 -e 1478215934 /
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478215933.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478215933 -e 1478215933 /
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478215932.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478215932 -e 1478215932 /
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478215931.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478215931 -e 1478215931 /
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478215930.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478215930 -e 1478215930 /
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478215929.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478215929 -e 1478215929 /
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478215928.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478215928 -e 1478215928 /
+./bprestore -L /tmp/SAP_PTA_restore-log_steram_1478215927.txt -C taqa1d01 -D tapr1d01 -t 17 -p SAP_PTA -X -s 1478215927 -e 1478215927 /
+</code>
+**KEEP IN MIND THAT THE -s -e switches needs to be adjusted to match the real situation**
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== Archive_logs_Restore ====
+In order to restore correct archive logs we need to know which full backup of TA2|PTA we did restore. The start time of this full backup minus 30 mins will be ours start time of archive logs
+we will be restoring. From the TA2 restore we can see that <code>
+ibmnbu5230ams:/home/maintenance # bpimagelist -policy SAP_TA2 -d 11/01/2016 11:08:00 -e 11/01/2016 21:28:59 -idonly
+Time: Tue 01 Nov 2016 09:28:41 PM ED   ID: teprbk01_1478050121   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:41 AM ED   ID: teprbk01_1478012921   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:40 AM ED   ID: teprbk01_1478012920   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:39 AM ED   ID: teprbk01_1478012919   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:38 AM ED   ID: teprbk01_1478012918   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:37 AM ED   ID: teprbk01_1478012917   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:36 AM ED   ID: teprbk01_1478012916   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:35 AM ED   ID: teprbk01_1478012915   UBAK (2)
+Time: Tue 01 Nov 2016 11:08:34 AM ED   ID: teprbk01_1478012914   UBAK (2)</code>
+
+ours backup we restored was created on Nov 1st 11:08:34 - so we should be browsing for archive logs made in between (minus 30 mins) 01 Nov 2016 10:38:00. Let's assume the DR declared date and time
+is 03 Nov 2016 15:00:00. So the command to look after all backup images made by BRA_TA2 policy would looked like (for PTA the policy is BRA_PTA):
+<code>taqa1d01:/root>bpimagelist -policy BRA_TA2 -d 11/01/2016 10:38:00 -e 11/03/2016 15:00:00 -U
+Backed Up         Expires       Files       KB  C  Sched Type      On Hold Index Status Policy
+----------------  ---------- -------- --------  -  --------------- ------- ------------ ------------
+11/03/2016 14:32  12/04/2016        8      931  N  User Backup     0       0            BRA_TA2
+11/03/2016 14:31  12/04/2016        4  3795042  N  User Backup     0       0            BRA_TA2
+11/03/2016 14:21  12/04/2016        8      931  N  User Backup     0       0            BRA_TA2
+11/03/2016 14:20  12/04/2016        7  6724162  N  User Backup     0       0            BRA_TA2
+11/03/2016 14:02  12/04/2016        8      931  N  User Backup     0       0            BRA_TA2
+11/03/2016 14:01  12/04/2016        4  3791746  N  User Backup     0       0            BRA_TA2
+11/03/2016 13:31  12/04/2016        8      931  N  User Backup     0       0            BRA_TA2
+11/03/2016 13:31  12/04/2016        1   929889  N  User Backup     0       0            BRA_TA2
+11/03/2016 13:21  12/04/2016        8      931  N  User Backup     0       0            BRA_TA2
+11/03/2016 13:20  12/04/2016        4  3669218  N  User Backup     0       0            BRA_TA2
+11/03/2016 13:03  12/04/2016        8      931  N  User Backup     0       0            BRA_TA2
+11/03/2016 13:01  12/04/2016        8  7445251  N  User Backup     0       0            BRA_TA2
+11/03/2016 12:32  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 12:31  12/04/2016        3  2866689  N  User Backup     0       0            BRA_TA2
+11/03/2016 12:20  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 12:20  12/04/2016        1   904961  N  User Backup     0       0            BRA_TA2
+11/03/2016 12:02  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 12:01  12/04/2016        4  3789826  N  User Backup     0       0            BRA_TA2
+11/03/2016 11:31  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 11:31  12/04/2016        1   909761  N  User Backup     0       0            BRA_TA2
+11/03/2016 11:10  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 11:10  12/04/2016        1   906081  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:56  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:55  12/04/2016        3  2875105  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:50  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:50  12/04/2016        1   925153  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:46  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:45  12/04/2016        2  1835201  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:41  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:40  12/04/2016        1   943553  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:35  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:35  12/04/2016        1   915457  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:31  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:31  12/04/2016        1   906209  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:25  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:25  12/04/2016        1   960353  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:21  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:20  12/04/2016        6  4793122  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:03  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 10:01  12/04/2016        6  5694786  N  User Backup     0       0            BRA_TA2
+11/03/2016 09:32  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 09:31  12/04/2016        3  2800033  N  User Backup     0       0            BRA_TA2
+11/03/2016 09:21  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 09:20  12/04/2016        4  3664450  N  User Backup     0       0            BRA_TA2
+11/03/2016 09:03  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 09:01  12/04/2016        6  5586178  N  User Backup     0       0            BRA_TA2
+11/03/2016 08:32  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 08:31  12/04/2016        2  1829665  N  User Backup     0       0            BRA_TA2
+11/03/2016 08:21  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 08:20  12/04/2016        5  4614562  N  User Backup     0       0            BRA_TA2
+11/03/2016 08:04  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 08:01  12/04/2016        6  5625986  N  User Backup     0       0            BRA_TA2
+11/03/2016 07:31  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 07:31  12/04/2016        2  1827649  N  User Backup     0       0            BRA_TA2
+11/03/2016 07:20  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 07:20  12/04/2016        2  1838753  N  User Backup     0       0            BRA_TA2
+11/03/2016 07:02  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 07:01  12/04/2016        7  6531810  N  User Backup     0       0            BRA_TA2
+11/03/2016 06:32  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 06:31  12/04/2016        3  2775681  N  User Backup     0       0            BRA_TA2
+11/03/2016 06:21  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 06:20  12/04/2016        3  2760609  N  User Backup     0       0            BRA_TA2
+11/03/2016 06:03  12/04/2016        8      899  N  User Backup     0       0            BRA_TA2
+11/03/2016 06:01  12/04/2016        8  7496899  N  User Backup     0       0            BRA_TA2
+11/03/2016 05:31  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 05:31  12/04/2016        1   912225  N  User Backup     0       0            BRA_TA2
+11/03/2016 05:20  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 05:20  12/04/2016        2  1820673  N  User Backup     0       0            BRA_TA2
+11/03/2016 05:02  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 05:01  12/04/2016        6  5534082  N  User Backup     0       0            BRA_TA2
+11/03/2016 04:31  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 04:31  12/04/2016        2  1838913  N  User Backup     0       0            BRA_TA2
+11/03/2016 04:21  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 04:20  12/04/2016        4  3680002  N  User Backup     0       0            BRA_TA2
+11/03/2016 04:02  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 04:01  12/04/2016        6  5590242  N  User Backup     0       0            BRA_TA2
+11/03/2016 03:31  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 03:31  12/04/2016        2  1824961  N  User Backup     0       0            BRA_TA2
+11/03/2016 03:21  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 03:20  12/04/2016        3  2757217  N  User Backup     0       0            BRA_TA2
+11/03/2016 03:02  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 03:01  12/04/2016        5  3428226  N  User Backup     0       0            BRA_TA2
+11/03/2016 02:31  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 02:31  12/04/2016        2  1415745  N  User Backup     0       0            BRA_TA2
+11/03/2016 02:22  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 02:20  12/04/2016       10  9247267  N  User Backup     0       0            BRA_TA2
+11/03/2016 01:20  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 01:20  12/04/2016        2  1839873  N  User Backup     0       0            BRA_TA2
+11/03/2016 01:02  12/04/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 01:01  12/04/2016        4  3739778  N  User Backup     0       0            BRA_TA2
+11/03/2016 00:31  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 00:31  12/03/2016        2  1914305  N  User Backup     0       0            BRA_TA2
+11/03/2016 00:20  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 00:20  12/03/2016        1   908193  N  User Backup     0       0            BRA_TA2
+11/03/2016 00:02  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/03/2016 00:01  12/03/2016        4  3788674  N  User Backup     0       0            BRA_TA2
+11/02/2016 23:31  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 23:31  12/03/2016        1   906817  N  User Backup     0       0            BRA_TA2
+11/02/2016 23:20  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 23:20  12/03/2016        1   909473  N  User Backup     0       0            BRA_TA2
+11/02/2016 23:02  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 23:01  12/03/2016        6  5684738  N  User Backup     0       0            BRA_TA2
+11/02/2016 22:31  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 22:31  12/03/2016        1   913505  N  User Backup     0       0            BRA_TA2
+11/02/2016 22:20  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 22:20  12/03/2016        2  1831553  N  User Backup     0       0            BRA_TA2
+11/02/2016 22:01  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 22:01  12/03/2016        2  1922049  N  User Backup     0       0            BRA_TA2
+11/02/2016 21:31  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 21:31  12/03/2016        1   905953  N  User Backup     0       0            BRA_TA2
+11/02/2016 21:21  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 21:20  12/03/2016        3  2741441  N  User Backup     0       0            BRA_TA2
+11/02/2016 21:02  12/03/2016        8      867  N  User Backup     0       0            BRA_TA2
+11/02/2016 21:01  12/03/2016        5  4630530  N  User Backup     0       0            BRA_TA2
+11/02/2016 20:31  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 20:31  12/03/2016        1   910209  N  User Backup     0       0            BRA_TA2
+11/02/2016 20:20  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 20:20  12/03/2016        2  1829505  N  User Backup     0       0            BRA_TA2
+11/02/2016 20:02  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 20:01  12/03/2016        6  5591170  N  User Backup     0       0            BRA_TA2
+11/02/2016 19:32  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 19:31  12/03/2016        2  1860161  N  User Backup     0       0            BRA_TA2
+11/02/2016 19:21  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 19:20  12/03/2016        4  3668962  N  User Backup     0       0            BRA_TA2
+11/02/2016 19:03  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 19:01  12/03/2016        6  5575266  N  User Backup     0       0            BRA_TA2
+11/02/2016 18:31  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 18:31  12/03/2016        1   915425  N  User Backup     0       0            BRA_TA2
+11/02/2016 18:20  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 18:20  12/03/2016        2  1814017  N  User Backup     0       0            BRA_TA2
+11/02/2016 18:02  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 18:01  12/03/2016        3  2827745  N  User Backup     0       0            BRA_TA2
+11/02/2016 17:31  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 17:31  12/03/2016        1   909281  N  User Backup     0       0            BRA_TA2
+11/02/2016 17:20  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 17:20  12/03/2016        1   908097  N  User Backup     0       0            BRA_TA2
+11/02/2016 17:02  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 17:01  12/03/2016        3  2809537  N  User Backup     0       0            BRA_TA2
+11/02/2016 16:31  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 16:31  12/03/2016        1   914721  N  User Backup     0       0            BRA_TA2
+11/02/2016 16:21  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 16:20  12/03/2016        4  3660482  N  User Backup     0       0            BRA_TA2
+11/02/2016 16:02  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 16:01  12/03/2016        5  4678210  N  User Backup     0       0            BRA_TA2
+11/02/2016 15:31  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 15:31  12/03/2016        1   907201  N  User Backup     0       0            BRA_TA2
+11/02/2016 15:20  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 15:20  12/03/2016        1   908993  N  User Backup     0       0            BRA_TA2
+11/02/2016 15:02  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 15:01  12/03/2016        3  2797889  N  User Backup     0       0            BRA_TA2
+11/02/2016 14:31  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 14:31  12/03/2016        1   907809  N  User Backup     0       0            BRA_TA2
+11/02/2016 14:20  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 14:20  12/03/2016        2  1817281  N  User Backup     0       0            BRA_TA2
+11/02/2016 14:02  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 14:01  12/03/2016        4  3704994  N  User Backup     0       0            BRA_TA2
+11/02/2016 13:31  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 13:31  12/03/2016        1   915137  N  User Backup     0       0            BRA_TA2
+11/02/2016 13:21  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 13:20  12/03/2016        3  2732193  N  User Backup     0       0            BRA_TA2
+11/02/2016 13:02  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 13:01  12/03/2016        4  3694562  N  User Backup     0       0            BRA_TA2
+11/02/2016 12:31  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 12:31  12/03/2016        1   909121  N  User Backup     0       0            BRA_TA2
+11/02/2016 12:21  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 12:20  12/03/2016        2  1837729  N  User Backup     0       0            BRA_TA2
+11/02/2016 12:02  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 12:01  12/03/2016        6  5584514  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:32  12/03/2016        8      835  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:31  12/03/2016        3  2771521  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:20  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:20  12/03/2016        1   910721  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:15  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:15  12/03/2016        1   904513  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:10  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:10  12/03/2016        2  1925249  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:01  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 11:01  12/03/2016        1   904609  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:55  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:55  12/03/2016        1   983649  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:45  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:45  12/03/2016        2  1825377  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:40  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:40  12/03/2016        1   915425  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:35  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:35  12/03/2016        1   914049  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:25  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:25  12/03/2016        1   908225  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:20  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:20  12/03/2016        2  1473281  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:02  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 10:01  12/03/2016        6  5607714  N  User Backup     0       0            BRA_TA2
+11/02/2016 09:31  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 09:31  12/03/2016        2  1832065  N  User Backup     0       0            BRA_TA2
+11/02/2016 09:21  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 09:20  12/03/2016        4  3657346  N  User Backup     0       0            BRA_TA2
+11/02/2016 09:02  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 09:01  12/03/2016        7  6531746  N  User Backup     0       0            BRA_TA2
+11/02/2016 08:32  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 08:31  12/03/2016        3  2771617  N  User Backup     0       0            BRA_TA2
+11/02/2016 08:21  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 08:20  12/03/2016        3  2747553  N  User Backup     0       0            BRA_TA2
+11/02/2016 08:02  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 08:01  12/03/2016        5  4646402  N  User Backup     0       0            BRA_TA2
+11/02/2016 07:31  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 07:31  12/03/2016        1   917569  N  User Backup     0       0            BRA_TA2
+11/02/2016 07:20  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 07:20  12/03/2016        2  1827873  N  User Backup     0       0            BRA_TA2
+11/02/2016 07:02  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 07:01  12/03/2016        7  6416898  N  User Backup     0       0            BRA_TA2
+11/02/2016 06:31  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 06:31  12/03/2016        1   910593  N  User Backup     0       0            BRA_TA2
+11/02/2016 06:20  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 06:20  12/03/2016        2  1823713  N  User Backup     0       0            BRA_TA2
+11/02/2016 06:02  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 06:01  12/03/2016        6  5550850  N  User Backup     0       0            BRA_TA2
+11/02/2016 05:31  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 05:31  12/03/2016        1   922401  N  User Backup     0       0            BRA_TA2
+11/02/2016 05:21  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 05:20  12/03/2016        4  3687138  N  User Backup     0       0            BRA_TA2
+11/02/2016 05:02  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 05:01  12/03/2016        7  6470658  N  User Backup     0       0            BRA_TA2
+11/02/2016 04:31  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 04:31  12/03/2016        1   930945  N  User Backup     0       0            BRA_TA2
+11/02/2016 04:21  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 04:20  12/03/2016        3  2784065  N  User Backup     0       0            BRA_TA2
+11/02/2016 04:02  12/03/2016        8      803  N  User Backup     0       0            BRA_TA2
+11/02/2016 04:01  12/03/2016        6  5602562  N  User Backup     0       0            BRA_TA2
+11/02/2016 03:31  12/03/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 03:31  12/03/2016        2  1829793  N  User Backup     0       0            BRA_TA2
+11/02/2016 03:21  12/03/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 03:20  12/03/2016        4  3676482  N  User Backup     0       0            BRA_TA2
+11/02/2016 03:02  12/03/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 03:01  12/03/2016        6  5532866  N  User Backup     0       0            BRA_TA2
+11/02/2016 02:32  12/03/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 02:31  12/03/2016        2  1830657  N  User Backup     0       0            BRA_TA2
+11/02/2016 02:22  12/03/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 02:20  12/03/2016        8  7233763  N  User Backup     0       0            BRA_TA2
+11/02/2016 01:20  12/03/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 01:20  12/03/2016        1   911489  N  User Backup     0       0            BRA_TA2
+11/02/2016 01:02  12/03/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 01:01  12/03/2016        4  3731362  N  User Backup     0       0            BRA_TA2
+11/02/2016 00:31  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 00:31  12/02/2016        2  1916577  N  User Backup     0       0            BRA_TA2
+11/02/2016 00:21  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 00:20  12/02/2016        2  1829921  N  User Backup     0       0            BRA_TA2
+11/02/2016 00:01  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/02/2016 00:01  12/02/2016        2  1912129  N  User Backup     0       0            BRA_TA2
+11/01/2016 23:31  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 23:31  12/02/2016        1   905985  N  User Backup     0       0            BRA_TA2
+11/01/2016 23:20  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 23:20  12/02/2016        1   608129  N  User Backup     0       0            BRA_TA2
+11/01/2016 23:02  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 23:01  12/02/2016        3  2827169  N  User Backup     0       0            BRA_TA2
+11/01/2016 22:31  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 22:31  12/02/2016        1   907873  N  User Backup     0       0            BRA_TA2
+11/01/2016 22:20  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 22:20  12/02/2016        1   907457  N  User Backup     0       0            BRA_TA2
+11/01/2016 22:01  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 22:01  12/02/2016        2  1907969  N  User Backup     0       0            BRA_TA2
+11/01/2016 21:21  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 21:20  12/02/2016        3  2826753  N  User Backup     0       0            BRA_TA2
+11/01/2016 21:02  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 21:01  12/02/2016        5  4637474  N  User Backup     0       0            BRA_TA2
+11/01/2016 20:31  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 20:31  12/02/2016        1   913153  N  User Backup     0       0            BRA_TA2
+11/01/2016 20:21  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 20:20  12/02/2016        2  1826561  N  User Backup     0       0            BRA_TA2
+11/01/2016 20:03  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 20:01  12/02/2016        7  6503682  N  User Backup     0       0            BRA_TA2
+11/01/2016 19:32  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 19:31  12/02/2016        2  1837569  N  User Backup     0       0            BRA_TA2
+11/01/2016 19:21  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 19:20  12/02/2016        4  3691202  N  User Backup     0       0            BRA_TA2
+11/01/2016 19:03  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 19:01  12/02/2016        7  6529698  N  User Backup     0       0            BRA_TA2
+11/01/2016 18:31  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 18:31  12/02/2016        2  1835361  N  User Backup     0       0            BRA_TA2
+11/01/2016 18:20  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 18:20  12/02/2016        2  1827777  N  User Backup     0       0            BRA_TA2
+11/01/2016 18:02  12/02/2016        8      771  N  User Backup     0       0            BRA_TA2
+11/01/2016 18:01  12/02/2016        3  2850145  N  User Backup     0       0            BRA_TA2
+11/01/2016 17:20  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 17:20  12/02/2016        1   904737  N  User Backup     0       0            BRA_TA2
+11/01/2016 17:02  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 17:01  12/02/2016        2  1920001  N  User Backup     0       0            BRA_TA2
+11/01/2016 16:21  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 16:20  12/02/2016        3  2733409  N  User Backup     0       0            BRA_TA2
+11/01/2016 16:02  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 16:01  12/02/2016        4  3752738  N  User Backup     0       0            BRA_TA2
+11/01/2016 15:20  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 15:20  12/02/2016        1   905729  N  User Backup     0       0            BRA_TA2
+11/01/2016 15:01  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 15:01  12/02/2016        2  1914337  N  User Backup     0       0            BRA_TA2
+11/01/2016 14:20  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 14:20  12/02/2016        1   906817  N  User Backup     0       0            BRA_TA2
+11/01/2016 14:02  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 14:01  12/02/2016        3  2828417  N  User Backup     0       0            BRA_TA2
+11/01/2016 13:20  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 13:20  12/02/2016        1   909857  N  User Backup     0       0            BRA_TA2
+11/01/2016 13:01  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 13:01  12/02/2016        2  1951649  N  User Backup     0       0            BRA_TA2
+11/01/2016 12:31  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 12:31  12/02/2016        1   905345  N  User Backup     0       0            BRA_TA2
+11/01/2016 12:20  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 12:20  12/02/2016        1   914689  N  User Backup     0       0            BRA_TA2
+11/01/2016 12:01  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 12:01  12/02/2016        2  1921153  N  User Backup     0       0            BRA_TA2
+11/01/2016 11:31  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 11:31  12/02/2016        1   908225  N  User Backup     0       0            BRA_TA2
+11/01/2016 11:10  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 11:10  12/02/2016        2  1837729  N  User Backup     0       0            BRA_TA2
+11/01/2016 11:01  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 11:01  12/02/2016        1   925153  N  User Backup     0       0            BRA_TA2
+11/01/2016 10:55  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 10:55  12/02/2016        2  1919521  N  User Backup     0       0            BRA_TA2
+11/01/2016 10:50  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 10:50  12/02/2016        1   929313  N  User Backup     0       0            BRA_TA2
+11/01/2016 10:45  12/02/2016        8      739  N  User Backup     0       0            BRA_TA2
+11/01/2016 10:45  12/02/2016        1   925409  N  User Backup     0       0            BRA_TA2
+</code>
+Let's do a bplist against some time frame from above - that command has to be run from the TA2 database server - peerdb99:
+<code>bplist -C peerdb99bck -t 17 -k BRA_TA2 -s 11/1/2016 10:38:00 -e 11/03/2016 15:00:00 -R /oracle
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumltng.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436193_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436194_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumlpwr.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436192_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumloeu.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436189_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436190_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436191_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumlkoe.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436187_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436188_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumliwi.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436184_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436185_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436186_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumlffs.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436183_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumldnw.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436181_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436182_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumlawr.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436180_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumkxro.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436179_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumkxga.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436178_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumkuou.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436177_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumkswy.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436174_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436175_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436176_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumkpgj.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436172_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436173_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumknom.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436170_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436171_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumkiga.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436168_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436169_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumkfou.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436167_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumkcxo.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436165_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436166_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjzgy.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436164_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjxpc.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436162_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436163_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjtym.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436161_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjsgr.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436159_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436160_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjoqa.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436158_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjmye.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436156_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436157_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjkgy.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436155_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjjho.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436154_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjhps.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436151_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436152_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436153_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjeym.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436150_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumjdzc.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436147_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436148_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436149_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumiyqr.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436146_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumiwyu.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436144_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436145_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumiuho.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436143_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumitie.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436142_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumirqi.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436140_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436141_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumiozc.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436139_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeuminzs.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436138_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumimhw.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436135_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436136_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436137_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumiirg.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436133_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436134_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumigzk.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436131_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436132_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumidiv.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436127_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436128_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436129_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436130_681897300.dbf
+/oracle/TA2/11203/dbs/initTA2.ora
+/oracle/TA2/11203/dbs/spfileTA2.ora
+/oracle/TA2/11203/dbs/initTA2.sap
+/oracle/TA2/11203/dbs/initTA2.bra
+/oracle/TA2/saparch/aeumibqy.svd
+/oracle/TA2/saparch/archTA2.log
+/oracle/TA2/sapreorg/spaceTA2.log
+/oracle/TA2/sapreorg/strucTA2.log
+/oracle/TA2/oraarch/TA2arch1_436123_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436124_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436125_681897300.dbf
+/oracle/TA2/oraarch/TA2arch1_436126_681897300.dbf
+</code>
+So these are ours target files to be restored. To restore those please run the following command **from the DR TA2 DB server being in /usr/openv/netbackup/bin/ directory **:<code>
+peerdb99-DR:/usr/openv/netbackup/bin/> ./bprestore -L /tmp/restore_ta2_archive_logs.txt -C peerdb99bck -D peerdb99bck -t 17 -p BRA_TA2 -s 11/1/2016 10:38:00 -e 11/12/2016 15:00:00 /oracle/TA2/
+</code>
+The hostname after -D should match the line CLIENT = one from bp.conf file on TA2 DB server at DR site. So that is for TA2, we would do the same for PTA - the only things which will change will be:
+  * client name - from peerdb99bck to tapr1d01
+  * policy name - from BRA_TA2 to BRA_PTA
+  * time stamp - needs to be determined for both
+  * you will run bprestore from tapr1d01 instead for peerdb99 host....
+
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== Binaries_Restore ====
+Use the syntax described in [[#AIX_Restore|here]]
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== VMWARE_Configuration ====
+Once VCenter server will be configured and up and running please run the following commands from ibmnbu5230ams:
+<code>tpconfig -add -virtual_machine drvcenter-machine -vm_user_id USER_ID -vm_type 1 -password PASSWORD
+</code>Of course drvcenter-machine needs to be replaced with working one hostname as well USER_ID and PASSWORD needs to be provided.
+Once entered please validate by executing the following (outpus are being taken from ours production NBU domain):
+<code>tpconfig -dvirtualmachines
+========================================================================
+Virtual Machine Host Name:           taitc176.amer.int.tenneco.com
+Virtual Machine Type:                VMware Virtual Center Server
+SubType:                             (1)
+User Id:                             amer\svcbackup
+Required Port:                       443
+</code>
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+
+==== VMWARE_Restore ====
+Unfortunatelly VMWARE based backups have to be restored using GUI. So please connect to NBU master server at DR site -> ibmnbu5230ams.amer.int.tenneco.com using JAVA GUI version 8.0. Login there as admin (password is well known
+to DPT members). NBU VMWARE related configuration was already made [[#VMWARE_configuration|here]]. After being logged go to:
+  - Backup, Archive and Restore pane,
+  - Click on Properties - hand in right upper corner
+  - In pop-up window select Source Client 
+  - Select Policy type VMWARE
+  - Press OK
+{{ :dp:vmware_1_rajha.png }}
+
+  - Once pressed OK select Restore Type to Virtual Machine Backups
+  - Set proper Start and End date to browse for backups
+  - check the box next to client name
+{{ :dp:vmware_2_rajha.png }}
+In the right bottom corner press Restore button and:
+{{ :dp:vmware_3_rajha.png }}
+{{ :dp:vmware_4_rajha.png }}
+{{ :dp:vmware_5_rajha.png }}
+{{ :dp:vmware_6_rajha.png }}
+
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== Tapes_Import ====
+Once the time comes we need to import all backup images written on tapes by ours DMZ server - taitc024 at the hot site NBU domain - all commands to be run from **ibmnbu5230ams**.
+List of tapes to be delivered to hot site is being stored with breports DB in Lotus Notes. All tapes from a day prior DR declared date should at Hot Site and inside the library 
+with LTO4 tape drives.
+These DMZ tapes are LTO3 - so we have to make sure that these tapes will be read only by LTO4 tape drives - so the type of storage unit making LTO4's needs to match the LTO3 tapes. 
+If not we will not manage to import these. If needed to change volume media type,please use this command (Change volume's media type):
+<code>vmchange [-h <EMM_server> | <volume_database_host>]
+                -new_mt <media_type> -m <media_id>
+</code>where new_mt stands for:
+<code>new_mt
+Specifies the media type of the volume to change.
+
+  Valid media types for NetBackup Enterprise Server follow:
+
+  4mm, 8mm, 8mm2, 8mm3, dlt, dlt2, dlt3, dtf, hcart, hcart2, hcart3, qcart, 4mm_clean, 8mm_clean,
+  8mm2_clean, 8mm3_clean, dlt_clean, dlt2_clean, dlt3_clean, dtf_clean, hcart_clean, hcart2_clean,
+  hcart3_clean
+</code>and -m stands for volume ID - remeber that in all ours NBU domains media ID is made of first 6 characters of a barcode - **so proper barcode rules needs to be in place**.
+
+When the tape type matches LTO4 storage group to start first phase of import run the following<code>
+bpimport -create_db_info -id media_id > /tmp/phase_1_media_id.log</code> where media id is treated like variable in above command, ie. same command for media_id = A00990:<code>
+bpimport -create_db_info -id A00990 > /tmp/phase_1_A009900.log</code>
+Repeat the above command for each tapes from a most recent backup taken at DMZ and available at Hot Site. Once the phase 1st is made please start 2nd phase by checking what will be imported:
+<code>bpimport -PM</code> Once you are happy with these outputs run the actual phase two import:<code>bpimport -L /tmp/DMZ_backupimages_import-log.txt</code>
+FIXME - as of now could not test that at DR site - if above will not work you can proceed with GUI methodology of this import.
+
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+
+==== Revert_back_all_changes ====
+  - Copy back the original /etc/hosts file as it was prior the test [[#etc_hosts|Step to make copy of it prior tests]], in elevated mode - CLISH [[#remote_login|link]]<code>cat /etc/hosts.orig
+cp /etc/hosts.orig /etc/hosts</code>
+  - Enable back DNS resolution on **both** appliances<code>mv /etc/resolv.conf_DR_tests /etc/resolv.conf</code>
+  - Remove tape drives and robotic arm
+  - Disable Redirected Restores<code>ibmnbu5230ams:/home/maintenance # rm /usr/openv/netbackup/db/altnames/No.Restrictions</code>
+  - Remove the the /tmp/STD_NBU_INFO directory<code>ibmnbu5230ams:/home/maintenance # rm -rf /tmp/STD_NBU_INFO/</code>
+  - Remove fake policy we did create STD_FAKE_ONE<code>ibmnbu5230ams:/home/maintenance # bppldelete STD_FAKE_ONE</code>
+  - Take off exported directory #/advanceddisk/dp1/advol/MKSYSB IBM_NIM_SERVER via NFS by editing the /etc/exports file and commenting out below line on ibmnbu5230amd media server<code>vi /etc/exports</code>This line should be having # sign on the beggining #/advanceddisk/dp1/advol/MKSYSB IBM_NIM_SERVER(all_squash,rw,sync,no_subtree_check) Then unexport all FS<code>exportfs -uav</code>
+  - Delete all policies except HOT_CAT and the two starting with SYMC_NBA<code>bppllist |grep -v -e SYMC_NBA -e HOT</code>Review its output and if all can be deleted run this<code>for i in `bppllist |grep -v -e SYMC_NBA -e HOT`; do echo deleting ${i}; bppldelete ${i} -reason "End of DR tests"; done</code>
+  - Whatever was changed then it needs to be changed back as it was.
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+
+==== NBU5230_IPMI ====
+In case that NBU 5230 appliances are not reachable via PuTTy please login to its IPMI interface in web browser type the following URL: https://ibmnbu5230amsipmi - for Master server 
+or https://ibmnbu5230amd - for Media server. In user ID provide there sysadmin - password is well known to DPT team members. 
+{{ :dp:ipmi_1.png |}}
+To see NBU appliance 'physical console' go to the Remote Control tab
+
+{{ :dp:ipmi_2.png |}}
+Then click on Launch Console button and agree on all Java related things
+
+{{ :dp:ipmi_3.png |}}
+Once all loaded the console prompt will be similar to the below one
+
+{{ :dp:ipmi_4.png |}}
+
+==== DR_clnt_prog ====
+|	Command to execute	|	status	|
+|	/usr/openv/netbackup/bin/install_client_files ssh itcap001	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh paap3p01bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh paerap01bck	| done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh paerap02bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh paerap03bck	| done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh paerap04bck	|done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh paerap06.amer.int.tenneco.com	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh paerap07	| done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh paft3p01.tenneco.com	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pagi3p01bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pahydb02bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerap01bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerap03bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerap02bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerap04bck	| done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerap05bck	| done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerap06bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerap07bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerap99bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh peerdb99bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pgaidb01bck.amer.int.tenneco.com	|	done |
+|	/usr/openv/netbackup/bin/install_client_files ssh pgasdb01bck.amer.int.tenneco.com  done	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pggpap01bck.amer.int.tenneco.com	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pggpdb01bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pggtdb01bck	|	done	|  
+|	/usr/openv/netbackup/bin/install_client_files ssh pggwdb01.amer.int.tenneco.com	|  done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh pggwdb01bck.amer.int.tenneco.com	|		|
+|	/usr/openv/netbackup/bin/install_client_files ssh pgimdb01bck	|  done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh pgrmdb01	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pgscdb01.amer.int.tenneco.com	|  done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pgsnap01bck.amer.int.tenneco.com 	|	done 	|
+|	/usr/openv/netbackup/bin/install_client_files ssh pgsndb01.amer.int.tenneco.com	|  done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh taitc103bck	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh taitc122bck.amer.int.tenneco.com	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh tapr1d01	|	done	|
+|	/usr/openv/netbackup/bin/install_client_files ssh tepr2e01bck	| done		|
+|	/usr/openv/netbackup/bin/install_client_files ssh tspr1d01bck	| done 		|
+|	/usr/openv/netbackup/bin/install_client_files ssh tspr1d02.amer.int.tenneco.com	|  done		|
+
+[[#NA_DR_Procedures_For_LDC|go_to_top]]
+==== drscope_vs_backups ====
+Create such script on IBM appliance and execute, before fulfil its requirements:<code>#!/bin/sh
+#Creation date: 09-20-2017
+#version 1.5
+#Author Pawel Tkaczyk, ptkaczyk@tenneco.com
+#
+#Script to be run from master server - linux based - in ours scenario ibmnbu5230ams - NBU appliance.
+#Script to check if a server from DR coordinator's list (file called dr_server_list.txt) is beign replicated here
+#and if its having valid backup images
+#If a given client does not have valid backup image you will see such note:
+#
+#       client_name is not being duplicated to this domain
+#this is also stored in ${WORKDIR}/${CLNT_NOT_HERE}
+#you need to hit enter to proceed
+#
+#
+#Definition of some variables
+WORKDIR=/tmp/checkups                                                                   #where the script will store its findings, temp files
+CLNT_NOT_HERE=clients_no_here.txt                                                       #file with information which clients backups are not replicated to this domain
+LOCAL_CLNT=replicated_clients.txt                                                       #file with all local clients to this NBU domian (any time)
+ALL_USED_POLICIES=all_used_policies                                                     #what policies are used with all backups
+BPIMAGELIST=/usr/openv/netbackup/bin/admincmd/bpimagelist                               #command for searching for backup images
+CLNT_DR_SCOPE=dr_server_list.txt                                                        #file provided by DR coordinator this file needs to be stored where this script is!!
+HOURSAGO=30                                                                             #how long back to look after backup images, in hours
+
+echo "Do you want to pause output after each client backup images? [y/n]"
+echo "if you will press n then output will be paused only after client's names which has no backup here."
+echo "select y for yes pause after each client, n - to pause only clients without any backups. [y/n]"
+read answer
+
+if [ ! -f ${CLNT_DR_SCOPE} ]; then
+        echo "DR NBU client list of servers does not exist - please create it here, file name should be ${CLNT_DR_SCOPE}"
+        exit 1
+fi
+
+if [ ! -d ${WORKDIR} ] ; then
+        mkdir ${WORKDIR}
+fi
+
+if [ -f ${WORKDIR}/${CLNT_NOT_HERE} ] ; then
+        rm ${WORKDIR}/${CLNT_NOT_HERE}
+fi
+#create list of clients known to this NBU domain
+ls -la /usr/openv/netbackup/db/images/ |awk '{print $NF}' > ${WORKDIR}/${LOCAL_CLNT}
+if [ -f ${WORKDIR}/${ALL_USED_POLICIES} ] ; then
+        rm ${WORKDIR}/${ALL_USED_POLICIES}
+fi
+for i in `cat ${CLNT_DR_SCOPE} `; do
+        grep -i ${i} ${WORKDIR}/${LOCAL_CLNT} ; # here we do search for a CLIENT in DR scope in local clients to this NBU domain
+        if [ $? != 0 ] ; then
+                echo ${i} is not being duplicated to this domain >> ${WORKDIR}/${CLNT_NOT_HERE}
+                echo ${i} is not being duplicated to this domain
+                read
+                else
+                        ${BPIMAGELIST} -client `grep -i ${i} ${WORKDIR}/${LOCAL_CLNT}|tail -1` -hoursago ${HOURSAGO} -U 1>${WORKDIR}/policy_temp 2>>${WORKDIR}/policy_temp_error
+                        cat ${WORKDIR}/policy_temp
+                        cat ${WORKDIR}/policy_temp|awk '{print $NF}' |sort -u|grep -v -e "------------" -e "Policy" >> ${WORKDIR}/${ALL_USED_POLICIES}
+                        #read
+                        if [ ${answer} == "y" ]; then
+                                read
+                        fi
+        fi
+done
+cat ${WORKDIR}/${ALL_USED_POLICIES} |sort -u > ${WORKDIR}/${ALL_USED_POLICIES}_sortedout
+mv ${WORKDIR}/${ALL_USED_POLICIES}_sortedout ${WORKDIR}/${ALL_USED_POLICIES}
+rm ${WORKDIR}/policy_temp
+rm ${WORKDIR}/policy_temp_error
+echo "Please see ${WORKDIR} for details"</code>

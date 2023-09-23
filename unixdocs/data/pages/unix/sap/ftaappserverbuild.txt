@@ -1,0 +1,76 @@
+====== Customization for FTA App servers ======
+
+  - Create users account<code>sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba -d /home/ftaadm -c "SAP NA System Admin" -m -u 3201 ftaadm
+echo "ftaadm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+sudo useradd -s /usr/bin/csh -g dba -G sapinst,sapsys -d /home/orafta -c "SAP NA Oracle Admin" -m -u 1082 orafta
+echo "orafta:DKK*],E-7Pwp?tqX" | sudo chpasswd</code>
+  - Create filesystems<code>sudo lvcreate -n oracle_FTA       -L 1024MB  datavg01
+sudo lvcreate -n usr_sap_FTA      -L 8192MB  datavg01
+sudo lvcreate -n usr_sap_FTA_SUM  -L 10240MB datavg01
+sudo lvcreate -n home_ftaadm      -L 512MB   datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/oracle_FTA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_FTA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_FTA_SUM
+sudo mkfs -t ext4 /dev/datavg01/home_ftaadm
+
+cat << EOF | sudo tee -a /etc/fstab
+/dev/mapper/datavg01-oracle_FTA         /oracle/FTA           ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_FTA        /usr/sap/FTA          ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_FTA_SUM    /usr/sap/FTA/SUM      ext4    defaults        1 2
+/dev/mapper/datavg01-home_ftaadm        /home/ftaadm          ext4    defaults        1 2
+EOF
+
+sudo chown orafta:dba /oracle
+sudo chown orafta:dba /oracle/client
+sudo chown ftaadm:sapsys /usr/sap
+
+sudo mkdir -p /oracle/FTA        ; sudo mount /oracle/FTA          ; sudo chown orafta:dba /oracle/FTA
+sudo mkdir -p /usr/sap/FTA       ; sudo mount /usr/sap/FTA         ; sudo chown ftaadm:sapsys /usr/sap/FTA
+sudo mkdir -p /usr/sap/FTA/SUM   ; sudo mount /usr/sap/FTA/SUM     ; sudo chown ftaadm:sapsys /usr/sap/FTA/SUM
+sudo mkdir -p /home/ftaadm       ; sudo mount /home/ftaadm         ; sudo chown ftaadm:sapsys /home/ftaadm</code>
+  - Add NFS. First export the filesystems from the NFS server<code>cat << EOF | sudo tee -a /etc/fstab
+qaerdb01:/sapmnt/FTA/exe       /sapmnt/FTA/exe      nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qaerdb01:/sapmnt/FTA/profile   /sapmnt/FTA/profile  nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qaerdb01:/sapmnt/FTA/global    /sapmnt/FTA/global   nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tapr1d01:/usr/sap/trans        /usr/sap/trans       nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qaerdb01:/taedi61              /taedi61             nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qaerdb01:/sapcomm/FTA          /sapcomm/FTA         nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qaerdb01:/sapcomm/FTA/archive  /sapcomm/FTA/archive nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pgadap01:/sapmedia             /sapmedia            nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qaap3p01:/comm                 /comm                nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+dagi3p01:/taedi                /taedi               nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+EOF
+
+sudo mkdir -p /sapmnt/FTA/exe          ; sudo mount /sapmnt/FTA/exe
+sudo mkdir -p /sapmnt/FTA/profile      ; sudo mount /sapmnt/FTA/profile
+sudo mkdir -p /sapmnt/FTA/global       ; sudo mount /sapmnt/FTA/global
+sudo mkdir -p /usr/sap/trans           ; sudo mount /usr/sap/trans
+sudo mkdir -p /taedi61                 ; sudo mount /taedi61
+sudo mkdir -p /taedi                   ; sudo mount /taedi
+sudo mkdir -p /sapcomm/FTA             ; sudo mount /sapcomm/FTA
+sudo mkdir -p /sapcomm/FTA/archive     ; sudo mount /sapcomm/FTA/archive
+sudo mkdir -p /sapmedia                ; sudo mount /sapmedia
+sudo mkdir -p /comm                    ; sudo mount /comm</code>
+  - If the system needs a Web dispatcher, follow these steps<code>
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst -d /home/qw1adm -c "Web dispatcher account - Test" -m -u 4533 qw1adm
+
+echo "qw1adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+
+sudo lvcreate -n sapmnt_QW1  -L 1G datavg01  ; sudo mkfs -t ext4 /dev/datavg01/sapmnt_QW1
+sudo lvcreate -n usr_sap_QW1 -L 2G datavg01  ; sudo mkfs -t ext4 /dev/datavg01/usr_sap_QW1
+
+cat << EOF | sudo tee -a /etc/fstab
+/dev/mapper/datavg01-sapmnt_QW1    /sapmnt/QW1                    ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_QW1   /usr/sap/QW1                   ext4    defaults        1 2
+EOF
+
+sudo mkdir -p /sapmnt/QW1  ; sudo mount /sapmnt/QW1
+sudo mkdir -p /usr/sap/QW1 ; sudo mount /usr/sap/QW1
+
+sudo chown qw1adm:sapsys /home/qw1adm /usr/sap/QW1 /sapmnt/QW1
+sudo chmod 700 /home/qw1adm
+sudo chmod 751 /usr/sap/QW1
+sudo chmod 755 /sapmnt/QW1</code>
+  - If the system needs unispool, enable it<code>sudo systemctl enable unispool</code>
+  - Install 64bit C++ library<code>sudo yum install compat-libstdc++-33-3.2.3-72.el7.x86_64</code>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UNIX Toolbox</title>
+  <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #E6E6E6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: auto;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .page-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px;
+            width: 100%;
+            max-width: 1200px; /* Adjust this value as needed */
+            margin: 0 auto;
+        }
+
+        .toolbox,
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 50px;
+            box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+            width: calc(50% - 30px); /* Adjust this value and the margin as needed */
+            display: flex;
+            flex-direction: column;
+			margin: 5px; /* Add margin for the gap */
+        }
+
+        .btn-group button {
+            background-color: #007bff;
+            border: 1px solid green;
+            color: white;
+            padding: 10px 24px;
+            cursor: pointer;
+            width: 80%; /* Adjusted width */
+            display: block;
+            margin: 5px auto; /* Center align the buttons */
+            font-weight: bold;
+        }
+
+        .btn-group button:not(:last-child) {
+            border-bottom: none;
+        }
+
+        .btn-group button:hover {
+            background-color: #5F04FC;
+        }
+
+		h1 {
+			margin-bottom: 20px;
+		}
+
+		.search-container {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			margin-bottom: 20px;
+		}
+
+		#hostname-input {
+			padding: 8px;
+			width: 70%;
+			border: 1px solid #ccc;
+			border-radius: 5px 0 0 5px;
+		}
+
+		#search-button {
+			padding: 8px 12px;
+			background-color: #007bff;
+			color: white;
+			border: none;
+			border-radius: 0 5px 5px 0;
+			cursor: pointer;
+		}
+
+		#results-container {
+			max-height: auto; /* Allow container to expand */
+			overflow-y: hidden; /* Hide vertical scrollbar */
+			border: 1px solid #ccc;
+			padding: 10px;
+		}
+    </style>
+</head>
+<body>
+    <div class="page-container">
+	    <div class="container">
+            <h1>Server Lookup</h1>
+		         <div class="search-container">
+                    <input type="text" id="hostname-input" placeholder="Enter hostname...">
+                    <button id="search-button">Search</button>
+                </div>
+                <div id="results-container"></div>
+		<p><em>Note: This is a static inventory, refer to ServiceNow for more current information.</em></p>
+        </div>
+        <div class="toolbox">
+           <h1>UNIX Toolbox</h1>
+            <div class="btn-group">
+				<button class="tool-button" onclick="window.location.href='/lpar2rrd'">Lpar2rrd</button>
+				<button class="tool-button" onclick="window.location.href='/cfg2html'">Cfg2html</button>
+				<button class="tool-button" onclick="window.location.href='/teampass'">TeamPass</button>
+				<button class="tool-button" onclick="window.location.href='/ansible'">Ansible</button>
+				<button class="tool-button" onclick="window.location.href='/git'">Git</button>
+				<button class="tool-button" onclick="window.location.href='/elk'">ELK-Stack</button>
+				<button class="tool-button" onclick="window.location.href='/wikidoku'">Wikidoku</button>
+            </div>
+        </div>
+	</div>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+===== Shutdown standby database and disconnect volumes =====
+
+  - Disconnect old dbdata volumes from pehrdb99
+    - Ask the DBA team to shutdown the database on pehrdb99
+    - Login to pehrdb99, take a snapshot of current config<code>sudo lsvpcfg.sh > lsvpcfg.out.6</code>
+    - Offline and export the VG<code>lsvgfs datavg01 | xargs -n1 sudo umount
+sudo varyoffvg datavg01
+sudo exportvg datavg01</code>
+    - Delete the datavg01 disks<code>grep datavg01 lsvpcfg.out.6 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+    - Disconnect the volumes from pehrdb99. Login to pgunap01<code>for volume in {001..021}
+do
+   echo "Disconnecting h1pdbprimary_${volume} from pehrdb99"
+   ${SSH2INXM20} purevol disconnect --host pehrdb99 h1pdbprimary_${volume}
+done</code>
+
+===== Create a protection group for H1P standby database volumes =====
+
+  -Create an empty protection group<code>${SSH2INXM20} purepgroup create h1pdbstandby2</code>
+  - Add all h1p standby database volumes to the protection group<code>for volume in {001..021}
+do
+   ${SSH2INXM20} purepgroup setattr --addvollist h1pdbstandby_${volume} h1pdbstandby2
+done</code>
+  - List the protection group<code>${SSH2INXM20} purepgroup list h1pdbstandby2</code>
+
+
+===== Create a snapshot of the protection group =====
+
+  - Ask DBA team to put H1P  database on pehrdb98 hot backup mode.
+  - Take a snapshot of H1P pehrdb98<code>${SSH2INXM20} purepgroup snap --suffix stbyrefresh h1pdbstandby2</code>
+  - Ask DBA team to put the DB in to end backup mode
+  - Copy the snapshot to new volumes.<code>for volume in {001..021}
+do
+   echo "Copying snapshot h1pdbstandby2.stbyrefresh.h1pdbstandby_${volume} to h1pdbprimary_${volume} "
+   ${SSH2INXM20} purevol copy --overwrite h1pdbstandby2.stbyrefresh.h1pdbstandby_${volume} h1pdbprimary_${volume}
+done</code>
+  - Connect the snapshot volumes to pehrdb99<code>for volume in {001..021}
+do
+   ${SSH2INXM20} purevol connect --host pehrdb99 h1pdbprimary_${volume}
+done</code>
+  - Login to pehrdb99<code>sudo lsvpcfg.sh > lsvpcfg.out.7
+sudo cfgmgr
+sudo lsvpcfg.sh > lsvpcfg.out.8</code>
+  - Recreate VG on pehrdb99<code>ssh pehrdb98 lspv | grep datavg01 | awk '{print $2}' > pehrdb98.datavg01.pvids</code>Document the disks<code>lspv | grep -f pehrdb98.datavg01.pvids | awk '{print $1}' | tr "\n" " "</code>Then recreatevg <code>sudo recreatevg -L/ -Y/ -y datavg01 <list of disks from above comand></code>
+  - Run fsck and mount the filesystems<code>for fs in $(lsvgfs datavg01)
+do
+   sudo fsck -y ${fs}
+   if [ ${?} -eq 0 ]
+   then
+      sudo mount ${fs}
+   else
+      echo "Error mounting ${fs} ..."
+   fi      
+done</code>
+  - Handover to DBA team
+
+
+

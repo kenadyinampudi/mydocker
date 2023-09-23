@@ -1,0 +1,237 @@
+  * [[hpcc_build|HPCC Build]]
+  * [[hpcc_postinstall|HPCC Post-installation tasks]]
+  * [[hpcc_finalcheckout|HPCC final checkout]]
+
+
+<markdown>
+# HPC Post-install instructions
+
+## Register with SUSE Manager
+
+### Short Path!
+`cat /etc/*release` (Check release version, and use the bootstrap script below accordingly.)  
+`zypper mr -da && zypper ref` (Check for success)  
+`ping -c 3 cdcpillx086.federalmogul.com` (Check for success)  
+`rm /etc/zypp/credentials.d/NCCcredentials /var/cache/SuseRegister/lastzmdconfig.cache /etc/sysconfig/rhn/systemid`  
+`rm /var/lib/dbus/machine-id && dbus-uuidgen --ensure`  
+`curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/<keyname>.sh" | /bin/bash`  
+(Usually like `curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/sles11-3-sap.sh" | /bin/bash`. )  
+*If command is not successful, then*  
+`zypper install rhncfg-actions`  
+`curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/<keyname>.sh" | /bin/bash` (A second time)  
+If you get `-bootstrap complete-`, then the registration is complete.
+ 
+### Prep work
+
+Actual registration with Suse Manager is a fairly simple process, but there may be a bit of prep work involved for things to function correctly.
+
+!!! note "Make sure the system has zypper and that zypper works."
+
+First, you'll need to make sure you are up to date enough to actually run the registration.
+
+Check the release file to see what is up.  `cat /etc/*release`
+If you are at 11.3, you probably are OK. If you are lower than that, you will probably need to install or update zypper for the registration process to work correctly.
+
+Second, YAST, yum and zypper need to be functioning correctly.  
+At times, there may be an invalid repository left over on the system from an install of some package or another.  These all need to be removed so a "zypper refresh" will run correctly.
+
+You can skip this step if you are confident that everything is OK, but experience has taught it's good to check.
+
+* Check for existing repositories by using zypper.  
+`zypper lr -E`
+* Disable any enabled repositories.  
+`zypper mr -da` (Modify repository, diable all)
+* Make sure zypper refresh works.  
+`zypper ref`
+
+Lastly, you'll want to make sure that the FQDN of the SUSE Manager server is resolvable.
+`ping cdcpillx086.federalmogul.com`
+
+### Time to register
+
+The hardest part of this process is determining the proper registration "key" to use.
+I use the registration keys for grouping OS types and sites.  
+So Nuremburg would have its own key for SUSE 12, Shanghai would have its own key for SUSE 12 and another for SUSE 11, and Chicago would have its own set of keys for SUSE 11.3, SUSE 11.4, and SUSE 12.1.
+
+Log into the target system and register.  
+
+!!! note "The goal is to execute the script. You can pull the script, push the script or download the script and execute."
+I like to pull the script while logged into the client, as I'm already there checking the prereqs.
+
+`curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/<keyname>.sh" | /bin/bash`
+
+Lots of stuff should flash on the screen, things scroll by, etc etc.
+You are looking for a line which says `-bootstrap complete-`
+
+If this message is not displayed, there will probably be a suggestion to install the rhncfg-actions package.  Do that and rerun the registration.
+`zypper install rhncfg-actions  `  
+`curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/<keyname>.sh" | /bin/bash`
+
+!!! warning "If a server disappears after registration, it may be it was already registered directly."
+This is caused when two machines have the same Novell Customer Center registration IDDs.  Most likely, this system was previous registered, then cloned and renamed.  SUSE manager picks up on this and thinks it is the same system.
+
+See [https://www.suse.com/support/kb/doc?id=7012170](https://www.suse.com/support/kb/doc?id=7012170) for info on how to fix.  
+Short version:
+
+* Remove the client systems in SUSE Manager using the web interface.
+* Run "mgr-ncc-sync" or "mgr-sync refresh" on the SUSE Manager server from command line.
+* On SLES 11 client systems, move "/etc/zypp/credentials.d/NCCcredentials", "/var/cache/SuseRegister/lastzmdconfig.cache" and "/etc/sysconfig/rhn/systemid" to "/tmp", or simply delete them (on SLES 10 client systems, remove /etc/zmd/deviceid and /etc/zmd/secret, then restart zmd).  
+`rm /etc/zypp/credentials.d/NCCcredentials /var/cache/SuseRegister/lastzmdconfig.cache /etc/sysconfig/rhn/systemid`
+* On SLES 11, check if /etc/zmd/deviceid and /etc/zmd/secret exist and delete them anyway, even if those files are legacy ones from SLES 10.
+* On SLES 12, remove "/etc/SUSEConnect"
+* In addition, the problem explained in TID 7017994 could exist. Please remove the machine-id for dbus and regenerate it again as explained in that TID.  
+`rm /var/lib/dbus/machine-id`  
+`dbus-uuidgen --ensure`  
+* Run the bootstrap script on the client systems again.
+* Run again "mgr-ncc-sync" or "mgr-sync refresh" on the SUSE Manager server from command line.
+
+
+## Subscribe to config channel
+
+The goal is that all new configuration files will be saved in the SUSE manager.  
+The config files are grouped by "purpose", for lack of a better term.  
+
+"Base_Config" contains a few files we would want to be on every machine, such as a sudoers file and an authorized_keys file which allows passwordless ssh from one of our jumpboxes.
+
+The beauty of this system is that changes can be made in one place, then pushed out to all the clients with a click of a button.  This is why the config files are separated by "purpose."
+
+### Subscribe to a config channel
+
+To add a config channel to a system (and thereby provide the opportunity to push a collection of config files), do the following:
+
+* From the "Systems" tab, click the "Systems" on the left hand tree.  
+* Find the system you want to configure and click on it.  
+* Click on the "Configuration" tab under then name of the system in the right pane.  
+* Click "Manage Configuration Channels"  
+* Click "Subscribe to Channels"  
+* Check the channel(s) which contains the files you want to push and click "Continue"  
+	* `hpcc_config` is the channel you want.  
+* Click the "Update Channel Rankings" button to confirm your choice.  
+
+!!! note "Subscribing to channels only makes files available.  They still need to be pushed out."
+
+### Push config files out
+
+The big secret is to make sure each server has the individual variables set.
+Each server has "Custom Info".  
+For each server that needs config files, click on the server first. Next, click the "Custom Info" tab.  This section lists variables used in the config files which will be pushed out.  In particular, make sure the local domain controller is set and is valid.  That's required for LDAP authentication.  
+
+Click the "+ Create Value" link to add a new custom value for this server.  
+Click on the blue "local_domaincontroller" link to add a new value.  
+Enter the IP address of a valid domain controller which is physically close to the box you are installing.  This should cause the config files to be valid.  
+
+To push config files out, you need to "Deploy" them.
+To deploy files:
+
+* Make sure you are looking at the system you wish to modify.  
+* Click on the "Configuration" tab.  
+* Click on the "Deploy Files" section under the Configuration tab.  
+
+-Files available for distribution appear here-  
+
+* Check the files you want to push to the client.  
+	* For HPCC, push everything over.
+
+Usually, you would want to distrubute the entire set of config files.  
+
+* Once all the files you care to distribute (or redistribute) are selected, click "Deploy Files".  
+* Choose when you want to push the files out and click "Schedule Deploy" to start the process.
+
+!!! warning "This overwrites whatever is on the client.  Make sure you are OK with this."
+
+The actual push event may take a while to kick off.
+Check back in a few to make sure the event fired properly.
+
+
+## Configure LDAP
+
+Once the system is subscribed to the proper configuration channels and the files are pushed, the server will start working with LDAP.
+</markdown>
+[[RedHatLDAP | Winbind with Redhat]]
+<markdown>
+
+Confirm changes by logging into the server with an LDAP account.
+
+## Configure the transparent huge pages
+</markdown>
+[[unix:transparenthugepages#suse | Updated SUSE Instructions]] \\
+[[unix:transparenthugepages#red_hat | Updated RHEL Instructions]]
+
+<markdown>###To display if THP Transparent Huge Pages
+
+`cat /sys/kernel/mm/*transparent_hugepage/enabled  `  
+`[always] madvise never`
+
+This shows that it is enabled
+
+
+###How to Disable THP as normal user
+
+`echo never | sudo tee /sys/kernel/mm/*transparent_hugepage/enabled`
+
+###How to Disable THP as root
+
+`echo never > /sys/kernel/mm/*transparent_hugepage/enabled`
+
+###Now you see that it is disabled
+
+`cat /sys/kernel/mm/*transparent_hugepage/enabled`  
+`always madvise [never]`
+
+### To make permenant on reboot add to /etc/rc.d/boot.local
+
+`echo "echo never > /sys/kernel/mm/*transparent_hugepage/enabled" >> /etc/rc.d/boot.local`
+
+!!! note "The wild card wasn't working with SLES 12 ... remove it to have it work."
+ 
+SLES 12 only
+
+`echo "echo never > /sys/kernel/mm/transparent_hugepage/enabled" >> /etc/rc.d/boot.local`
+
+
+
+### Another way to make it permenant on reboot is to add this to the /etc/rc.d/boot.local
+
+```
+if test -f /sys/kernel/mm/transparent_hugepage/enabled; then
+   echo never > /sys/kernel/mm/transparent_hugepage/enabled
+fi
+if test -f /sys/kernel/mm/transparent_hugepage/defrag; then
+   echo never > /sys/kernel/mm/transparent_hugepage/defrag
+fi
+```
+
+### You can also look in /proc/meminfo file
+
+If this shows a value greater than 0 then you need to reset as shown above
+and reboot.		
+
+```
+AnonHugePages:  59398144 kB    
+HugePages_Total:       0	
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+```
+
+## Load the GPU software
+
+###Installing NVIDIA drivers on Linux
+To check your card, run  
+`Nvidia-smi -L`  
+Or  
+`lspci -v|grep -I nvidia`
+</markdown>
+With RedHat, [[unix:nvidia_install | please see this install instead.]] \\ 
+[[unix:old_nvidia_install | The old SUSE instructions for reference.]]
+<markdown>
+[‎5/‎15/‎2019 3:18 PM]  Yaldo, Lara:  
+Here is a list of missing items:
+· Change the profile to show full folder: `/etc/profile   export PS1='\u@\h:\w> `
+· Sudo not configured (Need the same configuration as lx143 with addition of the command of starting or stopping opensmd service)
+· Make sure exclusive mode is on boot for the nvidia gpu: `nvidia-smi -c 3`
+· Make sure persistence mode for nvidia is enabled on boot: `nvidia-smi -pm 1`
+· Install infiniband drivers locationed in /apps/mlnx_drv/. Need to be enabled on startup for both openibd and opensmd 
+· Add the lsf.sudoers file to /etc
+</markdown>

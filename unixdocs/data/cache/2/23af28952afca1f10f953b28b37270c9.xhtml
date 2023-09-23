@@ -1,0 +1,26 @@
+
+<h1 class="sectionedit1" id="test_network_speed_between_two_servers">Test network speed between two servers</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Install netcat on both servers <code>nc</code></div>
+</li>
+<li class="level1"><div class="li"> From one of them<pre class="code">nc -vvlnp 12345 &gt;/dev/null</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Goto the other and perform<pre class="code">dd if=/dev/zero bs=4M count=1K | nc -v 10.0.48.56 12345</pre>
+
+<p>
+You should see something like this
+</p>
+<pre class="code">[root@xaerap04 ~]# dd if=/dev/zero bs=4M count=1K | nc -v 10.0.48.56 12345
+Ncat: Version 6.40 ( http://nmap.org/ncat )
+Ncat: Connected to 10.0.48.56:12345.
+1024+0 records in
+1024+0 records out
+4294967296 bytes (4.3 GB) copied, 4.15641 s, 1.0 GB/s
+Ncat: 4294967296 bytes sent, 0 bytes received in 4.16 seconds.</pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,54 @@
+====== Decommission Unix servers ======
+
+===== Steps to do prior =====
+
+  - Document all approvals from business, customers or other teams necessary.
+  - Discuss within the team and get an agreement.
+  - Create a **Standard change** control, get approval and do all the necessary paperwork.
+
+===== Decommission - Day 1 =====
+
+  - Communicate with all stake holders that the server and it's apps are being decommissioned.
+  - Have the application team stop all apps on the server
+  - If backups required, please ask DataPres team to backup the server with requested retention period.
+  - DRiV Servers
+    - Send an email to Monitoring team to stop monitoring.
+    - Send an email to Netbackup team to stop backing up the server.
+  - Tenneco Servers
+    - Ask PT Unix team to execute their decomm checklist
+
+===== Decommission - Day 2 =====
+
+  - Make sure the backups are completed. It could be a day or two.
+  - Unmount & remove NFS mounts from clients when necessary and unexport the filesytems.
+  - Shutdown the server 
+
+===== Decommission - Day 9 =====
+
+  - Return the SAN storage after clearing PVIDs and destroying the VGDA. 
+  - If this is a physical server, 
+    - Send a ticket for cables reclamation and any storage zones etc to delete.
+    - Remove CDs/Tape media from the server.
+    - Unrack the server or pull out the blade.
+  - DRiV servers
+    - Remove the host from ''pcdcunxaxap01:/prod/images/etc/unix_sys_console''
+    - Remove the host from ''pcdcunxaxap01:/prod/images/nimserver-utilities/Disaster.Recovery.List''
+    - Remove the host from ''pcdcunxaxap01:/prod/images/nimserver-utilities/Disaster.Recovery.List''
+    - Remove the host from PowerVM monitoring / LPAR2RRD - pcdcunxlxap02.
+    - Remove the mksysb backup files ''pcdcunxaxap01''.
+    - Remove from NIM definitions ''pcdcunxaxap01''.
+  - Tenneco servers
+    - Remove the host from ''pgnmsv01:/prod/images/etc/unix_sys_console''
+    - Remove the host from ''pgnmsv01:/prod/images/nimserver-utilities/Disaster.Recovery.List''
+    - Remove the host from ''penmsv01:/prod/images/nimserver-utilities/Disaster.Recovery.List''
+    - Remove the host from PowerVM monitoring / LPAR2RRD.
+    - Remove the mksysb backup files.
+    - Remove from NIM definitions.
+  - Remove the LPAR/Blade/Frame as applicable.
+  - Remove the HMC/ILO network/VMWare as applicable.
+  - Request to remove from hardware maintenance. Email System model number and serial number to Robert - Not applicable if you are decommissioning .
+  - Remove from UUMA - Email to Robert.
+  - Send ticket to reclaim DNS names, IP addresses, network ports and cables to Network team.
+  - Goto service now and change the hardware status to //retire// for that server.
+    - Goto service now and search for server --> Click option //All// ---> then in the name column type the decommissioning server
+    - Once you get the server change the status of the server to //retire//.

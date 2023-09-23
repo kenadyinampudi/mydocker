@@ -1,0 +1,89 @@
+====== Fabric zoning servers - Lincolnshire ( Pure storage X50 ) ======
+
+===== Physical cabling of Pure X50 storage array =====
+
+
+^Storage array^Port Name      ^Switch Name^Port No^Fabric  ^Alias name       ^WWN                    ^Zoning target^
+|ldcpx50v1    |ct0-slot0-port0|ldcds5300a1|21     |Fabric A|ldcpx50v1_0_0_0  |52:4a:93:7d:cf:9f:bc:00|A1 and B1    |
+|ldcpx50v1    |ct0-slot0-port1|ldcds6510b1|30     |Fabric B|ldcpx50v1_0_0_1  |52:4a:93:7d:cf:9f:bc:01|A2 and B2    |
+|ldcpx50v1    |ct0-slot0-port2|ldcds6510a1|30     |Fabric A|ldcpx50v1_0_0_2  |52:4a:93:7d:cf:9f:bc:02|A2 and B2    |
+|ldcpx50v1    |ct0-slot0-port3|ldcds5300b1|21     |Fabric B|ldcpx50v1_0_0_3  |52:4a:93:7d:cf:9f:bc:03|A1 and B1    |
+|ldcpx50v1    |ct1-slot0-port0|ldcds5300a1|22     |Fabric A|ldcpx50v1_1_0_0  |52:4a:93:7d:cf:9f:bc:10|A1 and B1    |
+|ldcpx50v1    |ct1-slot0-port1|ldcds6510b1|31     |Fabric B|ldcpx50v1_1_0_1  |52:4a:93:7d:cf:9f:bc:11|A2 and B2    |
+|ldcpx50v1    |ct1-slot0-port2|ldcds6510a1|31     |Fabric A|ldcpx50v1_1_0_2  |52:4a:93:7d:cf:9f:bc:12|A2 and B2    |
+|ldcpx50v1    |ct1-slot0-port3|ldcds5300b1|22     |Fabric B|ldcpx50v1_1_0_3  |52:4a:93:7d:cf:9f:bc:13|A1 and B1    |
+
+** Fabric A **
+
+^Storage array^Port Name      ^Switch Name^Port No^Fabric  ^Alias name       ^WWN                    ^Zoning target^
+|ldcpx50v1    |ct0-slot0-port0|ldcds5300a1|21     |Fabric A|ldcpx50v1_0_0_0  |52:4a:93:7d:cf:9f:bc:00|A1 and B1    |
+|ldcpx50v1    |ct0-slot0-port2|ldcds6510a1|30     |Fabric A|ldcpx50v1_0_0_2  |52:4a:93:7d:cf:9f:bc:02|A2 and B2    |
+|ldcpx50v1    |ct1-slot0-port0|ldcds5300a1|22     |Fabric A|ldcpx50v1_1_0_0  |52:4a:93:7d:cf:9f:bc:10|A1 and B1    |
+|ldcpx50v1    |ct1-slot0-port2|ldcds6510a1|31     |Fabric A|ldcpx50v1_1_0_2  |52:4a:93:7d:cf:9f:bc:12|A2 and B2    |
+
+
+** Fabric B **
+
+^Storage array^Port Name      ^Switch Name^Port No^Fabric  ^Alias name       ^WWN                    ^Zoning target^
+|ldcpx50v1    |ct0-slot0-port1|ldcds6510b1|30     |Fabric B|ldcpx50v1_0_0_1  |52:4a:93:7d:cf:9f:bc:01|A2 and B2    |
+|ldcpx50v1    |ct0-slot0-port3|ldcds5300b1|21     |Fabric B|ldcpx50v1_0_0_3  |52:4a:93:7d:cf:9f:bc:03|A1 and B1    |
+|ldcpx50v1    |ct1-slot0-port1|ldcds6510b1|31     |Fabric B|ldcpx50v1_1_0_1  |52:4a:93:7d:cf:9f:bc:11|A2 and B2    |
+|ldcpx50v1    |ct1-slot0-port3|ldcds5300b1|22     |Fabric B|ldcpx50v1_1_0_3  |52:4a:93:7d:cf:9f:bc:13|A1 and B1    |
+
+
+===== Check to which switches host is connected =====
+
+  - [[san:stats:tennecosanswitchwwns|Tenneco Switches documentation]]
+
+
+===== Alias definitions for Pure X50 =====
+
+==== Fabric A ====
+
+<code>alicreate "ldcpx50v1_0_0_0","52:4a:93:7d:cf:9f:bc:00"
+alicreate "ldcpx50v1_0_0_2","52:4a:93:7d:cf:9f:bc:02"
+alicreate "ldcpx50v1_1_0_0","52:4a:93:7d:cf:9f:bc:10"
+alicreate "ldcpx50v1_1_0_2","52:4a:93:7d:cf:9f:bc:12"</code>
+
+==== Fabric B ====
+
+<code>alicreate "ldcpx50v1_0_0_1","52:4a:93:7d:cf:9f:bc:01"
+alicreate "ldcpx50v1_0_0_3","52:4a:93:7d:cf:9f:bc:03"
+alicreate "ldcpx50v1_1_0_1","52:4a:93:7d:cf:9f:bc:11"
+alicreate "ldcpx50v1_1_0_3","52:4a:93:7d:cf:9f:bc:13"</code>
+
+===== Zoning - Systems connected to LDCDS5300A1 / LDCDS5300B1 servers =====
+
+==== Fabric A ====
+
+  - Login to the principal switch ldcds5300a1<code>ssh admin@ldcds5300a1</code>
+  - Create zoning and add to config<code>zonecreate "taitc118_551e26__ldcpx50v1_0_0_0__1_0_0","taitc118_551e26;ldcpx50v1_0_0_0;ldcpx50v1_1_0_0"
+cfgadd "fab_a_act_config","taitc118_551e26__ldcpx50v1_0_0_0__1_0_0"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+
+==== Fabric B ====
+
+  - Login to the principal switch ldcds5300b1<code>ssh admin@ldcds5300b1</code>
+  - Create zoning and add to config<code>zonecreate "taitc118_538915__ldcpx50v1_0_0_3__1_0_3","taitc118_538915;ldcpx50v1_0_0_3;ldcpx50v1_1_0_3"
+cfgadd "fab_b_act_config","taitc118_538915__ldcpx50v1_0_0_3__1_0_3"
+cfgsave
+cfgenable "fab_b_act_config"</code>
+
+===== Fabric A Zoning - Systems connected to LDCDS6510A1 / LDCDS6510B1 servers =====
+
+==== Fabric A ====
+
+  - Login to the principal switch ldcds5300a1<code>ssh admin@ldcds5300a1</code>
+  - Create zoning and add to config<code>zonecreate "pocafasv02_bd000c__ldcpx50v1_0_0_2__1_0_2","pocafasv02_bd000c;ldcpx50v1_0_0_2;ldcpx50v1_1_0_2"
+cfgadd "fab_a_act_config","pocafasv02_bd000c__ldcpx50v1_0_0_2__1_0_2"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+
+==== Fabric B ====
+
+  - Login to the principal switch ldcds5300b1<code>ssh admin@ldcds5300b1</code>
+  - Create zoning and add to config<code>zonecreate "pocafasv02_bd000e__ldcpx50v1_0_0_1__1_0_1","pocafasv02_bd000e;ldcpx50v1_0_0_1;ldcpx50v1_1_0_1"
+cfgadd "fab_b_act_config","pocafasv02_bd000e__ldcpx50v1_0_0_1__1_0_1"
+cfgsave
+cfgenable "fab_b_act_config"</code>

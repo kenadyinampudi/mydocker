@@ -1,0 +1,238 @@
+
+<h1 class="sectionedit1" id="gios_unix_team_-_interview_questions">GIOS Unix Team - Interview Questions</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "GIOS Unix Team - Interview Questions" [1-52] -->
+<h2 class="sectionedit2" id="basic_questions_-_unix_generic">Basic Questions - Unix generic</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> In shell script, what does <code>echo $?</code> mean ?<pre class="code">Return code from the last executed command?</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> In shell script, what does <code>echo $$</code> mean ?<pre class="code">Process id of the shell?</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What command or symbol is used to pass the STDOUT of a command to STDIN of another command?<pre class="code">pipe or &quot;|&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What are the differences between telnet and ssh<pre class="code">telnet transmits data in plan text versus ssh sends them encrypted.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> With respect to <code>chmod</code> command, explain 750<pre class="code">Read, Write and Execute permission to Owner of the object
+Read and Execute permission to members of group of the object
+No permission for other users.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What command do you use to display last 10 lines of a text file?<pre class="code">tail -10 &lt;filename&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What is the purpose of <code>kill</code> command?. Best answer<pre class="code">Kill command is used to send message to a running process</pre>
+
+<p>
+Acceptable answer
+</p>
+<pre class="code">kill is used to terminate a process gracefully or abruptly -15 and -9 as arguments</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Explain <code>nohup</code> command<pre class="code">nohup command is used on child process to ignore terminal disconnects or termination of it&#039;s parent process, thus continues running in the background</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Hard links and soft links have the same inode number as the file to which it is linked. True or false<pre class="code">False.
+Hard links have the same inode number as the original file.
+Soft links have different inode number.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Explain name resolution on a specific flavor of unix, let the candidate pick the flavor<pre class="code">nsswitch.conf or netsvc.conf
+The order file,nis,bind
+resolv.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you find out the default gateway on a unix system.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Basic Questions - Unix generic" [53-1746] -->
+<h2 class="sectionedit3" id="basic_questions_-_aix_specific">Basic Questions - AIX specific</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> In AIX LVM, how do you rename a volume group<pre class="code">Unmount
+varyoffvg
+exportvg
+importvg -y &lt;newname&gt; &lt;pvid&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Why and how would you mirror rootvg in AIX?<pre class="code">Add the disk to rootvg
+Execute mirrorvg
+bosboot
+bootlist</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Purpose and procedure of alt_disk_copy in AIX<pre class="code">To create a copy of the running rootvg on another disk
+alt_disk_copy -d &lt;diskname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you display the configured network interface cards on an AIX system<pre class="code">ifconfig -a</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you find out the inode number of a file<pre class="code">ls -i &lt;filename&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you list error entries on an AIX system<pre class="code">errpt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you find out the memory on an AIX system<pre class="code">lsattr -El sys0 -a realmem
+bootinfo -r
+topas</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you check the paging space usage on AIX<pre class="code">lsps -a</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What is Logical Partition (LP) and Physical Partition(PP)<pre class="code">When a disk is added to a LVM volume group, it gets split into chunks depending on the size of PP.
+A logical volume is created by a logical entity called LP. Each LP is mapped to one or more(mirrored) PPs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> A SAN disk has been added to an AIX system, Explain the steps to use that disk to expand a filesystem<pre class="code">cfgmgr
+chdev -- allocate pvid, change algorithms if required
+extendvg
+chfs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you NFS mount filesystem /test from serverA to serverB?<pre class="code">ServerA:-
+Start NFSD
+exportfs or /etc/exports # Add /test
+ServerB:-
+Start biod
+mknfsmnt or make entries on /etc/filesystems
+mount</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Basic Questions - AIX specific" [1747-3284] -->
+<h2 class="sectionedit4" id="basic_questions_-_redhat_specific">Basic Questions - Redhat specific</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> How to check IP addresses configured on a Redhat Linux system<pre class="code">ifconfig -a
+ip a</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How to check the default route<pre class="code">netstat -rn
+route -n</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How to list all the installed kernel modules?<pre class="code">lsmod</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What is the default operating system log file<pre class="code">/var/log/messages</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What is an inode ?<pre class="code">Inode has description of all files and pointers to the data blocks of files stored in it.
+The information contained is file-size, access and modification time, permission and so on.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What command is used to review boot messages?<pre class="code">dmesg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Explain the procedure to extend an ext3/4 filesystem under LVM<pre class="code">lvextend 
+resize2fs</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Basic Questions - Redhat specific" [3285-4028] -->
+<h2 class="sectionedit5" id="advanced_questions_-_unix_generic">Advanced Questions - Unix generic</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Explain the boot process of a unix system, Or explain the process from the moment you push the “ON” button of a unix system<pre class="code">Look for communication skills
+Knowledge of operating system
+BIOS -&gt; MBR -&gt; Boot image -&gt; init -&gt; rc -&gt; runlevels -&gt; Login</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> What is a fork system call?<pre class="code">Create a new process from an existing process is called fork(). The main process is called parent process and new process id called child process.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If you lose the “ls” command on a unix system, what other method will you use to list files or directories ?<pre class="code">echo *
+find
+du</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you delete a shell variable?<pre class="code">unset &lt;variablename&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Explain an inode in a filesystem ?<pre class="code">Every object in a filesystem has an inode number. 
+inode contains every attribute of the object except the name.
+the map between inode and name is listed in the directory file.
+inode contains File location on the disk, Size of the file, Device Id and Group Id, File mode information, File protection flags, Access privileges for owner, group, Timestamps for file creation, modifications, etc.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> You have started a script on your terminal session. Later decided to push it to background, how will you do it ?<pre class="code">CTRL+Z
+bg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Have you used tcpdump ? Why and how ?.</div>
+</li>
+<li class="level1"><div class="li"> How do you redirect STDOUT and STDERR to a single destination?<pre class="code">command &gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> </div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Advanced Questions - Unix generic" [4029-5476] -->
+<h2 class="sectionedit6" id="advanced_questions_-_aix_powervm_specific">Advanced Questions - AIX / PowerVM specific</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Explain etherchannel<pre class="code">Look for NIB
+Link Aggregation, modes LACP/802.3ad, Switch side configs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Explain VIOS / SEA<pre class="code">SEA configuration, VLAN tagging, Power VM Virtual Switch, SEA failover (dual VIOS)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Explain VIOS / vSCSI &amp; NPIV<pre class="code">Watch for strengths in the way they explain this</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> In PowerVM, What is a capped and uncapped lpar.</div>
+</li>
+<li class="level1"><div class="li"> Explain Live partition mobility</div>
+</li>
+<li class="level1"><div class="li"> What is Quorum from an AIX LVM perspective. How will you change it and explain the behavior.<pre class="code">Having more than 50% of the PVs meets a Quorum criteria.
+chvg -Qn --- Disable
+chvg -Qs --- Enable</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On a VIOS server, how do you list all disks mapped to a Virtual <abbr title="Small Computer System Interface">SCSI</abbr> adapter&lt;/code&gt;As padmin lsmap -all&lt;/code&gt;</div>
+</li>
+<li class="level1"><div class="li"> How do you find out the version of an HMC<pre class="code">lshmc -V</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Explain <abbr title="Small Computer System Interface">SCSI</abbr> reservation</div>
+<ol>
+<li class="level2"><div class="li"> Explain how <abbr title="Small Computer System Interface">SCSI</abbr> reservation is important in a Dual-VIOS scenario.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Explain VIOS / NPIV configuration.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Advanced Questions - AIX / PowerVM specific" [5477-6472] -->
+<h2 class="sectionedit7" id="advanced_questions_-_redhat_specific">Advanced Questions - Redhat specific</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> What is NSCD ?<pre class="code">nscd is a daemon that provides a cache for the most common name service requests. When resolving a user, group, host, service</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> H</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Advanced Questions - Redhat specific" [6473-] -->

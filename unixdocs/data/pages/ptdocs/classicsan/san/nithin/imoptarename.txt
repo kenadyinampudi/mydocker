@@ -1,0 +1,208 @@
+====== Delete the old paerdb99 zoning and host from Pure storage array ======
+<code>DELETE ZONING IN FABRIC A(ssh admin@ldcds5300a1)
+   ________________________________________________
+
+FAB A
+
+paerdb99_8b0022__ldcpm70v1_0_2_0__1_2_0
+paerdb99_8b0023__ldcpm70v1_0_2_0__1_2_0
+
+paerdb99_8b0022
+paerdb99_8b0023
+
+FAB B
+
+paerdb99_8b0020
+paerdb99_8b0021
+
+paerdb99_8b0020__ldcpm70v1_0_0_1__1_0_1
+paerdb99_8b0021__ldcpm70v1_0_0_1__1_0_1
+
+
+
+Remove all configUration from fab_a_act_config
+
+1)paerdb99
+
+  a)A)cfgremove "fab_a_act_config","paerdb99_8b0022__ldcpm70v1_0_2_0__1_2_0;paerdb99_8b0023__ldcpm70v1_0_2_0__1_2_0
+"
+
+2)paerdb99
+
+  a):zonedelete paerdb99_8b0022__ldcpm70v1_0_2_0__1_2_0
+
+     zonedelete paerdb99_8b0023__ldcpm70v1_0_2_0__1_2_0
+
+
+3)Delete Alias
+
+
+  c):alidelete paerdb99_8b0022
+     alidelete paerdb99_8b0023
+
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+
+FABRIC B(ssh admin@ldcds5300b1)
+
+
+
+Remove all configUration from fab_b_act_config
+
+1)paerdb99
+
+  a)A)cfgremove "fab_b_act_config","paerdb99_8b0020__ldcpm70v1_0_0_1__1_0_1;paerdb99_8b0021__ldcpm70v1_0_0_1__1_0_1"
+
+
+2)paerdb99
+
+  a):zonedelete paerdb99_8b0020__ldcpm70v1_0_0_1__1_0_1
+     zonedelete paerdb99_8b0021__ldcpm70v1_0_0_1__1_0_1
+
+3)Delete Alias
+
+
+  c):alidelete paerdb99_8b0020
+
+     alidelete paerdb99_8b0021
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+
+Delete the host from Pure storage array
+=======================================
+ssh pureuser@ldcpm70v1
+
+purehost delete -h paerdb99</code>
+
+====== zone Rename ======
+
+<code>FAB A  paerdb99
+====== 
+
+  alias: tapr1d01_p8_bd22e0
+  alias: tapr1d01_p8_c1f1d2
+ 
+
+ zone:  tapr1d01_p8_bd22e0__ldcpm70v1_0_2_0__1_2_0
+ zone:  tapr1d01_p8_c1f1d2__ldcpm70v1_0_0_0__1_0_0
+
+  
+
+Rename Alias
+-------------
+
+1):zoneobjectrename tapr1d01_p8_bd22e0,paerdb99_p8_bd22e0
+
+2):zoneobjectrename tapr1d01_p8_c1f1d2,paerdb99_p8_c1f1d2
+
+Rename zoning
+-------------
+
+1):zoneobjectrename tapr1d01_p8_bd22e0__ldcpm70v1_0_2_0__1_2_0,paerdb99_p8_bd22e0__ldcpm70v1_0_2_0__1_2_0
+
+2):zoneobjectrename tapr1d01_p8_c1f1d2__ldcpm70v1_0_0_0__1_0_0,paerdb99_p8_c1f1d2__ldcpm70v1_0_0_0__1_0_0
+
+
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+
+==========================================================================================================================
+
+FAB B
+------
+
+ alias: tapr1d01_p8_bd22e1
+ alias: tapr1d01_p8_c1f1d3
+ 
+ zone:  tapr1d01_p8_bd22e1__ldcpm70v1_0_0_1__1_0_1
+ zone:  tapr1d01_p8_c1f1d3__ldcpm70v1_0_2_1__1_2_1
+
+
+
+Rename Alias
+-------------
+
+1):zoneobjectrename tapr1d01_p8_bd22e1,paerdb99_p8_bd22e1
+
+2):zoneobjectrename tapr1d01_p8_c1f1d3,paerdb99_p8_c1f1d3
+
+Rename zoning
+-------------
+
+1):zoneobjectrename tapr1d01_p8_bd22e1__ldcpm70v1_0_0_1__1_0_1,paerdb99_p8_bd22e1__ldcpm70v1_0_0_1__1_0_1
+
+2):zoneobjectrename tapr1d01_p8_c1f1d3__ldcpm70v1_0_2_1__1_2_1,paerdb99_p8_c1f1d3__ldcpm70v1_0_2_1__1_2_1
+
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+</code>
+
+===== Pure host rename =====
+<code>purehost rename -h tapr1d01 paerdb99</code>
+
+==== PTA Planning ====
+
+<code>1)Take a snapshot backup of PTA Database server tapr1d01 [ Use tapr1d01-whole protection group ]
+
+
+   a) purepgroup list PTAIMO
+
+   b) purepgroup snap --suffix Jan-12-2019 PTAIMO
+
+   c) purevol list --snap --pgrouplist PTAIMO.Jan-12-2019
+
+
+
+2)Reconfigure the snapshot backups of PTA to use the new database servername (paerdb99)
+
+   a) Reconfigure the snapshot backups of PTA to use the new database servername (paerdb99). Login to taqa1d01
+
+      I.Backup the config file
+
+        sudo cp /admin/backups/etc/puresnap.PTA.config /admin/backups/etc/puresnap.PTA.config.01122019.cisplit
+
+
+      II.Install the new configuration file
+
+
+         sudo cp /admin/backups/etc/puresnap.PTA.config.new.cicplit /admin/backups/etc/puresnap.PTA.config
+
+
+3).Create a snapshot of SAP PTA sapdata filesystems and present it to paerdb98
+
+   a) purepgroup list PTADATAVGIMO
+
+   b) purepgroup snap --suffix Jan-12-2019 PTADATAVGIMO
+
+   c) purevol list --snap --pgrouplist PTADATAVGIMO.Jan-12-2019
+
+   D) copy the snapshot volume to new volumes and assign to paerdb98
+
+      I.purevol copy PTADATAVGIMO.Jan-12-2019.ptadbdata_001 paerdb98_010
+   
+      II.purevol connect --host paerdb98 paerdb98_010
+      export SSH2LDCPM70="sudo -u sanmontr ssh pureuser@ldcpm70v1"
+for volume in {010..055}
+do
+   ${SSH2LDCPM70}  purevol connect --host paerdb98 paerdb98_${volume}
+done</code>
+=== Destroy the pure PG and snapshot Jan 21st ===
+<code>purepgroup destroy PTAIMO.Jan-12-2019
+
+purepgroup destroy PTADATAVGIMO.Jan-12-2019
+
+
+purepgroup destroy PTADATAVGIMO
+</code>
+
+
+

@@ -1,0 +1,39 @@
+====== Installing SSL certificates for internal websites ======
+
+  - Generate a private key<code>openssl genrsa -out unixdocs.key 2048</code>
+  - Create a config file for alternate names<code>vi unixdocs.conf</code>Add this<code>[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+
+[req_distinguished_name]
+countryName = Country Name (2 letter code)
+countryName_default = US
+stateOrProvinceName = State or Province Name (full name)
+stateOrProvinceName_default = IL
+localityName = Locality Name (eg, city)
+localityName_default = Chicago
+organizationalUnitName  = Organizational Unit Name (eg, section)
+organizationalUnitName_default  = Driv, INC.
+commonName = unixdocs
+commonName_max  = 64
+
+[ v3_req ]
+# Extensions to add to a certificate request
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = unixdocs
+DNS.2 = unixdocs.driv.com</code>
+  - Generate a "CSR" using the key<code>openssl req -new -out unixdocs.csr -key unixdocs.key -config unixdocs_openssl.conf</code>
+  - Send the CSR (unixdocs.csr) to Wintel team
+  - Wintel team will send a certificate. Save it as unixdocs.crt
+  - Make a copy of existing key and certificate.<code>sudo mkdir -p /etc/httpd/conf.d/backups
+sudo cp /etc/httpd/conf.d/unixdocs.key /etc/httpd/conf.d/backups/unixdocs.key.$(date +%m%d%Y)
+sudo cp /etc/httpd/conf.d/unixdocs.crt /etc/httpd/conf.d/backups/unixdocs.crt.$(date +%m%d%Y)</code>
+  - Copy the new key and certificate to ''/etc/httpd/conf.d''<code>sudo cp unixdocs.key /etc/httpd/conf.d/unixdocs.key
+sudo cp unixdocs.crt /etc/httpd/conf.d/unixdocs.crt</code>
+  - The virtual host definition already has these entries that points to these files<code>SSLCertificateFile /etc/httpd/conf.d/unixdocs.crt
+SSLCertificateKeyFile /etc/httpd/conf.d/unixdocs.key</code>
+  - Restart httpd<code>sudo systemctl restart httpd</code>

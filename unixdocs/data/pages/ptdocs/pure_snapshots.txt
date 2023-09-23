@@ -1,0 +1,18 @@
+====== Manual Snapshots on Pure ======
+
+  - Identify the Pure array hosting the disk.
+  - Log into CDCPILLX151 as storage.
+  - ssh into taprpur001 (or taprpur003 if needed.)
+  - Issue the snap command via the command line. \\ ''%%purepgroup snap --suffix andytest --apply-retention H1PDAILBKP%%''
+  - Done and Done
+
+==== Which protection group owns the server? ====
+  - Log into CDCPILLX151 as storage.
+  - ssh into taprpur001 (or taprpur003 if needed)
+  - Issue the list command \\ ''%%purehost list --protect <fullhostname>%%''
+  - You can use the resultant protection group in the above command, replacing "H1PDAILBKP"
+
+==== Recovery from Snaps ====
+This is trickier.  If this is uncomfortable, I would get someone else involved to double-check.  Restores are a destructive process.
+  - ''%%purevol copy --overwrite H1PDAILBKP.<suffix>.PEHRDB99_1 PEHRDB99_1%%''
+  - Do this for all the volumes attached to the server you are trying to restore.

@@ -1,0 +1,123 @@
+====== Copying a CDC snapshot over PHTEST ======
+This article will show you how to take a Pure snapshot from the CDC and mount the disks to an AS400 partition in the FDC.
+
+==== Short Path! ====
+''ssh root@cdcpillx151'' \\ 
+''sudo su - storage'' \\ 
+''latestsnap=`ssh phlypans020 "purepgroup list --notitle --snap taprpur003:dr-as400" | head -n 1 | gawk '{print $1}'`; export latestsnap'' \\ 
+''source="USCAGS02";export source'' \\ 
+''ssh phlypans020 "purevol list --snap $latestsnap.$source*"'' \\ 
+
+
+
+==== Procedure ====
+
+=== 1)  Log into phlypans020 as storage from cdcpillx151. ===
+<cli prompt='>'>
+storage@cdcpillx151:~> ssh phlypans020
+
+Fri Aug 07 08:10:06 2020
+Welcome storage. This is Purity Version 5.3.6 on FlashArray phlypans020
+http://www.purestorage.com/
+storage@phlypans020>
+</cli>
+=== 2) Find the latest snapshot. ===
+''purepgroup list --snap --target taprpur003:dr-as400'' 
+<cli prompt='>'>
+leedsn16@phlypans020> purepgroup list --snap --target taprpur003:dr-as400
+Name                    Source               Created
+taprpur003:dr-as400.87  taprpur003:dr-as400  2020-08-07 05:15:00 EDT
+taprpur003:dr-as400.82  taprpur003:dr-as400  2020-08-07 01:15:00 EDT
+taprpur003:dr-as400.77  taprpur003:dr-as400  2020-08-06 21:15:00 EDT
+taprpur003:dr-as400.72  taprpur003:dr-as400  2020-08-06 17:15:00 EDT
+taprpur003:dr-as400.67  taprpur003:dr-as400  2020-08-06 13:15:00 EDT
+taprpur003:dr-as400.62  taprpur003:dr-as400  2020-08-06 09:15:00 EDT
+taprpur003:dr-as400.57  taprpur003:dr-as400  2020-08-06 05:15:00 EDT
+taprpur003:dr-as400.47  taprpur003:dr-as400  2020-08-05 21:15:00 EDT
+taprpur003:dr-as400.42  taprpur003:dr-as400  2020-08-05 17:15:00 EDT
+taprpur003:dr-as400.32  taprpur003:dr-as400  2020-08-05 09:15:00 EDT
+taprpur003:dr-as400.27  taprpur003:dr-as400  2020-08-05 05:15:00 EDT
+taprpur003:dr-as400.17  taprpur003:dr-as400  2020-08-04 21:15:00 EDT
+taprpur003:dr-as400.9   taprpur003:dr-as400  2020-08-04 15:25:30 EDT
+taprpur003:dr-as400.2   taprpur003:dr-as400  2020-08-04 09:15:00 EDT
+</cli>
+You can also get the latest snap from the command line on CDCPILLX151 and store it in a variable for later.
+<cli prompt=">">
+storage@cdcpillx151:~> latestsnap=`ssh phlypans020 "purepgroup list --notitle --snap taprpur003:dr-as400" | head -n 1
+ | gawk '{print $1}'`
+storage@cdcpillx151:~> export latestsnap
+storage@cdcpillx151:~> echo $latestsnap
+taprpur003:dr-as400.92
+</cli>
+=== 3)  List out the volumes in that snapshot and grab the 10 you are interested in. === 
+The first column contains the full name of the snapshotted volume
+<cli prompt='>'>
+leedsn16@cdcpillx151:~> ssh phlypans020 "purevol list --snap taprpur003:dr-as400.87.*"
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI70  200G  taprpur003:SFLDAS10_VTSCSI70  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B44
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI71  200G  taprpur003:SFLDAS10_VTSCSI71  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B45
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI72  200G  taprpur003:SFLDAS10_VTSCSI72  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B46
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI73  200G  taprpur003:SFLDAS10_VTSCSI73  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B47
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI74  200G  taprpur003:SFLDAS10_VTSCSI74  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B48
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI75  200G  taprpur003:SFLDAS10_VTSCSI75  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B49
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI76  200G  taprpur003:SFLDAS10_VTSCSI76  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B4A
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI77  200G  taprpur003:SFLDAS10_VTSCSI77  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B4B
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI78  200G  taprpur003:SFLDAS10_VTSCSI78  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B4C
+taprpur003:dr-as400.87.SFLDAS10_VTSCSI79  200G  taprpur003:SFLDAS10_VTSCSI79  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B4D
+taprpur003:dr-as400.87.USCAGS02_VTSCSI40  200G  taprpur003:USCAGS02_VTSCSI40  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B4E
+taprpur003:dr-as400.87.USCAGS02_VTSCSI41  200G  taprpur003:USCAGS02_VTSCSI41  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B4F
+taprpur003:dr-as400.87.USCAGS02_VTSCSI42  200G  taprpur003:USCAGS02_VTSCSI42  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B50
+taprpur003:dr-as400.87.USCAGS02_VTSCSI43  200G  taprpur003:USCAGS02_VTSCSI43  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B51
+taprpur003:dr-as400.87.USCAGS02_VTSCSI44  200G  taprpur003:USCAGS02_VTSCSI44  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B52
+taprpur003:dr-as400.87.USCAGS02_VTSCSI45  200G  taprpur003:USCAGS02_VTSCSI45  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B53
+taprpur003:dr-as400.87.USCAGS02_VTSCSI46  200G  taprpur003:USCAGS02_VTSCSI46  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B54
+taprpur003:dr-as400.87.USCAGS02_VTSCSI47  200G  taprpur003:USCAGS02_VTSCSI47  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B55
+taprpur003:dr-as400.87.USCAGS02_VTSCSI48  200G  taprpur003:USCAGS02_VTSCSI48  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B56
+taprpur003:dr-as400.87.USCAGS02_VTSCSI49  200G  taprpur003:USCAGS02_VTSCSI49  2020-08-07 05:15:00 EDT  5095A4D7D7C8461F000B7B57
+</cli>
+Using the command line from CDCPILLX151, if you had the latest snap in a variable and knew the name of the partition you were looking for, you can get the disks in a one liner.
+<cli prompt=">">
+storage@cdcpillx151:~> ssh phlypans020 "purevol list --notitle --snap $latestsnap.USCAGS02*" | gawk '{print $1}'
+taprpur003:dr-as400.92.USCAGS02_VTSCSI40
+taprpur003:dr-as400.92.USCAGS02_VTSCSI41
+taprpur003:dr-as400.92.USCAGS02_VTSCSI42
+taprpur003:dr-as400.92.USCAGS02_VTSCSI43
+taprpur003:dr-as400.92.USCAGS02_VTSCSI44
+taprpur003:dr-as400.92.USCAGS02_VTSCSI45
+taprpur003:dr-as400.92.USCAGS02_VTSCSI46
+taprpur003:dr-as400.92.USCAGS02_VTSCSI47
+taprpur003:dr-as400.92.USCAGS02_VTSCSI48
+taprpur003:dr-as400.92.USCAGS02_VTSCSI49
+storage@cdcpillx151:~>
+</cli>
+=== 4)  Write up the commands to use to copy them. === 
+Try to keep them in roughly numerical order.
+Use this template: \\ 
+<code>
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI80
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI81
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI82
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI83
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI84
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI85
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI86
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI87
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI88
+purevol copy --overwrite <diskname>  PHTEST_VTSCSI89
+</code> \\ 
+If I was copying the USCAGS02 volumes, the commands would end up like this: \\ 
+<code>
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI40  PHTEST_VTSCSI80
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI41  PHTEST_VTSCSI81
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI42  PHTEST_VTSCSI82
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI43  PHTEST_VTSCSI83
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI44  PHTEST_VTSCSI84
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI45  PHTEST_VTSCSI85
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI46  PHTEST_VTSCSI86
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI47  PHTEST_VTSCSI87
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI48  PHTEST_VTSCSI88
+purevol copy --overwrite taprpur003:dr-as400.87.USCAGS02_VTSCSI49  PHTEST_VTSCSI89
+</code>
+===  Make sure the target partition is down first, then run the commands on PHLYPANS020. ===
+In this case, I would make sure "PHTEST" is down, then run the copy commands.  \\  
+These are destructive commands, which means the original partition data will be completely destroyed.
+Be sure to take a snapshot if you care about the original disk.

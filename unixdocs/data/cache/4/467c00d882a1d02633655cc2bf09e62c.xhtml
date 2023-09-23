@@ -1,0 +1,102 @@
+
+<h1 class="sectionedit1" id="aix_initial_configuration_of_san_connected_systems">AIX initial configuration of SAN connected systems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Configure FC <abbr title="Small Computer System Interface">SCSI</abbr> attributes<pre class="code">for FSCSI in $(lscfg | grep fscsi | awk &#039;{print $2}&#039; )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "AIX initial configuration of SAN connected systems" [1-242] -->
+<h2 class="sectionedit2" id="storage_array_specific_device_drivers_since_all_servers_are_built_on_pure_this_section_is_abbreviated">Storage Array specific device drivers since all servers are built on pure this section is abbreviated</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check if pure ODM has been installed.<pre class="code">lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte</pre>
+
+<p>
+You should see this if ODM i
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+s installed
+</p>
+<pre class="code"> Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  devices.fcp.disk.pure.flasharray.mpio.rte
+                             1.0.0.4  COMMITTED  AIX MPIO Support for PURE
+                                                 Flash Arrays(New Install)</pre>
+
+<p>
+If Pure ODM is not installed, you would find somethin
+g like this
+</p>
+<pre class="code">lslpp: 0504-132  Fileset devices.fcp.disk.pure.flasharray.mpio.rte not installed.</pre>
+<ol>
+<li class="level1"><div class="li"> If Pure ODM is not installed, install it now.</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> What type of operating system is this ?</div>
+<ol>
+<li class="level2"><div class="li"> AIX</div>
+<ol>
+<li class="level3"><div class="li"> What type of disks are we using on this LPAR ?</div>
+<ol>
+<li class="level5"><div class="li">If the system is using Pure Storage disks, do nothing</div>
+</li>
+<li class="level5"><div class="li">If the system is NOT using Pure Storage disks, install the proper device drivers</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> vSCSI </div>
+<ol>
+<li class="level5"><div class="li"> Do not install any device drivers</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> NPIV</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If the system is using Pure Storage disks, do nothing</div>
+<ol>
+<li class="level4"><div class="li"> If the system is NOT using Pure Storage disks, install the proper device drivers</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> VIOS</div>
+<ol>
+<li class="level3"><div class="li"> What type of I/O virtualization are we planning to use on this frame/VIOS ?</div>
+<ol>
+<li class="level4"><div class="li"> vSCSI </div>
+<ol>
+<li class="level5"><div class="li"> If the system is using Pure Storage disks, do nothing</div>
+</li>
+<li class="level5"><div class="li"> If the system is NOT using Pure Storage disks, install the proper device drivers</div>
+</li>
+</ol>
+</li>
+<li class="level4"><div class="li"> NPIV</div>
+<ol>
+<li class="level5"><div class="li"> Do not install any device drivers</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Storage Array specific device drivers since all servers are built on pure this section is abbreviated" [243-] -->

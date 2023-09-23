@@ -1,0 +1,28 @@
+
+<h1 class="sectionedit1" id="nfs_notes">NFS Notes</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Forcefully unmount a filesystem<pre class="code">umount -f &lt;fsname&gt; </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> When an NFS server has rebooted, do this</div>
+<ul>
+<li class="level2"><div class="li"> Unmount all of them<pre class="code">grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; | sort -r | xargs -n1 umount -f</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Mount all of them <pre class="code">grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; | sort | xargs -n1 mount</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check read check on all of them <pre class="code"> for fs in $(grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot;)
+ do
+ ls -l $fs
+ echo &quot;Press a key...&quot;
+ read
+ done</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>

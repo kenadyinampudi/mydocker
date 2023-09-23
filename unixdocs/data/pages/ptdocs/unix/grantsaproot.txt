@@ -1,0 +1,27 @@
+====== Granting Root to SAP user ======
+
+To grant root to an SAP user, do the following:
+  * Ensure they have approval
+  * Add their userid to "sapsa" group
+  * Add an "at" job to set their groups back
+
+=== Approvals ===
+To get approval for root, a qualified Basis member must first send an email request to their manager.  Their manager will forward their approval to the IT manager.  The IT manager will forward their approval to the UNIX team for action.
+
+=== Add their userid to "sapsa" group ===
+We've set up the sapsa group to have sudo privileges.\\
+Verify their existing groups:\\
+  cdcpillx168:/ # groups neumanna
+  neumanna : users sapcc
+
+Modify the user account to be added into the sapsa account.\\
+  cdcpillx168:/ # usermod -a -G sapsa neumanna
+  
+Set up an at job to put the account back at the end of the approved time.\\
+  cdcpillx168:/ # at -t 05110000
+  warning: commands will be executed using /bin/sh
+  at> usermod -G users,sapcc neumanna
+  at>
+  at> <EOT>
+  job 1 at Sat May 11 00:00:00 2019
+

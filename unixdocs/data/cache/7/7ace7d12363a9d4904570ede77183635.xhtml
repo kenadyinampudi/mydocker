@@ -1,0 +1,66 @@
+
+<h1 class="sectionedit1" id="managing_hosts_in_ansible_provisioning_tool">Managing Hosts in Ansible provisioning tool</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Managing Hosts in Ansible provisioning tool" [1-58] -->
+<h2 class="sectionedit2" id="adding_the_server_to_ansible_provisioning_tool">Adding the server to ansible provisioning tool</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create the user “awxadm” and add it to taunix group so it has all the sudo privileges.<pre class="code">sudo useradd -g taunix  -c &quot;Ansible_admin&quot; -d /home/awadm  -m awxadm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the password <pre class="code">echo awxadm:savuqBIhp6PJo|sudo chpasswd -e</pre>
+
+<p>
+OR
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Password for awxadm is stored in secret server <a href="https://cdcpilms748.pt.int.tenneco.com/SecretServer/app/#/secret/4286/general" class="urlextern" title="https://cdcpilms748.pt.int.tenneco.com/SecretServer/app/#/secret/4286/general"  rel="nofollow">awxadm password</a></div>
+</li>
+<li class="level1"><div class="li"> Make sure the server has Python 2.7 or Python 3.5 and above.<pre class="code">inampk48@sfldmilx031:~&gt; python -V 
+Python 2.7.18 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> When the server have more than one version installed in it, make sure you link the correct Python version to /usr/bin/python<pre class="code">inampk48@sfldmilx031:~&gt; ls -lrt /usr/bin/python
+lrwxrwxrwx 1 root root 9 Apr 27  2021 /usr/bin/python -&gt; python2.7</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then log in to the Ansible Web <abbr title="Uniform Resource Locator">URL</abbr><a href="https://pcdcawxlxap01:8043/#/home" class="urlextern" title="https://pcdcawxlxap01:8043/#/home"  rel="nofollow">https://pcdcawxlxap01:8043/#/home</a></div>
+</li>
+<li class="level1"><div class="li"> Admin login credentials are stored in secret server <a href="https://cdcpilms748.pt.int.tenneco.com/SecretServer/app/#/secret/4303/general" class="urlextern" title="https://cdcpilms748.pt.int.tenneco.com/SecretServer/app/#/secret/4303/general"  rel="nofollow">admin password</a></div>
+</li>
+<li class="level1"><div class="li"> Click on inventories and select the inventory where you want to add the server to <a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144214.png" class="media" title="kennedy:pasted:20220529-144214.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144214.png" class="mediacenter" alt="" width="800" /></a></div>
+</li>
+<li class="level1"><div class="li"> After you&#039;ve chosen the inventory click on “Hosts” and then click on “Add” as shown in the below picture <a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144232.png" class="media" title="kennedy:pasted:20220529-144232.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144232.png" class="mediacenter" alt="" width="800" /></a></div>
+</li>
+<li class="level1"><div class="li"> Fill in the details like name description and under variables make sure you put the FQDN as shown below <pre class="code">ansible_host: FQDN 
+eg: ansible_host: sfldmiax140.driv.com</pre>
+
+<p>
+ <a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144141.png" class="media" title="kennedy:pasted:20220529-144141.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144141.png" class="mediacenter" alt="" width="800" /></a>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> After the server is added associate it with the group like AIX, SUSE or Red Hat as shown in the below picture<a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144745.png" class="media" title="kennedy:pasted:20220529-144745.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144745.png" class="mediacenter" alt="" width="800" /></a><a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144549.png" class="media" title="kennedy:pasted:20220529-144549.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144549.png" class="mediacenter" alt="" width="800" /></a></div>
+</li>
+<li class="level1"><div class="li"> Test the server for communication select the server and click on run command as shown in the below picture<a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144557.png" class="media" title="kennedy:pasted:20220529-144557.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144557.png" class="mediacenter" alt="" width="800" /></a></div>
+</li>
+<li class="level1"><div class="li"> Choose the module as “ping” and the credentials as “awxadm”<a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144602.png" class="media" title="kennedy:pasted:20220529-144602.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144602.png" class="mediacenter" alt="" width="800" /></a><a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144606.png" class="media" title="kennedy:pasted:20220529-144606.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144606.png" class="mediacenter" alt="" width="800" /></a></div>
+</li>
+<li class="level1"><div class="li"> After you have launched it you should see the ping output as successful<a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144609.png" class="media" title="kennedy:pasted:20220529-144609.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144609.png" class="mediacenter" alt="" width="800" /></a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Adding the server to ansible provisioning tool" [59-2285] -->
+<h2 class="sectionedit3" id="removing_the_server_from_ansible_provisioning_tool">Removing the server from ansible provisioning tool</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> To remove a server log into the ansible webpage click on “Hosts” search for the server you want to remove select the server and click on “Delete” as shown in the below screenshot<a href="/lib/exe/detail.php?id=kennedy%3Amanage-hosts-ansible&amp;media=kennedy:pasted:20220529-144612.png" class="media" title="kennedy:pasted:20220529-144612.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20220529-144612.png" class="mediacenter" alt="" width="800" /></a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Removing the server from ansible provisioning tool" [2286-] -->

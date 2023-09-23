@@ -1,0 +1,44 @@
+====== fm-vios-fix ======
+
+<code>export targethost=<host_name> </code>
+
+<code>export server_driv=<hostname> </code>
+
+  - [[unix:installothersoftwaresaix|On AIX and VIOS, install additional softwares]]
+
+  - [[unix:lpar2rrd-os-agent|Install Lpar2rrd agent]]
+
+<code>  mkgroup "id=8086" taunix </code>
+<code>  mkuser "id=4255" "pgrp=taunix"  "home=/home/x1cxs952" "gecos=Chris Stachowiak"  x1cxs952</code>
+<code> exit</code>
+<code> sudo scp -r /home/x1cxs952/.ssh/  ${server_driv}:/home/x1cxs952/ </code>
+<code> sudo  ssh ${server_driv}  chown -R x1cxs952:taunix /home/x1cxs952/.ssh </code>
+<code> sudo rsync -avv /home/x1cxs952/.profile  ${server_driv}:/home/x1cxs952/.profile </code>
+
+  - Backup /etc/services and /etc/inetd.conf
+<code> sudo ssh ${targethost} cp -p /etc/services /etc/services-$(date +%Y%m%d-%H:%M:%S).cs</code>
+<code> sudo ssh ${targethost} cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y%m%d-%H:%M:%S).cs</code>
+  - [[chris:installsysinter| Install Sysinter]]
+
+  - Copy the scripts<code>sudo ssh ${targethost} "mkdir -p /usr/local/scripts"
+sudo rsync -a /usr/local/scripts/ ${targethost}:/usr/local/scripts/</code>
+
+  - [[chris:usersandgroups|Create basic unix group and users]]
+
+  - Enable centralized syslog
+    - Add ODM<code>sudo scp /prod/images/etc/tensyslogadd ${targethost}:/var/tmp/tensyslogadd
+sudo ssh ${targethost} "/usr/bin/odmadd /var/tmp/tensyslogadd"
+sudo ssh ${targethost} "rm /var/tmp/tensyslogadd"</code>
+    - Add configurations to syslog <code>sudo ssh ${targethost} "grep ^'*.notice' /etc/syslog.conf | grep -q pglgsv01"
+[[ ${?} -ne 0 ]] && config=yes || config=no
+[[ "${config}" = "yes" ]] && sudo ssh ${targethost} 'echo *.notice           @unixlogs.driv.com >> /etc/syslog.conf'
+[[ "${config}" = "yes" ]] && sudo ssh ${targethost} 'refresh -s syslogd'</code>
+
+
+  - Schedule standard cron jobs
+    - Grant  tauxrpt cron access</code><code>ssh ${targethost} 'echo "tauxrpt" | sudo tee -a /var/adm/cron/cron.allow'</code>
+    - Add the script to crontab <code> ssh ${targethost}</code>
+<code>cat << EOF | sudo tee /var/spool/cron/crontabs/tauxrpt
+30 23 * * 6 /usr/local/scripts/rpt_config_tauxrpt.sh 1>/dev/null 2>&1
+EOF</code>
+     - Restart Cron<code>ps -ef | grep cron | grep -v grep | awk '{print $2}' | xargs -n1 sudo kill</code>

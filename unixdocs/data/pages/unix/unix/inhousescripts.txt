@@ -1,0 +1,24 @@
+====== In house developed Shell Scripts. ======
+
+  - mksysb backups on AIX.<code>Master Copy               taitc118:/prod/images/scripts/mksysb.sh
+On each AIX server        /usr/local/scripts/mksysb.sh</code>CRON entry will be<code>20 23 * * 5 /usr/local/scripts/mksysb.sh 1>/dev/null 2>&1</code>
+    - Scope :-
+      * It's sole purpose is to generate it's own mksysb and ftp/scp/rsync to it's local repository
+        *	Local repository for all systems in Lincolnshire is taitc118 - the NIM server.
+        *	Local repository for all the systems in Interexion will be the new NIM server "penmsv01". [ Right now some servers are going to taitc058 - not sure ].
+        *	Local repository for all production atlas systems(055) will be the backup server (057) and vice versa.
+      * The master copy of the script will be on taitc118:/prod/images/scripts. **It will copy once a week to all the systems. Hence, any local changes will be overwritten in a weeks time.**
+      * It does not do tape mksysbs (There has to be seperate cron jobs for this )
+      * It does not make DR copies of mksysbs	(There has to be seperate cron jobs for this )
+      * It does not backup VIOS at this time. (May be in future)
+    - Testing to be done
+      * No room for mksysb
+      * mksysb errors out
+      * gzip failure
+      * scp failure
+  - List disks in detail on AIX<code>Master Copy               taitc118:/prod/images/scripts/lsvpcfg.sh
+On each AIX server        /usr/local/scripts/lsvpcfg.sh</code>
+  - List VIO disks in detail on AIX<code>Master Copy               taitc118:/prod/images/scripts/lsdiskcfg
+On each AIX server        /usr/local/scripts/lsdiskcfg</code>
+  - Cleanup homeless people<code>Master copy - taitc118:/prod/images/scripts/HOME-CLEANER
+On each server /usr/local/scripts/HOME-CLEANER</code>

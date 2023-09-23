@@ -1,0 +1,39 @@
+====== Cloning documentation tips for IMO project ======
+
+  - This one is good for copying volumes to MP<code>function copy_clone_snap_mp {
+export tmpfile01=/var/tmp/tmpfile01.$$
+cat /dev/null > ${tmpfile01}
+
+export source_host=${1}
+export target_host=${2}
+
+hostpgroup="LDCPM70V1:ldcpm70-cdcvilns013-imo-wave0-hosts"
+volumepgroup="LDCPM70V1:ldcpm70-cdcvilns013-imo-wave0-volumes"
+
+export SSH2PURE="ssh kapil.koroth@cdcvilns013.fmmotorparts.com"
+
+snapshots=$(${SSH2PURE} purepgroup list --snap ${hostpgroup} --notitle | head -2 | tail -1 | awk '{print $1}' )
+snapshots="${snapshots} $(${SSH2PURE} purepgroup list --snap ${volumepgroup} --notitle | head -2 | tail -1 | awk '{print $1}' )"
+
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol list --snap --pgrouplist ${snapshot} >> ${tmpfile01}
+done
+
+ser_no=100
+
+volumes=""
+
+for snapshot in $(grep "${source_host}_" ${tmpfile01} | grep -v 138G | awk '{print $1}' )
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${target_host}_${ser_no}
+   volumes="${volumes} ${target_host}_${ser_no}"
+   ser_no=$(echo "${ser_no} + 1 " | bc )
+done
+
+${SSH2PURE} purevol connect --host ${target_host} ${volumes}
+
+rm ${tmpfile01}
+
+}</code>
+  - Use it as follows<code>copy_clone_snap_mp <ldc_host_name> <cdc_mp_host_name></code>

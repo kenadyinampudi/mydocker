@@ -1,0 +1,32 @@
+
+<h2 class="sectionedit1" id="update_openssl_and_openssh">Update OpenSSL and OpenSSH</h2>
+<div class="level2">
+<pre class="code">  scp -r /usr/local/update {hostname}:/usr/local/ </pre>
+<pre class="code"> cd /usr/local/update </pre>
+<pre class="code"> ./backup-ssh-ssl.sh </pre>
+<pre class="code"> ls -liatR  </pre>
+<pre class="code">mkdir -p /mnt/aixupdates </pre>
+<pre class="code"> mount pgnmsv01:/prod/images/service-packs/LATEST-SSL-SSH /mnt/aixupdates </pre>
+<pre class="code"> cd /mnt/aixupdates; ls </pre>
+<ol>
+<li class="level1"><div class="li"> Rempve the ssl Efix before installation <pre class="code"> sudo emgr -r -L 102m_ifix </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the <abbr title="Secure Sockets Layer">SSL</abbr> update first <pre class="code">installp -aXYd OpenSSL/OpenSSL/openssl-1.0.2.1500-1.0.2o openssl</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the <abbr title="Secure Shell">SSH</abbr> update x <pre class="code">installp -aXYd OpenSSH/OpenSSH_7.5.102.1500 openssh </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart <abbr title="Secure Shell">SSH</abbr> to activate the update and the changes to the sshd_config file <pre class="code"> refresh -s inetd </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmount the file system <pre class="code"> cd; umount /mnt/aixupdates</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> On the NIM Server, remove the exported lppsource file system from the exports list  <pre class="code"> /usr/sbin/rmnfsexp -d &#039;/prod/images/service-packs/LATEST-SSL-SSH&#039; &#039;-B&#039; </pre>
+</div>
+</li>
+</ol>
+
+</div>

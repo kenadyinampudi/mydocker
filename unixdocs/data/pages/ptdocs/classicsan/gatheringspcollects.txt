@@ -1,0 +1,45 @@
+Login to given VNX and<code>
+while [ 1 ];do SPA=`/nas/sbin/navicli -h A_CKM00143401481 managefiles -list|grep runlog|awk '{print $5}'`;if [ -z $SPA ];then break;fi;echo gathering $SPA;sleep 30;done;/nas/sbin/navicli -h A_CKM00143401481 managefiles -retrieve -file `/nas/sbin/navicli -h A_CKM00143401481 managefiles -list|grep data.zip|grep -v old|tail -n1|awk '{print $5}'` -path /home/nasadmin -o;while [ 1 ];do SPB=`/nas/sbin/navicli -h B_CKM00143401481 managefiles -list|grep runlog|awk '{print $5}'`;if [ -z $SPB ];then break;fi;echo gathering $SPB;sleep 30;done;/nas/sbin/navicli -h B_CKM00143401481 managefiles -retrieve -file `/nas/sbin/navicli -h B_CKM00143401481 managefiles -list|grep data.zip|grep -v old|tail -n1|awk '{print $5}'` -path /home/nasadmin -o;ls -1l /home/nasadmin/*data.zip;echo Please transfer SP collects for triiage.
+
+
+[root@rybvnx5400cs0 /]# 
+/nas/sbin/navicli -h A_`/nasmcd/sbin/serial` spcollect; /nas/sbin/navicli -h B_`/nasmcd/sbin/serial` spcollect; 
+echo -e -n "SPA starting."; 
+while [ `/nas/sbin/navicl i -h A_\`/nasmcd/sbin/serial\` managefiles -list | grep runlog | wc -l` -lt 1 ]; 
+do sleep 5; echo -e -n "."; 
+done; 
+echo -e "Started"; 
+echo -e -n "SPB starting."; 
+while [ `/nas/sbin/navicli  -h B_\`/nasmcd/sbin/serial\` managefiles -list | grep runlog | wc -l` -lt 1 ]; 
+do sleep 5; echo -e -n "."; 
+done; 
+echo -e "Started";
+mkdir /tmp/remoteproactive 2> /dev/null; 
+wget --spider --t imeout 5 --tries 2 -q ftp://168.159.219.40/pub/rcm/vnx/code/ && touch /tmp/remoteproactive/externalftp; 
+if [ -e /tmp/remoteproactive/externalftp ]; 
+then echo -e "\033[30;42mWe have external  ftp access.\033[0m"; 
+else echo -e "\033[34;43mNo external FTP access\033[0m"; 
+fi; 
+while [ 1 ]; do SPA=`/nas/sbin/navicli -h A_\`/nasmcd/sbin/serial\` managefiles -list|grep runlog|awk '{print $5}'`; 
+if [ -z $SPA ];
+then break;
+fi; 
+echo gathering $SPA; sleep 30; 
+done;
+/nas/sbin/navicli -h A_`/nasmcd/sbin/serial` managefiles -retrieve -file `/nas/sbin/navicli -h A_\`/nasmcd/sbin/ serial\` managefiles -list|grep data.zip|grep -v old|tail -n1|awk '{print $5}'` -path /home/nasadmin -o; 
+while [ 1 ]; do SPB=`/nas/sbin/navicli -h B_\`/nasmcd/sbin/serial\` managefiles -lis t|grep runlog|awk '{print $5}'`; if [ -z $SPB ];
+then break;
+fi; 
+echo gathering $SPB; sleep 30; 
+done; 
+/nas/sbin/navicli -h B_`/nasmcd/sbin/serial` managefiles -retrieve -file `/nas/sbin/navicli -h B_\`/nasmcd/sbin/serial\` managefiles -list|grep data.zip|grep -v old|tail -n1|awk '{print $5}'` -path /home/nasadmin -o; 
+ls -1l /home/nasadmin/*data.zip; 
+if [ -e /tmp/remoteproactive /externalftp ]; then 
+for i in `ls -1t /home/nasadmin/*data.zip | head -n2 | paste - -`; do curl --disable-epsv --ftp-create-dirs ftp://168.159.219.40/incoming/rcm/sahlm1/spcollect/ -T $i ;  
+done; for i in `ls -1t /home/nasadmin/lists-tar* | head -n1 | paste - -`; 
+do curl --disable-epsv --ftp-create-dirs ftp://168.159.219.40/incoming/rcm/sahlm1/spcollect/ -T $i ; 
+done; else 
+echo -e "\033[35;43mPlease transfer SP collects for triiage.\033[0m";
+fi
+
+</code>

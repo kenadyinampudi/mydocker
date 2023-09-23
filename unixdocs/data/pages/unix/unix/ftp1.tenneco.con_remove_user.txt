@@ -1,0 +1,21 @@
+====== FTP1.TENNECO.COM User Removal ======   
+   After Entitlement removes the user id from the server they will send the UNIX Team a ticket to remove the user id from the server.
+   Make the following changes substituting the user name from the ticket where applicable. 
+         
+   Remove the group that is unique to this user, the users home directory and all subdirectories under it 
+    - Remove the users unique group 
+<code> sudo rmgroup '-p' {user login here} </code>
+    - Remove the users home directory from /prod/ftp 
+<code> cd /prod/ftp </code> <code> sudo rm -r {user login here} </code>
+   
+   Modify ssh config file to remove the user id from the appropriate stanza in /etc/ssh/sshd_config 
+    - Create a backup copy of sshd_config  where .yn = your initials 
+<code> cd /etc/ssh </code> <code> sudo  cp -p  sshd_config sshd_config-$(date +%Y%m%d-%H:%M:%S).yn </code>
+<code> sudo vi sshd_config </code> Rremove the username to the end of the stanza "Example of overriding settings on a per-user basis"
+    - Save the file and restart the ssh daemon so the change takes effect <code> sudo kill -HUP $(lssrc -a |grep sshd | awk '{print $3}')</code>
+
+
+   
+
+   
+  

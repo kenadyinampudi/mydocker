@@ -1,0 +1,127 @@
+
+<h1 class="sectionedit1" id="draft_-_document_is_being_created">DRAFT - Document is being created.</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "DRAFT - Document is being created." [1-50] -->
+<h1 class="sectionedit2" id="unable_to_delete_gvfs_folder_in_home_sidadm_cache">Unable to delete gvfs folder in /home/sidadm/.cache</h1>
+<div class="level1">
+
+<p>
+There is a folder called gvfs which is mounted during the SAP installation and due to an error the gvfs folder was showing as having permission &amp; ownership of ???.
+</p>
+<ol>
+<li class="level1"><div class="li"> This is because of the fuse mount.<pre class="code">root on scdcigslxap01:/home/igsadm/.cache $ sudo mount |grep gvfs
+gvfsd-fuse on /home/igsadm/.cache/gvfs type fuse.gvfsd-fuse (rw,nosuid,nodev,relatime,user_id=6012,group_id=700)
+root on scdcigslxap01:/home/igsadm/.cache $</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> after confirmation from sap basis, dismount the fuse<pre class="code">root on scdcigslxap01:/home/igsadm/.cache $ sudo mount |grep gvfs
+gvfsd-fuse on /home/igsadm/.cache/gvfs type fuse.gvfsd-fuse (rw,nosuid,nodev,relatime,user_id=6012,group_id=700)
+root on scdcigslxap01:/home/igsadm/.cache $ sudo umount gvfsd-fuse
+root on scdcigslxap01:/home/igsadm/.cache $ sudo mount |grep gvfs
+root on scdcigslxap01:/home/igsadm/.cache $</pre>
+</div>
+</li>
+</ol>
+<hr />
+
+</div>
+<!-- EDIT2 SECTION "Unable to delete gvfs folder in /home/sidadm/.cache" [51-989] -->
+<h1 class="sectionedit3" id="sapinst_program_hence_sap_admins_requires_root_credentials">sapinst program &amp; hence SAP Admins requires root credentials</h1>
+<div class="level1">
+
+<p>
+SAP admins have sudo access to run sapinst, but when they get prompted for credentials for root user when they run the following command
+</p>
+<pre class="code">sudo /usr/sap/trans/SWPM/sapinst &amp; </pre>
+
+<p>
+  The solution from SAP for this problem is to pass the &lt;sid&gt;adm user as the REMOTE_ACCESS_USER. The command that SAP Admins can use is something like below for an SAP installation having an SID of igs
+</p>
+<pre class="code">sudo /usr/sap/trans/SWPM/sapinst SAPINST_REMOTE_ACCESS_USER=igsadm SAPINST_REMOTE_ACCESS_USER_IS_TRUSTED=true &amp;</pre>
+
+<p>
+ This will then open a browser where SAP team can key in the credentials of &lt;sid&gt;adm
+</p>
+<hr />
+
+</div>
+<!-- EDIT3 SECTION "sapinst program & hence SAP Admins requires root credentials" [990-1666] -->
+<h1 class="sectionedit4" id="how_to_setup_ssh_authentication_for_checkdb_other_remote_tools_to_work">How to setup SSH authentication for checkdb &amp; other remote tools to work</h1>
+<div class="level1">
+
+<p>
+In earlier days, SAP by default only supported rsh for executing remote programs on the DB server from the App server. Since, password is transmitted in clear text using rsh, it is recommended to use <abbr title="Secure Shell">SSH</abbr> to achieve remote program execution. At a high level, this is achieved in 2 steps.
+</p>
+
+</div>
+<!-- EDIT4 SECTION "How to setup SSH authentication for checkdb & other remote tools to work" [1667-2042] -->
+<h3 class="sectionedit5" id="setup_ssh_keys_from_app_server_to_db_server_viceversa_for_the_sid_adm_user">Setup ssh keys from app server to DB server &amp; viceversa for the &lt;sid&gt;adm user</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the app server and switch to the &lt;sid&gt;adm user</div>
+</li>
+<li class="level1"><div class="li"> execute ssh-keygen -t rsa and press enter when prompted for confirmation and the passphrase</div>
+</li>
+<li class="level1"><div class="li"> go to the .ssh directory and copy the ida_rsa.pub to authorized_keys<pre class="code">cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now copy the entire .ssh directory to the DB server. This has to be done using the root password <pre class="code">scp ~/.ssh/ root@dbserver:~sidadm/.ssh</pre>
+
+<p>
+Make sure to change the sidadm to the corresponding sid of the SAP instance in the above command
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the DB server, and change the permissions<pre class="code">sudo chown -R sidadm:sapsys ~sidadm/.ssh/</pre>
+
+<p>
+Make sure to change the sidadm to the corresponding sid of the SAP instancein the above command.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> From the app server, verify that login as sidadm is possible, by switching to the sidadm user and then running an ssh to the DB host</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Setup ssh keys from app server to DB server & viceversa for the <sid>adm user" [2043-3012] -->
+<h3 class="sectionedit6" id="login_once_using_the_fqdn_from_app_to_db_db_to_app_server_so_that_the_keys_are_added_in_the_known_hosts_file">Login once using the FQDN from app to DB &amp; DB to app server so that the keys are added in the known_hosts file.</h3>
+<div class="level3">
+
+<p>
+This is a very important step without which the SAP program will continue to give errors as the program can&#039;t accept the keys and add to known_hosts automatically.  For this to work, make sure to connect from app to DB and viceversa using both shortname and FQDN
+</p>
+<ol>
+<li class="level1"><div class="li"> On App server, switch to sidadm and ssh to the DB server using shortname and accept the fingerprint. Example:<pre class="code">scdcigslxap01:igsadm 200&gt; ssh scdcigslxdb01.pt.int.tenneco.com
+The authenticity of host &#039;scdcigslxdb01.pt.int.tenneco.com (10.131.15.35)&#039; can&#039;t      be established.
+ECDSA key fingerprint is SHA256:3ngw4TAohscIKNmyp9GuL2O67gZBGAdN8xYayDfucg0.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added &#039;scdcigslxdb01.pt.int.tenneco.com&#039; (ECDSA) to the lis     t of known hosts.
+Last login: Wed Jul 12 11:34:08 2023 from 10.131.15.34
+scdcigslxdb01:igsadm 148&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Repeat the same procedure from the DB server to the app server.  </div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Login once using the FQDN from app to DB & DB to app server so that the keys are added in the known_hosts file." [3013-4094] -->
+<h1 class="sectionedit7" id="veeam_backup_configuration">Veeam Backup configuration</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> If any VM snapshots have already been taken, delete them with confirmation from SAP Basis/DB</div>
+</li>
+<li class="level1"><div class="li"> This user needs ulimited sudo privileges and hence been added to taunix group.</div>
+</li>
+<li class="level1"><div class="li"> Create veeam-s-admin user<pre class="code">useradd -g 8086 -c veeam_admin -m -d /home/veeam-s-admin veeam-s-admin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get the standard password from the Backup team and set the password using the passwd command</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Veeam Backup configuration" [4095-] -->

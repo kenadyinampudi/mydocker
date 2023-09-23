@@ -1,0 +1,48 @@
+====== Perform an adhoc replication, and provision storage at CDC/PTT ======
+
+===== Adhoc sync =====
+
+  - Sync to be executed on LDCPM70<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+  - Export the list of hosts<code>export hosts="host1 host2"</code>
+  - Export a variable to use as suffix for today's snapshot<code>export suffix=$(date +%b%d%Y%H%M)</code>
+  - Add volumes to "autobahn-ldc-cdc-ptt" protection group<code>for host in ${hosts}
+do
+   volumes=$(${SSH2PURE} purevol list | grep ^${host}_ | awk '{print $1}'|tr "\n" "," | sed "s;,$;;g")
+   echo "Adding ${volumes} to autobahn-ldc-cdc-ptt protection group"
+   ${SSH2PURE} purepgroup setattr --addvollist ${volumes} autobahn-ldc-cdc-ptt
+done</code>
+  - Perform an adhoc sync on protection groups from LDC Pure storage array<code>${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt</code>
+
+===== Provision storage =====
+
+  - Provisioning to be done on PTT Pure<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+  - Check progress of the snapshot<code>${SSH2PURE} purevol list --total --snap --transfer --pgrouplist LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix}</code>Wait until all volumes become 100%
+  - Store all snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix} > snapshots.mp</code>
+  - Provision storage
+    - Define this function<code>function copysnapshots {
+for host in ${*}
+do
+   grep "${host}_" snapshots.mp > ${host}.snapshots
+   for snapshot in $(awk '{print $1}' ${host}.snapshots )
+   do
+      volumename=$(echo ${snapshot} | awk -F"." '{print $NF}' )
+      ${SSH2PURE} purevol copy ${snapshot} ${volumename}
+   done
+   volumes=$(awk '{print $1}' ${host}.snapshots | awk -F"." '{print $NF}' | tr "\n" " " )
+   ${SSH2PURE} purevol connect --host ${host} ${volumes}
+done
+}</code>
+    - Provision storage to hosts<code>copysnapshots ${hosts}</code>
+
+===== Cleanup the snapshots =====
+
+  - Clean up snapshots on LDCPM70V1<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+    - Remove the snapshot<code>${SSH2PURE} purepgroup destroy autobahn-ldc-cdc-ptt.${suffix}</code>
+    - Remove volumes from "autobahn-ldc-cdc-ptt" protection group<code>for host in ${hosts}
+do
+   volumes=$(${SSH2PURE} purevol list | grep ^${host}_ | awk '{print $1}'|tr "\n" "," | sed "s;,$;;g")
+   echo "Removing ${volumes} from autobahn-ldc-cdc-ptt protection group"
+   ${SSH2PURE} purepgroup setattr --remvollist ${volumes} autobahn-ldc-cdc-ptt
+done</code>
+  - Clean up snapshots on taprpur001<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+    - Remove the snapshot<code>${SSH2PURE} purepgroup destroy LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix}</code>

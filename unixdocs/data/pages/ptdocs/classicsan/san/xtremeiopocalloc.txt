@@ -1,0 +1,71 @@
+===== Allocating storage for TA2 POC system. =====
+
+<code>Need 2*200G (binvg01) and 12*1024G (xtremedatavg01) LUNs</code>
+
+  - Create folders for pocafasv01 local disks( binvg01 ) and data disks<code>ssh pocemcxms01 add-folder folder-type=\"vol\" caption=\"pocafasv01\" parent-folder-id=\"/\"
+ssh pocemcxms01 add-folder folder-type=\"vol\" caption=\"ta2oradb\" parent-folder-id=\"/\"</code>
+  - Create local volumes<code>for vol in 0001 0002
+do
+   ssh pocemcxms01 add-volume vol-name=\"pocafasv01_${vol}\" vol-size=\"200g\" parent-folder-id=\"/pocafasv01\"
+done
+ 
+Added Volume pocafasv01_0001 [14]
+Added Volume pocafasv01_0002 [15]</code>
+  - Create data volumes<code>for vol in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012
+do
+   ssh pocemcxms01 add-volume vol-name=\"ta2oradb_${vol}\" vol-size=\"1024g\" parent-folder-id=\"/ta2oradb\"
+done
+
+Added Volume ta2oradb_0001 [16]
+Added Volume ta2oradb_0002 [17]
+Added Volume ta2oradb_0003 [18]
+Added Volume ta2oradb_0004 [19]
+Added Volume ta2oradb_0005 [20]
+Added Volume ta2oradb_0006 [21]
+Added Volume ta2oradb_0007 [22]
+Added Volume ta2oradb_0008 [23]
+Added Volume ta2oradb_0009 [24]
+Added Volume ta2oradb_0010 [25]
+Added Volume ta2oradb_0011 [26]
+Added Volume ta2oradb_0012 [27]</code>
+  - Map local disks to pocafasv01<code>for vol in 0001 0002
+do
+   ssh pocemcxms01 map-lun vol-id=\"pocafasv01_${vol}\" ig-id=\"pocafasv01\"
+done</code>
+  - Now map the data volumes to pocafasv01<code>for vol in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012
+do
+   ssh pocemcxms01 map-lun vol-id=\"ta2oradb_${vol}\" ig-id=\"pocafasv01\"
+done</code>
+  - Perform a snapshot of all volumes inside /ta2oradb folder<code>ssh pocemcxms01 add-folder folder-type=\"vol\" caption=\"ta2orabcv\" parent-folder-id=\"/\"
+
+ssh pocemcxms01 create-snapshot source-folder-id=\"/ta2oradb\" folder-id=\"/ta2orabcv\" suffix=\"_$(date +%a)\"
+
+Created Snapshot ta2oradb_0009_Thu [28]
+Created Snapshot ta2oradb_0010_Thu [29]
+Created Snapshot ta2oradb_0011_Thu [30]
+Created Snapshot ta2oradb_0012_Thu [31]
+Created Snapshot ta2oradb_0005_Thu [32]
+Created Snapshot ta2oradb_0006_Thu [33]
+Created Snapshot ta2oradb_0007_Thu [34]
+Created Snapshot ta2oradb_0008_Thu [35]
+Created Snapshot ta2oradb_0002_Thu [36]
+Created Snapshot ta2oradb_0001_Thu [37]
+Created Snapshot ta2oradb_0004_Thu [38]
+Created Snapshot ta2oradb_0003_Thu [39]</code>
+  - Map the snapshot volumes to pocafasv02<code>for vol in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012
+do
+   ssh pocemcxms01 map-lun vol-id=\"ta2oradb_${vol}_$(date +%a)\" ig-id=\"pocafasv02\"
+done   
+
+LUN 4 mapped to Volume ta2oradb_0001_Thu
+LUN 5 mapped to Volume ta2oradb_0002_Thu
+LUN 6 mapped to Volume ta2oradb_0003_Thu
+LUN 7 mapped to Volume ta2oradb_0004_Thu
+LUN 8 mapped to Volume ta2oradb_0005_Thu
+LUN 9 mapped to Volume ta2oradb_0006_Thu
+LUN 10 mapped to Volume ta2oradb_0007_Thu
+LUN 11 mapped to Volume ta2oradb_0008_Thu
+LUN 12 mapped to Volume ta2oradb_0009_Thu
+LUN 13 mapped to Volume ta2oradb_0010_Thu
+LUN 14 mapped to Volume ta2oradb_0011_Thu
+LUN 15 mapped to Volume ta2oradb_0012_Thu</code>

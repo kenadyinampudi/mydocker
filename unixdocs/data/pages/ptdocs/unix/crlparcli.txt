@@ -1,0 +1,108 @@
+====== Create the lpar from a command line ======
+
+**Creating a NPIV lpar**
+
+  * Find out the next LPAR id available<code>lssyscfg -r lpar -m Server-8202-E4C-SN101260T -F lpar_id</code>Take the next number available for the new lpar. We are assuming "6" for the following steps.
+
+**NPIV lpar standard config**
+
+^Adapter^Type^SlotNumber^
+|vsa0|Virtual Serial|0|
+|vsa1|Virtual Serial|1|
+|ent0|Virtual Ethernet|2|
+|ent1|Virtual Ethernet|3|
+|fcs0|Virtual Fibre|4|
+|fcs1|Virtual Fibre|5|
+|fcs2|Virtual Fibre|6|
+|fcs3|Virtual Fibre|7|
+
+  * Perform a DLPAR operation to add a Virtual FC Server adapter on both the VIOS servers. They will be used on the new lpar on slot numbers 4 and 5(VIOS1) & 5and 6 (VIOS2). **0 and 1 are used for VSAs, 2 and 3 are used for Ethernet hence 4,5,6 and 7 will be the VFCs**
+  * VIOS1 - teprvio10<code>chhwres -r virtualio -m Server-8202-E4C-SN101260T -o a -p teprvio10 \
+--rsubtype fc -a "adapter_type=server,remote_lpar_id=6,remote_slot_num=4"</code><code>chhwres -r virtualio -m Server-8202-E4C-SN101260T -o a -p teprvio10 \
+--rsubtype fc  -a "adapter_type=server,remote_lpar_id=6,remote_slot_num=5"</code>
+  * VIOS2 - teprvio11<code>chhwres -r virtualio -m Server-8202-E4C-SN101260T -o a -p teprvio11 \
+--rsubtype fc  -a "adapter_type=server,remote_lpar_id=6,remote_slot_num=6"</code><code>chhwres -r virtualio -m Server-8202-E4C-SN101260T -o a -p teprvio11 \
+--rsubtype fc  -a "adapter_type=server,remote_lpar_id=6,remote_slot_num=7"</code>
+  * Save the current configuration of the VIOS1 and VIOS2 lpars. So that the configuration is preserved for reboots.<code>mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p teprvio10  -n teprvio10 --force
+mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p teprvio11  -n teprvio11 --force</code>
+  * Find out the VFC Server adapter's slot numbers<code>lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=teprvio10 -F virtual_fc_adapters \
+| sed -e "s;\";;g"  | sed "s;,;\n;g" | tail -2 | cut -f1 -d/</code><code>lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=teprvio11 -F virtual_fc_adapters \
+| sed -e "s;\";;g"  | sed "s;,;\n;g" | tail -2 | cut -f1 -d/</code>Make sure that both the VFC slot numbers are the same. We are looking for something like this<code>hscroot@tgprhmc4:~> lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=teprvio10 -F virtual_fc_adapters \
+| sed -e "s;\";;g"  | sed "s;,;\n;g" | tail -2 | cut -f1 -d/
+10
+11
+hscroot@tgprhmc4:~> lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=teprvio11 -F virtual_fc_adapters \
+| sed -e "s;\";;g"  | sed "s;,;\n;g" | tail -2 | cut -f1 -d/
+10
+11</code>
+  * Now that we have all the VIOS configs done, let us create the lpar. The VFC clients will need to be mapped to the above slot numbers on the respective VIOS servers<code>mksyscfg -r lpar -m Server-8202-E4C-SN101260T -i \
+"name=pehrdb98,\
+profile_name=pehrdb98,\
+lpar_env=aixlinux,\
+min_mem=2048,desired_mem=20480,max_mem=131072,\
+mem_mode=ded,\
+proc_mode=shared,\
+min_proc_units=0.1,\
+desired_proc_units=4.0,\
+max_proc_units=8.0,\
+min_procs=1,\
+desired_procs=7,\
+max_procs=8,\
+sharing_mode=uncap,\
+uncap_weight=150,\
+auto_start=0,\
+boot_mode=norm,\
+max_virtual_slots=100,\
+\"virtual_serial_adapters=0/server/1/any//any/1,1/server/1/any//any/1\",\
+\"virtual_eth_adapters=2/0/1//0/1/ETHERNET0//all/none,3/0/2//0/1/ETHERNET0//all/none\",\
+\"virtual_fc_adapters=\
+4/client/2//10//1,\
+5/client/2//11//1,\
+6/client/3//10//1,\
+7/client/3//11//1\""</code>Power8 has a new style I guess ?? or it may be the WWNs<code>mksyscfg -r lpar -m Server-8284-22A-SN847584V -i "name=pgnmsv01,\
+profile_name=pgnmsv01,\
+lpar_env=aixlinux,\
+min_mem=2048,\
+desired_mem=16384,\
+max_mem=24576,\
+mem_mode=ded,\
+hpt_ratio=1:128,\
+proc_mode=shared,\
+min_proc_units=0.1,\
+desired_proc_units=0.5,\
+max_proc_units=4.0,\
+min_procs=1,\
+desired_procs=2,\
+max_procs=4,\
+sharing_mode=uncap,\
+uncap_weight=128,\
+auto_start=0,\
+boot_mode=norm,\
+lpar_proc_compat_mode=default,\
+max_virtual_slots=100,\
+\"virtual_serial_adapters=0/server/1/any//any/1,1/server/1/any//any/1\",\
+\"virtual_eth_adapters=2/0/48//0/1/ETHERNET0//all/none,3/0/49//0/1/ETHERNET0//all/none\",\
+\"virtual_fc_adapters=\
+\"\"4/client/2/taprvio130/5/c0507607fdbb0010,c0507607fdbb0011/1\"\",\
+\"\"5/client/3/taprvio131/5/c0507607fdbb0018,c0507607fdbb0019/1\"\"\""</code>
+  * Get a list of WWNs for the new lpar<code>lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=penmsv01 -F virtual_fc_adapters | sed "s;,;\n;g" | grep client | cut -f6 -d/</code>Something like this is to be expected<code>c0507606104e00b0
+c0507606104e00b2
+c0507606104e00b4
+c0507606104e00b6</code>
+  * Map the VFC adapters to real HBAs ** Remember the slot numbers of the vfchost adapter fdrom earlier steps.**
+    * teprvio10<code>lscfg | grep vfc | egrep "C12|C13"
+* vfchost7         U8202.E4C.101260T-V2-C13              Virtual FC Server Adapter
+* vfchost6         U8202.E4C.101260T-V2-C12              Virtual FC Server Adapter</code>Switch to padmin<code>sudo su - padmin</code>Map them<code>vfcmap -vadapter vfchost6 -fcp fcs0
+vfcmap -vadapter vfchost7 -fcp fcs2</code>
+    * teprvio11<code>lscfg | grep vfc | egrep "C12|C13"
+* vfchost7         U8202.E4C.101260T-V3-C13          Virtual FC Server Adapter
+* vfchost6         U8202.E4C.101260T-V3-C12          Virtual FC Server Adapter</code>Switch to padmin<code>sudo su - padmin</code>Map them<code>vfcmap -vadapter vfchost6 -fcp fcs0
+vfcmap -vadapter vfchost7 -fcp fcs2</code>
+  * **Login HBA's into the Array**
+    - Press 8 on the console during boot to get into open formware prompt
+    - type 0 > ioinfo
+    - select menu item #6 for FCINFO
+    - pick first adapter by choosing menu item #1
+    - pick option# 1 List Attached FC Devices
+    - Q for quit
+    

@@ -1,0 +1,203 @@
+
+<h1 class="sectionedit1" id="redhat_server_post_installation_work">Redhat Server Post installation work</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Correct hostname. Cobler sometimes reverse lookup the IP and set up the hostname. So a <abbr title="Domain Name System">DNS</abbr> error can change the hostname(temporary root password &#039;abc123&#039;)<pre class="code">sudo vi /etc/sysconfig/network</pre>
+
+<p>
+Change the FQDN to shortname.Also edit hosts file
+</p>
+<pre class="code">sudo vi /etc/hosts</pre>
+
+<p>
+Remove the ipv6 line. And add a line for the host itself.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Change default password(abc123) to the standard unix password<pre class="code">passwd root</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add Centralized syslog entry<pre class="code">echo &#039;authpriv.info      @pablsv01&#039; | sudo tee -a /etc/rsyslog.conf
+sudo service rsyslog restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the Redhat repository<pre class="code">rm /etc/yum.repos.d/rhel-source.repo</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Modify the local.repo file with the latest repository<pre class="code">sudo vi /etc/yum.repos.d/local.repo</pre>
+
+<p>
+Remove everything except the following depending on the <abbr title="Operating System">OS</abbr> and type.
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> RHEL6 64 bit<pre class="code">[local-rhel-6.4-x86_64]
+name=local-rhel-6.4-x86_64
+baseurl=http://pablsv01/sources/rhel-6.4-x86_64/
+enabled=1
+gpgcheck=0
+[local-tenneco-noarch]
+name=local-tenneco-noarch
+baseurl=http://pablsv01/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupresolv.conf" class="wikilink1" title="unix:setupresolv.conf">Setup resolv.conf</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupntp#redhat" class="wikilink1" title="unix:setupntp">Setup NTP</a></div>
+</li>
+<li class="level1"><div class="li"> Configure default ssh configs<pre class="code">scp taitc118:/prod/images/etc/global_ssh_config /etc/ssh/ssh_config</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Setup <abbr title="Secure Shell">SSH</abbr> keys for NIM server<pre class="code">rsync -avv taitc118:/root/.ssh/authorized_keys /root/.ssh/authorized_keys</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install xinetd<pre class="code">sudo yum -y install xinetd</pre>
+
+<p>
+Enable and start it
+</p>
+<pre class="code">chkconfig --level 234 xinetd on
+service xinetd start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:installsysinter" class="wikilink1" title="unix:installsysinter">Install sysinter </a></div>
+</li>
+<li class="level1"><div class="li"> Install cfg2html<pre class="code">sudo yum -y install cfg2html-linux-2.66-2.noarch</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Korhshell<pre class="code">sudo yum -y install ksh
+sudo ln -s /bin/ksh /usr/bin/ksh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install these libraries for openview</div>
+<ol>
+<li class="level2"><div class="li"> RHEL <pre class="code">sudo yum -y install libgcc.i686 libstdc++.i686 compat-libstdc++-33-3.2.3-69.el6.i686</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Add the TMOUT variable to /etc/profile if it wasn&#039;t a clone<pre class="code">sudo vi /etc/profile</pre>
+<pre class="code"># Automatic logout, include in export line if uncommented
+TMOUT=3600
+readonly TMOUT</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the scripts<pre class="code">mkdir -p /usr/local/scripts
+scp taitc118:/usr/local/scripts/* /usr/local/scripts/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a file /var/adm/.information which explains the host&#039;s role and mksysb target e.g.<pre class="code">mkdir -p /var/adm ; vi /var/adm/.information</pre>
+
+<p>
+Enter these details
+</p>
+<pre class="code">mksysbhost:
+location:
+rack:
+virtual:
+virtualization:
+physhost:
+appname:
+role:
+contacts:
+function:
+asset owner:
+asset owner email:ta-unix@tenneco.com
+asset owner phone:+1-847-482-6440
+application owner:
+department:GIOS
+status:Active
+part number:
+vendor Service Tag:N/A
+express code:N/A
+company asset tag:N/A
+cage/room:LDC Datacenter
+rack position:
+private IP: N/A
+mac address:
+wwn:
+warranty start date:
+warranty end date:
+warranty number:
+warranty type:
+maintenance start date:
+maintenance end date:
+maintenance number:
+maintenance type:
+vendor:
+classification level:Critical
+business criticality:High</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the sudoers file from the NIM server taitc118<pre class="code">scp taitc118:/prod/images/etc/sudoers /etc/sudoers</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:usersandgroups#linux" class="wikilink1" title="unix:usersandgroups">Create basic unix group and users</a></div>
+</li>
+<li class="level1"><div class="li"> Schedule standard cron jobs<pre class="code">03 03 * * 6 /usr/local/scripts/clean_var 1&gt;/dev/null 2&gt;&amp;1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1&gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send ticket for netbackup</div>
+</li>
+<li class="level1"><div class="li"> Send ticket for Monitoring</div>
+</li>
+<li class="level1"><div class="li"> Send a ticket to “GIOS Operations - Entitlement” to add the systems.</div>
+</li>
+<li class="level1"><div class="li"> On VMWare VMs, </div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:vmware:vmwaretools" class="wikilink1" title="unix:vmware:vmwaretools">Install VMWare tools</a></div>
+</li>
+<li class="level2"><div class="li"> Install SYMCquiesce, SYMCquiesce is a utility to quiesce the IO during a snapshopt backup.<pre class="code">sudo scp taitc118:/prod/images/netbackup-vm/SYMCquiesce-*$(uname -i).rpm /var/tmp/
+sudo rpm -Uvh /var/tmp/SYMCquiesce-*$(uname -i).rpm</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install and configure SNMPD<pre class="code">sudo yum install net-snmp -y</pre>
+
+<p>
+Configure it
+</p>
+<pre class="code">sudo mv /etc/snmp/snmpd.conf /etc/snmp/snmpd.conf.Original
+sudo vi /etc/snmp/snmpd.conf</pre>
+
+<p>
+Add this config
+</p>
+<pre class="code">syslocation Server Room
+syscontact Sysadmin (root@localhost)
+
+rocommunity oicu812 10.32.6.113 
+rocommunity oicu812 10.32.8.188 
+rocommunity oicu812 10.32.8.187 
+rocommunity oicu812 10.32.8.191
+rocommunity oicu812 10.56.1.144
+trapsink   10.32.8.191   oicu812
+trap2sink  10.32.8.191   oicu812</pre>
+
+<p>
+Start snmpd
+</p>
+<pre class="code">sudo chkconfig --level 234 snmpd on
+sudo service snmpd start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the system to UUMA</div>
+<ol>
+<li class="level2"><div class="li"> Login to taqa1a03 and add the hostname to /home/oracle/uuma/hosts.txt<pre class="code">vi /home/oracle/uuma/hosts.txt</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform a reboot</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:security" class="wikilink1" title="unix:security">Systems in the DMZ - perform these steps</a></div>
+</li>
+</ol>
+
+</div>

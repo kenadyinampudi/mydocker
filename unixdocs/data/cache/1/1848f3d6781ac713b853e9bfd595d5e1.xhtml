@@ -1,0 +1,111 @@
+
+<h1 class="sectionedit1" id="build_my_computer">Build my computer</h1>
+<div class="level1">
+
+<p>
+Complete this after your PC is re-installed / rebuilt / recovered.
+</p>
+<ol>
+<li class="level1"><div class="li"> Configure sudo. Switch to root<pre class="code">echo &#039;%x1kxk630	ALL=(ALL)	NOPASSWD: ALL&#039; &gt;&gt; /etc/sudoers</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure proxy for yum<pre class="code">sudo vi /etc/yum.conf</pre>
+
+<p>
+Add these with the correct password
+</p>
+<pre class="code">proxy=http://170.64.0.72:8080
+proxy_username=x1kxk630
+proxy_password=&lt;passw0rd&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install updates<pre class="code">sudo yum update</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install correct resolv.conf<pre class="code">sudo scp taitc118:/etc/resolv.conf /etc/resolv.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:fedoranotes" class="wikilink1" title="unix:fedoranotes">Install lotus notes client</a></div>
+</li>
+<li class="level1"><div class="li"> Install Display drivers</div>
+<ol>
+<li class="level2"><div class="li"> Add RPMFusion Repositories (Free and Non-Free)<pre class="code">sudo yum localinstall --nogpgcheck http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm</pre>
+
+<p>
+OR
+</p>
+<pre class="code">yum localinstall --nogpgcheck http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+yum localinstall --nogpgcheck http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install NVIDIA drivers<pre class="code">sudo yum install akmod-nvidia xorg-x11-drv-nvidia-libs</pre>
+
+<p>
+And kernel-PAE
+</p>
+<pre class="code">sudo yum install kernel-PAE-devel</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Reboot<pre class="code">sudo init 6</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install Virtual Box</div>
+<ol>
+<li class="level2"><div class="li"> Install the repository<pre class="code">cd /etc/yum.repos.d/</pre>
+
+<p>
+then
+</p>
+<pre class="code">sudo wget http://download.virtualbox.org/virtualbox/rpm/fedora/virtualbox.repo</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install VirtualBox<pre class="code">sudo yum install VirtualBox-4.2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure Virtual Box<pre class="code">sudo /etc/init.d/vboxdrv setup</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add VirtualBox users<pre class="code">sudo usermod -a -G vboxusers x1kxk630</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install Chrome</div>
+<ol>
+<li class="level2"><div class="li"> Install repository<pre class="code">sudo vi /etc/yum.repos.d/google-chrome.repo</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">[google-chrome]
+name=google-chrome - 64-bit
+baseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64
+enabled=1
+gpgcheck=1
+gpgkey=https://dl-ssl.google.com/linux/linux_signing_key.pub</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install Chrome<pre class="code">sudo yum install google-chrome-stable</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Enable VirtualBox forward RDP connections to a specific VM</div>
+<ol>
+<li class="level2"><div class="li"> Modify the firewalld config to allow RDP.<pre class="code">sudo  firewall-cmd --zone=public --add-port=3389/tcp</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add port forwarding rules<pre class="code">vboxmanage setextradata kaps-win7-64-dt01 &quot;VBoxInternal/Devices/e1000/0/LUN#0/Config/rdp/HostPort&quot; 3389
+vboxmanage setextradata kaps-win7-64-dt01 &quot;VBoxInternal/Devices/e1000/0/LUN#0/Config/rdp/GuestPort&quot; 3389
+vboxmanage setextradata kaps-win7-64-dt01 &quot;VBoxInternal/Devices/e1000/0/LUN#0/Config/rdp/Protocol&quot; TCP</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Shutdown and start the VM</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

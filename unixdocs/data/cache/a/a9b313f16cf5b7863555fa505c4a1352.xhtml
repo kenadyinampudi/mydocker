@@ -1,0 +1,46 @@
+
+<h1 class="sectionedit1" id="set_up_a_new_usb_file_system_mount_an_existing_usb_file_system">Set Up a New USB File System / Mount an Existing USB File System</h1>
+<div class="level1">
+
+<p>
+##  Set Up a New a New USB File System
+##
+</p>
+<ol>
+<li class="level1"><div class="li"> The following lpp&#039;s need to be installed on the server <pre class="code"> lslpp -L devices.usbif.08025002.rte </pre>
+<pre class="code"> lslpp -L devices.common.IBM.usb.rte </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Plug the USB drive / device and run cfgmgr to bring the device into the server  <pre class="code"> cfgmgr -v </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make a mount point <pre class="code"> mkdir /usb_mnt </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make in line log file system on USB <pre class="code"> mkfs -olog=INLINE,ea=v2 -Vjfs2 /dev/usbms0 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the USB File System <pre class="code"> mount -V jfs2 -o log=/dev/usbms0 /dev/usbms0 /usb_mnt </pre>
+</div>
+</li>
+</ol>
+
+<p>
+## Mount an Existing USB FIle System
+##
+</p>
+<ol>
+<li class="level1"><div class="li"> Plug USB Device into a USB port on the server</div>
+</li>
+<li class="level1"><div class="li"> Run config manager  Manager to discover USB device <pre class="code"> sudo cfgmgr -v </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make a mount point <pre class="code"> sudo mkdir /usb_mnt </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the USP File System <pre class="code">sudo mount -V jfs2 -o log=/dev/usbms0 /dev/usbms0 /usb_mnt </pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,45 @@
+====== Migrating systems from one datacenter to another ======
+
+This is a basic checklist for migrating a system from one datacenter to another.
+
+==== Sanity Checks: ====
+
+  * Do you know the root password?
+  * Are there any external mounted file systems?
+  * Are there any filesystems exported via NFS?
+  * Is this server actually in a replication group?
+  * Have the new LPARs been created at the target location?
+  * Are the fabric zones created?
+  * Have the hosts been created on the storage array?
+  * Are there any aliases that will need to be changed after startup?
+ 
+==== Prior to Event ====
+
+  * Replicate the protection group.  Time it to finish 2-3 hours prior to start of cutover.
+  * Get storage commands prepped.
+  * Get resources lined up to change IP address
+  * Consider commenting out any hard NFS mounts and any export files to make boot quicker on the new IP.
+ 
+==== Cutover ====
+
+  * Back up the system using existing backups
+  * Shut down application (if necessary)
+  * Doublecheck root password works.
+  * Shut down server
+  * Initiate snapshot from source location
+    * Get the names of the new disks
+    * <code>purevol list --snap *<snapname>*</code>
+  * Copy the snapshots to actual volumes
+    * <code>purevol copy oldname newname</code>
+  * Map the new volumes to the host
+    * <code>purevol connect --host <hostname> hostname</code>
+  * Boot the system
+  * Change the IP
+  * Notify networking resource to change the DNS entry
+  * Undo whatever fstab changes were made to quicken boot time
+  * Reboot the box
+  * Verify filesystems are mounted again
+  * Verify any exports are mounted at destination
+  * Reload aliases
+  * Hand over server to application team for startup
+  * Get backups configured for boxes

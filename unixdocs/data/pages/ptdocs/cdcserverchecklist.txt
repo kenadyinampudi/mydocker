@@ -1,0 +1,77 @@
+====== Checklist for New CDC Server ======
+
+===== Pre-change control physical requirement verification =====
+
+  * Verify new device is rack mountable
+  * Verify size of new device
+  * Verify power requirements of new device
+    * The CDC uses <10Amp 220 circuits with C13-C14 receptacles.
+    * Anything else will probably need to be verified directly with CTL
+  * Get Rack Space, RU number from NLyte [[http://nlyte.federalmogul.com]]  
+    * Both rack number and elevation RU number are needed.
+    * for reference, [[nlyte:nlyteaddasset | Adding a Server to Nlyte]]
+  * Identify how many FC SAN links will be needed.
+  * Contact SAN team to determine where links will need to go.
+    * Include rack location, device and port of source and destination
+    * The entries should be in [[https://tenneco-my.sharepoint.com/:x:/r/personal/nathan_leeds_tenneco_com/Documents/Reference/F-M_CRL_Combined.xlsx?d=wcfd8b800757647afae9121d4845b4ca1&csf=1&web=1&e=P4kYjk | the Cabling CRL]]
+  * Calculate length of FC OM3 cables needed to patch device into the end of row SAN patch panels
+  * Identify how many 10GB Ethernet links will be needed.
+  * Identify how many 1GB copper links will be needed.
+    * Include all management/DRAC links as well as regular connectivity
+  * Contact LAN/WAN team to determine Ethernet link locations
+    * Include rack location, device and port of source and destination
+  * Calculate length of 10GB OM3 cables needed to patch device into the end of row LAN patch panels
+  * Calculate length of CAT6 copper cables needed to patch device.  It’s usually the nearest Cisco 2K switch.
+
+==== Pre-change control logical requirements actions ====
+
+  * Put in placeholder in NLyte to indicate device location once installed.
+  * Order any cables needed for the server.
+    * There may or may not be appropriate cables onsite in CDC.
+    * Make sure if a patch panel is being used that 2 cables are ordered for each link, one for the server side of the patch panel and one for the switch side of the patch panel.
+  * Put in ticket to SAN team (if necessary) to identify and provision ports identified above
+  * Put in ticket to MS team to get IP addresses and device names
+  * Put in ticket to LAN team to identify and provision ports identified above.
+  * Draft change control
+    * Attach any required special permissions
+  * Submit CC for review
+
+==== Post-change control approval ====
+
+  * If equipment is not arriving the day of (or day before) installation or if the equipment is arriving out of business hours, ask Operations to submit a ticket to Cyxtera to receive the equipment.
+    * They will need a tracking number, carrier company, the addressee name
+
+=== Cyxtera installation ===
+
+  * Put in ticket with CTL to rack the device on the installation date.  
+    * Include the rack and RU numbers.
+    * Include wiring instructions
+    * Include source port on new device and destination rack, device and port for each cable
+    * Include the instructions to check for link lights on the server after powering up	
+    * Include phone number also so you can be directly reached if necessary.
+  * Contact LAN and SAN teams to verify the new device is visible on the respective switches
+
+=== Vendor Engineer Installation ===
+
+  * Put in ticket with CYX to run cables prior to the installation date.  
+    * Title this “Cable survey / installation”
+    * Include source port on new device and destination rack, device and port for each cable
+    * Include phone number also so you can be directly reached if necessary.
+  * Get Vendor engineer name and phone number for access to the CDC.  
+    * Make sure the name given matches the name on the driver’s license exactly.
+    * [[cdc_datacenter | Information on the CDC for the Vendor - Copy and Paste notes for External Visitors]]
+  * Have Operations submit a ticket to allow access for the engineer to the CDC on the installation date (or dates.)
+  * Warn engineer that no cardboard is allowed on the floor, so he/she will need to unpack the equipment in shipping.  CTL can provide carts for transport.
+  * After the device is installed, have engineer power up the device and verify link lights are visible on device.
+  * Contact LAN and SAN teams to verify the new device is visible on the respective switches.
+  * Have vendor engineer finish installation.
+
+==== Post-installation ====
+
+  * Gather proof for change control.
+    * Make sure to gather and document exactly what was written in the change control.
+  * Make sure the new asset is added to ServiceNow
+  * Close the change control, attaching proof of completion.
+  * Finish whatever configuration or setup needs to take place.
+
+

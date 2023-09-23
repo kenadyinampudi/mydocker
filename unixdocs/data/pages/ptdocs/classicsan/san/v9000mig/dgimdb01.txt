@@ -1,0 +1,147 @@
+====== dgimdb01 Migration from DMX4 to V9000 ======
+
+  - dgimdb01 current config.
+    - Disks from from taprvio60 & 70
+      - taprvio60<code>hdiskpower101:138105:dgimdb01:N/A:vhost9:00f72d6770a73602:EMC-SYMM/CLAR-000190103339:1386
+hdiskpower102:138105:dgimdb01:N/A:vhost9:00f72d6770a9b413:EMC-SYMM/CLAR-000190103339:1396
+hdiskpower103:34526:dgimdb01:N/A:vhost9:00f72d6770ac2aa9:EMC-SYMM/CLAR-000190103339:1942
+hdiskpower104:34526:dgimdb01:N/A:vhost9:00f72d6770af1d18:EMC-SYMM/CLAR-000190103339:1946
+hdiskpower105:34526:dgimdb01:N/A:vhost9:00f72d6770b1af26:EMC-SYMM/CLAR-000190103339:194A
+hdiskpower106:34526:dgimdb01:N/A:vhost9:00f72d6770b3ea3b:EMC-SYMM/CLAR-000190103339:194E
+hdiskpower107:34526:dgimdb01:N/A:vhost9:00f72d6770a706e6:EMC-SYMM/CLAR-000190103339:1952
+hdiskpower108:34526:dgimdb01:N/A:vhost9:00f72d6770a947a9:EMC-SYMM/CLAR-000190103339:1956
+hdiskpower109:34526:dgimdb01:N/A:vhost9:00f72d6770ab7fad:EMC-SYMM/CLAR-000190103339:195A
+hdiskpower110:34526:dgimdb01:N/A:vhost9:00f72d6770adf587:EMC-SYMM/CLAR-000190103339:195E
+hdiskpower111:34526:dgimdb01:N/A:vhost9:00f72d6770b02316:EMC-SYMM/CLAR-000190103339:1962
+hdiskpower112:34526:dgimdb01:N/A:vhost9:00f72d6770b29526:EMC-SYMM/CLAR-000190103339:1966</code>
+      - taprvio70<code>hdiskpower50:138105:dgimdb01:N/A:vhost9:00f72d6770a73602:EMC-SYMM/CLAR-000190103339:1386
+hdiskpower51:138105:dgimdb01:N/A:vhost9:00f72d6770a9b413:EMC-SYMM/CLAR-000190103339:1396
+hdiskpower52:34526:dgimdb01:N/A:vhost9:00f72d6770ac2aa9:EMC-SYMM/CLAR-000190103339:1942
+hdiskpower53:34526:dgimdb01:N/A:vhost9:00f72d6770af1d18:EMC-SYMM/CLAR-000190103339:1946
+hdiskpower54:34526:dgimdb01:N/A:vhost9:00f72d6770b1af26:EMC-SYMM/CLAR-000190103339:194A
+hdiskpower55:34526:dgimdb01:N/A:vhost9:00f72d6770b3ea3b:EMC-SYMM/CLAR-000190103339:194E
+hdiskpower56:34526:dgimdb01:N/A:vhost9:00f72d6770a706e6:EMC-SYMM/CLAR-000190103339:1952
+hdiskpower57:34526:dgimdb01:N/A:vhost9:00f72d6770a947a9:EMC-SYMM/CLAR-000190103339:1956
+hdiskpower58:34526:dgimdb01:N/A:vhost9:00f72d6770ab7fad:EMC-SYMM/CLAR-000190103339:195A
+hdiskpower59:34526:dgimdb01:N/A:vhost9:00f72d6770adf587:EMC-SYMM/CLAR-000190103339:195E
+hdiskpower60:34526:dgimdb01:N/A:vhost9:00f72d6770b02316:EMC-SYMM/CLAR-000190103339:1962
+hdiskpower61:34526:dgimdb01:N/A:vhost9:00f72d6770b29526:EMC-SYMM/CLAR-000190103339:1966</code>
+  - Need to present the following disks from V9000 to taprvio60 & 70.<code>2    *    138GB
+10    *    34GB</code>
+  - Provision storage. 
+    - 138GB Boot volumes<code>svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_000 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_001 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%</code>
+    - 34GB Data volumes<code>svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_002 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_003 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_004 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_005 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_006 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_007 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_008 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_009 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_010 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name dgimdb01_011 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%</code>
+  - Add to taprvio60<code>svctask mkvdiskhostmap -host taprvio60 dgimdb01_000
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_001
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_002
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_003
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_004
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_005
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_006
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_007
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_008
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_009
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_010
+svctask mkvdiskhostmap -host taprvio60 dgimdb01_011</code>
+  - Add to taprvio70<code>svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_000
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_001
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_002
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_003
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_004
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_005
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_006
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_007
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_008
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_009
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_010
+svctask mkvdiskhostmap -force -host taprvio70 dgimdb01_011</code>
+  - On taprvio60, scan and allocate PVIDs and change disk attributes for round robin.<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.1</code>cfgmgr<code>sudo cfgmgr</code><code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.2</code>Find the new LUNs<code>diff lsdiskcfg.out.1 lsdiskcfg.out.2</code>
+    - Change disk attributes & allocate pvid on taprvio60<code>sudo chdev -l <diskname> -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+.....
+.....</code>
+  - On taprvio70, scan and allocate PVIDs and change disk attributes for round robin.<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.1</code>cfgmgr<code>sudo cfgmgr</code><code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.2</code>Find the new LUNs<code>diff lsdiskcfg.out.1 lsdiskcfg.out.2</code>
+    - Change disk attributes & allocate pvid on taprvio70<code>sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l <diskname></code>
+  - On taprvio60, add disks to dgimdb01.
+    - Find out the vhost<code>grep dgimdb01 lsdiskcfg.out.1 | awk -F: '{print $5}' | sort -u</code>The result should look like. If you see more vhosts, check with Sr. members of the Unix team<code>x1kxk630 on taprvio60:/home/x1kxk630 $ grep dgimdb01 lsdiskcfg.out.1 | head -1  | awk -F: '{print $5}'
+vhost7</code>
+    - Switch to padmin and map the disks from taprvio60 to vhost7.<code>sudo su - padmin</code>Map<code>mkvdev -vdev hdisk57 -vadapter vhost7</code>I got a warning like this<code>mkvdev  -vdev hdisk17 -vadapter vhost7
+vtscsi12 Available
+To see the newly added disk, client partition needs reboot.</code>This means, the characteristics of two different storage subsystems are not supported on a single vSCSI. We have seen this problem before, hence we dedicate a vSCSI for a specific storage array.
+    - The corrective action here is to create a new pair of vSCSI adapters for dgimdb01 from taprvio60 & 70. There are documentations available in unixdocs on how to do so. In this case, we created vhost19 on taprvio60 & 70 for the V9000 disks.
+    - Hence mapping to vhost19 on taprvio60<code>sudo su - padmin</code>Map<code>mkvdev -vdev hdisk57 -vadapter vhost19
+mkvdev -vdev hdisk62 -vadapter vhost19
+mkvdev -vdev hdisk122 -vadapter vhost19
+mkvdev -vdev hdisk123 -vadapter vhost19
+mkvdev -vdev hdisk142 -vadapter vhost19
+mkvdev -vdev hdisk143 -vadapter vhost19
+mkvdev -vdev hdisk144 -vadapter vhost19
+mkvdev -vdev hdisk145 -vadapter vhost19
+mkvdev -vdev hdisk146 -vadapter vhost19
+mkvdev -vdev hdisk147 -vadapter vhost19
+mkvdev -vdev hdisk156 -vadapter vhost19
+mkvdev -vdev hdisk157 -vadapter vhost19</code>
+  - On taprvio70, add disks to dgimdb01.
+    - Find out the vhost<code>grep dgimdb01 lsdiskcfg.out.1 | awk -F: '{print $5}' | sort -u</code>The result should look like. If you see more vhosts, check with Sr. members of the Unix team<code>x1kxk630 on taprvio60:/home/x1kxk630 $ grep dgimdb01 lsdiskcfg.out.1 | head -1  | awk -F: '{print $5}'
+vhost7</code>
+    - Switch to padmin and map the disks from taprvio70 to vhost7<code>sudo su - padmin</code>Map<code>mkvdev -vdev hdisk17 -vadapter vhost19
+mkvdev -vdev hdisk22 -vadapter vhost19
+mkvdev -vdev hdisk71 -vadapter vhost19
+mkvdev -vdev hdisk72 -vadapter vhost19
+mkvdev -vdev hdisk77 -vadapter vhost19
+mkvdev -vdev hdisk78 -vadapter vhost19
+mkvdev -vdev hdisk79 -vadapter vhost19
+mkvdev -vdev hdisk80 -vadapter vhost19
+mkvdev -vdev hdisk81 -vadapter vhost19
+mkvdev -vdev hdisk82 -vadapter vhost19
+mkvdev -vdev hdisk83 -vadapter vhost19
+mkvdev -vdev hdisk84 -vadapter vhost19</code>
+  - Now login to the guest (dgimdb01 ) and discover the PVs<code>lspv > lspv.out.1
+sudo cfgmgr
+lspv > lspv.out.2</code>Find the new disks<code>diff lspv.out.1 lspv.out.2</code>
+  - Add the 34G LUNs to datavg01 and start mirroring.<code>sudo extendvg datavg01 hdisk14 hdisk15 hdisk16 hdisk17 hdisk18 hdisk19 hdisk20 hdihdisk22 hdisk23</code>Mirror<code>sudo mirrorvg datavg01 hdisk14 hdisk15 hdisk16 hdisk17 hdisk18 hdisk19 hdisk20 hdihdisk22 hdisk23</code>
+  - After the migration, unmirror and remove the old devices<code>sudo unmirrorvg datavg01 hdisk2 hdisk3 hdisk4 hdisk5 hdisk6 hdisk7 hdisk8 hdisk9 hdisk10 hdisk11</code>Remove them<code>sudo reducevg datavg01 hdisk2 hdisk3 hdisk4 hdisk5 hdisk6 hdisk7 hdisk8 hdisk9 hdisk10 hdisk11</code>Delete them<code>echo "hdisk2 hdisk3 hdisk4 hdisk5 hdisk6 hdisk7 hdisk8 hdisk9 hdisk10 hdisk11" | xargs -n1 sudo rmdev -dl</code>
+  - Mirror rootvg too<code>sudo extendvg rootvg hdisk12
+sudo mirrorvg rootvg hdisk12
+sudo bosboot -ad /dev/hdisk1
+sudo bosboot -ad /dev/hdisk12
+sudo bootlist -m normal hdisk12
+sudo unmirrorvg rootvg hdisk1
+sudo reducevg rootvg hdisk1
+sudo bosboot -ad /dev/hdisk12</code>Create a new alt_disk<code>sudo alt_disk_install -X alt_rootvg
+sudo rmdev -dl hdisk1
+sudo rmdev -dl hdisk0
+sudo alt_disk_copy -B -d hdisk13</code>
+  - Remove these disks from taprvio60<code>hdiskpower89:138105:dgimdb01:N/A:vhost7:00f72d6743801288:EMC-SYMM/CLAR-000190103339:1316
+hdiskpower90:138105:dgimdb01:N/A:vhost7:00f72d674381c853:EMC-SYMM/CLAR-000190103339:1326
+hdiskpower91:34526:dgimdb01:N/A:vhost7:00f72d6743741743:EMC-SYMM/CLAR-000190103339:18DE
+hdiskpower92:34526:dgimdb01:N/A:vhost7:00f72d674375c65e:EMC-SYMM/CLAR-000190103339:18E2
+hdiskpower93:34526:dgimdb01:N/A:vhost7:00f72d6743779f5c:EMC-SYMM/CLAR-000190103339:18E6
+hdiskpower94:34526:dgimdb01:N/A:vhost7:00f72d6743796f1f:EMC-SYMM/CLAR-000190103339:18EA
+hdiskpower95:34526:dgimdb01:N/A:vhost7:00f72d67437b16f8:EMC-SYMM/CLAR-000190103339:18EE
+hdiskpower96:34526:dgimdb01:N/A:vhost7:00f72d67437ca555:EMC-SYMM/CLAR-000190103339:18F2
+hdiskpower97:34526:dgimdb01:N/A:vhost7:00f72d67437e3bdb:EMC-SYMM/CLAR-000190103339:18F6
+hdiskpower98:34526:dgimdb01:N/A:vhost7:00f72d6743804935:EMC-SYMM/CLAR-000190103339:18FA
+hdiskpower99:34526:dgimdb01:N/A:vhost7:00f72d674372f428:EMC-SYMM/CLAR-000190103339:18FE
+hdiskpower100:34526:dgimdb01:N/A:vhost7:00f72d674374d29c:EMC-SYMM/CLAR-000190103339:1902</code>
+  - Remove these disks from taprvio70<code>hdiskpower38:138105:dgimdb01:N/A:vhost7:00f72d6743801288:EMC-SYMM/CLAR-000190103339:1316
+hdiskpower39:138105:dgimdb01:N/A:vhost7:00f72d674381c853:EMC-SYMM/CLAR-000190103339:1326
+hdiskpower40:34526:dgimdb01:N/A:vhost7:00f72d6743741743:EMC-SYMM/CLAR-000190103339:18DE
+hdiskpower41:34526:dgimdb01:N/A:vhost7:00f72d674375c65e:EMC-SYMM/CLAR-000190103339:18E2
+hdiskpower42:34526:dgimdb01:N/A:vhost7:00f72d6743779f5c:EMC-SYMM/CLAR-000190103339:18E6
+hdiskpower43:34526:dgimdb01:N/A:vhost7:00f72d6743796f1f:EMC-SYMM/CLAR-000190103339:18EA
+hdiskpower44:34526:dgimdb01:N/A:vhost7:00f72d67437b16f8:EMC-SYMM/CLAR-000190103339:18EE
+hdiskpower45:34526:dgimdb01:N/A:vhost7:00f72d67437ca555:EMC-SYMM/CLAR-000190103339:18F2
+hdiskpower46:34526:dgimdb01:N/A:vhost7:00f72d67437e3bdb:EMC-SYMM/CLAR-000190103339:18F6
+hdiskpower47:34526:dgimdb01:N/A:vhost7:00f72d6743804935:EMC-SYMM/CLAR-000190103339:18FA
+hdiskpower48:34526:dgimdb01:N/A:vhost7:00f72d674372f428:EMC-SYMM/CLAR-000190103339:18FE
+hdiskpower49:34526:dgimdb01:N/A:vhost7:00f72d674374d29c:EMC-SYMM/CLAR-000190103339:1902</code>

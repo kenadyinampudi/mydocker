@@ -1,0 +1,63 @@
+
+<h1 class="sectionedit1" id="aix_vios">AIX / VIOS</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Create these users<pre class="code">sudo mkuser &quot;id=6951&quot; &quot;pgrp=taunix&quot;  &quot;home=/home/hilla016&quot; &quot;gecos=Andy Hill=FM-PTT&quot;    hilla016 
+sudo mkuser &quot;id=6888&quot; &quot;pgrp=taunix&quot;  &quot;home=/home/labrar29&quot; &quot;gecos=Robert Labranche=FM-PTT&quot;   labrar29
+sudo mkuser &quot;id=6699&quot; &quot;pgrp=taunix&quot;  &quot;home=/home/leedsn16&quot; &quot;gecos=Nathan Leeds=FM-PTT&quot;    leedsn16</pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Set the simple password</div>
+</li>
+</ul>
+<pre class="code">echo &quot;hilla016:saTxrfVn.jGMs&quot;| sudo chpasswd -e</pre>
+<pre class="code">echo &quot;labrar29:saEVc4lmoEEFY&quot; | sudo chpasswd -e</pre>
+<pre class="code">echo &quot;leedsn16:saTLnaGYqOo7Q&quot; | sudo chpasswd -e</pre>
+<ul>
+<li class="level1"><div class="li"> Set to no change at first login<pre class="code">sudo pwdadm -c hilla016 
+sudo pwdadm -c labrar29
+sudo pwdadm -c leedsn16</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "AIX / VIOS" [1-697] -->
+<h1 class="sectionedit2" id="linux">Linux</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Create these users<pre class="code">sudo useradd -g taunix -d /home/hilla016 -c &quot;Andy Hill &quot; -m -u 6951 hilla016
+sudo useradd -g taunix -d /home/labrar29 -c &quot;Andy Hill &quot; -m -u 6888 labrar29
+sudo useradd -g taunix -d /home/leedsn16 -c &quot;Andy Hill &quot; -m -u 6699 leedsn16</pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Set the simple password</div>
+</li>
+</ul>
+<pre class="code">echo &quot;hilla016:saTxrfVn.jGMs&quot;| sudo chpasswd -e</pre>
+<pre class="code">echo &quot;labrar29:saEVc4lmoEEFY&quot; | sudo chpasswd -e</pre>
+<pre class="code">echo &quot;leedsn16:saTLnaGYqOo7Q&quot; | sudo chpasswd -e</pre>
+<ul>
+<li class="level1"><div class="li"> Set the password expiration<pre class="code">&lt;code&gt;sudo chage -I -1 -m 0 -M 60 -E -1 hilla016
+sudo chage -I -1 -m 0 -M 60 -E -1 labrar29
+sudo chage -I -1 -m 0 -M 60 -E -1 leedsn16</pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Unlock the ids<pre class="code">sudo usermod -U hilla016
+sudo passwd -uhilla016
+sudo usermod -U labrar29
+sudo passwd -u labrar29
+sudo usermod -U leedsn16
+sudo passwd -u leedsn16</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Linux" [698-] -->

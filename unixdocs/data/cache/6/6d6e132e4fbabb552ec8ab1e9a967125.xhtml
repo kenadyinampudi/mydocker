@@ -1,0 +1,56 @@
+
+<h2 class="sectionedit1" id="tenneco_clear_pvid_and_vgda">Tenneco Clear PVID and VGDA</h2>
+<div class="level2">
+
+<p>
+<strong></strong><strong></strong><strong></strong><strong>This process has been discontinued. Leaving the original doc for the technical commands..</strong><strong></strong><strong></strong><strong></strong>
+</p>
+
+<p>
+#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#  NOTE
+This process is dependent upon the following condition(s) being met:
+</p>
+
+<p>
+ - A new Email group is defined as TA-San o TA-SAN to include all SAN Adminstrators  who will/may assign disk from the EMC platforms for use by the UNIX Team 
+#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#&lt;&gt;#  End of NOTE
+</p>
+<ol>
+<li class="level1"><div class="li"> The SAN administrator will present the disks to pgdskcln</div>
+</li>
+<li class="level1"><div class="li"> The unix admin should execute the following commands to clean the LVM metadata.</div>
+<ol>
+<li class="level2"><div class="li"> Remove the pvid<pre class="code">chdev -l &lt;hdiskname&gt; -a pv=clear</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove VGDA<pre class="code">chpv -C &lt;hdiskname&gt;</pre>
+
+<p>
+Example
+</p>
+<pre class="code">chpv -C hdiskpower129</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Once done, remove the disks from AIX kernel</div>
+<ol>
+<li class="level2"><div class="li"> Remove from powerpath<pre class="code">powermt remove dev=hdiskpowername</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the devicefile<pre class="code">rmdev -dl &lt;hdiskpowername&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the child devices<pre class="code">rmdev -dl hdiskname
+rmdev -dl hdiskname</pre>
+
+<p>
+If the disk has more than 2 paths, remove all the 4 hdisk child devices.
+</p>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

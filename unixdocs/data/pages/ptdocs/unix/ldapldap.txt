@@ -1,0 +1,82 @@
+===== Using old LDAP for authentication =====
+
+==== Step 0: ====
+[[unix:checkldap|Are you actually using old LDAP?]]
+
+==== Step 1: ====
+
+Get [[finddccontrollers:how_to_find_current_dc_controllers | list of PT domain controllers]] for the site you are migrating. \\ 
+The MS team uses different domain controllers for different domains, so you will need to know which server to authenticate against before you start.
+\\
+  * Verify the list with ldapsearch
+  * <code>ldapsearch -x -h 10.14.116.160 -b 'dc=pt,dc=int,dc=tenneco,dc=com' -D 'PT-HPCCLDAP@pt' -W "(anr=leedsn*)"</code>
+	
+	
+==== Step 2: ====
+
+Open a root window to the server and hide it.  This is the emergency access window in case the authentication is messed up.
+
+==== Step 3: ====
+
+Open a new root window to the server.
+	
+==== Step 4: ====
+
+Copy /etc/pam.d, /etc/ldap.conf and /etc/nsswitch.conf to a safe location just in case.
+	brscdelx012:~ # mkdir ldapupdate
+	brscdelx012:~ # cd ldapupdate/
+	brscdelx012:~/ldapupdate # cp /etc/ldap.conf .
+	brscdelx012:~/ldapupdate # cp /etc/nsswitch.conf .
+	brscdelx012:~/ldapupdate # cp -r /etc/pam.d/ .
+
+==== Step 5: ====
+
+Edit /etc/ldap.conf and put in the new values.
+	#base    DC=fedmog,DC=federalmogul,DC=com
+	base    DC=pt,DC=int,DC=tenneco,DC=com
+	...
+	#binddn CN=PT-HPCCLDAP,OU=Service Accounts,OU=Domain,DC=fedmog,DC=federalmogul,DC=com
+	binddn  CN=PT-HPCCLDAP,OU=Service Accounts,OU=Domain,DC=pt,DC=int,DC=tenneco,DC=com
+	...
+	#uri    ldap://10.1.17.11
+	uri     ldap://10.14.116.160
+	
+You might need to edit the /etc/nsswitch.conf as well.
+	#passwd:        compat
+	passwd: files ldap
+	
+Verify the pam.d files all reference pam_ldap.so as well.
+	brscdelx012:~/ldapupdate/pam.d # grep ldap /etc/pam.d/common-*
+	
+==== Step 6: ====
+
+Restart nscd.  Make sure the PID changes to verify a restart of the caching daemon.
+	brscdelx012:~/ldapupdate/pam.d # pgrep nscd
+	5009
+	brscdelx012:~/ldapupdate/pam.d # pkill nscd && /usr/sbin/nscd
+	brscdelx012:~/ldapupdate/pam.d #  pgrep nscd
+	33309
+
+==== Step 7: ====
+Sanity checks, then real checks.
+  * Can root still log in with keys?\\
+<code>cdcpillx055:/scripts/inventory_script # ssh brscdelx012
+Last login: Mon May 20 16:24:50 2019 from cdcpillx055.fedmog.federalmogul.com
+brscdelx012:~ #</code>
+
+  * Can a user be fetched from AD?
+<code>brscdelx012:~ # getent passwd leedsn16
+leedsn16:*:617:617:Leeds, Nathan:/home/leedsn16:/bin/bash</code>
+
+  * Can a user log in to AD, and do wrong passwords still get rejected as expected?
+<code>cdcpillx055:~ # ssh leedsn16@brscdelx012
+Password:
+Password:
+Last failed login: Mon May 20 16:35:21 CEST 2019 from cdcpillx055.fedmog.federalmogul.com on ssh:notty
+There was 1 failed login attempt since the last successful login.
+Last login: Thu Jul 12 21:36:02 2018 from 134.238.148.94
+Could not chdir to home directory /home/leedsn16: No such file or directory
+leedsn16@brscdelx012:/></code>
+
+==== Step 8: ====
+Pass it off to Lara.

@@ -1,0 +1,53 @@
+
+<h1 class="sectionedit1" id="setting_up_nim_resources_for_a_mksysb_installation">Setting up nim resources for a mksysb installation</h1>
+<div class="level1">
+
+<p>
+<strong>This documentation was written while building peerap09 using the mksysb of peerap07</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> For ease of documenting, export a variable to notify the source system and new system<pre class="code">export srcsystem=&lt;system_of_which_you_plan_to_use_mksysb_from&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the NIM Server (pgnmsv01 - LDC and penmsv01 - Interexion) and identify the mksysb.<pre class="code">ls -ld /mksysb-images/bos.obj.${srcsystem}.*
+-rw-r-----    1 mksysftp system   1573758245 Aug 11 17:06 /mksysb-images/bos.obj.peerap07.gz</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the mksysb to a temp location<pre class="code">sudo cp /mksysb-images/bos.obj.${srcsystem}.gz /preupgrade/mksysb/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unzip the mksysb file<pre class="code">cd /preupgrade/mksysb/ ; sudo gunzip bos.obj.${srcsystem}.gz</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define a mksysb resource(if doesn&#039;t exist already) using the unzipped mksysb file<pre class="code">sudo nim -o define -t mksysb -a server=master -a location=/preupgrade/mksysb/bos.obj.${srcsystem} ${srcsystem}-mksysb</pre>
+
+<p>
+If NIM complains there is an existing resource with that name, please remove it
+</p>
+<pre class="code">sudo nim -o remove ${srcsystem}-mksysb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the OSLEVEL on the system that we plan to clone<pre class="code">ssh ${srcsystem} oslevel -s
+5300-12-01-1016</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the correct Spot and LPPSRC for the above AIX release level. In this case they are,<pre class="code">530TL12-01_spot
+530TL12-01_lppsrc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define the new server as a NIM client.</div>
+<ol>
+<li class="level2"><div class="li"> CLI method<pre class="code">sudo nim -o define -t standalone -a platform=chrp -a if1=&quot;find_net peerap09 0&quot; -a netboot_kernel=mp peerap09</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> smitty method<pre class="code">sudo smitty nim --&gt; Perform NIM Administration Tasks --&gt; Manage Machines --&gt; Define a Machine --&gt; Type in the hostname (hit enter) --&gt; select &quot;ent&quot; --&gt; Fill in and hit enter</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure the server for a bosinst operation<pre class="code">sudo nim -o bos_inst -a source=mksysb -a spot=530TL12-01_spot -a lpp_source=530TL12-01_lppsrc -a no_client_boot=yes -a script=postinstallCloning -a mksysb=${srcsystem}-mksysb peerap09</pre>
+</div>
+</li>
+</ol>
+
+</div>

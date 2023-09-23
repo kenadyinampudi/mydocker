@@ -1,0 +1,17 @@
+====== Dress rehearsal 2 - Issues and lessons learned ======
+
+  - ftabinvg01 was mounted after datavg01 -- Fix the sequence.
+  - NFS filesystems -- final check -- Add this code where necessary<code>[[ "$(uname)" = "AIX" ]] && nfss=$(grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | tr "\n" " ") || nfss=$(grep nfs /etc/fstab | awk '{print $2}' | tr "\n" " ")
+
+for nfs in ${nfss}
+do
+   echo "Check :: NFS filesystem - ${nfs} .."
+   mountedas=$(df -k ${nfs} | grep -v ^File | awk '{print $NF}' )
+   if [ "${nfs}" = "${mountedas}" ]
+   then
+      echo "   Good  :: ${nfs} "
+   else
+      echo "   Error :: ${nfs} -- does not seem to be mounted right " 
+   fi
+   echo ""
+done</code>

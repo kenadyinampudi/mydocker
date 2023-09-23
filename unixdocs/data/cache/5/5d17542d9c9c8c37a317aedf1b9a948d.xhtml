@@ -1,0 +1,41 @@
+
+<h3 class="sectionedit1" id="locationedenkoben">Location: Edenkoben</h3>
+<div class="level3">
+
+<p>
+<strong>  Date: March 22, 2014 (Saturday)
+Start Time: 08:00 CET
+End Time:   20:00 CET</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Shutdown MaxDB and HTTPD applications for CDB and SDB - BASIS/<abbr title="Database Administrator">DBA</abbr></div>
+</li>
+<li class="level1"><div class="li"> Shutdown Unix system - Robert Bieniek</div>
+</li>
+<li class="level1"><div class="li"> Install fiber adapters in the server - Robert Bieniek</div>
+</li>
+<li class="level1"><div class="li"> Install  and connect fiber cables - Robert Bieniek</div>
+</li>
+<li class="level1"><div class="li"> Connect to SAN and allocate SAN storage - Pawel Tkaczyk / Kapil Koroth</div>
+</li>
+<li class="level1"><div class="li"> Migrate 1.7T of data from the external SAS disk enclosure to SAN storage - Robert Bieniek</div>
+</li>
+</ul>
+<pre class="code">extendvg datavg01 hdisk20 hdisk21 hdisk22 hdisk23 hdisk24 hdisk25</pre>
+<pre class="code">mirrorvg -c3 datavg01 hdisk20 hdisk21 hdisk22 hdisk23 hdisk24 hdisk25</pre>
+<pre class="code">splitvg -y datavg02 -c 3 -i datavg01</pre>
+<pre class="code">lsvg -l datavg01 | grep sapdata | awk &#039;{print $7}&#039; | xargs -n1 umount</pre>
+<pre class="code">varyoffvg datavg01</pre>
+<pre class="code">lspv | grep datavg01 | awk &#039;{print $1} | xargs -n1 rmdev -dl</pre>
+<pre class="code">exportvg datavg01</pre>
+<pre class="code">lsvg -l datavg02 | grep sapdata | awk &#039;{print $7}&#039; | xargs -n1 mount</pre>
+<ul>
+<li class="level1"><div class="li"> Disconnect SAS disk enclosure from the Atlas system and pack it for transport to Rybnik - Robert Bieniek</div>
+</li>
+<li class="level1"><div class="li"> Start MaxDB and HTTPD application - BASIS/<abbr title="Database Administrator">DBA</abbr></div>
+</li>
+<li class="level1"><div class="li"> Functional testing - Axel Doerr</div>
+</li>
+</ul>
+
+</div>

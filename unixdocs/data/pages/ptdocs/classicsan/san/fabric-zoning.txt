@@ -1,0 +1,39 @@
+====== Brocade Fabric zoning ======
+
+**Standards**
+
+  * There are always 2 Fabrics
+  * We call them FabricA and FabricB
+  * We call the switches switcha and switchb
+  * Zones will always contain only one initiator and one target.
+====== Zoning ======
+
+**Switch A**
+
+  * Login to the switch over ssh as "admin" [[san:sanswitches|A list of all switches here]]
+  * Check and document the running configuration<code>zoneshow</code>
+  * Look for the WWN<code>switchshow</code>
+  * For NPIV HBAs, you may want to lookup WWN on the given port<code>portloginshow 20</code>**20** is the port number where you would expect the WWN to login.
+  * Create host aliase(s)<code>alicreate "penmsv01_4e00b0","c0:50:76:06:10:4e:00:b0"
+alicreate "penmsv01_4e00b4","c0:50:76:06:10:4e:00:b4"</code>
+  * Create zones<code>zonecreate "penmsv01_4e00b0__ns480spa2_66","penmsv01_4e00b0;ns480spa2_66"
+zonecreate "penmsv01_4e00b4__ns480spb3_6f","penmsv01_4e00b4;ns480spb3_6f"</code>
+  * Add the zone(s) to zone configuration<code>cfgadd "Production_1","penmsv01_4e00b0__ns480spa2_66;penmsv01_4e00b4__ns480spb3_6f"</code>
+  * Save the zone configuration<code>cfgsave</code>
+  * Enable the configuration<code>cfgenable "Production_1"</code>
+
+**Switch B**
+
+  * Login to the switch over ssh as "admin" [[san:sanswitches|A list of all switches here]]
+  * Check and document the running configuration<code>zoneshow</code>
+  * Look for the WWN<code>switchshow</code>
+  * For NPIV HBAs, you may want to lookup WWN on the given port<code>portloginshow 20</code>**20** is the port number where you would expect the WWN to login.
+  * Create a host aliases<code>alicreate "penmsv01_4e00b2","c0:50:76:06:10:4e:00:b2"
+alicreate "penmsv01_4e00b6","c0:50:76:06:10:4e:00:b6"</code>
+  * Create zones<code>zonecreate "penmsv01_4e00b2__ns480spa3_67","penmsv01_4e00b2;ns480spa3_67"
+zonecreate "penmsv01_4e00b6__ns480spb2_6e","penmsv01_4e00b6;ns480spb2_6e"</code>
+  * Add the zone to zone configuration<code>cfgadd "Production_1b","penmsv01_4e00b2__ns480spa3_67;penmsv01_4e00b6__ns480spb2_6e"</code>
+  * Save the zone configuration<code>cfgsave</code>
+  * Enable the configuration<code>cfgenable "Production_1b"</code>
+
+

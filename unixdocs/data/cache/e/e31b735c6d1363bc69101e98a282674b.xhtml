@@ -1,0 +1,98 @@
+
+<h1 class="sectionedit1" id="cobbler_kickstart">Cobbler / Kickstart</h1>
+<div class="level1">
+
+<p>
+<strong>Cobbler is used to build Redhat systems. It runs on pablsv01</strong>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Cobbler / Kickstart" [1-101] -->
+<h2 class="sectionedit2" id="process_-_concepts">Process - Concepts</h2>
+<div class="level2">
+
+<p>
+<strong> Distros </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> A distro is a copy of the RHEL installation DVD for a given version.<pre class="code">sudo cobbler distro list
+   rhel-5.8-i386
+   rhel-5.8-x86_64
+   rhel-5.8-xen-i386
+   rhel-5.8-xen-x86_64
+   rhel-6.3-i386
+   rhel-6.3-x86_64
+   rhel-6.4-x86_64</pre>
+</div>
+</li>
+</ul>
+
+<p>
+<strong> Kickstart file </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Kickstart profile is used to define how the system needs to be built. It defines, the partition sizes, types, root password etc. </div>
+</li>
+<li class="level1"><div class="li"> On pablsv01 The kickstart files are stored under<pre class="code">sudo ls -l /var/lib/cobbler/kickstarts/tenneco.*
+-rw-r--r-- 1 root root 1574 Nov  3  2012 /var/lib/cobbler/kickstarts/tenneco.rhel-5.8-HP.ks
+-rw-r--r-- 1 root root 1550 Nov  4  2012 /var/lib/cobbler/kickstarts/tenneco.rhel-5.8.ks
+-rw-r--r-- 1 root root 1586 Nov  3  2012 /var/lib/cobbler/kickstarts/tenneco.rhel-6.3-HP.ks
+-rw-r--r-- 1 root root 1562 Nov  2  2012 /var/lib/cobbler/kickstarts/tenneco.rhel-6.3.ks
+-rw-r--r-- 1 root root 1562 Aug 13 15:48 /var/lib/cobbler/kickstarts/tenneco.rhel-6.4.ks</pre>
+</div>
+</li>
+</ul>
+
+<p>
+<strong> Profiles </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> A profile associates a distro with kickstart<pre class="code">sudo cobbler profile list
+   rhel-5.8-i386
+   rhel-5.8-x86_64
+   rhel-5.8-xen-i386
+   rhel-5.8-xen-x86_64
+   rhel-6.3-i386
+   rhel-6.3-x86_64
+   rhel-6.4-x86_64</pre>
+</div>
+</li>
+</ul>
+
+<p>
+<strong> Build Process </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> We define a system to cobbler this way<pre class="code">sudo cobbler system add \
+--name=taqa1a03new \
+--profile=rhel-6.4-x86_64 \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=amer.int.tenneco.com \
+--gateway=10.32.6.1 \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=00:0c:29:7d:37:90 \
+--ip-address=10.32.6.22 \
+--netmask=255.255.255.0 \
+--server=pablsv01.amer.int.tenneco.com</pre>
+
+<p>
+This way we associated a system with a profile.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> We then create a iso file using cobbler<pre class="code"> sudo cobbler buildiso --systems=&quot;taqa1a03new&quot; --iso=/var/www/html/servers/taqa1a03new.iso</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The iso file is then copied over to a filesystem on taitc118. This filesystem is presented to VMWARE as a datastore.</div>
+</li>
+<li class="level1"><div class="li"> On the VM, we select this datastore, browse for the iso file and boot from it.</div>
+</li>
+<li class="level1"><div class="li"> Once booted, the VM downloads packages and the kickstart file from pablsv01 and builds the system.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Process - Concepts" [102-] -->

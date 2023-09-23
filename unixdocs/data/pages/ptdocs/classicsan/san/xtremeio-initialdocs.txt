@@ -1,0 +1,21 @@
+====== XtremeIO Documentation ======
+
+  - To access the XtremeIO XMS system, the best way is to create your own individual account (using the GUI -- Security ) and authenticate it using your public key. Once setup is done, you should be able to do this<code>x1kxk630 on taitc118:/home/x1kxk630 $ ssh pocemcxms01
+Last login: Thu Feb 26 15:28:57 2015 from taitc118e4.amer.int.tenneco.com
+Connect XMS on 10.32.6.151:443: version 3.0.1 build 11
+xmcli (x1kxk630)></code>
+  - Display all volumes on the array<code>show-volumes</code>
+  - List initiator groups<code>show-initiator-groups</code>
+  - Show lun allocations<code>show-lun-mappings</code>
+  - Create a volume<code>add-volume vol-name="pocafasv02_001" vol-size="500g"</code>
+  - Map volume to a host<code>map-lun vol-id="pocafasv02_001" ig-id="pocafasv02"</code>
+  - Create a folder **I'll explain in person why**<code>ssh tenneco@pocemcxms01 add-folder folder-type=\"vol\" caption=\"ta2oradb\" parent-folder-id=\"/\"</code>The quotes are required and makes it dirty while doing a remote operation.
+  - Moving volumes to a folder<code>for vol in ta2oradb_1 ta2oradb_2 ta2oradb_3 ta2oradb_4
+do
+   ssh tenneco@pocemcxms01 move-to-folder parent-folder-id=\"/ta2oradb\" vol-id=\"${vol}\"
+done</code>
+  - Snapshot all volumes in a directory<code>for vol in ta2oradb_1 ta2oradb_2 ta2oradb_3 ta2oradb_4
+do
+   ssh tenneco@pocemcxms01 move-to-folder parent-folder-id=\"/ta2oradb\" vol-id=\"${vol}\"
+done</code>
+  - [[san:xtremeiopocalloc|XtremeIO allocation work screen shots]]

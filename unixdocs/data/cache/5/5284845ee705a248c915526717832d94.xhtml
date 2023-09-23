@@ -1,0 +1,258 @@
+
+<h1 class="sectionedit1" id="powerha_re-ip_procedure">PowerHA Re-IP procedure</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "PowerHA Re-IP procedure" [1-38] -->
+<h2 class="sectionedit2" id="overview">Overview</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li">The objective of this document it to re-IP all the nodes in the PowerHA/hacmp cluster.</div>
+</li>
+<li class="level1"><div class="li">Basic cluster in our environment contains three nodes one service IP and two boot IP’s. Two boot IP’s can be changed in the regular way using smit tcpip or mktcpip, to change the service IP there is no easy way we need to remove the cluster network and re-add with the new IP’s</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Overview" [39-437] -->
+<h2 class="sectionedit3" id="backup_roll_back_plan">Backup/roll back plan</h2>
+<div class="level2">
+
+<p>
+First line of defense is cluster snapshot, if something didn’t go as planned, we can roll back using the cluster snapshot.
+</p>
+
+</div>
+<!-- EDIT3 SECTION "Backup/roll back plan" [438-596] -->
+<h3 class="sectionedit4" id="cluster_snapshot">Cluster Snapshot</h3>
+<div class="level3">
+
+<p>
+To take a snapshot use the below command or use smitty
+</p>
+<pre class="code">clsnapshot –c backup_snapshot</pre>
+
+<p>
+To restore a snapshot
+</p>
+
+<p style="border:2px dashed red;"><b>Note: </b><i>do not restore the snapshot when the cluster is active</i></p>
+<pre class="code">clsnapshot –a backup_snapshot</pre>
+
+<p>
+To list the snapshot you created
+</p>
+<pre class="code">clsnapshot –l</pre>
+
+</div>
+<!-- EDIT4 SECTION "Cluster Snapshot" [597-981] -->
+<h3 class="sectionedit5" id="take_alt_clone_on_both_nodes">Take alt_clone on both nodes</h3>
+<div class="level3">
+
+<p>
+Clean up the previous alt_clone disk
+</p>
+<pre class="code">alt_disk_install -X altinst_rootvg</pre>
+
+<p>
+Create a new alt_Clone
+</p>
+<pre class="code">nohup alt_disk_copy -B -d hdiskX &amp;
+tail -f nohup.out</pre>
+
+</div>
+<!-- EDIT5 SECTION "Take alt_clone on both nodes" [982-1194] -->
+<h3 class="sectionedit6" id="take_a_mksysb_of_both_nodes">Take a mksysb of both nodes</h3>
+<div class="level3">
+<pre class="code">mount cdcvilax118:/export/mksysb /mnt</pre>
+<pre class="code">nohup mksybs -i -e /mnt/servername.mksysb &amp;</pre>
+<pre class="code">tail -f nohup.out</pre>
+
+</div>
+<!-- EDIT6 SECTION "Take a mksysb of both nodes" [1195-1371] -->
+<h3 class="sectionedit7" id="take_profile_backup_of_both_nodes">Take profile backup of both nodes</h3>
+<div class="level3">
+
+<p>
+Login it to HMC select the LPAR – Configuration – Manage Profile (select the active profile) – Actions – Copy
+</p>
+
+</div>
+<!-- EDIT7 SECTION "Take profile backup of both nodes" [1372-1534] -->
+<h2 class="sectionedit8" id="procedure">Procedure</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT8 SECTION "Procedure" [1535-1556] -->
+<h3 class="sectionedit9" id="stop_the_cluster">Stop the Cluster</h3>
+<div class="level3">
+<pre class="code">smitty hacmp
+       System Management (C-SPOC)
+              HACMP Services
+                     Stop Cluster Services
+               	          (Provide necessary details) stop now / provide node names/ Bring RG offline.</pre>
+
+</div>
+
+<h4 id="validation">Validation</h4>
+<div class="level4">
+
+<p>
+To check the RG online status
+</p>
+<pre class="code">clRGinfo</pre>
+
+<p>
+To check the cluster manager status on both nodes
+</p>
+<pre class="code">lssrc -ls clstrmgrES</pre>
+
+</div>
+<!-- EDIT9 SECTION "Stop the Cluster" [1557-1975] -->
+<h3 class="sectionedit10" id="change_the_vlan_on_both_nodes">Change the VLAN on both nodes</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li">Login it to HMC - Select the LPAR - Configuration - Manage Profile (select the active profile) - Actions - Edit -Virtual Adapters (select Ethernet) - Actions - Edit (Port Virtual Ethernet (VLAN ID)) change it to the desired VLAN </div>
+</li>
+<li class="level1"><div class="li">Save the profile </div>
+</li>
+<li class="level1"><div class="li">shutdown and start the LPAR for the changes to take affect</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="validation1">Validation</h4>
+<div class="level4">
+<pre class="code">entstat -d enX | grep &#039;Port VLAN ID&#039;</pre>
+
+</div>
+<!-- EDIT10 SECTION "Change the VLAN on both nodes" [1976-2400] -->
+<h3 class="sectionedit11" id="change_the_ip_address_on_both_nodes">Change the IP address on both nodes</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li">Edit the /etc/hosts file with the new IP entries of the three nodes</div>
+</li>
+<li class="level1"><div class="li">You can change the IP using smit tcpip or mktcpip</div>
+</li>
+</ol>
+<pre class="code">/usr/sbin/mktcpip -h hostname -a xxx.xxx.xxx.xxx((IP address)  -m xxx.xxx.xxx.xxx(subnet) -i en0 -g xxx.xxx.xxx.xxx(gateway) -A no</pre>
+
+</div>
+
+<h4 id="validation2">Validation</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li">ping hostname</div>
+</li>
+<li class="level1"><div class="li">ssh hostname</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT11 SECTION "Change the IP address on both nodes" [2401-2766] -->
+<h3 class="sectionedit12" id="cluster_reconfiguration">Cluster reconfiguration</h3>
+<div class="level3">
+
+</div>
+
+<h4 id="remove_the_cluster_network">Remove the cluster network</h4>
+<div class="level4">
+<pre class="code">smitty hacmp
+	Extended Configuration
+		Extended Topology Configuration
+			Configure HACMP Networks
+                                Remove a Network from the HACMP Cluster (select the network net_ether_01 (xxx.xxx.xxx.xxx/24))</pre>
+
+<p>
+This will remove the network and interfaces with it
+</p>
+
+</div>
+
+<h4 id="re-add_the_network">Re-add the network</h4>
+<div class="level4">
+<pre class="code">smitty hacmp
+	Extended Configuration
+		Extended Topology Configuration
+			Configure HACMP Networks
+				Add a Network to the HACMP Cluster (select “ether”)</pre>
+
+<p>
+and Provide necessary details
+</p>
+<pre class="code">* Network Name                                      [net_ether_01]
+* Network Type                                        ether
+* Netmask (IPv4)/Prefix Length (IPv6)                  [XXX.XXX.XXX.XXX]
+* Enable IP Address Takeover via IP Aliases         [Yes]                                                                                     
+  IP Address Offset for Heart beating over IP Aliases []</pre>
+
+</div>
+
+<h4 id="add_communication_interfaces">Add Communication Interfaces</h4>
+<div class="level4">
+<pre class="code">smitty hacmp
+	Extended Configuration
+		Extended Topology Configuration
+			Configure HACMP Communication Interfaces/Devices
+				Add Communication Interfaces/Devices
+					Add Pre-defined Communication Interfaces and Devices
+						Communication Interfaces</pre>
+
+<p>
+Select network (Provide necessary details)
+</p>
+<pre class="code">* IP Label/Address                                   [node name]                                                                                        
+* Network Type                                        ether
+* Network Name                                        net_ether_01
+* Node Name                                          [node name]                                                                                        
+  Network Interface                                  [enX]</pre>
+
+</div>
+
+<h4 id="add_service_ip_label">Add service IP Label</h4>
+<div class="level4">
+<pre class="code">smitty hacmp
+	Extended Configuration
+		Extended Resource Configuration
+			HACMP Extended Resources Configuration
+				Configure HACMP Service IP Labels/Addresses
+					Add a Service IP Label/Address</pre>
+
+<p>
+input the service IP
+</p>
+
+</div>
+
+<h4 id="add_the_service_ip_to_resource_group">Add the service IP to resource group</h4>
+<div class="level4">
+<pre class="code">smitty hacmp
+	Extended Configuration
+		Extended Resource Configuration
+			HACMP Extended Resource Group Configuration
+				Change/Show Resources and Attributes for a Resource Group		</pre>
+
+<p style="border:2px dashed red;"><b>Note:</b><i>Repeat this on both nodes and start the cluster</i></p>
+
+</div>
+<!-- EDIT12 SECTION "Cluster reconfiguration" [2767-5249] -->
+<h3 class="sectionedit13" id="start_the_cluster">Start the Cluster</h3>
+<div class="level3">
+<pre class="code">smitty hacmp
+	System Management (C-SPOC)
+		HACMP Services
+			Start cluster services
+				(Provide necessary details) start now / provide node names/  Choose Automatic for manage RG</pre>
+
+</div>
+<!-- EDIT13 SECTION "Start the Cluster" [5250-5473] -->
+<h2 class="sectionedit14" id="conclusion">Conclusion</h2>
+<div class="level2">
+
+<p>
+Validate by logging in all three nodes
+</p>
+
+</div>
+<!-- EDIT14 SECTION "Conclusion" [5474-] -->

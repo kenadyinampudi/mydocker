@@ -1,0 +1,23 @@
+====== VMAX storage allocation ======
+
+^LUN Size^TDEV Size^Meta^Notes^
+|34G|8631M|4 Way|Small apps|
+|68G|8631M|8 Way|VIO Boot disks|
+|102G|8631M|12 Way|Medium size DB servers|
+|120G|15G|8 Way|Large DB servers|
+|138G|34522M|4 Way|AIX Boot disks|
+
+** The CLI method **
+
+  - [[san:vmaxstdalloc|VMAX storage allocation using CLI]]
+
+** The Web UI method **
+
+  - [[san:createtdevs|Create TDEVs when required]]
+  - [[san:crstrmetas|Create striped Meta volumes ( atleasy 4 way )]]
+  - [[san:bind|Bind the meta devices to FC pool.]]
+  - [[crstggroupvmax|Create storage group]]
+  - [[san:addmetastostg|Add metas to the storage group]]
+  - [[san:assfcpolicy|Associate Storage group with the respective FAST policy]]
+  - [[san:crinitgroup|Create initiator group.]]
+  - [[san:crmaskview|Create Masking view.]]

@@ -1,0 +1,47 @@
+====== Extend NAS filesystems on VNX ======
+
+===== Perform storage assessment =====
+
+  - Login to the control station<code>ssh nasadmin@<vnx_control_station_name></code>
+  - List the filesystem usage in a proper format<code>server_df server_2  | grep -v "server_2:" |awk '{if(NF==1) {printf $0;getline;print $0} else print $0}'  | grep ^fs > nas_fs_usage.now</code>
+  - Display the contents<code>cat nas_fs_usage.now</code>
+  - Store the filesystem that needs expansion in a variable<code>export fs_name="file_system_name"</code>
+  - Find the space you will need to add.
+    - Define the percentage<code>[[ $(grep ${fs_name} nas_fs_usage.now | awk '{printf "%.0f",$2/1024/1024}') -ge 1024 ]] && export percent="90" || export percent="85"</code>
+    - Find the space needed to make it under the threshold<code>cat nas_fs_usage.now | grep ${fs_name} | awk -vvar=${percent} '{printf "%.0f\n",($3/1024/1024/(var/100))-$2/1024/1024}'| awk '{print $0"G"}'</code>
+  - Check the pool and it's free space
+    - Find the pool name<code>pool_name=$(nas_fs -info ${fs_name} | grep ^pool | awk -F "=" '{print $NF}')</code>
+    - Check if the pool has enough free space<code>nas_pool -size ${pool_name} | grep -e ^avail_mb -e potential_mb</code>You should see something similar<code>avail_mb     = 437519
+potential_mb = 0</code>
+
+===== If NAS Pool does not have enough space -- Expand the pool =====
+
+  - Create a LUN on the clariion or VNX using standard procedures documented [[san:allocate-lun-clarions|elsewhere]]
+  - Add the new LUNs to the Storage group for NAS ''~filestorage''
+  - On the NAS control station
+  - List the existing disks visible to NAS heads<code>nas_disk -l > disksthen.txt</code>
+  - Rescan for new storage on the NAS
+    - server_2<code>server_devconfig server_2 -create -scsi -disks</code>
+    - server_3<code>server_devconfig server_3 -create -scsi -disks</code>
+  - Confirm the disks are visible<code>nas_disk -l > disksnow.txt</code>
+  - Check the difference and make a note of the disks<code>diff disksthen.txt disksnow.txt</code>
+  - Check if the pool has enough free space<code>nas_pool -size ${pool_name} | grep -e ^avail_mb -e potential_mb</code>You should see something similar<code>avail_mb     = 437519
+potential_mb = 0</code>
+
+===== Expand the filesystem and verify =====
+
+  - Prepare the command to extend<code>cat nas_fs_usage.now | grep ${fs_name} | awk -vvar=${percent} '{printf "%.0f\n",($3/1024/1024/(var/100))-$2/1024/1024}'|\
+awk -vfsname=${fs_name} '{print "nas_fs -xtend " fsname " size="$0"G"}'</code>
+  - Execute the above command to increase the filesystem. 
+  - Validate the filesystems<code>server_df server_2  | grep -v "server_2:" |awk '{if(NF==1) {printf $0;getline;print $0} else print $0}'  | grep ^fs</code>
+
+====== Create NAS filesystems ======
+
+  - Check if NAS pool has enough space<code>nas_pool -size <pool_name></code>
+  - If enough space is not available, add space as documented above in the extend section.
+  - Create filesystem and mount to the VDM.
+  - Create CIFS entry and add to the correct CIFS server.
+  - Create a checkpoint<code>nas_ckpt_schedule -create fs051pdata -filesystem fs-051_pdata -recurrence daily -runtimes 03:30 -keep 10 -every 1 -start_on 2014-12-02 \
+-description "Daily snaphsots of fs-051_pdata" -cvfsname_prefix fs051_pdata</code>
+
+You can enter engineering mode in Unisphere on an EMC array by holding down CTRL + ALT + SHIFT + F12. Enter the password messner.

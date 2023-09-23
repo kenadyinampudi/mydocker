@@ -1,0 +1,133 @@
+Installing Oracle 19C Prerequisites
+
+Oracle 19C requires some prerequisites from SUSE 12 to install properly.
+The biggest ask is a newer version of libstdc++ libraries.  SUSE 12 moved to a new major version.  Oracle requires an updated version of an old set of headers.  Therefore, the required library needs to be manually installed.
+\\ 
+  * Copy the required library to the destination server. There will be a question asking what to do since the signature verification failed.  Ignore the bad certs to continue.\\ ''scp cdcpillx056:/root/libstdc++33-3.3.3-63.1.x86_64.rpm .''\\ ''zypper in ./libstdc++33-3.3.3-63.1.x86_64.rpm''\\ <cli prompt="#">
+sfldmilx251:~ # zypper in ./libstdc++33-3.3.3-63.1.x86_64.rpm
+
+The following NEW package is going to be installed:
+  libstdc++33
+
+The following package has no support information from it's vendor:
+  libstdc++33
+
+1 new package to install.
+Overall download size: 237.0 KiB. Already cached: 0 B. After the operation, additional 1.0 MiB will be used.
+Continue? [y/n/...? shows all options] (y):
+Retrieving package libstdc++33-3.3.3-63.1.x86_64                                                                                                                                                        (1/1), 237.0 KiB (  1.0 MiB unpacked)
+libstdc++33-3.3.3-63.1.x86_64.rpm:
+    Header V3 DSA/SHA1 Signature, key ID cda92ffb: NOKEY
+    V3 DSA/SHA1 Signature, key ID cda92ffb: NOKEY
+
+libstdc++33-3.3.3-63.1.x86_64 (Plain RPM files cache): Signature verification failed [4-Signatures public key is not available]
+Abort, retry, ignore? [a/r/i] (a): i
+
+Checking for file conflicts: ..........................................................................................................................................................................................................[done]
+(1/1) Installing: libstdc++33-3.3.3-63.1.x86_64 .......................................................................................................................................................................................[done]
+Additional rpm output:
+warning: /var/cache/zypper/RPMS/libstdc++33-3.3.3-63.1.x86_64.rpm: Header V3 DSA/SHA1 Signature, key ID cda92ffb: NOKEY
+
+
+sfldmilx251:~ #
+</cli>
+  * Install the rest of the requirements from SUSE Manager. \\ ''zypper install -y sysstat'' \\ 
+''zypper install -y libcap-ng*'' \\ 
+''zypper install -y libcap-progs'' \\ 
+''zypper install -y libcap1*'' \\ 
+''zypper install -y libXtst*'' \\ <cli prompt="#">sfldmilx251:~ # zypper install sysstat
+Refreshing service 'spacewalk'.
+Loading repository data...
+Reading installed packages...
+Resolving package dependencies...
+
+The following NEW package is going to be installed:
+  sysstat
+
+1 new package to install.
+Overall download size: 360.6 KiB. Already cached: 0 B. After the operation, additional 1.3 MiB will be used.
+Continue? [y/n/...? shows all options] (y):
+Retrieving package sysstat-12.0.2-20.14.1.x86_64                                                                                                                                                        (1/1), 360.6 KiB (  1.3 MiB unpacked)
+Retrieving: sysstat-12.0.2-20.14.1.x86_64.rpm .........................................................................................................................................................................................[done]
+
+Checking for file conflicts: ..........................................................................................................................................................................................................[done]
+(1/1) Installing: sysstat-12.0.2-20.14.1.x86_64 .......................................................................................................................................................................................[done]
+sfldmilx251:~ # zypper install libcap-ng*
+Refreshing service 'spacewalk'.
+Loading repository data...
+Reading installed packages...
+'libcap-ng0' providing 'libcap-ng*' is already installed.
+No update candidate for 'libcap-ng0-0.7.3-4.125.x86_64'. The highest available version is already installed.
+Resolving package dependencies...
+
+The following 2 NEW packages are going to be installed:
+  libcap-ng-utils libcap-ng0-32bit
+
+2 new packages to install.
+Overall download size: 37.4 KiB. Already cached: 0 B. After the operation, additional 83.0 KiB will be used.
+Continue? [y/n/...? shows all options] (y):
+Retrieving package libcap-ng-utils-0.7.3-4.125.x86_64                                                                                                                                                   (1/2),  25.8 KiB ( 65.5 KiB unpacked)
+Retrieving: libcap-ng-utils-0.7.3-4.125.x86_64.rpm ....................................................................................................................................................................................[done]
+Retrieving package libcap-ng0-32bit-0.7.3-4.125.x86_64                                                                                                                                                  (2/2),  11.7 KiB ( 17.5 KiB unpacked)
+Retrieving: libcap-ng0-32bit-0.7.3-4.125.x86_64.rpm ...................................................................................................................................................................................[done]
+
+Checking for file conflicts: ..........................................................................................................................................................................................................[done]
+(1/2) Installing: libcap-ng-utils-0.7.3-4.125.x86_64 ..................................................................................................................................................................................[done]
+(2/2) Installing: libcap-ng0-32bit-0.7.3-4.125.x86_64 .................................................................................................................................................................................[done]
+sfldmilx251:~ # zypper install -y libcap-progs
+Refreshing service 'spacewalk'.
+Loading repository data...
+Reading installed packages...
+Resolving package dependencies...
+
+The following NEW package is going to be installed:
+  libcap-progs
+
+1 new package to install.
+Overall download size: 18.8 KiB. Already cached: 0 B. After the operation, additional 52.2 KiB will be used.
+Continue? [y/n/...? shows all options] (y): y
+Retrieving package libcap-progs-2.22-13.1.x86_64                                                                                                                                                        (1/1),  18.8 KiB ( 52.2 KiB unpacked)
+Retrieving: libcap-progs-2.22-13.1.x86_64.rpm .........................................................................................................................................................................................[done]
+
+Checking for file conflicts: ..........................................................................................................................................................................................................[done]
+(1/1) Installing: libcap-progs-2.22-13.1.x86_64 .......................................................................................................................................................................................[done]
+sfldmilx251:~ # zypper install -y libcap1*
+Refreshing service 'spacewalk'.
+Loading repository data...
+Reading installed packages...
+Resolving package dependencies...
+
+The following 2 NEW packages are going to be installed:
+  libcap1 libcap1-32bit
+
+2 new packages to install.
+Overall download size: 17.0 KiB. Already cached: 0 B. After the operation, additional 28.0 KiB will be used.
+Continue? [y/n/...? shows all options] (y): y
+Retrieving package libcap1-1.10-61.1.x86_64                                                                                                                                                             (1/2),   8.5 KiB ( 14.5 KiB unpacked)
+Retrieving: libcap1-1.10-61.1.x86_64.rpm ..............................................................................................................................................................................................[done]
+Retrieving package libcap1-32bit-1.10-61.1.x86_64                                                                                                                                                       (2/2),   8.6 KiB ( 13.6 KiB unpacked)
+Retrieving: libcap1-32bit-1.10-61.1.x86_64.rpm ........................................................................................................................................................................................[done]
+
+Checking for file conflicts: ..........................................................................................................................................................................................................[done]
+(1/2) Installing: libcap1-1.10-61.1.x86_64 ............................................................................................................................................................................................[done]
+(2/2) Installing: libcap1-32bit-1.10-61.1.x86_64 ......................................................................................................................................................................................[done]
+sfldmilx251:~ # zypper install -y libXtst*
+Refreshing service 'spacewalk'.
+Loading repository data...
+Reading installed packages...
+'libXtst6' providing 'libXtst*' is already installed.
+No update candidate for 'libXtst6-1.2.2-7.1.x86_64'. The highest available version is already installed.
+Resolving package dependencies...
+
+The following NEW package is going to be installed:
+  libXtst6-32bit
+
+1 new package to install.
+Overall download size: 12.4 KiB. Already cached: 0 B. After the operation, additional 21.6 KiB will be used.
+Continue? [y/n/...? shows all options] (y): y
+Retrieving package libXtst6-32bit-1.2.2-7.1.x86_64                                                                                                                                                      (1/1),  12.4 KiB ( 21.6 KiB unpacked)
+Retrieving: libXtst6-32bit-1.2.2-7.1.x86_64.rpm .......................................................................................................................................................................................[done]
+
+Checking for file conflicts: ..........................................................................................................................................................................................................[done]
+(1/1) Installing: libXtst6-32bit-1.2.2-7.1.x86_64 .....................................................................................................................................................................................[done]
+sfldmilx251:~ # </cli>

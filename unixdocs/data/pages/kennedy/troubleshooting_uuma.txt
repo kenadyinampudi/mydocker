@@ -1,0 +1,49 @@
+====== Troubleshooting UUMA ======
+===== Overview =====
+UUMA server "pcdcunxlxap03" connects to the below Database server
+
+**Database Server details.**
+  *Server: PCDCFORAXDB01.driv.com
+  *Port: 1538
+  *SID: PIOS
+
+We can run simple DB commands to isolate any issues and fix it.\\ 
+<html>
+<span style="color:red;font-size:100%;">Note: </span>
+</html>
+do not run **delete**, **alter** commands if you are not sure of what you are doing.
+===== Make sure SYSINTER is installed =====
+  - For SUSE follow [[kennedy:install_sysinter_suse|SUSE Linux]]
+  - For AIX and Redhat follow [[unix:installsysinter|Install sysinter]]
+
+===== After SYSINTER is successfully installed =====
+  - Then do a quick check to see if the server is communicating <code>export RCMDHOSTNAME=hostname
+export RCMDPORTNUM=40035
+./sh_rclt "uname -n;"</code> 
+  - The output will produce the hostname<code>Example:
+export RCMDHOSTNAME=dcdced1lxci01
+export RCMDPORTNUM=40035
+./sh_rclt "uname -n;"
+dcdced1lxci01
+</code>
+
+
+===== Manually syncing the list of servers =====
+I think the sync process runs every 4 hours (embedded into uumad code).
+If you want to run the sync process manually (on demand) you can follow this simple procedure:
+
+Login to pcdcunxlxap03
+<code>sudo su – oracle
+cd uuma
+ps -ef | grep uumad
+kill <pid>
+./get_host_data.sh
+./start_uumad.sh
+Check if uumad is running: ps –ef | grep uumad
+</code>
+===== If the count is stuck =====
+
+after checking if the count doesnt go down
+  select count(*) from cmd_pwd_reset;
+you can query the table to find out where it is stuck by using the below command
+  select hostname,username,timestamp from cmd_pwd_reset  

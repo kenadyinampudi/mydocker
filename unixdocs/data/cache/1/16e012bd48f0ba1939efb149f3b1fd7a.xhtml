@@ -1,0 +1,78 @@
+
+<h1 class="sectionedit1" id="installing_renewing_flexnet_cadverter_license_on_pggpdb01_for_frank_sessler">Installing / renewing Flexnet Cadverter License on pggpdb01 for Frank Sessler</h1>
+<div class="level1">
+
+<p>
+** Contact Frank Sessler /DE/TA.EU and schedule the installation.  Be sure to work with Frank while doing this.  Also make sure you can use Skype Meeting to share screen  so Frank can check work as it progresses if required.  Confirm each step with Frank use Skype Chat to work step by step with Frank.
+</p>
+<ul>
+<li class="level1"><div class="li"> Frank will email you the new license as an attachment. Save the attachment to a local file on your PC</div>
+</li>
+<li class="level1"><div class="li"> Use FileZilla to transfer file from local pc to pggpdb01. Transfer to your home  directory .  !!! NOTE MAKE SURE TRANSFER TYPE IS SET TO <abbr title="American Standard Code for Information Interchange">ASCII</abbr> !!!!  Thsi removes all special characters like ^M from file. Newer versions of FileZilla do automatic sensing and transfer as required. </div>
+</li>
+<li class="level1"><div class="li"> You will need to coment out a line in /etc/inittab so make a copy of it now where yyyymmdd is current date <pre class="code"> cd /etc </pre>
+<pre class="code"> sudo cp -p inittab inittab-$(date +%Y%m%d-%H:%M:%S)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the the inittab file <pre class="code">sudo vi inittab </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Comment out the following line &lt;and save the file. Note in the inittab a ”:” is the comment character of choice, but a ”#” will also work.  <pre class="code">flexlmtheorem:2:respawn:/opt/FLEXnet/cadverter/daemon_theorem start &gt;/dev/null 2&gt;&amp;1 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now tell the init command to re-examine the /etc/inittab file Note in AIX the telint and init commands are identical in purpose. See <a href="https://www.ibm.com/support/knowledgecenter/en/ssw_aix_61/com.ibm.aix.cmds5/telinit.htm" class="urlextern" title="https://www.ibm.com/support/knowledgecenter/en/ssw_aix_61/com.ibm.aix.cmds5/telinit.htm"  rel="nofollow">https://www.ibm.com/support/knowledgecenter/en/ssw_aix_61/com.ibm.aix.cmds5/telinit.htm</a> <pre class="code"> telinit q</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change to the cadverter directory <pre class="code">cd /opt/FLEXnet/cadverter </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Save the current license as backup where yyyymmdd is current date <pre class="code">sudo cp -p license.lic license.lic-$(date +%Y%m%d-%H:%M:%S)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the new licene <pre class="code">sudo cp -p {new license location} ./license.lic</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the license.lic file to theorem.lic.<pre class="code"> sudo cp -p license.lic theorem.lic</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Owner &amp; group of theorem.lic should be root:system If they are not correct fix them now <pre class="code"> chown root:system theorem.lic </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the permissions on the therom.lic file <pre class="code">sudo chmod 666 theorem.lic</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Invoke the new license <pre class="code">sudo ./lmutil lmreread -c ./license.lic</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> </div>
+</li>
+<li class="level1"><div class="li"> Frank will check the file and run tests to insure the new license is activated. </div>
+</li>
+</ul>
+
+<p>
+  Extra commands that Frank may ask you to do if there are isues.
+</p>
+<ul>
+<li class="level1"><div class="li"> <pre class="code"> sudo ./daemon_theorem start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Once everything is working correctoy go back and undo the comment in the inittab file</div>
+</li>
+</ul>
+
+<p>
+ i* Edit the the inittan file 
+</p>
+<pre class="code">sudo vi initab </pre>
+<ul>
+<li class="level1"><div class="li"> Uncomment out the following line (you commented this out earlier) and save the file.  <pre class="code">flexlmtheorem:2:respawn:/opt/FLEXnet/cadverter/daemon_theorem start &gt;/dev/null 2&gt;&amp;1 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now tell the init command to re-examine the /etc/inittab file Note in AIX the telint and init commands are identical in purpose. See <a href="https://www.ibm.com/support/knowledgecenter/en/ssw_aix_61/com.ibm.aix.cmds5/telinit.htm" class="urlextern" title="https://www.ibm.com/support/knowledgecenter/en/ssw_aix_61/com.ibm.aix.cmds5/telinit.htm"  rel="nofollow">https://www.ibm.com/support/knowledgecenter/en/ssw_aix_61/com.ibm.aix.cmds5/telinit.htm</a> <pre class="code"> telinit q</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "Installing / renewing Flexnet Cadverter License on pggpdb01 for Frank Sessler" [2-] -->

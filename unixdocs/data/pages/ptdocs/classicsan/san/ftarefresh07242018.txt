@@ -1,0 +1,85 @@
+===== FTA refresh =====
+
+  - Login to pgunap01 set SSH variable<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+  - Ask DBA team to put the database in hot backup mode.
+  - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix ftarefresh PTAONLINEBKP</code>
+  - Ask DBA to put the database in end backup mode.
+  - Copy the snapshot to new volumes<code>for volume in {001..043}
+do
+   echo "Copying snapshot PTAONLINEBKP.ftarefresh.ptadbdata_${volume} to ftadbdata_${volume}"
+   ${SSH2PURE} purevol copy PTAONLINEBKP.ftarefresh.ptadbdata_${volume} ftadbdata_${volume}
+done</code>
+  - Connect the volumes to qaerdb01<code>for volume in {001..043}
+do
+   echo "Connecting ftadbdata_${volume} to qaerdb01 "
+   ${SSH2PURE} purevol connect --host qaerdb01 ftadbdata_${volume}
+done</code>
+  - Login to qaerdb01<code>ssh qaerdb01</code>
+  - Rename the filesystems and leave the VGs varied off.<code>for vg in $(lsvg | grep datavg0)
+do
+   for fs in $(sudo lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -cuk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] && echo "Unable to umount ${fs} "
+      fi         
+      newfs=$(echo ${fs} | sed "s;^;/OLDFTA;g")
+      echo "Renaming ${fs} to ${newfs} ... "
+      sudo chfs -m ${newfs} ${fs}
+   done
+   lsvg -l ${vg} | grep -i open > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      echo "warning :: ${vg} requires manual intervention "
+   else
+      echo "Varying off ${vg} "
+      sudo varyoffvg ${vg}
+   fi
+done</code>
+  - See if we can rename the VGs as well.
+  - Take a snapshot of disks<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Discover new devices<code>sudo cfgmgr</code>
+  - Take a snapshot<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Get a list of PVIDs from production<code>ssh tapr1d01 "lspv" > /var/tmp/tapr1d01.pvids</code>
+  - Re-create the VGs<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   grep -w ${vg} /var/tmp/tapr1d01.pvids | awk '{print $2}' > ${vg}.pvids
+   echo "Recreating as fta${vg} .."
+   pvs=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   echo "sudo recreatevg -L/ -Y/ -y fta${vg} ${pvs}"
+done</code>
+  - Change the mountpoints<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(sudo lsvgfs fta${vg} )
+   do
+      newfs=$(echo ${fs} | sed "s;PTA;FTA;g" )
+      sudo chfs -m ${newfs} ${fs}
+   done
+done</code>
+  - Run fsck<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(lsvgfs fta${vg} )
+   do
+      echo "Running fsck on fta${vg} --> ${fs} "
+      sudo fsck -y ${fs}
+   done
+done</code>
+  - Mount the filesystems<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(lsvgfs fta${vg} )
+   do
+      echo "Mounting fta${vg} --> ${fs}"
+      sudo mount ${fs}
+      if [ ${?} -eq 0 ]
+      then
+         sudo chown -R orafta:dba ${fs}
+      else
+         echo "Unable to mount ${fs} - please fix and don't forget to change the permissions using chown -R orafta:dba ${fs}"
+      fi         
+   done
+done</code>
+  - Handover to DBAs
+  - Cleanup after a week ( the old volumes, snapshots etc )

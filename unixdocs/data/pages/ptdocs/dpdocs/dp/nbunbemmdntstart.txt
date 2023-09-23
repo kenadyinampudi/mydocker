@@ -1,0 +1,6 @@
+Exit code 334 for nbemm start up can have multiple reasons. So first thing firts is to enable more verbose logging for this deamon|service<code>vxlogcfg -a -p NB -o 111 -s DiagnosticLevel=6 -s DebugLevel=6</code>
+Once this was done attempt to start nbu again<code>bpup -f -v</code> Then review the logs of this service, no later then 5 mins since bpup<code>vxlogview -p NB -o 111 -t 00:05:00 -d all</code> 
+Hopefully the detailed information will give you a clue what is NOK. Last time in the tamad001 error was Exception caught attempting EMM orb startup = BAD_PARAM, after few secs of googling I found out this TN:
+[[https://www.veritas.com/support/en_US/article.000006469]] where they said to stop PBX and start it back again, so I did and then next attempt of bpup was successful. Once done, please
+do not forget to disable verbose logging by<code>vxlogcfg -a -p NB -o 111 -s DiagnosticLevel=1 -s DebugLevel=1</code>
+Helpful TN for some similar issue we did face in tazwi001 - recently [[https://www.veritas.com/support/en_US/article.000031908|how to clean emm db]]

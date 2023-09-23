@@ -1,0 +1,109 @@
+
+<h1 class="sectionedit1" id="linux_redhat_infrastructure_at_tenneco">Linux(RedHat) infrastructure at Tenneco</h1>
+<div class="level1">
+
+<p>
+Tenneco at this time has some Linux systems. Some are Redhat, some CentOS, some are Ubuntu and SuSE.
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Linux(RedHat) infrastructure at Tenneco" [1-157] -->
+<h3 class="sectionedit2" id="directions_from_upper_management">Directions from upper management</h3>
+<div class="level3">
+
+<p>
+<strong> REDHAT IS THE TENNECO STANDARD FOR LINUX </strong>
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Directions from upper management" [158-249] -->
+<h3 class="sectionedit3" id="considerations_while_deploying_linux">Considerations while deploying Linux</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Only supported on Virtualized hardware. No new physical Linux deployement at this time.</div>
+<ul>
+<li class="level2"><div class="li"> Exceptions are the build servers itself.</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> No I/O intensive workloads to be deployed ( VMWare )</div>
+</li>
+<li class="level1"><div class="li"> Typically the application can be on Linux while the databases will run on AIX.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "Considerations while deploying Linux" [250-577] -->
+<h3 class="sectionedit4" id="warning">Warning</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Never ever install locally compiled / internet downloaded RPMs w/o consulting Unix team. We have a local redhat repository which has all RPMs that Redhat provides, if you need anything out of ordinary, please consult Unix team.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Warning" [578-828] -->
+<h1 class="sectionedit5" id="redhat_infrastructure">Redhat Infrastructure</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Redhat installations are performed using kickstart.</div>
+</li>
+<li class="level2"><div class="li"> We do not use PXE booting for obvious reasons (DMZ, the need for boot helpers in every subnet, complexity).</div>
+</li>
+<li class="level2"><div class="li"> The redhat server gets defined on the Build server.</div>
+</li>
+<li class="level2"><div class="li"> The build server creates a <abbr title="International Organization for Standardization">ISO</abbr> , the client boots from it, pulls the configuration from build server.</div>
+</li>
+</ul>
+
+</div>
+
+<h4 id="implementation">Implementation</h4>
+<div class="level4">
+
+<p>
+<a href="/lib/exe/detail.php?id=unix%3Alinux%3Aplanning&amp;media=unix:linux:redhat_build_infrastructure.png" class="media" title="unix:linux:redhat_build_infrastructure.png"><img src="/lib/exe/fetch.php?w=768&amp;media=unix:linux:redhat_build_infrastructure.png" class="media" alt="" width="768" /></a>
+</p>
+
+</div>
+
+<h4 id="backup">Backup</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> <abbr title="Operating System">OS</abbr> backups ( Today <abbr title="Operating System">OS</abbr> backups are performed by VMWare snapshots - There is a inhouse project to make a mksysb equivalent undergoing)</div>
+</li>
+<li class="level1"><div class="li"> Data backups (Netbackup agent/agentless)</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="recovery">Recovery</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> <abbr title="Operating System">OS</abbr> recovery (VMWare snapshots backed up on netbackup)</div>
+</li>
+<li class="level1"><div class="li"> Data recovery ( Netbackup )</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="patching">Patching</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> Will be done via the Local repository that serves patches.</div>
+</li>
+</ul>
+
+</div>
+
+<h4 id="support">Support</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> Redhat Support is paid for.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT5 SECTION "Redhat Infrastructure" [829-] -->

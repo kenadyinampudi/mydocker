@@ -1,0 +1,13 @@
+====== Redhat PABLSV02 Cobbler server build ======
+  
+  * Ask the wintel team to create a VM called pablsv02 with the following specifications<code>1Core, 8Gig RAM, 70Gig bootdisk, 100Gig datadisk and 10.32.6.0/24 vlan</code> 
+  * [[unix:buildredhat|Please follow the standard linux build instruction for pablsv02]]
+  * Do the following<code>This is nothing</code>
+  * Please create /var/www filesystem of size 50Gig<code>sudo pvcreate /dev/sdb
+
+sudo vgcreate datavg01 /dev/sdb
+sudo lvcreate -L 50G -n varwww /dev/datavg01
+sudo mkfs -t ext4 /dev/datavg01/varwww
+echo "/dev/mapper/datavg01-varwww   /var/www                    ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /var/www
+sudo mount /var/www</code>

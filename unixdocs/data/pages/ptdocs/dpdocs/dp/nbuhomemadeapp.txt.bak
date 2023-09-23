@@ -1,0 +1,74 @@
+  * Disk Layout - to be handed over to UNIX team. On HP array end we need to create two LUNs: One for OS sysvg(either 2x600 GB in RAID1 or 2x900GB in RAID1) and one for vrtsdatavg01 (9x 900GB RAID6 [small app] or 9x2,4TB RAID 6 [medium app] or 9x6TB RAID 6 [large app] - in each config 1x HDD for Hot Spare)
+  * NBU configs are available [[https://tenneco.sharepoint.com/:x:/s/COUSGI/DPT/EeN2yj6d3khFnXnEFB6rs58Bami6RdcmUlzyyHKBpkePoA?e=Cba3nr|here]]
+  * 4TB installation<code>#Stanza file for creation Filesystems related to Veritas
+/inst:32:vrts_inst:vrtsdatavg01
+/usr/openv:128:vrts_opnv:sysvg
+/usr/openv/db:32:vrts_opnvdb:sysvg
+/usr/openv/logs:32:vrts_opnvlg:sysvg
+/usr/openv/netbackup/logs:128:vrts_nblg:sysvg
+/usr/openv/netbackup/db:256:vrts_nbdb:sysvg
+/usr/openv/netbackup/track:8:vrts_nbtrck:sysvg
+/advdsk/data1:1024:vrts_advl1:vrtsdatavg01
+/msdp/data1:2048:vrts_msdpvl1:vrtsdatavg01
+/msdp/cat:256:vrts_msdpcat:vrtsdatavg01</code>
+  * 14TB installation<code>#Stanza file for creation Filesystems related to Veritas
+#mount_point:size in GB:LV_name:VGname
+/inst:32:vrts_inst:vrtsdatavg01
+/usr/openv:128:vrts_opnv:sysvg
+/usr/openv/db:32:vrts_opnvdb:sysvg
+/usr/openv/logs:32:vrts_opnvlg:sysvg
+/usr/openv/netbackup/logs:128:vrts_nblg:sysvg
+/usr/openv/netbackup/db:256:vrts_nbdb:sysvg
+/usr/openv/netbackup/track:8:vrts_nbtrck:sysvg
+/advdsk/data1:2048:vrts_advl1:vrtsdatavg01
+/msdp/data1:12288:vrts_msdpvl1:vrtsdatavg01
+/msdp/cat:256:vrts_msdpcat:vrtsdatavg01</code>
+  * Check if all FSes are available <code>df -hP</code>
+  * Copy NBU install files from taitc009 E:\GIOS\Soft\NBU_8.1 to /inst folder using scp protocol, ie.<code>pscp E:\GIOS\Soft\NBU_8.1\NetBackup_8.1_LinuxR_x86_64.tar.gz root@servername:/inst</code>
+  * Unzip and untar this copied file<code>cd /inst/ && tar xzfv /inst/NetBackup_8.1_LinuxR_x86_64.tar.gz</code>
+  * NBU tuning on LINUX<code>echo "kernel.sem = 300  307200  32  1024">> /etc/sysctl.conf
+sysctl -p
+sudo vi /etc/security/limits.conf</code> and add these two lines:<code>*               hard    nofile          10000
+soft    nofile          10000</code>
+  * Add required groups and users<code>sudo groupadd nbwebgrp
+sudo useradd -g nbwebgrp -c 'NetBackup Web Services account' -d /usr/openv/wmc nbwebsvc</code>
+  * Install NBU <code>/inst/NetBackup_8.1_LinuxR_x86_64/install</code> Follow the prompts.
+  * Once installed execute this script.
+
+  * In order to receive NBU hot catalog backup form giosdatapresalerts@tenneco.com follow below steps:<code>echo "sender_canonical_maps = hash:/etc/postfix/sender_canonical_maps" >> /etc/postfix/main.cf
+echo Netbackup.`hostname` giosdatapresalerts@tenneco.com >> /etc/postfix/sender_canonical_maps
+postmap hash:/etc/postfix/sender_canonical_maps
+postfix reload</code>test now the hot catalog backup if email recived is from proper sender. <code>bpbackup -i -p HOT_xxx</code>
+  * 
+  * Uninstall steps - use with awarness<code>sudo rpm -qa|grep VRTS
+sudo rpm -e VRTSnbcfg
+sudo rpm -e VRTSnetbp
+sudo rpm -e VRTSnbjava
+sudo rpm -e VRTSnbjre
+sudo rpm -e VRTSnbclt
+sudo rpm -e VRTSpbx
+sudo rpm -e VRTSnbpck</code>
+
+  * SAMBA protocol - to be able to download binaries from home made appliance using CIFS
+There should be created a file in /etc/samba/smb.conf which should look similar to this one:<code>root on pcdcbkplxms01:/binaries/shared $ cat /etc/samba/smb.conf
+# See smb.conf.example for a more detailed config file or
+# read the smb.conf manpage.
+# Run 'testparm' to verify the config is correct after
+# you modified it.
+[global]
+        workgroup = pcdcbkplxms01_grp
+        server string = Samba Server %v
+        netbios name = pcdcbkplxms01
+        security = user
+        map to guest = bad user
+        name resolve order = bcast host
+        dns proxy = no
+        idmap config * : backend = tdb
+
+[NBU_inst_bin]
+        comment = NetBackup Binaries
+        browseable = yes
+        path = /binaries/shared
+        read only = Yes
+        guest ok = Yes
+        guest only = Yes</code>If such file do exist you can start samba by executing<code>systemctl start smb</code>Once done from windows client you should be able to enter into \\<netbiosname from samb.conf file>. When the download is made stop the samba protocol by executing<code>systemctl stop smb</code>

@@ -1,0 +1,54 @@
+===== DMX4 storage lay out =====
+
+  * A group of same size, same characteristics ''disks'' build a ''diskgroup''
+  * A slice of ''diskgroup'' with a defined raid type is a ''symdevice''
+  * A group of ''symdevices'' make ''meta volumes''
+    * 4 ''symdevices'' make a 4 way ''meta volume''
+    * 8 ''symdevices'' make a 8 way ''meta volume''
+    * The first ''symdevice'' becomes a ''meta head'' rest of the volumes become ''meta member''
+    * Use symdev -list command to get more familiar with these terminologies
+===== Creating 34G metavolumes on DMX4  =====
+
+  - Login to taitc118. That is the CLI server for DMX4.
+  - Find out free space on the available disk groups<code>sudo symdisk -sid 39 list -by_diskgroup</code>
+    - Look at the Capacity(MB) Free column (9th column) and figure out if we have enough space.
+    - Identify and document the disk group ( Call Moon for escalation, if he isn't available - call EMC )
+  - Create symdevices
+    - Find out a sym ssid ""This is something special for a DMX that is connected to both mainframe and open systems**
+      - List all ssids<code>sudo symcfg list -ssid</code>You will see that each ssid has a limit of 256 devices, If you don't find one with enough empty, pick the next number. We don't have to create it, the symdevice creation procedure creates it.
+    - Create this text file and populate the details accordingly, name it ''cr_symdevs.dmx4.txt'' <code>vi cr_symdevs.dmx4.txt</code>Add this<code>create dev count=200,
+size=9207,
+emulation=FBA,
+config=RAID-1,
+disk_group=6,
+mvs_ssid=0021;</code>
+      * count -----> The number of devices you plan to create
+      * size  -----> The size in number of cylinder or tracks ( I don't recall )
+      * emulation  -----> FBA for opensystems
+      * config  -----> RAID type.
+      * disk_group -----> The disk group number that you figured out in early steps
+      * mvs_ssid  -----> The SSID number you either figured out or plan to create.
+    - Execute it on the Symmetrix<code>sudo symconfigure -sid 39 -f ./cr_symdevs.dmx4.txt preview</code>If preview is fine commit<code>sudo symconfigure -sid 39 -f ./cr_symdevs.dmx4.txt commit</code>
+  - Create 4 way 34G Raid 1 metavolumes
+    - Get a list of free LUNs and get it to a text<code>sudo symdev -sid 39 list                        | \
+grep "2-Way"     # Get the Raid 1 volumes       | \
+grep -v "(M)"    # Remove the meta heads        | \
+grep -v "(m)"    # Remove the meta members      | \
+grep 8632        # That is the size we created. | \
+> freesymdevs.txt</code>
+    - Create the syntax for meta volume creation
+      - This is the format of the file<code>form meta from dev 8A4 config=striped stripe_size=1920;
+add dev 8A5 to meta 8A4;
+add dev 8A6 to meta 8A4;
+add dev 8A7 to meta 8A4;</code>
+      - I use this awk one(?) liner to generate this for the devices that we just created and documented.<code>cat freesymdevs.txt |\
+awk '{print "form meta from dev "$1,"config=striped stripe_size=1920;";
+metaname=$1;
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+}' > cr_meta34gR1.txt</code>
+      - Execute it on the Symmetrix<code>sudo symconfigure -sid 39 -f ./cr_meta34gR1.txt preview</code>If the preview was fine, commit the operation<code>sudo symconfigure -sid 39 -f ./cr_meta34gR1.txt commit</code>

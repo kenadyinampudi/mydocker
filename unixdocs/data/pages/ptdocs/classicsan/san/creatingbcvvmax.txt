@@ -1,0 +1,16 @@
+====== BCV groups on VMAX ======
+
+  * Add all the source luns in a text file.''source.txt''
+  * Add all the target luns in a text file.''target.txt''
+  * Create the devicegroup **note that this is local to the SYMCLI host**<code>sudo symdg create PTA_BACKUP_DG -type regular</code>
+  * Add standard devices ( source luns ) to device group<code>for i in $(cat source.txt)
+do
+  sudo symld -sid 0301 -g PTA_BACKUP_DG add dev $i
+done</code>
+  * Add BCV devices ( target luns - equal number and size )<code>for i in $(cat target.txt)
+do
+   sudo symbcv -sid 0301 -g PTA_BACKUP_DG associate dev $i
+done</code>
+  * For the first time, perform a full establish<code>sudo symmir -g PTA_BACKUP_DG establish -full</code>
+  * Check the status<code>sudo symmir -g PTA_BACKUP_DG query</code>
+  * Split the group after they are fully synchronised<code>sudo symmir -g PTA_BACKUP_DG split</code>

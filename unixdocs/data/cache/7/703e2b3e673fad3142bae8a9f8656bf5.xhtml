@@ -1,0 +1,121 @@
+<ul>
+<li class="level1"><div class="li"> Create the POC lpars by hand<pre class="code">chhwres -r virtualio -m Server-8284-22A-SN847584V -o a -p taprvio130 --rsubtype fc -a &quot;adapter_type=server,remote_lpar_id=5,remote_slot_num=3&quot;
+chhwres -r virtualio -m Server-8284-22A-SN847584V -o a -p taprvio131 --rsubtype fc -a &quot;adapter_type=server,remote_lpar_id=5,remote_slot_num=4&quot;
+
+mksyscfg -r prof -m Server-8284-22A-SN847584V -o save -p taprvio130 -n taprvio130 --force
+mksyscfg -r prof -m Server-8284-22A-SN847584V -o save -p taprvio131 -n taprvio131 --force
+
+mksyscfg -r lpar -m Server-8284-22A-SN847584V -i \
+&quot;name=pocafasv03,\
+profile_name=pocafasv03,\
+lpar_env=aixlinux,\
+min_mem=2048,desired_mem=32768,max_mem=49152,\
+mem_mode=ded,\
+proc_mode=shared,\
+min_proc_units=0.1,\
+desired_proc_units=2.0,\
+max_proc_units=20.0,\
+min_procs=1,\
+desired_procs=2,\
+max_procs=20,\
+sharing_mode=uncap,\
+uncap_weight=128,\
+auto_start=0,\
+boot_mode=norm,\
+max_virtual_slots=100,\
+\&quot;virtual_serial_adapters=0/server/1/any//any/1,1/server/1/any//any/1\&quot;,\
+\&quot;virtual_eth_adapters=2/0/406//0/1/ETHERNET0//all/none\&quot;,\
+\&quot;virtual_fc_adapters=\
+3/client/2/taprvio130/6//1,\
+4/client/3/taprvio131/6//1\&quot;&quot;
+
+
+
+
+chhwres -r virtualio -m Server-8284-22A-SN847584V -o a -p taprvio130 --rsubtype fc -a &quot;adapter_type=server,remote_lpar_id=6,remote_slot_num=3&quot;
+chhwres -r virtualio -m Server-8284-22A-SN847584V -o a -p taprvio131 --rsubtype fc -a &quot;adapter_type=server,remote_lpar_id=6,remote_slot_num=4&quot;
+
+mksyscfg -r prof -m Server-8284-22A-SN847584V -o save -p taprvio130 -n taprvio130 --force
+mksyscfg -r prof -m Server-8284-22A-SN847584V -o save -p taprvio131 -n taprvio131 --force
+
+mksyscfg -r lpar -m Server-8284-22A-SN847584V -i \
+&quot;name=pocafasv04,\
+profile_name=pocafasv04,\
+lpar_env=aixlinux,\
+min_mem=2048,desired_mem=16384,max_mem=20480,\
+mem_mode=ded,\
+proc_mode=shared,\
+min_proc_units=0.1,\
+desired_proc_units=2.0,\
+max_proc_units=20.0,\
+min_procs=1,\
+desired_procs=2,\
+max_procs=20,\
+sharing_mode=uncap,\
+uncap_weight=128,\
+auto_start=0,\
+boot_mode=norm,\
+max_virtual_slots=100,\
+\&quot;virtual_serial_adapters=0/server/1/any//any/1,1/server/1/any//any/1\&quot;,\
+\&quot;virtual_eth_adapters=2/0/406//0/1/ETHERNET0//all/none\&quot;,\
+\&quot;virtual_fc_adapters=\
+3/client/2/taprvio130/7//1,\
+4/client/3/taprvio131/7//1\&quot;&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Query CDP packets to figure out to which switch we are connected<pre class="code">sudo tcpdump -nn -v -i en15 -s 1500 -c 1 &#039;ether[20:2] == 0x2000&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change PVIDs on all lpars on a frame after you have completely messed up the VLAN config.<pre class="code">for lpar in pehrdb99 pehrap99 pehrap01 qehrdb01 qehrap01 dehrdb98 dehrap99 dehrap01 dehrdb02 sehrdb01
+do
+   echo &quot;chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p $lpar -s 2 -a port_vlan_id=1&quot;
+   echo &quot;chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p $lpar -s 3 -a port_vlan_id=2&quot;
+   echo &quot;mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p $lpar -n $lpar --force&quot;
+   echo &quot;&quot;
+done</pre>
+
+<p>
+This will generate something like this
+</p>
+<pre class="code">chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p pehrdb99 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p pehrdb99 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrdb99 -n pehrdb99 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p pehrap99 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p pehrap99 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrap99 -n pehrap99 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p pehrap01 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p pehrap01 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrap01 -n pehrap01 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p qehrdb01 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p qehrdb01 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p qehrdb01 -n qehrdb01 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p qehrap01 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p qehrap01 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p qehrap01 -n qehrap01 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p dehrdb98 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p dehrdb98 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p dehrdb98 -n dehrdb98 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p dehrap99 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p dehrap99 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p dehrap99 -n dehrap99 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p dehrap01 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p dehrap01 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p dehrap01 -n dehrap01 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p dehrdb02 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p dehrdb02 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p dehrdb02 -n dehrdb02 --force
+
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p sehrdb01 -s 2 -a port_vlan_id=1
+chhwres -r virtualio --rsubtype eth -m Server-8205-E6C-SN101261T -o s -p sehrdb01 -s 3 -a port_vlan_id=2
+mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p sehrdb01 -n sehrdb01 --force</pre>
+</div>
+</li>
+</ul>

@@ -1,0 +1,113 @@
+====== Disable fake IPs, enable DNS and reboot DRiV servers ======
+
+  - Enforce firewall rules          --- > Network Team
+  - Shutdown all Applications.      --- > Basis, apps teams
+  - Enable DNS on all DRiV servers. --- > Unix Team
+    - Login to DRiV NIM server<code>for host in $(cat /prod/images/etc/allhosts.driv)
+do
+   sudo scp /prod/images/etc/resolv.conf.driv ${host}:/etc/resolv.conf
+done</code>
+  - Perform hosts file, remove fake IPs and test firewall on AIX servers<code>for host in $(sudo cat /root/firewallchange/aix.$(whoami))
+do
+   sudo scp /prod/images/etc/ntp.conf.aix.imoclone.driv ${host}:/etc/ntp.conf
+   ssh ${host} 
+done</code>On each server do the following<code># Fix hosts file
+
+sudo cp /etc/hosts /etc/hosts.enabledns
+echo "127.0.0.1               loopback localhost"                                                    >  hosts.new
+host $(uname -n) | sed -e "s;,;;g" -e "s;.driv.com;;g" | awk '{print $3"     "$1".driv.com     "$1}' >> hosts.new
+sudo cp hosts.new /etc/hosts
+
+# Remove Fake NICs
+
+ifconfig -a | sudo tee -a /root/ifconfiga
+
+for NIC in $(ifconfig -a | grep ^en[1-9] | awk '{print $1}' | sed "s;:;;g" )
+do
+   sudo ifconfig ${NIC} down detach
+done
+
+for network in 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1
+do
+   sudo rmdev -dl en${network}
+   sudo rmdev -dl et${network}
+   sudo rmdev -dl ent${network}
+done
+
+# Test firewall connectivity - Both of these should fail
+
+telnet 10.0.48.213 1527
+telnet 10.32.50.64 1527
+
+# Update time and restart NTP daemons
+
+sudo stopsrc -s xntpd
+sudo ntpdate -u cdcvildns001.fmmotorparts.com
+sudo chrctcp -S -a xntpd
+sudo ntpdate -q cdcvildns001.fmmotorparts.com
+
+# Reboot the server
+
+sudo shutdown -Fr</code>
+  - Perform hosts file, remove fake IPs and test firewall on RHEL servers<code>for host in $(sudo cat /root/firewallchange/linux.$(whoami))
+do
+   sudo scp /prod/images/etc/ntp.conf.rhel.driv ${host}:/etc/ntp.conf
+   ssh ${host} 
+done</code>On each server do the following<code># Fix hosts file
+
+sudo cp /etc/hosts /etc/hosts.enabledns
+
+echo "127.0.0.1               loopback localhost" >  hosts.new
+grep $(uname -n) /etc/hosts                       >> hosts.new
+
+sudo cp hosts.new /etc/hosts
+
+# Remove Fake NICs
+
+for NIC in $(ifconfig -a | grep -e ^en -e ^eth | grep .6..: | awk '{print $1}' | sed "s;:;;g" )
+do
+   sudo ifdown ${NIC}
+done
+
+sudo rsync -avv /etc/sysconfig/network-scripts/ /root/network-scripts/
+
+for NICCFG in $(ls /etc/sysconfig/network-scripts/ifcfg-en*.6?? /etc/sysconfig/network-scripts/ifcfg-eth*.6??)
+do
+   sudo rm ${NICCFG}
+done
+
+# Test firewall connectivity - Both of these should fail
+
+sudo yum -y install telnet
+
+telnet 10.0.48.213 1527
+telnet 10.32.50.64 1527
+
+# Update time and restart NTP daemons
+
+sudo systemctl stop ntpd
+sudo ntpdate -u cdcvildns001.fmmotorparts.com
+sudo systemctl enable ntpd
+sudo systemctl start ntpd
+sudo ntpdate -q cdcvildns001.fmmotorparts.com
+
+# Reboot the server
+
+sudo init 6</code>
+  - After all systems have been rebooted, Make sure all NFS have been mounted.<code>for host in $(cat /prod/images/etc/allhosts.driv)
+do
+   ssh ${host}
+done</code>Execute these on each system and make sure there are no errors<code>[[ "$(uname)" = "AIX" ]] && nfss=$(grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | tr "\n" " ") || nfss=$(grep nfs /etc/fstab | awk '{print $2}' | tr "\n" " ")
+
+for nfs in ${nfss}
+do
+   echo "Check :: NFS filesystem - ${nfs} .."
+   mountedas=$(df -k ${nfs} | grep -v ^File | awk '{print $NF}' )
+   if [ "${nfs}" = "${mountedas}" ]
+   then
+      echo "   Good  :: ${nfs} "
+   else
+      echo "   Error :: ${nfs} -- does not seem to be mounted right " 
+   fi
+   echo ""
+done</code>

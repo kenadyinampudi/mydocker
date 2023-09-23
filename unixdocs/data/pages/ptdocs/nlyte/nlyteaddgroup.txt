@@ -1,0 +1,121 @@
+====== Adding new AD groups to Nlyte ======
+Adding new AD groups to Nlyte is relatively painless but involves a few steps.
+
+=== Get the Canonical Name of the group ===
+  * You need to get the fully qualified name of the AD group. \\ It will look like ''CN=PT Linux Admins,OU=Security Groups,OU=Process,OU=Federal-Mogul,DC=pt,DC=int,DC=tenneco,DC=com''
+  * Format it for Nlyte with the name of a DC to look up against. \\ ''LDAP://10.131.17.75:389/CN=PT Linux Admins,OU=Security Groups,OU=Process,OU=Federal-Mogul,DC=pt,DC=int,DC=tenneco,DC=com'' \\ The MS team may need to help with the specifics of this. 
+  * Alternatively, you can try to log into CDCPILLX086 and use "ldapsearch" to pull up the name. \\ <cli prompt="#">cdcpillx086:~ # ldapsearch -h 10.131.17.75 -b 'dc=pt,dc=int,dc=tenneco,dc=com' -                                                                             D 'leedsn16@pt' -W "(anr=pt linux*)"
+Enter LDAP Password:
+# extended LDIF
+#
+# LDAPv3
+# base <dc=pt,dc=int,dc=tenneco,dc=com> with scope subtree
+# filter: (anr=pt linux*)
+# requesting: ALL
+#
+
+# PT Linux Admins, Security Groups, Process, Federal-Mogul, pt.int.tenneco.com
+dn: CN=PT Linux Admins,OU=Security Groups,OU=Process,OU=Federal-Mogul,DC=pt,DC
+ =int,DC=tenneco,DC=com
+objectClass: top
+objectClass: group
+cn: PT Linux Admins
+member: CN=Lagwankar\, Shukant (lagwas23),OU=Users,OU=SFLD,OU=MI,OU=USA,OU=NA,
+ OU=Federal-Mogul,DC=pt,DC=int,DC=tenneco,DC=com
+member: CN=Houghton\, Neil (houghn13),OU=Users,OU=MNC2,OU=GBR,OU=EU,OU=Federal
+ -Mogul,DC=pt,DC=int,DC=tenneco,DC=com
+member: CN=Labranche\, Robert (labrar29),OU=Users,OU=SFL1,OU=MI,OU=USA,OU=NA,O
+ U=Federal-Mogul,DC=pt,DC=int,DC=tenneco,DC=com
+member: CN=Hill\, Andy (hilla016),OU=Users,OU=MNC2,OU=GBR,OU=EU,OU=Federal-Mog
+ ul,DC=pt,DC=int,DC=tenneco,DC=com
+member: CN=Leeds\, Nathan (leedsn16),OU=Users,OU=SFL1,OU=MI,OU=USA,OU=NA,OU=Fe
+ deral-Mogul,DC=pt,DC=int,DC=tenneco,DC=com
+distinguishedName: CN=PT Linux Admins,OU=Security Groups,OU=Process,OU=Federal
+ -Mogul,DC=pt,DC=int,DC=tenneco,DC=com
+instanceType: 4
+whenCreated: 20181215043849.0Z
+whenChanged: 20200128142100.0Z
+uSNCreated: 5896350
+memberOf: CN=Admin_CDCPILMS549,OU=Server Admin Group,OU=Process,OU=Federal-Mog
+ ul,DC=pt,DC=int,DC=tenneco,DC=com
+memberOf: CN=Admin_VNWTOHMS001,OU=Server Admin Group,OU=Process,OU=Federal-Mog
+ ul,DC=pt,DC=int,DC=tenneco,DC=com
+memberOf: CN=Admin_PHLYPAMS004,OU=Server Admin Group,OU=Process,OU=Federal-Mog
+ ul,DC=pt,DC=int,DC=tenneco,DC=com
+memberOf: CN=Admin_PHLYPAMS005,OU=Server Admin Group,OU=Process,OU=Federal-Mog
+ ul,DC=pt,DC=int,DC=tenneco,DC=com
+memberOf: CN=Admin_CDCPILMS402,OU=Server Admin Group,OU=Process,OU=Federal-Mog
+ ul,DC=pt,DC=int,DC=tenneco,DC=com
+memberOf: CN=Admin_CDCPILMS401,OU=Server Admin Group,OU=Process,OU=Federal-Mog
+ ul,DC=pt,DC=int,DC=tenneco,DC=com
+memberOf: CN=Admin_CDCPILMS418,OU=Server Admin Group,OU=Process,OU=Federal-Mog
+ ul,DC=pt,DC=int,DC=tenneco,DC=com
+uSNChanged: 154210176
+name: PT Linux Admins
+objectGUID:: UjMlOhoXMU6y2fh0xpMzgg==
+objectSid:: AQUAAAAAAAUVAAAANXawdNtMP28c7KBbi+YAAA==
+sAMAccountName: PT Linux Admins
+sAMAccountType: 268435456
+sIDHistory:: AQUAAAAAAAUVAAAArHu1v3JPNsyUfxjMtR0DAA==
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=int,DC=tenneco,DC=com
+accountNameHistory: FEDMOG\PT Linux Admins
+dSCorePropagationData: 20201109110608.0Z
+dSCorePropagationData: 20200504235200.0Z
+dSCorePropagationData: 20200430140912.0Z
+dSCorePropagationData: 20200430140838.0Z
+dSCorePropagationData: 16010714223649.0Z
+
+# search reference
+ref: ldap://DomainDnsZones.pt.int.tenneco.com/DC=DomainDnsZones,DC=pt,DC=int,D
+ C=tenneco,DC=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 1
+# numReferences: 1
+cdcpillx086:~ # logout
+</cli>
+
+=== Log into Nlyte with an existing user ===
+  * Go to [[http://nlyte.federalmogul.com/nlyte]]
+  * Go to "Admin" -> "Permissions"
+  * Click on "Group Assignments" on left
+  * Click "Edit user groups" button
+  * Click in bottom-most empty cell in the table to add a new entry
+  * Give it a recognizable name in the first **Name** column
+  * Paste in the LDAP url from above into the **LDAP** column
+  * Click "Close"
+
+=== Log into CDCPILMS418 ===
+  * Log into CDCPILMS418 as "sfld-nlyteadmin"
+  * Navigate to "D:\Program Files (x86)\nlyte Software\GroupSync"
+  * Double-click to run "nlyteLdapGroupMembershipSync.exe" \\ This will poll AD for members of the group you just added.
+  * A command prompt window will pop in and out.  \\ This should be done now.
+
+=== In Nlyte Admin ===
+  * Go back to your browser window. 
+  * Make sure you are still in Admin -> Permissions -> Group assignments
+  * Click in the Search box next to **User Group** and select the group name you just added
+  * Ensure the "Current Users in group" is populated
+
+=== Add Locations to group ===
+  * Still in the Admin -> Permissions screen
+  * Click **Group locations**
+  * Click in the Search box next to **User Group** and select the group name you just added
+  * Click the **Select all sub-locations** button
+
+=== Add group permissions ===
+  * Still in the Admin -> Permissions screen
+  * Click **Group permissions**
+  * Click in the Search box next to **User Group** and select the group name you just added
+  * In the **Permission State** dropdown box, select "Allow"
+  * Choose which permissions to grant. \\ To add all, scroll down to bottom of the list and click the "Select all" then the ">" button to add those permissions to the "Allow" list.
+
+=== Refresh the cache ===
+  * Still in the Admin -> Permissions screen
+  * You might see the "Refresh permission cache" flash
+  * Click the **Refresh permission cache** to refresh.

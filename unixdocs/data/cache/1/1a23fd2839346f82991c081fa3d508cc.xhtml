@@ -1,0 +1,49 @@
+
+<h1 class="sectionedit1" id="april_27th_storage_tasks">April 27th Storage tasks</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "April 27th Storage tasks" [1-40] -->
+<h2 class="sectionedit2" id="prior_to_the_outage_windows">Prior to the outage windows</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to pgunap01</div>
+</li>
+<li class="level1"><div class="li"> Execute a replication in advance<pre class="code">export SSH2PURE=&quot;sudo -u sanmontr ssh pureuser@ldcpm70v1&quot;
+export suffix=$(date +%b%d%Y%H%M)
+export wintel_luns=&quot;wintel_esx_wave3_009 wintel_esx_wave3_010 wintel_esx_wave3_011 wintel_esx_wave3_012 wintel_esx_wave3_014 wintel_esx_wave3_015&quot;
+${SSH2PURE} purepgroup setattr --addvollist ${wintel_luns} autobahn-ldc-cdc-ptt
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Prior to the outage windows" [41-552] -->
+<h2 class="sectionedit3" id="during_the_outage_after_all_vms_are_down">During the outage after all VMs are down.</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to pgunap01</div>
+</li>
+<li class="level1"><div class="li"> Execute replication<pre class="code">export SSH2PURE=&quot;sudo -u sanmontr ssh pureuser@ldcpm70v1&quot;
+export suffix=$(date +%b%d%Y%H%M)
+export wintel_luns=&quot;wintel_esx_wave3_009 wintel_esx_wave3_010 wintel_esx_wave3_011 wintel_esx_wave3_012 wintel_esx_wave3_014 wintel_esx_wave3_015&quot;
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check progress<pre class="code">export SSH2PURE=&quot;ssh taprpur001.pt.int.tenneco.com&quot;
+${SSH2PURE} purevol list --total --snap --transfer --pgrouplist LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Once all volumes are 100%, provision storage<pre class="code">for volume in ${wintel_luns}
+do
+   ${SSH2PURE} purevol copy LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix}.${volume} ${volume}
+done
+
+${SSH2PURE} purevol connect --hgroup PROD-MS2 ${wintel_luns}</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "During the outage after all VMs are down." [553-] -->

@@ -1,0 +1,17 @@
+====== Netbackup home made appliances ======
+
+  - These systems are built by Wintel Project team
+  - These systems have the following hardware configurations
+    - Storage<code>2  * 600G - Raid1 on built in P408i Raid controller
+10 * 900G - Raid6 with one spare built in P408i Raid controller</code>**Enable Cache**
+    - Configure DNS entries on ILO and iDRAC ports **Must he configured for installation**
+    - Network, work with the network resource to configure the ports as follows
+      - 1Gig<code>4 * 1Gbps network interfaces with the following configuration
+
+eno1               - The first interface - Access port, configured to the default VLAN i.e. The VLAN which points to the IP to which hostname resolves to.
+   
+eno2, eno3, eno4   - These interfaces are to be configured in LACP mode 802.3ad,
+                     Allowed VLANs should include all VLANs ( backup VLAN, any other VLANthat is at the site, iSCSI VLAN )
+                     No "native vlan" statement in the interface configurations.</code>
+      - 10Gig<code>Define how 10G should be paired</code>
+  - Check with Wintel team to make sure the hardware is monitored for warnings and failures.

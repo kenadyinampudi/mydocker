@@ -1,0 +1,118 @@
+
+<h1 class="sectionedit1" id="someomemem">someomemem</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Document the current state of disks on taprvio40, taprvio41 and pgrmdb01</div>
+<ol>
+<li class="level2"><div class="li"> taprvio40<pre class="code">ssh taprvio40 sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.taprvio40</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> taprvio41<pre class="code">ssh taprvio41 sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.taprvio41</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> pgrmdb01<pre class="code">ssh pgrmdb01 lspv &gt; lspv.out.pgrmdb01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Login to pgrmdb01</div>
+</li>
+<li class="level2"><div class="li"> Document the list of disks<pre class="code">lspv &gt; lspv.out.1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the following filesystems from pgrmdb01<pre class="code">sudo rmfs -r /oracle/PRM/sapdata1
+sudo rmfs -r /oracle/PRM/sapdata2
+sudo rmfs -r /oracle/PRM/sapdata3
+sudo rmfs -r /oracle/PRM/sapdata4
+sudo rmfs -r /oracle/PRM/sapdata5
+sudo rmfs -r /oracle/PRM/sapdata6
+sudo rmfs -r /oracle/PRM/sapdata7
+sudo rmfs -r /oracle/PRM/sapdata8
+sudo rmfs -r /oracle/PRM/sapdata9
+sudo rmfs -r /oracle/PRM/sapdata10</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> By now datavg02 is empty. Deactivate datavg02<pre class="code">sudo varyoffvg datavg02</pre>
+
+<p>
+Export it
+</p>
+<pre class="code">sudo exportvg datavg02</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Document the disks to remove<pre class="code">grep -w datavg02 lspv.out.1 &gt; disks_to_remove</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Delete the disks that belonged to datavg02<pre class="code">grep -w datavg02 lspv.out.1| awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check datavg01 and migrate / reduce the PVs from it leaving one useable disk worth of storage<pre class="code">lsvg -p datavg01</pre>
+
+<p>
+If needed migrate PV
+</p>
+<pre class="code">sudo migratepv &lt;hdiskname&gt; disk1 disk2 etc..</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Once disks to be reduced are identified, remove them from datavg01<pre class="code">sudo reducevg datavg01 disk1 disk2 .....</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> This is the current state after removing sapdata1,2,3 and 4<pre class="code">lsvg -p datavg01 | grep hdisk | awk &#039;{print $1&quot;\t&quot; $3 &quot;\t&quot; $4 &quot;\t&quot; $3-$4 }&#039; | sort -nk4</pre>
+
+<p>
+The output is
+</p>
+<pre class="code">hdisk62 809     777     32
+hdisk69 809     731     78
+hdisk60 809     721     88
+hdisk63 809     663     146
+hdisk1  809     545     264
+hdisk67 809     544     265
+hdisk61 809     509     300
+hdisk65 809     502     307</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> We planned to remove hdisk62,hdisk69,hdisk60,hdisk63,hdisk1,hdisk67. </div>
+</li>
+<li class="level1"><div class="li"> Add to the list of disks to be removed<pre class="code">lspv | egrep -w &quot;hdisk62|hdisk69|hdisk60|hdisk63|hdisk1|hdisk67&quot; &gt;&gt; disks_to_remove</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> In order to move this, we require 873 PPs</div>
+</li>
+<li class="level2"><div class="li"> We move as follows<pre class="code">sudo migratepv hdisk62 hdisk61 hdisk65
+sudo migratepv hdisk69 hdisk61 hdisk65
+sudo migratepv hdisk60 hdisk61 hdisk65
+sudo migratepv hdisk1 hdisk61 hdisk65
+sudo migratepv hdisk63 hdisk61 hdisk65
+sudo migratepv hdisk67 hdisk61 hdisk65</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Once complete, We will remove the disks from datavg01<pre class="code">sudo reducevg datavg01 hdisk62 hdisk69 hdisk60 hdisk63 hdisk1 hdisk67</pre>
+
+<p>
+Once done, remove them
+</p>
+<pre class="code">echo &quot;hdisk62 hdisk69 hdisk60 hdisk63 hdisk1 hdisk67&quot; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Log back into the NIM server or the server where you worked initially from</div>
+</li>
+<li class="level1"><div class="li"> Copy the disks to remove file<pre class="code">scp pgrmdb01:disks_to_remove disks_to_remove.pgrmdb01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get the PVIDs<pre class="code">awk &#039;{print $2}&#039; disks_to_remove.pgrmdb01 &gt; pgrmdb01.remove.disks.pvids</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the number of luns to remove<pre class="code">wc -l disks_to_remove.pgrmdb01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <pre class="code">grep -wf disks_to_remove.pgrmdb01 lsdiskcfg.out.taprvio40  | wc -l </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Validate, once removed, send the list fo Storage team for reclamation.</div>
+</li>
+</ol>
+
+</div>

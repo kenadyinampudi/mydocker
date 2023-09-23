@@ -1,0 +1,68 @@
+
+===== VIOS Pre_Upgrade Steps =====
+Steps for taprvio50 / taqprvio51
+  -  Run vios_save_env.sh when complete cd to the newely created directory.
+  -  Log on to each VILS Client defined on the VISO Server and oo lan lspv capruting the outut to a file.  Copy that fle from each server to directory creaed in step 1 above on the   vios server being upgraded and save it there. 
+  -  Take a fresh mksysb and when it completed copy the latest taprvio50.viosbr.bak.nn.tar.gz fle to the directory created in step 1 above <code>ls -liat /home/padmin| grep taprvio50.viosbr | pg </code> <code> cp -p /home//padmin/{Latest taprvio50.viosbr file } . </code>
+  -  Run script-1<code> hname=`hostname`
+OUTDIR=`ls | grep $hname`
+cat /dev/null > $OUTDIR/C-ALL-DISK-BEFORE
+cat /dev/null > $OUTDIR/clean-disk
+cat /dev/null > $OUTDIR/unmap-disk
+/usr/local/scripts/lsdiskcfg > $OUTDIR/C-ALL-DISK-BEFORE
+cat C-ALL-DISK-BEFORE | grep -v taprvio50 | grep -v none > $OUTDIR/clean-disk
+LANG=POSIX  sort -t":" +4 clean-disk  > $OUTDIR/ordered-disk
+for disk in $(awk -F: '{print $1}' $OUTDIR/ordered-disk)
+do
+        echo "rmvdev -vdev ${disk}" >> $OUTDIR/unmap-disk
+done</code>
+  -  Copy the direcory created in step 1 to to the repository on the NIM server pgnmsvo1 <code> scp -r {Directory from step 1} pgnmsv01:/preupgrade/reports </code>
+  - [[unix:buildvioserver&#create_lpar|nstall VIOS Server]]
+  -  copy preserved output from vios_save_env.sh to repository on pgnmsv01 to the back to the vio server <cpde> scp -r /preupgrade/reports/{file to be copied} taprvio50:{location of choice} </code>
+  -  cd to the directory you just copied
+  -  copy the  taprvio50.viosbr.bak file back to /home/padmin. <code> cp {taprviovi.viosbr.bak file} /home/padmin/
+  -  su - padmin
+  -  run the viosbr comand to recover all the lpard on the server <code> viosbr -restore -file {taprviovi.viosbr.bakfile} -validate -inter </code>
+  -  remove all disks from the vio server
+  -  run cfgmgr to bring inthe disks again 
+  -  run script-2 <code>hname=`hostname`
+OUTDIR=`ls | grep igrep -v bak | grep $hname`
+rm -f $OUTDIR/remap-disks
+cat /dev/null > $OUTDIR/remap-disks
+cat /dev/null > $OUTDIR/process-disk
+lspv > $OUTDIR/c-all-disk-after
+for disk in `lspv | awk '{print $1}'`
+do
+        echo "sudo chdev -l $disk -a algorithm=round_robin -a reserve_policAy=no_reserve" >>  $OUTDIR/process-disk
+done
+lspv | grep -v root > $OUTDIR/all-vio-client-disks
+for pvid in `cat $OUTDIR/ordered-disk | awk -F: '{print $6}'`
+do
+        maptovhost=`grep $pvid $OUTDIR/ordered-disk | awk -F: '{print $5}'`
+        maptodisk=`grep $pvid $OUTDIR/all-vio-client-disks | awk '{print $1}'`
+        echo "mkvdev -vadapter $maptovhost -vdev $maptodisk" >> $OUTDIR/remap-disks
+done </code>
+  -  reset the reserve lock to no_reserve and the algorithm to round_robin on all disks 
+  -  Remap the disks <code> sh ./{taprvioxx savedenvronment directry}/rempa-disks
+
+===== Sample of remap disk file output - script-2 was run againas output on taprvio90  =====
+<code>
+mkvdev -vadapter vhost0 -vdev hdisk7
+mkvdev -vadapter vhost0 -vdev hdisk6
+mkvdev -vadapter vhost0 -vdev hdisk5
+mkvdev -vadapter vhost0 -vdev hdisk4
+mkvdev -vadapter vhost0 -vdev hdisk3
+mkvdev -vadapter vhost1 -vdev hdisk8
+mkvdev -vadapter vhost1 -vdev hdisk2
+mkvdev -vadapter vhost1 -vdev hdisk9
+mkvdev -vadapter vhost1 -vdev hdisk10
+mkvdev -vadapter vhost1 -vdev hdisk11
+mkvdev -vadapter vhost2 -vdev hdisk17
+mkvdev -vadapter vhost2 -vdev hdisk16
+mkvdev -vadapter vhost2 -vdev hdisk15
+mkvdev -vadapter vhost2 -vdev hdisk14
+mkvdev -vadapter vhost2 -vdev hdisk13
+mkvdev -vadapter vhost3 -vdev hdisk18
+mkvdev -vadapter vhost3 -vdev hdisk19
+mkvdev -vadapter vhost3 -vdev hdisk20</code>
+

@@ -1,0 +1,353 @@
+
+<h1 class="sectionedit1" id="lvm_and_asm_migration_steps">LVM and ASM Migration steps</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "LVM and ASM Migration steps" [1-43] -->
+<h2 class="sectionedit2" id="lvm_migration">LVM migration</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create storage request<pre class="code">oravg    Need 260G
+vgswap   Need 40G
+vgback   Need 110G</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of the current disks visible<pre class="code">sudo multipath -ll &gt; multipath.before.othervgs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>SAN Storage Step</strong> Provision storage from the new storage array ( assuming zoning and array registrations completed)<pre class="code">ssh phlypans013 purevol create --size 40G  fdc-h-cdcvillx166_001
+ssh phlypans013 purevol create --size 260G fdc-h-cdcvillx166_002
+ssh phlypans013 purevol create --size 110G fdc-h-cdcvillx166_003
+
+ssh phlypans013 purevol connect --host fdc-h-cdcvillx166 fdc-h-cdcvillx166_001 fdc-h-cdcvillx166_002 fdc-h-cdcvillx166_003</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rescan for new devices<pre class="code">for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk &#039;{print $9}&#039; )
+do
+   echo &quot;- - -&quot; | sudo tee ${dir}/scan
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of disks and figure out the new devices<pre class="code">sudo multipath -ll &gt; multipath.after.othervgs</pre>
+
+<p>
+And diff
+</p>
+<pre class="code">diff multipath.before.othervgs multipath.after.othervgs | grep &quot;&gt;&quot; | grep -e mpath -e size</pre>
+
+<p>
+Output
+</p>
+<pre class="code">&gt; mpathap (3624a9370cb22f1186409489103791182) dm-28 PURE,FlashArray
+&gt; size=250G features=&#039;0&#039; hwhandler=&#039;0&#039; wp=rw
+&gt; mpathao (3624a9370cb22f1186409489103791181) dm-27 PURE,FlashArray
+&gt; size=32G features=&#039;0&#039; hwhandler=&#039;0&#039; wp=rw
+&gt; mpathan (3624a9370cb22f1186409489103791183) dm-26 PURE,FlashArray
+&gt; size=100G features=&#039;0&#039; hwhandler=&#039;0&#039; wp=rw</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> To get a better view of all the mpaths and their size for all disks from PURE, run the following command.  Note that only the 260G, 110G &amp; 40G are in scope in this section of the activity<pre class="code">for mpdsk in `multipath -ll |grep PURE |awk &#039;{print $1}&#039;`
+do
+echo &quot;/dev/mapper/&quot;$mpdsk $(multipath $mpdsk -ll |grep sd |awk &#039;{print $3}&#039;) $(multipath $mpdsk -ll |grep size |awk &#039;{print $1}&#039;) 
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Before creating a storage layout, partition the disks using the fdisk command<pre class="code"> fdisk /dev/mapper/mpath?</pre>
+
+<p>
+Run fdisk on the device &amp; then press the following key sequences one after the other.
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> “n” to create new partition, </div>
+</li>
+<li class="level2"><div class="li"> “p” to select primary partition, </div>
+</li>
+<li class="level2"><div class="li"> “1” to select Partition number, </div>
+</li>
+<li class="level2"><div class="li"> “Enter” to select default start</div>
+</li>
+<li class="level2"><div class="li"> “Enter” to select default END</div>
+</li>
+<li class="level2"><div class="li"> “w” to write to partition table</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Run partprobe <pre class="code">partprobe /dev/mapper/mapth?</pre>
+
+<p>
+If partprobe returns error, try running partprobe couple of times.  If that is also not working, run the previous fdisk command against the sd devices rather than the mpath devices.  No need to delete &amp; recreate the partition, just “w”(write) and exit and then run partprobe on the sd device file.  
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Repeat the fdisk &amp; partprobe sections for all disks for vgback, vgswap, oravg</div>
+</li>
+<li class="level1"><div class="li"> Create a storage layout for the migration<pre class="code">/dev/mapper/mpathaf oravg  lvm2 a--u 250.00g     0   Migrates to mpathap 
+/dev/mapper/mpathak vgswap lvm2 a--u  32.00g     0   Migrates to mpathao
+/dev/mapper/mpathal vgback lvm2 a--u 100.00g 10.00g  Migrates to mpathan</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create LVM structure on new devices<pre class="code">sudo pvcreate /dev/mapper/mpathap1
+sudo pvcreate /dev/mapper/mpathao1
+sudo pvcreate /dev/mapper/mpathan1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add disks into the respective VGs<pre class="code">sudo vgextend oravg  /dev/mapper/mpathap1
+sudo vgextend vgswap /dev/mapper/mpathao1
+sudo vgextend vgback /dev/mapper/mpathan1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Execute migrations<pre class="code">sudo pvmove /dev/mapper/mpathaf1
+sudo pvmove /dev/mapper/mpathak1
+sudo pvmove /dev/mapper/mpathal1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove old devices from respective VGs<pre class="code">sudo vgreduce oravg  /dev/mapper/mpathaf1
+sudo vgreduce vgswap /dev/mapper/mpathak1
+sudo vgreduce vgback /dev/mapper/mpathal1</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "LVM migration" [44-3674] -->
+<h2 class="sectionedit3" id="asm_migration">ASM migration</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Come up with storage requirement. List ASM disks<pre class="code">sudo /etc/init.d/oracleasm listdisks</pre>
+
+<p>
+Output
+</p>
+<pre class="code">DATA01_PR
+DATA02_PR
+DEVDATA_PR
+OCR_VT_PR</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Map ASM disks to devices</div>
+<ol>
+<li class="level2"><div class="li"> List ASM devices<pre class="code">ls -l /dev/oracleasm/disks</pre>
+
+<p>
+Output
+</p>
+<pre class="code">brw-rw---- 1 grid asmadmin  8, 145 Nov  1 13:00 DATA01_PR
+brw-rw---- 1 grid asmadmin  8,  65 Nov  1 13:00 DATA02_PR
+brw-rw---- 1 grid asmadmin 65,  17 Nov  1 13:00 DEVDATA_PR
+brw-rw---- 1 grid asmadmin  8,  81 Nov  1 15:25 OCR_VT_PR</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Make a note of Major and Minor numbers and figure out the target devices<pre class="code">ls -l /dev | grep -e &quot;8, 145&quot; -e &quot;8,  65&quot; -e &quot;65,  17&quot; -e &quot;8,  81&quot;</pre>
+
+<p>
+Output
+</p>
+<pre class="code">brw-rw----  1 root disk     68,  81 Nov  1 12:58 sdbr1
+brw-rw----  1 root disk      8,  65 Nov  1 12:58 sde1
+brw-rw----  1 root disk      8,  81 Nov  1 12:58 sdf1
+brw-rw----  1 root disk      8, 145 Nov  1 12:58 sdj1
+brw-rw----  1 root disk     65,  17 Nov  1 12:58 sdr1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Produce a map between ASM disk names and devices<pre class="code">DATA01_PR    sdj1
+DATA02_PR    sde1
+DEVDATA_PR   sdr1
+OCR_VT_PR    sdf1</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <strong><abbr title="Database Administrator">DBA</abbr> Task</strong>Query ASM and map the devices to ASM disk groups<pre class="code">sudo su - grid
+export ORACLE_HOME=/u01/app/11.2.0.3/grid
+export ORACLE_SID=+ASM2
+export PATH=$PATH:${ORACLE_HOME}/bin
+
+sqlplus / as sysasm
+
+set lines 999;
+col diskgroup for a10
+col diskname for a12
+col path for a30
+select a.name DiskGroup,b.name DiskName, b.total_mb, (b.total_mb-b.free_mb) Used_MB, b.free_mb,b.path, b.header_status from v$asm_disk b, v$asm_diskgroup a 
+where a.group_number (+) =b.group_number 
+order by b.group_number,b.name;</pre>
+
+<p>
+Output
+</p>
+<pre class="code">DISKGROUP  DISKNAME       TOTAL_MB    USED_MB    FREE_MB PATH                           HEADER_STATU
+---------- ------------ ---------- ---------- ---------- ------------------------------ ------------
+DATA       DATA01_PR        307196      67140     240056 /dev/oracleasm/disks/DATA01_PR MEMBER
+DATA       DATA02_PR        204797      44744     160053 /dev/oracleasm/disks/DATA02_PR MEMBER
+DEV_DATA   DEVDATA_PR       511993       3662     508331 /dev/oracleasm/disks/DEVDATA_P MEMBER
+OCR_VOT    OCR_VT_PR         10236        432       9804 /dev/oracleasm/disks/OCR_VT_PR MEMBER</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create an end to end map between disks and ASM disk groups<pre class="code">Disk Group    Disk Name    ASM Lib Path                        Physical Disk
+----------    ---------    ------------                        -------------
+DATA          DATA01_PR    /dev/oracleasm/disks/DATA01_PR      /dev/sdj1         
+DATA          DATA02_PR    /dev/oracleasm/disks/DATA02_PR      /dev/sde1
+DEV_DATA      DEVDATA_PR   /dev/oracleasm/disks/DEVDATA_P      /dev/sdr1
+OCT_VOT       OCR_VT_PR    /dev/oracleasm/disks/OCR_VT_PR      /dev/sdf1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Request for additional storage - shared between both RAC nodes<pre class="code">DATA     -&gt; DATA_PURE_01  --&gt; 300G
+DATA     -&gt; DATA_PURE_02  --&gt; 200G
+DEV_DATA -&gt; DEVDATA_PR    --&gt; 500G
+OCR_VOT  -&gt; OCR_VT_PR     --&gt; 10G</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of current disks<pre class="code">sudo multipath -ll &gt; multipath.before</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>SAN Team work</strong> Provision SAN storage<pre class="code">ssh phlypans013 purevol create --size 300G fdc-c-cdcvillx165-66_001
+ssh phlypans013 purevol create --size 200G fdc-c-cdcvillx165-66_002
+ssh phlypans013 purevol create --size 500G fdc-c-cdcvillx165-66_003
+ssh phlypans013 purevol create --size 10G fdc-c-cdcvillx165-66_005
+
+ssh phlypans013 purevol connect --hgroup fdc-c-cdcvillx165-66 fdc-c-cdcvillx165-66_001 fdc-c-cdcvillx165-66_002 fdc-c-cdcvillx165-66_003 fdc-c-cdcvillx165-66_005</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rescan storage<pre class="code">for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk &#039;{print $9}&#039; )
+do
+   echo &quot;- - -&quot; | sudo tee ${dir}/scan
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of current disks<pre class="code">sudo multipath -ll &gt; multipath.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Figure out the new disks<pre class="code">diff multipath.before multipath.after | grep &quot;&gt;&quot; | grep -e mpath -e size</pre>
+
+<p>
+Output
+</p>
+<pre class="code">&gt; mpathat (3624a9370cb22f118640948910379166a) dm-32 PURE,FlashArray
+&gt; size=300G features=&#039;0&#039; hwhandler=&#039;0&#039; wp=rw
+&gt; mpathas (3624a9370cb22f118640948910379166c) dm-31 PURE,FlashArray
+&gt; size=500G features=&#039;0&#039; hwhandler=&#039;0&#039; wp=rw
+&gt; mpathar (3624a9370cb22f118640948910379166b) dm-30 PURE,FlashArray
+&gt; size=200G features=&#039;0&#039; hwhandler=&#039;0&#039; wp=rw
+&gt; mpathaq (3624a9370cb22f118640948910379166d) dm-29 PURE,FlashArray
+&gt; size=10G features=&#039;0&#039; hwhandler=&#039;0&#039; wp=rw</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a storage migration map for ASM<pre class="code">DATA     -&gt; DATA_PURE_01  --&gt; 300G   -&gt; /dev/mapper/mpathat
+DATA     -&gt; DATA_PURE_02  --&gt; 200G   -&gt; /dev/mapper/mpathas
+DEV_DATA -&gt; DEVDATA_PR    --&gt; 500G   -&gt; /dev/mapper/mpathar
+OCR_VOT  -&gt; OCR_VT_PR     --&gt; 10G    -&gt; /dev/mapper/mpathaq</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare disks for oracle ASM<pre class="code">sudo /etc/init.d/oracleasm createdisk DATA_PURE_01 /dev/mapper/mpathat
+sudo /etc/init.d/oracleasm createdisk DATA_PURE_02 /dev/mapper/mpathar
+sudo /etc/init.d/oracleasm createdisk DEVDATA_PURE_01 /dev/mapper/mpathas
+sudo /etc/init.d/oracleasm createdisk OCR_VOT_PURE_01 /dev/mapper/mpathaq</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if ASMlIb updates are fine<pre class="code">sudo /etc/init.d/oracleasm listdisks</pre>
+
+<p>
+Output
+</p>
+<pre class="code">DATA01_PR
+DATA02_PR
+DATA_PURE_01
+DATA_PURE_02
+DEVDATA_PR
+DEVDATA_PURE_01
+OCR_VOT_PURE_01
+OCR_VT_PR</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the second RAC node and rescan for ASM devices<pre class="code">sudo /etc/init.d/oracleasm scandisks</pre>
+
+<p>
+Also list disks and make sure all disks are visible on both the nodes.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong><abbr title="Database Administrator">DBA</abbr> Task</strong>Connect to ASM instance and add disks to the respective disk groups<pre class="code">alter diskgroup DATA add disk &#039;/dev/oracleasm/disks/DATA_PURE_01&#039;;
+alter diskgroup DATA add disk &#039;/dev/oracleasm/disks/DATA_PURE_02&#039;;
+alter diskgroup DEV_DATA add disk &#039;/dev/oracleasm/disks/DEVDATA_PURE_01&#039;;
+alter diskgroup OCR_VOT add disk &#039;/dev/oracleasm/disks/OCR_VOT_PURE_01&#039;;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check status<pre class="code">Select operation, state, est_work, est_minutes from v$asm_operation;</pre>
+
+<p>
+While in progress it should look like
+</p>
+<pre class="code">OPERA STAT   EST_WORK EST_MINUTES
+----- ---- ---------- -----------
+REBAL RUN       22430           2
+REBAL WAIT
+REBAL WAIT</pre>
+
+<p>
+Once done - it should be
+</p>
+<pre class="code">no rows selected</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong><abbr title="Database Administrator">DBA</abbr> Task</strong>Remove the old disks from respective disk groups<pre class="code">alter diskgroup DATA drop disk &#039;DATA01_PR&#039;; 
+alter diskgroup DATA drop disk &#039;DATA02_PR&#039;; 
+alter diskgroup DEV_DATA drop disk &#039;DEVDATA_PR&#039;; 
+alter diskgroup OCR_VOT drop disk &#039;OCR_VT_PR&#039;; </pre>
+
+<p>
+Watch the progress
+</p>
+<pre class="code">Select operation, state, est_work, est_minutes from v$asm_operation;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check and make sure the old disks are listed as <code>FORMER</code><pre class="code">set lines 999;
+col diskgroup for a10
+col diskname for a12
+col path for a30
+select a.name DiskGroup,b.name DiskName, b.total_mb, (b.total_mb-b.free_mb) Used_MB, b.free_mb,b.path, 
+b.header_status
+from v$asm_disk b, v$asm_diskgroup a 
+where a.group_number (+) =b.group_number 
+order by b.group_number,b.name;</pre>
+
+<p>
+Output
+</p>
+<pre class="code">DISKGROUP  DISKNAME       TOTAL_MB    USED_MB    FREE_MB PATH                           HEADER_STATU
+---------- ------------ ---------- ---------- ---------- ------------------------------ ------------
+                                 0          0          0 /dev/oracleasm/disks/DATA01_PR FORMER
+                                 0          0          0 /dev/oracleasm/disks/DATA02_PR FORMER
+                                 0          0          0 /dev/oracleasm/disks/OCR_VT_PR FORMER
+                                 0          0          0 /dev/oracleasm/disks/DEVDATA_P FORMER
+                                                         R
+
+DATA       DATA_0000        307200      67129     240071 /dev/oracleasm/disks/DATA_PURE MEMBER
+                                                         _01
+
+DATA       DATA_0001        204800      44755     160045 /dev/oracleasm/disks/DATA_PURE MEMBER
+                                                         _02
+
+DISKGROUP  DISKNAME       TOTAL_MB    USED_MB    FREE_MB PATH                           HEADER_STATU
+---------- ------------ ---------- ---------- ---------- ------------------------------ ------------
+
+DEV_DATA   DEV_DATA_000     512000       3662     508338 /dev/oracleasm/disks/DEVDATA_P MEMBER
+           0                                             URE_01
+
+OCR_VOT    OCR_VOT_0000      10240        432       9808 /dev/oracleasm/disks/OCR_VOT_P MEMBER
+                                                         URE_01
+
+
+8 rows selected.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the Oracle ASM disks using ASMLib<pre class="code">sudo /etc/init.d/oracleasm deletedisk DATA01_PR
+sudo /etc/init.d/oracleasm deletedisk DATA02_PR
+sudo /etc/init.d/oracleasm deletedisk OCR_VT_PR
+sudo /etc/init.d/oracleasm deletedisk DEVDATA_PR</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "ASM migration" [3675-] -->

@@ -1,0 +1,120 @@
+====== PTA LUN Reclaim ======
+
+  -To reclaim lun in VMAX<code>           Delete the PTA Luns
+          +++++++++++++++++++++
+
+1) Log in to the sever taqa1d01
+
+  a):Delete the disk from the server
+
+  
+    echo "hdisk88 hdisk89 hdisk90 hdisk91 hdisk92" | xargs -n1 sudo rmdev -dl
+
+
+2)::Remove a LUN or multiple LUNs from VMAX
+
+
+  Make sure and double check the devices are correct and have been removed from the OS.ssh taqa1d01
+ 
+ a):Remove the LUN and unmap
+
+    sudo symaccess -sid 0301 -name PTABCV_SG -type storage remove dev 419F,41A7,41AF,41B7,41BF -unmap
+
+
+2)Delete the LUNs
+
+ a) Unbind the LUN from FC thin pool VP_FC15_MIR2
+
+
+sudo symdev -sid 0301 -dev 419F,41A7,41AF,41B7,41BF unbind
+
+   
+
+
+  b) Dissolve the LUNs from VMAX
+   
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 419F;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 419F;" COMMIT -NOP
+
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 41A7;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 41A7;" COMMIT -NOP
+
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 41AF;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 41AF;" COMMIT -NOP
+
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 41B7;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 41B7;" COMMIT -NOP
+
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 41BF;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 41BF;" COMMIT -NOP
+
+
+sudo symaccess -sid 0301 list -type storage -dev 419F,41A7,41AF,41B7,41BF :-PTABCV_SG
+
+
+
+
+=======================================================================================================================================================================================
+
+
+
+1):Remove a LUN or multiple LUNs from VMAX
+
+
+  Make sure and double check the devices are correct and have been removed from the OS.ssh tapr1d01 
+ 
+ a):Remove the LUN and unmap
+
+    sudo symaccess -sid 0301 -name tapr1d01-p8_SG -type storage remove dev 3D47,3D4F,3D57,3D5F,3D67 -unmap
+
+
+2)Delete the LUNs
+
+ a) Unbind the LUN from FC thin pool VP_FC15_MIR2
+
+
+sudo symdev -sid 0301 -dev 3D47,3D4F,3D57,3D5F,3D67 unbind
+
+   
+
+
+  b) Dissolve the LUNs from VMAX
+   
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D47;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D47;" COMMIT -NOP
+
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D4F;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D4F;" COMMIT -NOP
+
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D57;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D57;" COMMIT -NOP
+
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D5F;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D5F;" COMMIT -NOP
+
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D67;" PREVIEW -NOP 
+   sudo symconfigure -sid 0301 -cmd "dissolve meta dev 3D67;" COMMIT -NOP
+
+   
+   
+
+
+
+
+_____________________________________________________________________________________________________________________________
+
+
+
+sudo symaccess -sid 0301 list -type storage -dev 3D47,3D4F,3D57,3D5F,3D67 :-tapr1d01-p8_SG
+
+
+
+
+taqa1d01
+
+
+203     which symmir
+204     sudo symdg list
+205     sudo symmir -g PTA_BACKUP_DG query > PTA_BACKUP_DG.out.1
+206     cat PTA_BACKUP_DG.out.1
+</code>

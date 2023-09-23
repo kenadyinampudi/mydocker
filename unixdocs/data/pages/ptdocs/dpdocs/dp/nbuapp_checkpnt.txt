@@ -1,0 +1,51 @@
+Some EEBs do recommend to create a manual/user checkpoint, ie:<code> >> CAUTION: Before you install this EEB, Veritas recommends that you create a custom appliance checkpoint using the Support > Checkpoint Create command. Are you sure that you want to proceed with the EEB installation? [yes,no]</code> - in order to quickly revert back to the state prior EEB installation. Please take a few momenets to see how this can be done. 
+If you will find your self in position to revert back to a certain checkpoint always get in touch with Pawel and/or VRTS support in order to check what consequences it might have.
+Login to an appliance, Stop NetBackup from main menu of CLISH goto support/processes and execute NetBackup stop<code>glwnbu5230ams.Processes> NetBackup Stop
+- [Info] Stopping NetBackup processes on appliance 'glwnbu5230ams.emea.int.tenneco.com'
+glwnbu5230ams.Processes></code>Now check if NBU was really stopped<code>
+glwnbu5230ams.Processes> NetBackup Show
+NB Processes
+------------
+
+
+MM Processes
+------------
+
+
+Shared Veritas Processes
+-------------------------
+</code>
+Retrun to Support contetx <code>glwnbu5230ams.Support> Checkpoint Create
+- [Info] Disable interrupt (CTRL-C), quit, and suspend signals
++-------------------------------+
+|  Create Appliance Checkpoint  |
++-------------------------------+
+Creating an Appliance Checkpoint allows the user to easily rollback the entire system back to a point-in-time to undo any misconfiguration or system failure that might have occurred. An Appliance Checkpoint captures the following components:
+        1) Appliance Operating System
+        2) Appliance Software
+        3) NetBackup Software
+        4) Networking Configuration
+        5) Any previously applied patches
+        6) Backup data is not reverted
+
+- [Info] Running create checkpoint validation...please wait
+- [Info] Create checkpoint validation successful.
+The existing checkpoints in the system are:
+-------------------------------------------------------------------
+Checkpoint Name: Post-upgrade checkpoint
+Date Created: Thu 09 Mar 2017 12:24:19 PM CET
+Description: undef
+There is no user checkpoint. Please continue to create a user checkpoint
+ >> Would you like to proceed? (yes/no) yes
+
+>> Checkpoint description (OPTIONAL): prior_EEB_NBAPP_EEB_ET3925629-3.0.0.0-1.x86_64
+
+ >> Create checkpoint? (yes/no) yes
+- [Info] No existing USER checkpoint was detected.
+- [Info] CREATING USER CHECKPOINT
+- [Info] Creating checkpoint. This operation can take up to 15 minutes.
+     Please wait...
+     
+     
+- [Info] Appliance Checkpoint creation was successful
+glwnbu5230ams.Support></code>And now we do have a checkpoint which can be used to roll back. Remeber once you will recover it - your NBU catalog will be as it was when checkpoint was taken.

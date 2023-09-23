@@ -1,0 +1,98 @@
+When it comes to NBU decommission we need to preserve the information about the backups taken in decommissioned NBU domain. There are at least two ways to get this done:
+  - For sure we need to take NBU catalog backup and store the NBU version along with this one, most likely after few years we will not be able to use it (too old version)
+  - Run the following script to secure tapes lables, backup images information etc:
+Script for windows - copy below to file called gather_old_NBU_info.bat: <code>
+@rem echo off
+hostname > hn
+set /p hn=<hn
+mkdir defined_policies
+mkdir backup_images
+mkdir media_used
+
+bpimagelist -d 01/01/2000 -U > master_%hn%_bpimagelist.txt
+for /f "tokens=1" %%c in ('dir /b "d:\Program Files\Veritas\NetBackup\db\images"') do (bpimagelist -client %%c -d 1/1/2000 -U  1>>clnt_%%c_bpimagelist.txt 2>&1)
+for /f "tokens=1" %%c in ('dir /b "d:\Program Files\Veritas\NetBackup\db\images"') do (bpimagelist -client %%c -d 1/1/2000  1>>clnt_%%c_bpimagelist.txt 2>&1)
+
+bpmedialist -summary > %hn%_bpmedialist-summary.txt
+vmquery -b -a > %hn%_vmquery-a-b.txt
+
+for /f "tokens=1" %%p in ('vmpool -list_all -b') do (bpmedialist -p %%p 1>media_used\%hn%_bpmedialist_%%p.txt 2>&1)
+
+for /f "tokens=6" %%b in ('bpimagelist -d 1/1/2000 -idonly -st full') do (bpimagelist -backupid %%b -media -U 1>backup_images\%%b.txt 2>&1)
+
+@rem Gather information about full saves
+for /f "tokens=6" %%b in ('bpimagelist -d 1/1/2000 -idonly -st full') do (for /f "tokens=9" %%m in ('bpimagelist -backupid %%b -media') do (echo %%m 1>>backup_images\%%b.txt 2>&1))
+
+@rem Gather defined policies details
+for /f "tokens=1" %%p in ('bppllist') do (bppllist %%p -U 1>defined_policies\%%p.txt 2>&1)
+
+bpverify.exe -PD -s 01/01/2000 -primary 1>%hn%_tape_backupimage_info.txt 2>&1
+
+
+del hn
+</code>
+After executing this one gather_old_NBU_info.bat (of course for this script to work all paths for NBU should be in PATH env variable),
+in the directory from which is was ran - there will be new directory <hostname>_NBU - this has to be compressed and saved, ie on sharepoint. If given site was having multiple copies... 
+then it had to be managed further. Also to make sure everything was captured it is the best to use GUI to perform cross check NetBackup Management\Catalog etc.
+Script for UNIX based ones: <code>
+#!/bin/sh -x
+#Author Pawel Tkaczyk ptkaczyk@tenneco.com
+#Script to gather information about written backups, tapes used etc - information needed prior a decommission of NBU domain
+#Variables set
+HN=`hostname`
+WORKDIR=/tmp/NBU_gather_output
+BPIMAGELIST=/usr/openv/netbackup/bin/admincmd/bpimagelist
+BPMEDIALIST=/usr/openv/netbackup/bin/admincmd/bpmedialist
+BPPLLIST=/usr/openv/netbackup/bin/admincmd/bppllist
+BPVERIFY=/usr/openv/netbackup/bin/admincmd/bpverify
+VMQUERY=/usr/openv/volmgr/bin/vmquery
+VMPOOL=/usr/openv/volmgr/bin/vmpool
+START_DATE=1/1/2000
+
+#create work dir if does not exist
+if [ ! -d ${WORKDIR} ] ; then
+        mkdir ${WORKDIR}
+fi
+
+#remove WORKDIR contents
+rm ${WORKDIR}/*
+
+#Gather information about backup images still valid
+${BPIMAGELIST} -d ${START_DATE} -U > ${WORKDIR}/${HN}_bpimagelist.txt
+echo ============== > ${WORKDIR}/${HN}_bpimagelist-idonly.txt
+echo ============== >> ${WORKDIR}/${HN}_bpimagelist-idonly.txt
+${BPIMAGELIST} -d ${START_DATE} -idonly >> ${WORKDIR}/${HN}_bpimagelist-idonly.txt
+paste ${WORKDIR}/${HN}_bpimagelist.txt ${WORKDIR}/${HN}_bpimagelist-idonly.txt > ${WORKDIR}/${HN}_bpimagelist_combined.txt
+
+for client in `ls /usr/openv/netbackup/db/images/ -l |grep -v db_mare |grep ^d|awk '{print $NF}'` ; do 
+          ${BPIMAGELIST} -client ${client} -d ${START_TIME} -U  1>>${WORKDIR}/clnt_${client}_bpimagelist.txt 2>&1
+          ${BPIMAGELIST} -client ${client} -d ${START_TIME} 1>>${WORKDIR}/clnt_${client}_bpimagelist.txt 2>&1
+done
+
+#Gather information about all media and their expiry date
+${BPMEDIALIST} -summary > ${WORKDIR}/${HN}_bpmedialist.txt
+
+#Gather media's IDs and number of mounts - needed if tapes are going to be reused anywhere elase
+${VMQUERY} -b -a > ${WORKDIR}/${HN}_vmquery-b-a.txt
+${VMQUERY} -W -a > ${WORKDIR}/${HN}_vmquery-b-W.txt
+#gather information about tapes per volume pool
+for poolname in `${VMPOOL} -list_all -b |awk '{print $1}' |grep -v -e ^pool -e ^------ ` ; do
+        ${BPMEDIALIST} -p ${poolname} > ${WORKDIR}/${HN}_bpmedialist_${poolname}.txt
+done
+
+#gather information about full backup images and related media
+for backupid in `${BPIMAGELIST} -d ${START_DATE} -st full |grep ^IMAGE |awk '{print $6}' `; do
+        ${BPIMAGELIST} -backupid ${backupid} |grep ^FRAG |awk '{print $9}' |sort -u  > ${WORKDIR}/${HN}_${backupid}.txt
+done
+
+mkdir defined_policies
+for policy in `${BPPLLIST}` ;do 
+        ${BPPLLIST} ${policy} -U 1>defined_policies/${policy}.txt 2>&1
+done
+
+#gather similar output as is in GUI catalog view
+${BPVERIFY} -PD -s ${START_DATE} -primary > ${WORKDIR}/${HN}_backups_verification.txt
+${BPVERIFY} -PD -s ${START_DATE} -cn 2 > ${WORKDIR}/${HN}_backups_2nd-copy_verification.txt
+
+</code>
+Once done change working directory to $WORKDIR and collect all files.

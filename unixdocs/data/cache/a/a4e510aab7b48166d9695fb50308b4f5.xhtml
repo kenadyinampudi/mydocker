@@ -1,0 +1,96 @@
+
+<h1 class="sectionedit1" id="convert_1gig_links_to_10gig_-_power8_vios_-_taprvio120-121">Convert 1Gig links to 10Gig - Power8 VIOS - taprvio120-121</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Convert 1Gig links to 10Gig - Power8 VIOS - taprvio120-121" [1-74] -->
+<h2 class="sectionedit2" id="taprvio120">taprvio120</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check the current status<pre class="code">sudo entstat -d ent6 | grep ^&quot;Physical Port Speed&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Put the SEA on standby<pre class="code">sudo chdev -l ent6 -a ha_mode=standby</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check pings to hosts from pgnmsv01<pre class="code">for host in pgnmsv01 pgdmr057 pgsnap03 pocafasv02 sggtdb01 pafodb01 dgsodb01 pgbcdb98 pocsndb01
+do
+   ping -c1 ${host} &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -ne 0 ]
+   then
+      echo &quot;Problem with ${host} &quot;
+   fi
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ask network team to make changes<pre class="code">FEX109 - Port 23 
+FEX109 - Port 24</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the current Speed and aggregation status<pre class="code">sudo entstat -d ent6 | grep -e^&quot;Physical Port Speed&quot; -e ^&quot;Aggregation status:&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change SEA mode back to shared<pre class="code">sudo chdev -l ent6 -a ha_mode=sharing</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check pings to hosts from pgnmsv01<pre class="code">for host in pgnmsv01 pgdmr057 pgsnap03 pocafasv02 sggtdb01 pafodb01 dgsodb01 pgbcdb98 pocsndb01
+do
+   ping -c1 ${host} &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -ne 0 ]
+   then
+      echo &quot;Problem with ${host} &quot;
+   fi
+done</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> Take a 30 minutes break </strong>
+</p>
+
+</div>
+<!-- EDIT2 SECTION "taprvio120" [75-1134] -->
+<h2 class="sectionedit3" id="taprvio121">taprvio121</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check the current status<pre class="code">sudo entstat -d ent6 | grep ^&quot;Physical Port Speed&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Put the SEA on standby<pre class="code">sudo chdev -l ent6 -a ha_mode=standby</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check pings to hosts from pgnmsv01<pre class="code">for host in pgnmsv01 pgdmr057 pgsnap03 pocafasv02 sggtdb01 pafodb01 dgsodb01 pgbcdb98 pocsndb01
+do
+   ping -c1 ${host} &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -ne 0 ]
+   then
+      echo &quot;Problem with ${host} &quot;
+   fi
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ask network team to make changes<pre class="code">FEX110 - Port 23 
+FEX110 - Port 24</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the current Speed and aggregation status<pre class="code">sudo entstat -d ent6 | grep -e^&quot;Physical Port Speed&quot; -e ^&quot;Aggregation status:&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change SEA mode back to shared<pre class="code">sudo chdev -l ent6 -a ha_mode=sharing</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check pings to hosts from pgnmsv01<pre class="code">for host in pgnmsv01 pgdmr057 pgsnap03 pocafasv02 sggtdb01 pafodb01 dgsodb01 pgbcdb98 pocsndb01
+do
+   ping -c1 ${host} &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -ne 0 ]
+   then
+      echo &quot;Problem with ${host} &quot;
+   fi
+done</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "taprvio121" [1135-] -->

@@ -1,0 +1,61 @@
+
+<h2 class="sectionedit1" id="configure_iocp_aix">COnfigure IOCP (AIX)</h2>
+<div class="level2">
+
+<p>
+Procedure
+The following is based upon information from IBM Developer Works 
+</p>
+
+<p>
+Enter the lslpp command to check whether the IOCP module is installed on your system.
+</p>
+<pre class="code">   lslpp -l bos.iocp.rte</pre>
+
+<p>
+The resulting output should be similar to the following example:
+</p>
+<pre class="code">  Fileset                     Level     State       Description
+  ----------------------------------------------------------------------------
+  Path: /usr/lib/objrepos
+    bos.iocp.rte              5.3.9.0   APPLIED     I/O Completion Ports API</pre>
+<pre class="code">  Path: /etc/objrepos
+    bos.iocp.rte              5.3.0.50  COMMITTED   I/O Completion Ports API</pre>
+
+<p>
+Enter the lsdev command to check whether the status of the IOCP port is Available.
+</p>
+<pre class="code">   lsdev -Cc iocp</pre>
+
+<p>
+The resulting output should match the following example:
+</p>
+<pre class="code">   iocp0 Available  I/O Completion Ports</pre>
+
+<p>
+If the IOCP port status is <strong>Defined</strong>, change the status to Available
+Log in to the server and issue the following command:
+</p>
+<pre class="code">       sudo smitty iocp</pre>
+
+<p>
+Select Change / Show Characteristics of I/O Completion Ports.
+Change the configured state at system restart from Defined to Available.
+</p>
+
+<p>
+For this change to take effect, either <strong>issue the cfgmgr command</strong> or perform a system reboot.
+</p>
+<pre class="code">sudo cfgmgr -v</pre>
+
+<p>
+Enter the lsdev command again to confirm that the status of the IOCP port has changed to Available.
+</p>
+<pre class="code">   lsdev -Cc iocp</pre>
+
+<p>
+The resulting output should match the following example:
+</p>
+<pre class="code">   iocp0 Available  I/O Completion Ports</pre>
+
+</div>

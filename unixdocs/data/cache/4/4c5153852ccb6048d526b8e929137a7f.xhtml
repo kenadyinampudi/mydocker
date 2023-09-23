@@ -1,0 +1,54 @@
+
+<h2 class="sectionedit1" id="set_ssh_startup_by_inetd">Set ssh startup by inetd</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> logon to server being built</div>
+</li>
+<li class="level1"><div class="li"> Make a copy of the inetd.conf file <pre class="code"> cd /etc </pre>
+<pre class="code"> sudo /usr/bin/cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y-%m-%d-%H:%M:%S)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Insert the entry into the inetd.conf file <pre class="code"> echo &quot;ssh stream   tcp      nowait   root  /usr/sbin/sshd  sshd -i&quot;  | sudo tee -a  /etc/inetd.config </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Refresh the inetd daem so that it knows about the changes to the file <pre class="code">sudo  refresh -s inetd </pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Update the rd2.d scripts that start/start sshd. First make a copy. <pre class="code"> cd /etc/rc.d/rd2.d </pre>
+<pre class="code"> sudo cp -p Ssshd Ssshd-original </pre>
+<pre class="code"> sudo cp -p Ksshd Ksshd-original </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Edit the files and put in the following lines after the #!/bin/ksh statement <pre class="code"> vi Ssshd </pre>
+</div>
+</li>
+</ol>
+<pre class="code"> # inserted 2 lines - ssh is now started from initd
+exit 0
+exit 0 </pre>
+
+<p>
+ save the changes
+</p>
+<ol>
+<li class="level1"><div class="li">  <pre class="code"> vi Ksshd </pre>
+</div>
+</li>
+</ol>
+<pre class="code"> # inserted 2 lines - ssh is now started from initd
+exit 0
+exit 0 </pre>
+
+<p>
+ save the changes
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Set ssh startup by inetd" [1-1034] -->
+<h2 class="sectionedit2" id="end_of_set_ssh_startup_by_inetd">End of Set ssh startup by inetd</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT2 SECTION "End of Set ssh startup by inetd" [1035-] -->

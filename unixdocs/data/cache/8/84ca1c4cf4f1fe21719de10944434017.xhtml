@@ -1,0 +1,186 @@
+
+<h1 class="sectionedit1" id="lvm_mirror_pools">LVM Mirror Pools</h1>
+<div class="level1">
+
+<p>
+Siteawareness , LVM PVG of HPUX … This is how IBM does it &#039;Mirror Pools&#039;. If you have a system which can see disks from two frames or locations and wants to make sure each LV is mirrored across them, here is what you need to do. I am learning as I am writing.
+</p>
+<ul>
+<li class="level1"><div class="li"> First of all AIX 6 is probably the first version that supports this. May be aix 5.3, need to check.</div>
+</li>
+<li class="level1"><div class="li"> The volume group has to be a scalable VG<pre class="code">mkvg -S </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> In the following process I am going to create a regular volume group and then I will convert it to a Scalable, mirror pool aware Volume group.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "LVM Mirror Pools" [1-613] -->
+<h1 class="sectionedit2" id="create_volume_group">Create Volume Group</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> AIX 6 or 7 allows us to name the disks as we want. So I like to name them so I know where they come from.<pre class="code">root :/root&gt;lsdev -Ccdisk | grep hdisk1[1-4]
+hdisk11 Available  Virtual SCSI Disk Drive
+hdisk12 Available  Virtual SCSI Disk Drive
+hdisk13 Available  Virtual SCSI Disk Drive
+hdisk14 Available  Virtual SCSI Disk Drive</pre>
+
+<p>
+As you see they are all virtual disks. <strong>For now I am going to assume that the first two disks from a storage frame located in Chicago and the rest from London.</strong>
+</p>
+<pre class="code">root :/root&gt;lsdev -Ccdisk | grep hdisk1[1-4]
+hdisk11 Available  Virtual SCSI Disk Drive      ----&gt;      Chicago - Array serial No: 3451  LUN number 0DEF
+hdisk12 Available  Virtual SCSI Disk Drive      ----&gt;      Chicago - Array serial No: 3451  LUN number 0DEG
+hdisk13 Available  Virtual SCSI Disk Drive      ----&gt;      London  - Array serial No: 3339  LUN number 1F45
+hdisk14 Available  Virtual SCSI Disk Drive      ----&gt;      London  - Array serial No: 3339  LUN number 1F46</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Let me now rename them accordingly <strong>(Naming scheme lifted from Veritas )</strong><pre class="code">root :/root&gt;rendev -l hdisk11 -n EMC_3451_0DEF
+EMC_3451_0DEF
+root :/root&gt;rendev -l hdisk12 -n EMC_3451_0DEG
+EMC_3451_0DEG
+root :/root&gt;rendev -l hdisk13 -n EMC_3339_1F45
+EMC_3339_1F45
+root :/root&gt;rendev -l hdisk14 -n EMC_3339_1F46
+EMC_3339_1F46</pre>
+
+<p>
+Let us see how they look
+</p>
+<pre class="code">root :/root&gt;lspv | grep EMC
+EMC_3451_0DEF   0000aadaf23ab95f                    None
+EMC_3451_0DEG   0000aadaf23ab9ac                    None
+EMC_3339_1F45   0000aadaf23f17a8                    None
+EMC_3339_1F46   0000aadaf23f1808                    None</pre>
+
+<p>
+<strong>I like it. Now I know by looking at the disk where it comes from and it&#039;s location.</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Let us create a regular volume group using the Chicago disks and create a filesystem.<pre class="code">root :/root&gt;mkvg -s 4M -y datavg01 EMC_3451_0DEF EMC_3451_0DEG
+datavg01
+root :/root&gt;lsvg datavg01
+VOLUME GROUP:       datavg01                 VG IDENTIFIER:  0000aada0000d4000000013685f34361
+VG STATE:           active                   PP SIZE:        4 megabyte(s)
+VG PERMISSION:      read/write               TOTAL PPs:      510 (2040 megabytes)
+MAX LVs:            256                      FREE PPs:       510 (2040 megabytes)
+LVs:                0                        USED PPs:       0 (0 megabytes)
+OPEN LVs:           0                        QUORUM:         2 (Enabled)
+TOTAL PVs:          2                        VG DESCRIPTORS: 3
+STALE PVs:          0                        STALE PPs:      0
+ACTIVE PVs:         2                        AUTO ON:        yes
+MAX PPs per VG:     32512
+MAX PPs per PV:     1016                     MAX PVs:        32
+LTG size (Dynamic): 256 kilobyte(s)          AUTO SYNC:      no
+HOT SPARE:          no                       BB POLICY:      relocatable
+PV RESTRICTION:     none                     INFINITE RETRY: no</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a filesystem<pre class="code">root :/root&gt;mklv -t jfs2 -y ora001 datavg01 8
+ora001
+root :/root&gt;crfs -v jfs2 -d ora001 -m /oracle/oradb/ora001 -A yes
+File system created successfully.
+32560 kilobytes total disk space.
+New File System size is 65536
+root :/root&gt;mount /oracle/oradb/ora001
+root :/root&gt;df -k /oracle/oradb/ora001
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/ora001         32768     32432    2%        4     1% /oracle/oradb/ora001</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Create Volume Group" [614-3998] -->
+<h1 class="sectionedit3" id="convert_to_a_scalable_vg">Convert to a Scalable VG.</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Unmount filesystems<pre class="code">root :/root&gt;lsvgfs datavg01 | sort -r | xargs -n1 umount
+root :/root&gt;lsvg -l datavg01
+datavg01:
+LV NAME             TYPE       LPs     PPs     PVs  LV STATE      MOUNT POINT
+ora001              jfs2       8       8       1    closed/syncd  /oracle/oradb/ora001
+loglv01             jfs2log    1       1       1    closed/syncd  N/A</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Convert the VG to scalable<pre class="code">root :/root&gt;varyoffvg datavg01
+root :/root&gt;chvg -G datavg01
+0516-1224 chvg: WARNING, once this operation is completed, volume group datavg01
+        cannot be imported into AIX 5.2 or lower versions. Continue (y/n) ?
+y
+0516-1712 chvg: Volume group datavg01 changed.  datavg01 can include up to 1024 physical volumes with 2097152 total physical partitions in the volume group.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the London disks to the VG.<pre class="code">root :/root&gt;varyonvg datavg01
+root :/root&gt;extendvg -f datavg01 EMC_3339_1F45 EMC_3339_1F46
+root :/root&gt;</pre>
+
+<p>
+Looks good
+</p>
+<pre class="code">root :/root&gt;lspv | grep EMC
+EMC_3451_0DEF   0000aadaf23ab95f                    datavg01        active
+EMC_3451_0DEG   0000aadaf23ab9ac                    datavg01        active
+EMC_3339_1F45   0000aadaf23f17a8                    datavg01        active
+EMC_3339_1F46   0000aadaf23f1808                    datavg01        active</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Attach a pool id on the disks<pre class="code">root :/root&gt;chpv -p Chicago EMC_3451_0DEF
+root :/root&gt;chpv -p Chicago EMC_3451_0DEG
+root :/root&gt;chpv -p London EMC_3339_1F45
+root :/root&gt;chpv -p London EMC_3339_1F46</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add mirror pools to each logical volume in the volume group.<pre class="code">chlv -m copy1=Chicago -m copy2=London ora001
+chlv -m copy1=Chicago -m copy2=London loglv01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable super strict policy to make sure mirrors are always across the pools<pre class="code">chvg -M s datavg01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mirror the VG<pre class="code">mirrorvg -c 2 datavg01
+0516-1804 chvg: The quorum change takes effect immediately.</pre>
+
+<p>
+Let us check the lay out.
+</p>
+<pre class="code">root :/root&gt;lslv -m ora001
+ora001:/oracle/oradb/ora001
+LP    PP1  PV1               PP2  PV2               PP3  PV3
+0001  0035 EMC_3451_0DEF     0049 EMC_3339_1F45
+0002  0036 EMC_3451_0DEF     0050 EMC_3339_1F45
+0003  0037 EMC_3451_0DEF     0051 EMC_3339_1F45
+0004  0038 EMC_3451_0DEF     0052 EMC_3339_1F45
+0005  0039 EMC_3451_0DEF     0053 EMC_3339_1F45
+0006  0040 EMC_3451_0DEF     0054 EMC_3339_1F45
+0007  0041 EMC_3451_0DEF     0055 EMC_3339_1F45
+0008  0042 EMC_3451_0DEF     0056 EMC_3339_1F45
+root :/root&gt;lslv -m loglv01
+loglv01:N/A
+LP    PP1  PV1               PP2  PV2               PP3  PV3
+0001  0035 EMC_3451_0DEG     0049 EMC_3339_1F46</pre>
+
+<p>
+Amazing!
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Some useful commands<pre class="code">root :/root&gt;lsvg -m datavg01
+Logical Volume    Copy 1            Copy 2            Copy 3
+ora001            Chicago           London            None
+loglv01           Chicago           London            None
+root :/root&gt;lsmp datavg01
+VOLUME GROUP:       datavg01            Mirror Pool Super Strict: yes
+
+MIRROR POOL:        Chicago             Mirroring Mode:           SYNC
+MIRROR POOL:        London              Mirroring Mode:           SYNC</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> We may want to do this for the NFS Cluster VG. Sorry, I know it is late in the game. I should have researched this long back.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Convert to a Scalable VG." [3999-] -->

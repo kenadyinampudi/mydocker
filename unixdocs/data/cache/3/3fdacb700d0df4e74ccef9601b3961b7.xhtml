@@ -1,0 +1,82 @@
+
+<h1 class="sectionedit1" id="ftp1tennecocom_user_setup">FTP1.TENNECO.COM User Setup</h1>
+<div class="level1">
+<pre class="code"> After Entitlement creates the user id on the server thwy will send the UNIX Team a ticket to alow the user id FTP access to the server. 
+ Make the following changes to the user id substitute actual user name and uid where applicable 
+ 
+ Check the ticket for a Preferred Password. If one is present set the password to that password. 
+ If no prefered password is documented, create a complex password and document it so it can be sent to the user. 
+ 
+ A reminder. this is an SFTP server only. All who ftp here must **use port 22** for a successfull connection.</pre>
+<ol>
+<li class="level1"><div class="li"> Change the user shell from /usr/bin/ksh to /usr/sbin/sftp-server <pre class="code"> sudo chuser shell=&#039;/usr/sbin/sftp-server&#039; {user login here} </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Change the users home directory from /home/user to /prod/ftp/user <pre class="code"> sudo chuser home=&#039;/prod/ftp/{user login here}&#039; {user login here} </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Change the users rlogin to false <pre class="code">sudo  chuser rlogin=&#039;false&#039; &lt;user login here&gt; </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Set the users password with specified/ requested on one you have generated and documented <pre class="code"> sudo passwd {user login here}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Set Password to not request change at first login <pre class="code">sudo  pwdadm -c {user login here}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Set the password to not expire <pre class="code"> sudo chuser maxage=0 {user login here) </pre>
+</div>
+</li>
+</ol>
+
+<p>
+   Add a group that is unique to this user.
+</p>
+<ol>
+<li class="level1"><div class="li"> Get the users UID from /etc/password <pre class="code"> sudo  grep {user name} /etc/passwd | awk -F: &#039;{print $3}&#039; </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Set so user can only see his own data <pre class="code"> sudo  mkgroup -&#039;A&#039; id=&#039;{UID from step above}&#039; users=&#039;{user login here}&#039; {user login here} </pre>
+<pre class="code"> sudo chuser pgrp=&#039;{user login here}&#039; {user login here}</pre>
+<pre class="code"> sudo chuser groups=&#039;{user login here}&#039; {user login here} </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Move the users home directory to /prod/ftp <pre class="code"> cd /prod/ftp </pre>
+<pre class="code"> sudo mv /home/{user login here} . </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Set the users ownership and group permissions <pre class="code"> sudo chown {user login here}:{user login here} {user login here} </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Set the permissions so others can not see or cd to user <pre class="code">sudo chmod 700 {user login here} </pre>
+</div>
+</li>
+</ol>
+
+<p>
+   Edit the /etc/ftpusers file and remove the user from the file. 
+</p>
+<pre class="code"> sudo vi /etc/ftpusers </pre>
+
+<p>
+ Delete the users ID and save the file.
+</p>
+<pre class="code"> 
+ Modify ssh config file to further harden the user id and server Add the user to the appropirate stanza in /etc/ssh/sshd_config 
+  - Create a backup copy of sshd_config  where .yn = your initials </pre>
+<pre class="code"> cd /etc/ssh </pre>
+<pre class="code"> sudo  cp -p  sshd_config sshd_config-$(date +%Y%m%d-%H:%M:%S).yn </pre>
+<pre class="code"> sudo vi sshd_config </pre>
+
+<p>
+ Add the username to the end of the stanza “Example of overriding settings on a per-user basis”
+</p>
+<ol>
+<li class="level1"><div class="li"> Save the file and restart the ssh daemon so the change takes effect <pre class="code"> sudo kill -HUP $(lssrc -a |grep sshd | awk &#039;{print $3}&#039;)</pre>
+</div>
+</li>
+</ol>
+<pre class="code"> Now test the user id with FileZilla from your pc to insure that the user can access the server as requested. 
+ Attach a screen shot of the access from your pc to the ticket as proof of access to the server. </pre>
+
+</div>

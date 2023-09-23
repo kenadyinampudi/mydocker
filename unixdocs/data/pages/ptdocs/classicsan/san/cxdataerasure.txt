@@ -1,0 +1,13 @@
+====== Clariion Data Erasure ======
+
+  - export a variable for the SPA of the specific VNX/Clariion<code>export SP=<hostname of SPA></code>
+  - Get a list of all disks<code>naviseccli -h ${SP} getdisk | grep ^"Bus " | awk '{print $2"_"$4"_"$6}' > alldisks.toremove</code>
+  - Erase data<code>for disk in $(cat alldisks.toremove)
+do
+   echo "Started zeroing process for ${disk} "
+   naviseccli -h ${SP} zerodisk -messner ${disk} start
+done</code>
+  - Check status<code>for disk in $(cat alldisks.toremove)
+do
+   naviseccli -h ${SP} zerodisk -messner ${disk} status
+done</code>

@@ -1,0 +1,67 @@
+====== V9000 Storage allocation -- generic steps ======
+
+===== Inventory =====
+
+^Make and Model     ^Description                                                                                             ^
+|IBM V9000 - 78BD160|The first V9000 that runs TA2                                                                           |
+|IBM V9000 - 78BF751|The second V9000 that runs some production and non production storage, we have SATA storage on this one.|
+
+===== LUN size standards =====
+
+^Size      ^Description                                 ^
+|34526 MiB |Unix - Small applications, databases - data |
+|103578 MiB|Unix - Medium size databases - data         |
+|122880 MiB|Unix - PTA/TA2 and their copies only        |
+|138105 MiB|Unix - AIX SAN Boot                         |
+|524288 MiB|Unix - TA2 database, IT0 database etc       |
+
+===== LUN naming standards =====
+
+^Type of LUN  ^Description                                                                                                                            ^
+|Standard LUNs|Always use this format ''<hostname>_XYZ'' i.e. daerdb01_002, daerdb02_009 etc. This is very important as that is how we report storage.|
+|Database LUNs|For systems like PTA, TA2, FTA and IT0 database LUNs we follow database_<lun_number> i.e. ta2dbdata_<lun_number>                       |
+
+===== Storage provisioning and reclamation - Instructions =====
+
+==== Prepare for work on the Admin server ====
+
+  - Login to the storage admin server.<code>ssh pgunap01</code>
+  - Store the array information in a variable.
+    - To allocate storage from V9000-1<code>export array=ldcv9ac2vip1
+export MDISKGRP="POOL_1381128"</code>
+    - To allocate storage from V9000-2<code>export array=ldcv9ac3vip1</code>
+      - This storage array has both Flash and SATA storage, define the type of media
+        - All Flash<code>export MDISKGRP="POOL_6885667"</code>
+        - SATA<code>export MDISKGRP="POOL_SATA"</code>
+  - Define a variable for SSH so that it is easier to document further
+    - If you have your own account with password-less login setup<code>export SSH2V9="/usr/bin/ssh ${array}"</code>
+    - If not<code>export SSH2V9="sudo -u sanmontr /usr/bin/ssh ${array}"</code>
+
+==== Defining a new host on V9000 ====
+
+  - Collect the WWNs from the systems team, complete zoning. 
+  - To add a host<code>${SSH2V9} mkhost -fcwwpn wwn1:wwn2:wwn3...... -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name <name_of_the_host> -type generic</code>
+  - Adding additional WWNs to an existing host<code>${SSH2V9} addhostport -force -fcwwpn wwn1:wwn2:wwn3...... <host_name></code>
+
+==== Storage provisioning ====
+
+  - A typical request comes to storage us something like this<code>Please allocate 1 * 103GB disk to taprvio60 and taprvio70 from I IBM-v9000-600507680C80817D . This is for qggpdb01 organic growth</code>
+  - Always name a LUN to the actual server it is being requested for. This is important, because that is how we keep track of storage growth and trend.
+    - Hence, list the existing volumes to figure out the next number to use<code>${SSH2V9} lsvdisk | grep qggpdb01 | awk '{print $2"\t"$8}' | sort -k1</code>This is what we get<code>qggpdb01_001    134.87GB
+qggpdb01_002    134.87GB
+...
+...
+qggpdb01_012    101.15GB</code>
+    - From the above output, we know that we need to create<code>qggpdb01_013 of size 101.15GB or 103578 MiB and allocate it to taprvio60 & 70</code>
+  - Creating a LUN<code>${SSH2V9} mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp ${MDISKGRP} -name qggpdb01_013 -nofmtdisk -rsize 2% \
+-size 103578 -syncrate 50 -unit mb -vtype striped -warning 0% </code>
+  - Now map the LUN to the servers requested.
+    - taprvio60<code>${SSH2V9} mkvdiskhostmap -host taprvio60 qggpdb01_013</code>To allocate the same LUN to the next VIOS server ''taprvio70''<code>${SSH2V9} mkvdiskhostmap -force -host taprvio70 qggpdb01_013</code>
+  - We need to send the details to systems team.
+    - Find out the LUN id<code>${SSH2V9} lsvdisk qggpdb01_013 | grep -e ^vdisk_UID | awk '{print $2}' | cut -c 18-32</code>We would expect something like this<code>8000000000001D9</code>
+  - Now send the following information to System's team and close the ticket<code>LUN 8000000000001D9 has been allocated from V9000 to taprvio60 & 70 for qggpdb01</code>
+
+==== Storage reclamation ====
+
+  - Removing a mapping<code>${SSH2V9} rmvdiskhostmap -host <hostname> <volume_name></code>
+  - Delete the volumes from LDCV9000 after one week using GUI

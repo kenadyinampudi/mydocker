@@ -1,0 +1,41 @@
+
+<h1 class="sectionedit1" id="rsync_-_use_nonprivileged_unix_account_s_ssh_password-less_login_to_sync_files_owned_by_root_another_user">rsync - Use nonprivileged unix account&#039;s ssh password-less login to sync files owned by root/another user</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "rsync - Use nonprivileged unix account's ssh password-less login to sync files owned by root/another user" [1-121] -->
+<h2 class="sectionedit2" id="scenario">Scenario</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> server1 has a directory that contains software or data, no necessarily owned by the non-privileged user that a team uses for automating cron jobs etc</div>
+</li>
+<li class="level1"><div class="li"> The data needs to be replicated to server2</div>
+</li>
+<li class="level1"><div class="li"> The non-privileged user has “sudo” rights to perform “rsync” on both the servers.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Scenario" [122-431] -->
+<h3 class="sectionedit3" id="our_scenario">Our Scenario</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> We have <a href="https://storagedocs" class="urlextern" title="https://storagedocs"  rel="nofollow">https://storagedocs</a> running on pgunap01 in Lincolnshire. </div>
+</li>
+<li class="level1"><div class="li"> We would like to host <a href="https://storagedocs-dr" class="urlextern" title="https://storagedocs-dr"  rel="nofollow">https://storagedocs-dr</a> on pgunap02 server in Interxion.</div>
+</li>
+<li class="level1"><div class="li"> In order to make sure all documents are syncd, we need to “rsync” the data from pgunap01 to pgunap02.</div>
+</li>
+<li class="level1"><div class="li"> We use a non-privileged user “sanmontr” to schedule cronjobs i.e. We don&#039;t use root or any system account for security reasons.</div>
+</li>
+<li class="level1"><div class="li"> sanmontr unix account has &#039;sudo rsync&#039; rights on both pgunap01 and pgunap02.</div>
+</li>
+<li class="level1"><div class="li"> sanmontr unix account has ssh-password-less login access from pgunap01 to pgunap02.</div>
+</li>
+<li class="level1"><div class="li"> <strong>After much googling and brain picking multiple people here, we got this method that works.</strong><pre class="code">rsync --delete -a ${wikihome}/ --rsync-path=&quot;sudo rsync&quot; ${drhost}:${wikihome}/</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Our Scenario" [432-] -->

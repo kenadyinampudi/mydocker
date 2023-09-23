@@ -1,0 +1,27 @@
+
+<h1 class="sectionedit1" id="aix_lvm_cool_clis">AIX LVM Cool CLIs</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Mount all filesystems on an AIX server in one line <pre class="code"> lsvg -o | xargs -n1 lsvgfs | sort | xargs -n1 mount </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount all filesystems in one line <pre class="code"> lsvg -o | xargs -n1 lsvgfs | sort -r | xargs -n1 umount </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unlock a Volume Group so that the VG can be imported on the other host <pre class="code"> varyonvg -b -u &lt;vg_name&gt; </pre>
+
+<p>
+ On the remote host do 
+</p>
+<pre class="code"> importvg -n -y &lt;vgname&gt; diskname </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a JFS2 filesystem <pre class="code">mklv -t jfs2 -y &lt;lvname&gt; &lt;vgname&gt; &lt;no_of_lps&gt; &lt;hdisk.....&gt; 
+crfs -v jfs2 -d &lt;lvname&gt; -m &lt;mountpoint&gt; -A yes -t no</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> </div>
+</li>
+</ol>
+
+</div>

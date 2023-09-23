@@ -1,0 +1,104 @@
+
+<h1 class="sectionedit1" id="sudo_documentation_for_users">SUDO Documentation for Users</h1>
+<div class="level1">
+
+<p>
+sudo or as I call it “Super User Do” is a unix program that allows non-privileged users to execute some commands as root. sudo provides a rich set of features including monitoring, managing and alerting as compared to its competitors like setuid, proprietory RBAC or root equivalent user. 
+</p>
+
+<p>
+At Tenneco, we have identified the following teams as the ones who will need to run some programs as root.
+</p>
+<ul>
+<li class="level1"><div class="li"> <abbr title="Database Administrator">DBA</abbr> Team</div>
+</li>
+<li class="level1"><div class="li"> Data preservation Team</div>
+</li>
+<li class="level1"><div class="li"> SAP - Basis Team</div>
+</li>
+<li class="level1"><div class="li"> HP Openview Team.</div>
+</li>
+</ul>
+
+<p>
+We need to group servers
+</p>
+<ul>
+<li class="level1"><div class="li"> Production Servers</div>
+</li>
+<li class="level1"><div class="li"> Non production servers</div>
+</li>
+<li class="level1"><div class="li"> Backup servers</div>
+</li>
+<li class="level1"><div class="li"> Others</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "SUDO Documentation for Users" [1-633] -->
+<h2 class="sectionedit2" id="usage">Usage</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> This is the easiest part. This is as simple as “prefix the command that you need to run as root with sudo”.<pre class="code">sudo /oracle/SID/11203/root.sh</pre>
+
+<p>
+The above command runs as root.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> To list all the commands you are entitled to<pre class="code">sudo -l</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> </div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Usage" [634-913] -->
+<h2 class="sectionedit3" id="dos_don_t_s">Dos &amp; Don&#039;t(s)</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> There is no perfect security model. So there are ways around to break everything. So is sudo, there are ways around and the methods are easily accessible.</div>
+</li>
+<li class="level1"><div class="li"> Be responsible. sudo gives great power on a Unix system. “With great power comes great responsibility, visibility and publicity”. Think before you hit enter on that command that you prefixed with sudo. You are Superman !</div>
+</li>
+<li class="level1"><div class="li"> Use sudo only when it really needed. It is not to be used for convenience. Do not fix a problem by “chmod 777” because you have the ability to do so for example.</div>
+</li>
+<li class="level1"><div class="li"> When in doubt, use “CTRL + C” <strong>do not hit enter</strong>.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "Dos & Don't(s)" [914-1548] -->
+<h2 class="sectionedit4" id="limitations_of_sudo">Limitations of sudo</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Redirection is one limitation of sudo. i.e. <pre class="code">sudo echo &quot;something&quot; &gt; /etc/motd</pre>
+
+<p>
+For security reasons, sudo does not permit re-directions. Instead, this works
+</p>
+<pre class="code">echo &quot;something&quot; | sudo tee -a /etc/motd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> “cd” command i.e. <pre class="code">sudo cd /protected-directory</pre>
+
+<p>
+This will not work. Instead use
+</p>
+<pre class="code">sudo ls -l /protected-directory</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Limitations of sudo" [1549-1946] -->
+<h2 class="sectionedit5" id="sudo_management">sudo management</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> All sudo commands are logged and sent to a central repository. Unix team, from time to time , when required , will audit the file for investigation purpose and/or misuse.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT5 SECTION "sudo management" [1947-] -->

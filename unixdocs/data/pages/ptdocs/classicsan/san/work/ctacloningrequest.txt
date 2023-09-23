@@ -1,0 +1,282 @@
+====== CTA Cloning work ======
+
+===== My documentations / preparation steps =====
+
+<code>drenap99 
+
+c0507607fdbb0062 	ldcds6510a1	13
+c0507607fdbb0063  	ldcds6510a1	13
+c0507607fdbb0064 	ldcds6510b1	12
+c0507607fdbb0065 	ldcds6510b1	12
+
+
+Fabric A :-
+
+alicreate "drenap99_bb0062","c0:50:76:07:fd:bb:00:62"
+alicreate "drenap99_bb0063","c0:50:76:07:fd:bb:00:63"
+
+zonecreate "drenap99_bb0062__ldcpm70v1_0_2_0__1_2_0","drenap99_bb0062;ldcpm70v1_0_2_0;ldcpm70v1_1_2_0"
+zonecreate "drenap99_bb0063__ldcpm70v1_0_2_0__1_2_0","drenap99_bb0063;ldcpm70v1_0_2_0;ldcpm70v1_1_2_0"
+cfgadd "fab_a_act_config","drenap99_bb0062__ldcpm70v1_0_2_0__1_2_0;drenap99_bb0063__ldcpm70v1_0_2_0__1_2_0"
+cfgsave
+cfgenable "fab_a_act_config"
+
+Fabric B :-
+
+alicreate "drenap99_bb0064","c0:50:76:07:fd:bb:00:64"
+alicreate "drenap99_bb0065","c0:50:76:07:fd:bb:00:65"
+
+zonecreate "drenap99_bb0064__ldcpm70v1_0_0_1__1_0_1","drenap99_bb0064;ldcpm70v1_0_0_1;ldcpm70v1_1_0_1"
+zonecreate "drenap99_bb0065__ldcpm70v1_0_0_1__1_0_1","drenap99_bb0065;ldcpm70v1_0_0_1;ldcpm70v1_1_0_1"
+cfgadd "fab_b_act_config","drenap99_bb0064__ldcpm70v1_0_0_1__1_0_1;drenap99_bb0065__ldcpm70v1_0_0_1__1_0_1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+${SSH2PURE} purehost create --wwnlist c0507607fdbb0062,c0507607fdbb0063,c0507607fdbb0064,c0507607fdbb0065 drenap99 
+
+${SSH2PURE} purevol create --size 138g drenap99_001 drenap99_002
+
+${SSH2PURE} purevol connect --host drenap99 drenap99_001 drenap99_002
+
+${SSH2PURE} purepgroup create --hgrouplist daerap00 imodaerap99 
+
+${SSH2PURE} purepgroup list imodaerap99
+
+${SSH2PURE} purepgroup snap --suffix 01082019 imodaerap99
+
+${SSH2PURE} purepgroup snap --suffix Jan-8-2019 imodaerap99
+
+${SSH2PURE} purevol list --snap --pgrouplist imodaerap99.Jan-8-2019
+
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purevol list --snap --pgrouplist imodaerap99.Jan-8-2019
+Name                                 Size  Source        Created                  Serial
+imodaerap99.Jan-8-2019.daerap00_001  102G  daerap00_001  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A03
+imodaerap99.Jan-8-2019.daerap00_002  102G  daerap00_002  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A04
+imodaerap99.Jan-8-2019.daerap00_003  102G  daerap00_003  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A05
+imodaerap99.Jan-8-2019.daerap98_001  138G  daerap98_001  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A01
+imodaerap99.Jan-8-2019.daerap98_002  138G  daerap98_002  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A02
+imodaerap99.Jan-8-2019.daerap99_001  138G  daerap99_001  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B99FF
+imodaerap99.Jan-8-2019.daerap99_002  138G  daerap99_002  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A00
+
+${SSH2PURE} purevol copy imodaerap99.Jan-8-2019.daerap00_001 drenap99_003
+${SSH2PURE} purevol copy imodaerap99.Jan-8-2019.daerap00_002 drenap99_004
+${SSH2PURE} purevol copy imodaerap99.Jan-8-2019.daerap00_003 drenap99_005
+
+${SSH2PURE} purevol connect --host drenap99 drenap99_003 drenap99_004 drenap99_005
+
+${SSH2PURE} purepgroup destroy imodaerap99.Jan-8-2019
+
+${SSH2PURE} purepgroup destroy imodaerap99</code>
+
+===== Putty Session =====
+
+<code>x1kxk630 on pgnmsv01:/home/x1kxk630 $ ssh admin@ldcds5300a1
+Warning: Permanently added 'ldcds5300a1,10.32.10.36' (ECDSA) to the list of known hosts.
+ldcds5300a1:admin> alicreate "drenap99_bb0062","c0:50:76:07:fd:bb:00:62"
+ldcds5300a1:admin> alicreate "drenap99_bb0063","c0:50:76:07:fd:bb:00:63"
+ldcds5300a1:admin> zonecreate "drenap99_bb0062__ldcpm70v1_0_2_0__1_2_0","drenap99_bb0062;ldcpm70v1_0_2_0;ldcpm70v1_1_2_0"
+ldcds5300a1:admin> zonecreate "drenap99_bb0063__ldcpm70v1_0_2_0__1_2_0","drenap99_bb0063;ldcpm70v1_0_2_0;ldcpm70v1_1_2_0"
+ldcds5300a1:admin> cfgadd "fab_a_act_config","drenap99_bb0062__ldcpm70v1_0_2_0__1_2_0;drenap99_bb0063__ldcpm70v1_0_2_0__1_2_0"
+ldcds5300a1:admin> cfgsave
+WARNING!!!
+The changes you are attempting to save will render the
+Effective configuration and the Defined configuration
+inconsistent. The inconsistency will result in different
+Effective Zoning configurations for switches in the fabric if
+a zone merge or HA failover happens. To avoid inconsistency
+it is recommended to commit the configurations using the
+'cfgenable' command.
+
+Do you want to proceed with saving the Defined
+zoning configuration only?  (yes, y, no, n): [no] yes
+Updating flash ...
+ldcds5300a1:admin> cfgenable "fab_a_act_config"
+You are about to enable a new zoning configuration.
+This action will replace the old zoning configuration with the
+current configuration selected. If the update includes changes
+to one or more traffic isolation zones, the update may result in
+localized disruption to traffic on ports associated with
+the traffic isolation zone changes.
+Do you want to enable 'fab_a_act_config' configuration  (yes, y, no, n): [no] yes
+zone config "fab_a_act_config" is in effect
+Updating flash ...
+ldcds5300a1:admin> logout
+Connection to ldcds5300a1 closed.
+x1kxk630 on pgnmsv01:/home/x1kxk630 $ ssh admin@ldcds5300b1
+Warning: Permanently added 'ldcds5300b1,10.32.10.37' (ECDSA) to the list of known hosts.
+ldcds5300b1:admin>
+ldcds5300b1:admin> alicreate "drenap99_bb0064","c0:50:76:07:fd:bb:00:64"
+ldcds5300b1:admin> alicreate "drenap99_bb0065","c0:50:76:07:fd:bb:00:65"
+ldcds5300b1:admin> zonecreate "drenap99_bb0064__ldcpm70v1_0_0_1__1_0_1","drenap99_bb0064;ldcpm70v1_0_0_1;ldcpm70v1_1_0_1"
+ldcds5300b1:admin> zonecreate "drenap99_bb0065__ldcpm70v1_0_0_1__1_0_1","drenap99_bb0065;ldcpm70v1_0_0_1;ldcpm70v1_1_0_1"
+ldcds5300b1:admin> cfgadd "fab_b_act_config","drenap99_bb0064__ldcpm70v1_0_0_1__1_0_1;drenap99_bb0065__ldcpm70v1_0_0_1__1_0_1"
+ldcds5300b1:admin> cfgsave
+WARNING!!!
+The changes you are attempting to save will render the
+Effective configuration and the Defined configuration
+inconsistent. The inconsistency will result in different
+Effective Zoning configurations for switches in the fabric if
+a zone merge or HA failover happens. To avoid inconsistency
+it is recommended to commit the configurations using the
+'cfgenable' command.
+
+Do you want to proceed with saving the Defined
+zoning configuration only?  (yes, y, no, n): [no] yes
+Input not acceptable, please re-enter
+
+Do you want to proceed with saving the Defined
+zoning configuration only?  (yes, y, no, n): [no]
+
+Operation canceled...
+ldcds5300b1:admin> cfgadd "fab_b_act_config","drenap99_bb0064__ldcpm70v1_0_0_1__1_0_1;drenap99_bb0065__ldcpm70v1_0_0_1__1_0_1"
+"fab_b_act_config" already contains "drenap99_bb0064__ldcpm70v1_0_0_1__1_0_1;drenap99_bb0065__ldcpm70v1_0_0_1__1_0_1"
+ldcds5300b1:admin> cfgsave
+WARNING!!!
+The changes you are attempting to save will render the
+Effective configuration and the Defined configuration
+inconsistent. The inconsistency will result in different
+Effective Zoning configurations for switches in the fabric if
+a zone merge or HA failover happens. To avoid inconsistency
+it is recommended to commit the configurations using the
+'cfgenable' command.
+
+Do you want to proceed with saving the Defined
+zoning configuration only?  (yes, y, no, n): [no] yes
+Updating flash ...
+ldcds5300b1:admin> cfgenable "fab_b_act_config"
+You are about to enable a new zoning configuration.
+This action will replace the old zoning configuration with the
+current configuration selected. If the update includes changes
+to one or more traffic isolation zones, the update may result in
+localized disruption to traffic on ports associated with
+the traffic isolation zone changes.
+Do you want to enable 'fab_b_act_config' configuration  (yes, y, no, n): [no] yes
+zone config "fab_b_act_config" is in effect
+Updating flash ...
+ldcds5300b1:admin> logout
+Connection to ldcds5300b1 closed.
+x1kxk630 on pgnmsv01:/home/x1kxk630 $ ssh pgunap01
+Last login: Fri Dec 21 12:10:17 2018 from pgnmsv01.amer.int.tenneco.com
+x1kxk630 on pgunap01:/home/x1kxk630 $ export STGARRAY=ldcpm70v1
+x1kxk630 on pgunap01:/home/x1kxk630 $ export SSH2PURE="sudo -u sanmontr ssh pureuser@${STGARRAY}"
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purehost create --wwnlist c0507607fdbb0062,c0507607fdbb0063,c0507607fdbb0064,c0507607fdbb0065 drenap99
+Name      WWN                      IQN
+drenap99  C0:50:76:07:FD:BB:00:62  -
+          C0:50:76:07:FD:BB:00:63
+          C0:50:76:07:FD:BB:00:64
+          C0:50:76:07:FD:BB:00:65
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purevol create --size 138g drenap99_001 drenap99_002
+Name          Size  Source  Created                  Serial
+drenap99_002  138G  -       2019-01-08 15:25:49 CST  BBABD90D93D542ED002B99FD
+drenap99_001  138G  -       2019-01-08 15:25:49 CST  BBABD90D93D542ED002B99FE
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purevol connect --host drenap99 drenap99_001 drenap99_002
+Name          Host Group  Host      LUN
+drenap99_001  -           drenap99  1
+drenap99_002  -           drenap99  2
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup create --help
+usage: purepgroup create [-h]
+                         [--hgrouplist HGROUPS | --hostlist HOSTS | --vollist VOLS]
+                         [--targetlist TARGETS]
+                         PGROUP ...
+
+positional arguments:
+  PGROUP                protection group name
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --hgrouplist HGROUPS  host groups
+  --hostlist HOSTS      hosts
+  --vollist VOLS        volumes
+  --targetlist TARGETS  target arrays
+x1kxk630 on pgunap01:/home/x1kxk630 $
+x1kxk630 on pgunap01:/home/x1kxk630 $
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup create --hgrouplist daerap00 imodaerap99
+Name         Source     Targets  Host Groups  Hosts  Volumes
+imodaerap99  LDCPM70V1  -        daerap00     -      -
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup list imodaerap99
+Name         Source     Targets  Host Groups  Hosts  Volumes
+imodaerap99  LDCPM70V1  -        daerap00     -      -
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup snap --suffix 01082019 imodaerap99
+Error on 01082019: Snapshot suffix must be between 1 and 63 characters (alphanumeric and '-') in length and begin and end with a letter or number. The suffix must include at least one letter.
+x1kxk630 on pgunap01:/home/x1kxk630 $
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup snap --suffix Jan-8-2019 imodaerap99
+Name                    Source       Created
+imodaerap99.Jan-8-2019  imodaerap99  2019-01-08 15:31:47 CST
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purevol list --snap --pgrouplist imodaerap99.Jan-8-2019
+Name                                 Size  Source        Created                  Serial
+imodaerap99.Jan-8-2019.daerap00_001  102G  daerap00_001  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A03
+imodaerap99.Jan-8-2019.daerap00_002  102G  daerap00_002  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A04
+imodaerap99.Jan-8-2019.daerap00_003  102G  daerap00_003  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A05
+imodaerap99.Jan-8-2019.daerap98_001  138G  daerap98_001  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A01
+imodaerap99.Jan-8-2019.daerap98_002  138G  daerap98_002  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A02
+imodaerap99.Jan-8-2019.daerap99_001  138G  daerap99_001  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B99FF
+imodaerap99.Jan-8-2019.daerap99_002  138G  daerap99_002  2019-01-08 15:31:47 CST  BBABD90D93D542ED002B9A00
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purevol copy imodaerap99.Jan-8-2019.daerap00_001 drenap99_003
+Name          Size  Source        Created                  Serial
+drenap99_003  102G  daerap00_001  2019-01-08 15:34:14 CST  BBABD90D93D542ED002B9A16
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purevol copy imodaerap99.Jan-8-2019.daerap00_002 drenap99_004
+Name          Size  Source        Created                  Serial
+drenap99_004  102G  daerap00_002  2019-01-08 15:34:21 CST  BBABD90D93D542ED002B9A17
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purevol copy imodaerap99.Jan-8-2019.daerap00_003 drenap99_005
+Name          Size  Source        Created                  Serial
+drenap99_005  102G  daerap00_003  2019-01-08 15:34:28 CST  BBABD90D93D542ED002B9A18
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purevol connect --host drenap99 drenap99_003 drenap99_004 drenap99_005
+Name          Host Group  Host      LUN
+drenap99_003  -           drenap99  3
+drenap99_004  -           drenap99  4
+drenap99_005  -           drenap99  5
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup snap --help
+usage: purepgroup snap [-h] [--replicate | --replicate-now] [--suffix SUFFIX]
+                       [--apply-retention]
+                       PGROUP ...
+
+positional arguments:
+  PGROUP             protection group name
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --replicate        arrange for this snapshot to be replicated when the
+                     replication schedule allows
+  --replicate-now    replicate this snapshot to the specified targets
+                     immediately
+  --suffix SUFFIX    snapshot suffix
+  --apply-retention  this snapshot will be retained and eradicated by the
+                     local and remote schedules
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup --help
+usage: purepgroup [-h]
+                  {allow,copy,create,destroy,disable,disallow,enable,eradicate,list,listobj,recover,rename,retain,schedule,setattr,snap}
+                  ...
+
+positional arguments:
+  {allow,copy,create,destroy,disable,disallow,enable,eradicate,list,listobj,recover,rename,retain,schedule,setattr,snap}
+    allow               allow a protection group to be replicated
+    copy                copy content of a protection group snapshot to a new
+                        protection group
+    create              create a protection group
+    destroy             destroy a protection group or snapshot
+    disable             disable a protection group snapshot and replication
+                        schedule
+    disallow            disallow a protection group from being replicated
+    enable              enable a protection group snapshot and replication
+                        schedule
+    eradicate           eradicate a destroyed protection group or snapshot
+    list                list protection groups
+    listobj             list objects associated with protection groups
+    recover             recover a protection group or snapshot
+    rename              rename a protection group
+    schedule            set a protection group snapshot and replication
+                        schedule and retention policy
+    retain              set a protection group snapshot and replication
+                        schedule and retention policy.
+    setattr             set protection group attributes
+    snap                take a manual snapshot of a protection group
+
+optional arguments:
+  -h, --help            show this help message and exit
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup destroy imodaerap99.Jan-8-2019
+Name
+imodaerap99.Jan-8-2019
+x1kxk630 on pgunap01:/home/x1kxk630 $ ${SSH2PURE} purepgroup destroy imodaerap99
+Name
+imodaerap99
+x1kxk630 on pgunap01:/home/x1kxk630 $</code>

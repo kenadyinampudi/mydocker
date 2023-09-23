@@ -1,0 +1,33 @@
+====== Change Legacy UUID of a cloned Virtual Machine ======
+
+** Background **
+
+  - As we clone an original VM's boot disk to a new Virtual Machine for duplicating an environment, the process also clones the VMX file that contains the Legacy "uuid.bios"
+  - VMware GUI will allocate a new "Persistent ID" - Yet, tools like "dmidecode" would pull the serial number using ''uuid.bios''
+  - This becomes a problem as Service Now CMDB discovery process uses "Serial Number" that is derived from "uuid.bios" to uniquely identify a Virtual Machine.
+
+** Fix **
+
+  - The easiest way to fix this is to edit the VMX file and change uuid.bios - but it is difficult ( not many has access) and error prone (typos in a config file)
+  - Here's the PowerCLI way to fix this.
+  - Power off the VM # It does not allow you to edit this while the VM is running.
+  - Login to vCenter<code>Connect-VIServer -server cdcvilms156.driv.com</code>Supply credentials<code>Specify Credential
+Please specify server credential
+User: driv\x1kxk630
+Password for user driv\x1kxk630: ******************
+
+
+Name                           Port  User
+----                           ----  ----
+cdcvilms156.driv.com           443   DRIV\x1kxk630</code>
+  - Find out the "Persistend ID of the VM"<code>Get-VM acdcinplxap01 | Select-Object PersistentId</code>The output looks like this<code>PersistentId
+------------
+50187ad0-6f4c-0884-3150-bf4b91ee9ada</code>
+  - Set some variable and run this snippet
+    - Name of the VM<code>$vmName="acdcinplxap01"</code>
+    - New UUID - this will be the Persistent ID as that is a unique one across the vCenter<code>$newUuid="50187ad0-6f4c-0884-3150-bf4b91ee9ada"</code>
+    - This part is from VMware articles - feel free to read about it<code>$spec = New-Object VMware.Vim.VirtualMachineConfigSpec
+$spec.uuid = $newUuid
+$vm = Get-VM -Name $vmName
+$vm.Extensiondata.ReconfigVM_Task($spec)</code>
+  - Power on the VM

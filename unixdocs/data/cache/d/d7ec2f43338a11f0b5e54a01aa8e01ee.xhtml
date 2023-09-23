@@ -1,0 +1,59 @@
+
+<h1 class="sectionedit1" id="if_relay1_server_goes_down_for_a_long_time">If relay1 server goes down for a long time</h1>
+<div class="level1">
+
+<p>
+Instructions from Dirk De Craemere on how to move the workload of relay1 to relay2.
+</p>
+
+<p>
+There is a script on the NIM server that takes the backups and push the config to a directory on relay2.
+</p>
+<pre class="code">pgnmsv01:/prod/images/scripts/backup_relayhosts</pre>
+
+<p>
+<strong> Failover </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Backup configuration files on relay2<pre class="code">for file in /etc/hosts /etc/httpd/conf.d/redir.conf /etc/httpd/conf.d/ssl.conf
+do
+   filename=$(basename ${file} )
+   sudo cp -p ${file} /usr/local/scripts/backups/${filename}.$(uname -n)
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure relay1&#039;s IP on relay2<pre class="code">sudo ifconfig eth0:1 170.64.0.70 netmask 255.255.255.192 up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Concatenate the config files on relay2.<pre class="code">for file in /etc/hosts /etc/httpd/conf.d/redir.conf /etc/httpd/conf.d/ssl.conf
+do
+   filename=$(basename ${file} )
+   cat /usr/local/scripts/backups/${filename}.relay1 | sudo tee -a ${file}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart Apache<pre class="code">sudo service httpd restart</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> Fall back services to relay1 </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Remove the IP address of relay1 from relay2<pre class="code">sudo ifconfig eth0:1 0.0.0.0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restore the config files<pre class="code">for file in /etc/hosts /etc/httpd/conf.d/redir.conf /etc/httpd/conf.d/ssl.conf
+do
+   filename=$(basename ${file} )
+   sudo cp -p /usr/local/scripts/backups/${filename} ${file}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart Apache<pre class="code">sudo service httpd restart</pre>
+</div>
+</li>
+</ol>
+
+</div>

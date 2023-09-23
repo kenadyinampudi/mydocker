@@ -1,0 +1,15 @@
+====== Additional steps to be performed on a NBU appliance based on RHEL on Wintel UEFI HP and Dell======
+  - For HP server you can use RHEL7.2 but for Dell servers you need to use RHEL 7.7 which is mandatory 
+    - Copy EFI related files to the buildiso directory for RHEL 7.2.<code>sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/images/ /var/cache/cobbler/buildiso/images/
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/EFI/ /var/cache/cobbler/buildiso/EFI/</code>
+    - Copy EFI related files to the buildiso directory for RHEL 7.7.<code>sudo rsync -avv /var/www/html/sources/rhel-7.7-x86_64/images/ /var/cache/cobbler/buildiso/images/
+sudo rsync -avv /var/www/html/sources/rhel-7.7-x86_64/EFI/ /var/cache/cobbler/buildiso/EFI/</code>
+  - Configure grub.cfg for UEFI boot<code>echo "menuentry ${shortname} --class fedora --class gnu-linux --class gnu --class os {" | sudo tee /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo linuxefi /images/pxeboot/vmlinuz $(sudo grep append /var/cache/cobbler/buildiso/isolinux/isolinux.cfg  | sed "s;append initrd=1.img ;;g") | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo "initrdefi /images/pxeboot/initrd.img" | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo "}" | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg</code>
+  - Create a fresh iso file which now has UEFI boot files<code>cd /var/cache/cobbler/buildiso
+sudo mkisofs -o /var/www/html/servers/${shortname}.iso -R -J -A "CobblerBuild" -hide-rr-moved \
+-v -d -N -no-emul-boot -boot-load-size 4 -boot-info-table -b isolinux/isolinux.bin -c isolinux/isolinux.boot \
+-eltorito-alt-boot -no-emul-boot -eltorito-boot images/efiboot.img -x /var/cache/cobbler/buildiso/isolinux -x \
+/var/cache/cobbler/buildiso/images -x /var/cache/cobbler/buildiso/EFI .</code>

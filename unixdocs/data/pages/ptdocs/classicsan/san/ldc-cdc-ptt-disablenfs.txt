@@ -1,0 +1,64 @@
+====== 30 mins prior to the outage -- Capture the state and disable NFS and create alt disk copy ======
+
+  - Login to the NIM server, and collect the information
+    - Set a variable for the server or servers<code>export servers="host1 host2 ......"</code>
+    - Create a temp work directory<code>mkdir -p pttmigration</code>
+    - Collect details and copy the Actifio package to the server<code>for host in ${servers}
+do
+   ssh ${host} "ifconfig -a" > pttmigration/${host}.ifconfiga
+   ssh ${host} "df -k"       > pttmigration/${host}.dfk
+   ssh ${host} "mount"       > pttmigration/${host}.mount
+   sudo scp /prod/images/Actifio/connector-AIX-latestversion.bff ${host}:/tmp
+done</code>
+  - Login to the respective server(s)<code>for host in ${servers}
+do
+   ssh ${host}
+done</code>Perform the following steps on each server
+    - Disable NFS<code>nfsfilesystems=$(grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | tr "\n" " " )
+
+for nfsfs in ${nfsfilesystems}
+do
+   sudo /usr/local/scripts/manage_auto_mount_nfs disable ${nfsfs}
+done
+
+sudo mv /etc/exports /etc/exports.move2cdc</code>
+    - Capture and create commands for re-creating the network<code>cat /dev/null | sudo tee /root/configure_ips.cmds
+
+host_name=$(uname -n)
+my_ip=$(host ${host_name} | awk '{print $3}' | sed "s;,;;g" )
+
+nics=$(ifconfig -a | grep ^en | awk '{print $1}'  | sed "s;:;;g" | tr "\n" " " )
+
+for nic in ${nics}
+do
+   ip_addr=$(lsattr -El ${nic} -a netaddr | awk '{print $2}' )
+   if [ "${ip_addr}" = "${my_ip}" ]
+   then
+      master_nic=${nic}
+      netmask=$(lsattr -El ${master_nic} -a netmask | awk '{print $2}' )
+      gateway=$(lsattr -El inet0 -a route | awk -F"," '{print $6}' | awk '{print $1}' )
+
+      echo "sudo /usr/sbin/mktcpip -h ${host_name} -a ${my_ip} -m ${netmask} -i en0 -g ${gateway} -A no -s " | sudo tee -a /root/configure_ips.cmds
+
+      additional_ips=$(ifconfig ${master_nic} | grep inet | grep -v ${my_ip} | awk '{print $2}' | tr "\n" " " )
+      for alias_ip in ${additional_ips}
+      do
+
+         echo "sudo ifconfig en0 alias ${alias_ip} netmask ${netmask} up"   | sudo tee -a /root/configure_ips.cmds
+
+      done
+   else
+      netmask=$(lsattr -El ${nic} -a netmask | awk '{print $2}' )
+      echo "sudo chdev -l en1 -a netaddr=${ip_addr} -a netmask=${netmask} -a state=up"   | sudo tee -a /root/configure_ips.cmds
+      additional_ips=$(ifconfig ${nic} | grep inet | grep -v ${ip_addr} | awk '{print $2}' | tr "\n" " " )
+      for alias_ip in ${additional_ips}
+      do
+         echo "sudo ifconfig en1 alias ${alias_ip} netmask ${netmask} up"    | sudo tee -a /root/configure_ips.cmds
+      done
+   fi
+done</code>
+    - Run an adhoc alt_disk_copy
+      - Find out the alt_disk<code>altdisk=$(lspv | grep -w altinst_rootvg | awk '{print $1}')</code>
+      - Remove the existing alt_disk<code>sudo alt_rootvg_op -X altinst_rootvg</code>
+      - Create an alt_disk<code>sudo alt_disk_copy -B -d ${altdisk}</code>
+

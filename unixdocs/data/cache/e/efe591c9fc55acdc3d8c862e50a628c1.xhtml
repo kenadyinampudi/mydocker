@@ -1,0 +1,43 @@
+
+<h1 class="sectionedit1" id="upgrade_fedora_from_21_-_23">Upgrade Fedora from 21 - 23</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> yum is being replaced by dnf. I think Fedora 21 has dnf, we just need to configure it.<pre class="code">sudo vi /etc/dnf/dnf.conf</pre>
+
+<p>
+Add the proxy information to it in the main section
+</p>
+<pre class="code">proxy=http://170.64.0.72:8080
+proxy_username=x1kxk630
+proxy_password=&lt;password&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> First of all, upgrade to the latest version of the current level<pre class="code">sudo dnf upgrade</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the DNF upgrade plugins<pre class="code">sudo dnf install dnf-plugin-system-upgrade</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Download the files for the upgrade<pre class="code">sudo dnf system-upgrade download --releasever=23 --best</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot and upgrade<pre class="code">sudo dnf system-upgrade reboot</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup after the upgrade</div>
+<ol>
+<li class="level2"><div class="li"> Remove unused packages<pre class="code">sudo rpm --rebuilddb
+sudo dnf distro-sync --setopt=deltarpm=0
+
+sudo dnf install rpmconf
+sudo rpmconf -a</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If you have chrome<pre class="code">sudo dnf remove google-chrome-\* &amp;&amp; sudo dnf install google-chrome-[beta,stable,unstable]</pre>
+</div>
+</li>
+</ol>
+
+</div>

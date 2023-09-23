@@ -1,0 +1,301 @@
+
+<h2 class="sectionedit1" id="expanding_linux_boot_disk">Expanding Linux Boot disk</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT1 SECTION "Expanding Linux Boot disk" [1-39] -->
+<h3 class="sectionedit2" id="why">Why ?</h3>
+<div class="level3">
+
+<p>
+Redhat (may be just RHEL5) supports resizing disks on the fly. But it does not support resizing the slices unless they are free from all volume managers or filesystems that uses it.
+</p>
+<pre class="code">Slice1 - sda1 - ext3 /boot
+Slice2 - sda2 - LVM sysvg</pre>
+
+<p>
+In some older systems it is,
+</p>
+<pre class="code">Slice1 - sda1 - ext3 /boot
+Slice2 - sda2 - swap
+Slice3 - sda3 - LVM sysvg</pre>
+
+<p>
+In order to increase sysvg by re-sizing the LVM slice, The LVM slice must be free. The following procedure illustrates how to move the LVM slice out of the sysvg, resize it and bring it back.
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Why ?" [40-613] -->
+<h3 class="sectionedit3" id="what_do_we_need">What do we need ?</h3>
+<div class="level3">
+
+<p>
+A temporary disk of the size equal to or more than LVM slice.
+</p>
+
+</div>
+<!-- EDIT3 SECTION "What do we need ?" [614-705] -->
+<h3 class="sectionedit4" id="procedure">Procedure</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Objective is to enlarge the boot disk from 32GB to 50GB. <pre class="code">sudo fdisk -l
+Disk /dev/sda: 34.3 GB, 34359738368 bytes
+255 heads, 63 sectors/track, 4177 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          13      104391   83  Linux
+/dev/sda2              14        4177    33447330   8e  Linux LVM</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the LVM slice in the sysvg <pre class="code">lvmslice=$(sudo vgdisplay -v sysvg | grep &#039;PV Name&#039; | awk &#039;{print $NF}&#039;)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get a new 32 <abbr title="Gigabyte">GB</abbr> disk to the system ( Big enough to hold /dev/sda2 - the LVM slice)</div>
+</li>
+<li class="level1"><div class="li"> Rescan the <abbr title="Small Computer System Interface">SCSI</abbr> bus for the new disk <pre class="code">echo &quot;- - -&quot; | sudo tee /sys/class/scsi_host/host0/scan</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify the new disk is visible to the <abbr title="Operating System">OS</abbr> <pre class="code">sudo fdisk -l
+Disk /dev/sda: 34.3 GB, 34359738368 bytes
+255 heads, 63 sectors/track, 4177 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          13      104391   83  Linux
+/dev/sda2              14        4177    33447330   8e  Linux LVM
+
+Disk /dev/sdb: 36.5 GB, 36507222016 bytes
+255 heads, 63 sectors/track, 4438 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes</pre>
+
+<p>
+ <strong>/dev/sdb is the new disk.</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Store the new disk name <pre class="code">export newdisk=/dev/&lt;newdiskname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the new disk to sysvg <pre class="code">sudo pvcreate ${newdisk}</pre>
+<pre class="code">sudo vgextend sysvg ${newdisk}</pre>
+
+<p>
+ Ignore the error messages about /dev/hdc and cdrom.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the PVs in sysvg and confirm new disk is in <pre class="code">sudo vgdisplay -v sysvg | sed -n &quot;/--- Physical volumes ---/,/^$/&quot;p
+    Using volume group(s) on command line
+    Finding volume group &quot;sysvg&quot;
+  --- Physical volumes ---
+  PV Name               /dev/sda2
+  PV UUID               bWmDiu-O46r-ke7f-c3xg-qZAQ-sWlf-k6ohve
+  PV Status             allocatable
+  Total PE / Free PE    1020 / 316
+
+  PV Name               /dev/sdb
+  PV UUID               F4CVXY-cBLQ-2mEc-ZqI5-3cBx-Ojf1-ILPurM
+  PV Status             allocatable
+  Total PE / Free PE    1087 / 1087</pre>
+
+<p>
+ /dev/sdb is in. 1087 of 1087 PEs are free.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Migrate (pvmove) LVM slice to new disk <pre class="code">sudo pvmove ${lvmslice} ${newdisk}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove /dev/sda2 from sysvg <pre class="code">sudo vgreduce sysvg ${lvmslice}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get VM Team to increase the Boot disk /dev/sda to 50G.</div>
+</li>
+<li class="level1"><div class="li"> Find out the LUN number <pre class="code">cat /proc/scsi/scsi
+Attached devices:
+Host: scsi0 Channel: 00 Id: 00 Lun: 00
+  Vendor: VMware   Model: Virtual disk     Rev: 1.0
+  Type:   Direct-Access                    ANSI SCSI revision: 02
+Host: scsi0 Channel: 00 Id: 01 Lun: 00
+  Vendor: VMware   Model: Virtual disk     Rev: 1.0
+  Type:   Direct-Access                    ANSI SCSI revision: 02</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rescan the LUN<pre class="code">echo &quot;1&quot; | sudo tee /sys/bus/scsi/devices/0\:0\:0\:0/rescan
+1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify the disk size has changed<pre class="code">sudo fdisk -l
+
+Disk /dev/sda: 53.6 GB, 53687091200 bytes
+255 heads, 63 sectors/track, 6527 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          13      104391   83  Linux
+/dev/sda2              14        4177    33447330   8e  Linux LVM
+
+Disk /dev/sdb: 36.5 GB, 36507222016 bytes
+255 heads, 63 sectors/track, 4438 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+Disk /dev/sdb doesn&#039;t contain a valid partition table </pre>
+
+<p>
+ <strong>/dev/sda has changed from 32G to 53.6G</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Delete LVM slice (sda2 in this example) , re-create LVM slice with the extended size and change the slice type to LVM (8e) - make sure the starting cylinder number is not changed.<pre class="code">**sudo fdisk /dev/sda**
+
+The number of cylinders for this disk is set to 6527.
+There is nothing wrong with that, but this is larger than 1024,
+and could in certain setups cause problems with:
+1) software that runs at boot time (e.g., old versions of LILO)
+2) booting and partitioning software from other OSs
+   (e.g., DOS FDISK, OS/2 FDISK)
+
+Command (m for help): **p**
+
+Disk /dev/sda: 53.6 GB, 53687091200 bytes
+255 heads, 63 sectors/track, 6527 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          13      104391   83  Linux
+/dev/sda2              14        4177    33447330   8e  Linux LVM
+
+Command (m for help): **d**
+Partition number (1-4): **2**
+
+Command (m for help): **n**
+Command action
+   e   extended
+   p   primary partition (1-4)
+**p**
+Partition number (1-4): **2**
+First cylinder (14-6527, default 14):**14**
+Using default value 14
+Last cylinder or +size or +sizeM or +sizeK (14-6527, default 6527):**6527**
+Using default value 6527
+
+Command (m for help): **p**
+
+Disk /dev/sda: 53.6 GB, 53687091200 bytes
+255 heads, 63 sectors/track, 6527 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          13      104391   83  Linux
+/dev/sda2              14        6527    52323705   83  Linux
+
+Command (m for help): **t**
+Partition number (1-4): **2**
+Hex code (type L to list codes): **8e**
+Changed system type of partition 2 to 8e (Linux LVM)
+
+Command (m for help): **p**
+
+Disk /dev/sda: 53.6 GB, 53687091200 bytes
+255 heads, 63 sectors/track, 6527 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          13      104391   83  Linux
+/dev/sda2              14        6527    52323705   8e  Linux LVM
+
+Command (m for help): **w**
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+
+WARNING: Re-reading the partition table failed with error 16: Device or resource busy.
+The kernel still uses the old table.
+The new table will be used at the next reboot.
+Syncing disks.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rescan the partitions using partprobe <pre class="code">sudo partprobe /dev/sda</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Resize LVM slice <pre class="code">sudo pvresize ${lvmslice}</pre>
+
+<p>
+ Ignore the error messages about /dev/cdrom.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the LVM slice back to sysvg<pre class="code">sudo vgextend sysvg ${lvmslice}</pre>
+
+<p>
+ Ignore the error messages about /dev/cdrom
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify LVM shows the increased size for the LVM slice<pre class="code">sudo vgdisplay -v sysvg | sed -n &quot;/--- Physical volumes ---/,/^$/&quot;p
+    Using volume group(s) on command line
+    Finding volume group &quot;sysvg&quot;
+  --- Physical volumes ---
+  PV Name               /dev/sdb
+  PV UUID               F4CVXY-cBLQ-2mEc-ZqI5-3cBx-Ojf1-ILPurM
+  PV Status             allocatable
+  Total PE / Free PE    1087 / 383
+
+  PV Name               /dev/sda2
+  PV UUID               bWmDiu-O46r-ke7f-c3xg-qZAQ-sWlf-k6ohve
+  PV Status             allocatable
+  Total PE / Free PE    1596 / 1596</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Migrate the data from new disk to LVM slice<pre class="code">sudo pvmove ${newdisk} ${lvmslice}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify new disk is empty <pre class="code">sudo vgdisplay -v sysvg | sed -n &quot;/--- Physical volumes ---/,/^$/&quot;p
+    Using volume group(s) on command line
+    Finding volume group &quot;sysvg&quot;
+  --- Physical volumes ---
+  PV Name               /dev/sdb
+  PV UUID               F4CVXY-cBLQ-2mEc-ZqI5-3cBx-Ojf1-ILPurM
+  PV Status             allocatable
+  Total PE / Free PE    1087 / 1087
+
+  PV Name               /dev/sda2
+  PV UUID               bWmDiu-O46r-ke7f-c3xg-qZAQ-sWlf-k6ohve
+  PV Status             allocatable
+  Total PE / Free PE    1596 / 892</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove new disk from sysvg <pre class="code">sudo vgreduce sysvg ${newdisk}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get VM Team to remove new disk from the VM</div>
+</li>
+<li class="level1"><div class="li"> Rescan the <abbr title="Small Computer System Interface">SCSI</abbr> bus<pre class="code">echo &quot;- - -&quot; | sudo tee /sys/class/scsi_host/host0/scan</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify the disk has disappeared <pre class="code">sudo fdisk -l
+
+Disk /dev/sda: 53.6 GB, 53687091200 bytes
+255 heads, 63 sectors/track, 6527 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          13      104391   83  Linux
+/dev/sda2              14        6527    52323705   8e  Linux LVM</pre>
+
+<p>
+ <strong>/dev/&lt;newdisk&gt; is gone.</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the temporary disk from LVM <pre class="code">sudo pvremove --force ${newdisk}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the temporary disk from the system <pre class="code">echo &quot;1&quot; | sudo tee /sys/block/$(echo ${newdevice} | sed &quot;s;/dev/;;g&quot;)/device/delete</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Procedure" [706-] -->

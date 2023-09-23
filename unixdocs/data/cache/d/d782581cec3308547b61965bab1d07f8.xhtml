@@ -1,0 +1,296 @@
+
+<h1 class="sectionedit1" id="redhat_upgrade_document_--_redhat_enterprise_linux_version_6_to_7_rhel6_to_rhel7">Redhat upgrade document -- Redhat Enterprise Linux version 6 to 7 ( RHEL6 to RHEL7 )</h1>
+<div class="level1">
+
+<p>
+<img src="/lib/images/smileys/fixme.gif" class="icon" alt="FIXME" />
+</p>
+
+<p>
+Do not do this until this message goes away
+</p>
+
+<p>
+From this redhat documentation <code><a href="https://access.redhat.com/solutions/637583" class="urlextern" title="https://access.redhat.com/solutions/637583"  rel="nofollow">https://access.redhat.com/solutions/637583</a></code>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Redhat upgrade document -- Redhat Enterprise Linux version 6 to 7 ( RHEL6 to RHEL7 )" [1-234] -->
+<h2 class="sectionedit2" id="stop_applications_and_prepare_for_backout">Stop applications and prepare for backout</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Shutdown applications.</div>
+</li>
+<li class="level1"><div class="li"> Plan with VMWARE team and perform a VMWARE snapshot</div>
+<ol>
+<li class="level2"><div class="li"> Shutdown the <abbr title="Operating System">OS</abbr></div>
+</li>
+<li class="level2"><div class="li"> Take a cold snapshot – Wintel / Unix.</div>
+</li>
+<li class="level2"><div class="li"> Power the system back on</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the server.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Stop applications and prepare for backout" [235-496] -->
+<h2 class="sectionedit3" id="upgrade_to_rhel_68_if_not_done_already">Upgrade to RHEL 6.8 if not done already</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Remove all the existing repositories except local.repo<pre class="code">sudo rm /etc/yum.repos.d/cobbler-config.repo
+sudo rm /etc/yum.repos.d/redhat.repo</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install RHEL 6.8&#039;s local.repo<pre class="code">sudo vi /etc/yum.repos.d/local.repo</pre>
+
+<p>
+Add this 
+</p>
+<pre class="code">[local-rhel-6.8-x86_64]
+name=local-rhel-6.8-x86_64
+baseurl=http://pablsv02/sources/rhel-6.8-x86_64/
+enabled=1
+gpgcheck=0
+proxy=_none_</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Clean and perform the update<pre class="code">sudo yum clean all
+sudo yum update -y</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot<pre class="code">sudo init 6</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Upgrade to RHEL 6.8 if not done already" [497-1058] -->
+<h2 class="sectionedit4" id="upgrade_from_rhel6_to_rhel7">Upgrade from RHEL6 to RHEL7</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT4 SECTION "Upgrade from RHEL6 to RHEL7" [1059-1100] -->
+<h3 class="sectionedit5" id="move_usr_filesystem_to_filesystem">Move /usr filesystem to &quot;/&quot; filesystem</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Move /usr filesystem to a directory</div>
+<ol>
+<li class="level2"><div class="li"> Enlarge the ”/” filesystem to accommodate contents of <code>/usr</code> filesystem<pre class="code">sudo lvextend -L 7G /dev/sysvg/root
+sudo resize2fs /dev/sysvg/root</pre>
+
+<p>
+Shutdown the server
+</p>
+<pre class="code">sudo init 0</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Once the system is down, Login to vSphere.<pre class="code">Select the VM 
+  --&gt; Edit Settings
+    --&gt; Select the CD/DVD drive
+      --&gt; Select Datastore ISO file
+        --&gt; Click on Browse
+          --&gt; Double click on &quot;ISO&quot; datastore
+            --&gt; Select &quot;rhel-server-6.8-x86_64-boot.iso&quot;
+              --&gt; Check &quot;Connect at power on&quot; under &quot;Device Status&quot;
+                --&gt; Click &quot;OK&quot;
+                  --&gt; Open a console and then power on the VM
+                    --&gt; At the console, when the system starts, hit &quot;ESC&quot; key once
+                      --&gt; At the boot menu, choose &quot;CDROM&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Boot through the DVD<pre class="code">Select &#039;Rescue Installed System&#039; --&gt; 
+  --&gt; Mount the root read &amp; write under /mnt/sysimage
+    --&gt; Open a Shell 
+      --&gt; Get to the prompt</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Copy /usr filesystem to ”/” filesystem<pre class="code">rsync -avv /mnt/sysimage/usr/ /mnt/sysimage/usrnew/</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmount and rename /usr filesystem<pre class="code">cp /mnt/sysimage/etc/fstab /mnt/sysimage/etc/fstab.backup</pre>
+
+<p>
+Edit fstab
+</p>
+<pre class="code">vi /mnt/sysimage/etc/fstab</pre>
+
+<p>
+Remove the line that starts with <code>/dev/mapper/sysvg-usr</code>
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmount /usr filesystem<pre class="code">umount /mnt/sysimage/usr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the directory<pre class="code">rmdir /mnt/sysimage/usr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Rename “usrnew” directory to “usr”<pre class="code">mv -f /mnt/sysimage/usrnew /mnt/sysimage/usr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Reboot<pre class="code">reboot</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Move /usr filesystem to / filesystem" [1101-2759] -->
+<h3 class="sectionedit6" id="install_and_run_pre-upgrade_scripts">Install and run pre-upgrade scripts</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Remove all existing repositories<pre class="code">sudo rm /etc/yum.repos.d/*.repo</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable the RHEL6, extras and optional repositories to perform pre-upgrade tasks<pre class="code">sudo vi /etc/yum.repos.d/rhel-6-7-upgrade.repo</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">[local-rhel-6.8-x86_64]
+name=local-rhel-6.8-x86_64
+baseurl=http://pablsv02/sources/rhel-6.8-x86_64/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-rhel-6-server-extras-rpms]
+name=local-rhel-6-server-extras-rpms
+baseurl=http://pablsv02/sources/rhel-6-server-extras-rpms/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-rhel-6-server-optional-rpms]
+name=local-rhel-6-server-optional-rpms
+baseurl=http://pablsv02/sources/rhel-6-server-optional-rpms/
+enabled=1
+gpgcheck=0
+proxy=_none_</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Re-create yum local cache and cleanup<pre class="code">sudo yum clean all</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the pre-upgrade packages.<pre class="code">sudo yum -y install preupgrade-assistant preupgrade-assistant-ui preupgrade-assistant-el6toel7</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run preupg command<pre class="code">sudo preupg</pre>
+
+<p>
+Answer “y” to this question
+</p>
+<pre class="code">Preupg tool doesn&#039;t do the actual upgrade.
+Please ensure you have backed up your system and/or data in the event of a failed upgrade
+ that would require a full re-install of the system from installation media.
+Do you want to continue? y/n</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy <code>/root/preupgrade/result.html </code> file to a PC and review the results. Take actions on reported errors.</div>
+</li>
+<li class="level1"><div class="li"> Install the upgrade tool<pre class="code">sudo yum install redhat-upgrade-tool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import the Redhat GPG key<pre class="code">sudo rpm --import http://&lt;buildserver&gt;/sources/rhel-6.8-x86_64/RPM-GPG-KEY-redhat-release</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Install and run pre-upgrade scripts" [2760-4389] -->
+<h3 class="sectionedit7" id="perform_the_upgrade">Perform the upgrade</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Run the upgrade tool<pre class="code">sudo redhat-upgrade-tool --network &lt;the-latest-rhel-7-version&gt; --instrepo ftp://ftp.example.com/pub/rhel7/</pre>
+
+<p>
+E.g.
+</p>
+<pre class="code">sudo redhat-upgrade-tool --network 7.2 --instrepo http://pablsv02/sources/rhel-7.2-x86_64</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Wait until this screen comes<pre class="code">Finished. Reboot to start upgrade.</pre>
+
+<p>
+Then reboot
+</p>
+<pre class="code">sudo init 6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Watch the upgrade process on the VM&#039;s console.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Perform the upgrade" [4390-4837] -->
+<h3 class="sectionedit8" id="perform_the_post-upgrade_tasks">Perform the post-upgrade tasks</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Once the server is up remove the repository<pre class="code">sudo rm /etc/yum.repos.d*.repo</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable the RHEL7 Repository<pre class="code">sudo vi local.repo</pre>
+<pre class="code">[local-rhel-7.2-x86_64]
+name=local-rhel-7.2-x86_64
+baseurl=http://pablsv02/sources/rhel-7.2-x86_64/
+enabled = 1
+gpgcheck=0
+proxy=_none_</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupresolv.conf" class="wikilink1" title="unix:setupresolv.conf">Setup resolv.conf</a></div>
+</li>
+<li class="level1"><div class="li"> On RHEL7<pre class="code">sudo yum install -y open-vm-tools</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable iptables<pre class="code">sudo systemctl disable iptables</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If the server has HTTPD, enable HTTPD service in systemd<pre class="code">sudo systemctl enable httpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupntp#redhat" class="wikilink1" title="unix:setupntp">Setup NTP</a></div>
+</li>
+<li class="level1"><div class="li"> Start snmpd</div>
+<ol>
+<li class="level2"><div class="li"> Enable it<pre class="code">sudo systemctl enable snmpd</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Start xinetd</div>
+<ol>
+<li class="level2"><div class="li"> Enable it<pre class="code">sudo systemctl enable xinetd</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform a reboot<pre class="code">sudo init 6</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT8 SECTION "Perform the post-upgrade tasks" [4838-5687] -->
+<h2 class="sectionedit9" id="handover_the_system_to_application_team">Handover the system to application team</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Have the application team perform functional testing.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT9 SECTION "Handover the system to application team" [5688-5800] -->
+<h2 class="sectionedit10" id="cleanup_the_snapshots">Cleanup the snapshots</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create a calendar reminder to cleanup the snapshots after 7 days.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT10 SECTION "Cleanup the snapshots" [5801-] -->

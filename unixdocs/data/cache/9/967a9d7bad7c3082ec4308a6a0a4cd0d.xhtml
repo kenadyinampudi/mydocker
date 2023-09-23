@@ -1,0 +1,167 @@
+
+<h1 class="sectionedit1" id="migrate_blade_from_ivm_to_hmc_control">Migrate Blade from IVM to HMC Control</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Get an IP Address in the 10.0.4.xxx subnet from the GIOS Network Services team for the Blade you aqre foing to convert. in this example taqprvio5-hmc 10.0.4.15 Netmask should be 255.255.252.0 and Gateway should be 10.0.4.1  hope4u2</div>
+</li>
+<li class="level1"><div class="li"> Login to the respective Bmade Center Console and cwexpand MM Control.</div>
+<ol>
+<li class="level2"><div class="li"> Select Chassis Int Network</div>
+<ol>
+<li class="level3"><div class="li"> Eanble Chassis Internal Network (CIN) and change from Disabled to Enabeled and save</div>
+</li>
+<li class="level3"><div class="li"> Under Chassis Internetwork (CIN) Configuration select the Index you are going to modify in this example  4 (taprvio5 resides in slot 4) </div>
+<ol>
+<li class="level4"><div class="li"> Change the <abbr title="Local Area Network">LAN</abbr> ID from 4094 to 4093 </div>
+</li>
+<li class="level4"><div class="li"> Change the IP Address from 0.0.0.0 to the New IP address. In this example 10.0.4.15 and save</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Select Blade Tasks  </div>
+<ol>
+<li class="level3"><div class="li"> Select Serial Over <abbr title="Local Area Network">LAN</abbr></div>
+</li>
+<li class="level3"><div class="li"> Select the Bay corresponding to the Blade you are converting In this example bay 4 </div>
+<ol>
+<li class="level4"><div class="li"> Under Available Actions Select Disable Serial Over <abbr title="Local Area Network">LAN</abbr> and perform Action</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> Select Configuration </div>
+<ol>
+<li class="level4"><div class="li"> Select Management Network</div>
+</li>
+<li class="level4"><div class="li"> Select the Bay corresponding to the Blde you are converting In this example bay 4 The heading ssould read Bay 4 - SN#YL10W734405U: Network Configuration</div>
+<ol>
+<li class="level5"><div class="li"> Change Eanble/Disable NIC to Enabled</div>
+</li>
+<li class="level5"><div class="li"> Change Enable/Disable IPV6 to Disabeled</div>
+</li>
+<li class="level5"><div class="li"> Save the changes</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> Set up IP </div>
+<ol>
+<li class="level4"><div class="li"> Change <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr>  From Eanbled - Obtain IP config from <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr> server   To Disabeled - Use static IP configuration</div>
+</li>
+<li class="level4"><div class="li"> Enter IP Address: - in this example 10.0.4.15</div>
+</li>
+<li class="level4"><div class="li"> Enter Subnet mask: - In this example 255.255.252.0</div>
+</li>
+<li class="level4"><div class="li"> Enter Gateway Address: - In this example 10.0.4.1 </div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Select the correct frame</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Aorigmigratebadetohmc&amp;media=unix:0bladenetworkconfiguration.png" class="media wikilink2" title="unix:0bladenetworkconfiguration.png"><img src="/lib/exe/fetch.php?media=unix:0bladenetworkconfiguration.png" class="media" alt="" /></a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Save your entries<pre class="code">General Settings
+
+Enable/Disable NIC: Enabled	
+Enable/Disable IPv6:Disabeled	
+VLAN ID: 	0
+Route traffic through: 	
+MAC address:	00:1a:64:44:e2:32
+
+IPv4
+
+DHCP: 	         Disabeled - Use static IP cofiguration
+IP address:      10.0.4.15	
+Subnet mask:	 255.255.252.0
+Gateway address: 10.0.4.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove IVM devices </div>
+<ol>
+<li class="level2"><div class="li"> Find the ibmvmc device&#039;s location code.  On the VIOS partition, access oem_setup_env shell, then run the following command as root<pre class="code">lscfg | grep ibmvmc0</pre>
+
+<p>
+ The output shold resemble ibmvmc0 U7998.61X.100113A-V1-C2 Virtual Management Channel. Record the location code in the second column
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Stop IVM In the VIOS partition access oem_setup_env shell, then run the following command as root: <pre class="code">/usr/ios/lpm/sbin/lparmgr accessprocess stop</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the ibmvmc device and adapter <pre class="code">rmdev -dev ibmvmc0 </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Access oem_setup_env shell, then run the following command as root: <pre class="code"> drmgr -c slot -r -s drc_name_for_ibmvmc0</pre>
+
+<p>
+where drc_name_for_ibmvmc0is the location code found in step 5 I. 
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Discover the blade. </div>
+<ol>
+<li class="level2"><div class="li"> In the HMC navigation area, click on Systems Management. In the work panel, select Servers then click the task Connections &gt; Add Managed System </div>
+</li>
+<li class="level2"><div class="li"> On the Add Managed Systems panel, select Add a managed system then specify the blade FSP IP address configured in step 2.  If this is the first HMC to connect to the blade, leave the password field blank and click OK. Click Add. </div>
+</li>
+<li class="level2"><div class="li"> In the navigation panel, click on Servers. </div>
+</li>
+<li class="level2"><div class="li"> Wait for an IP address to appear in the list with a state of “Pending Authentication” with status “Pending Authentication - Password Updates Required”. This may take several minutes. </div>
+</li>
+<li class="level2"><div class="li"> Select the IP address and click Update Password.  The user will be prompted to set the HMC Access password . Enter the HMC access password and confirm password. If prompted to set the password for “general” set that as well. </div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li">  Ensure RMC is active </div>
+<ol>
+<li class="level2"><div class="li"> Verify the HMC and VIOS partition have network connectivity. </div>
+</li>
+<li class="level2"><div class="li"> Wait up to 10 minutes for RMC to go active.  To check status of the RMC connection run the following command: <pre class="code">lssyscfg -m &lt;SYSNAME&gt; -r lpar -F rmc_state,rmc_ipaddr --filter lpar_ids=1</pre>
+
+<p>
+ where &lt;SYSNAME&gt; is the system name. It will show “active” once the connection is established: active,x.x.x.x      
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li">  Confirm VASI adapter is active </div>
+</li>
+</ol>
+
+<p>
+     Note: This is needed before logical partition mobility (LPM) can be used; it may also cause errors attempting dynamic logical partition functions (dlpar) on virtual adapters on VIOS.
+</p>
+<ol>
+<li class="level1"><div class="li"> Check adapter status From the VIOS Command line run the following command <pre class="code"> $ lsdev -field name status physloc | grep vasi | grep C32</pre>
+
+<p>
+ The results should be similiar to 
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+     vasi1 Available U7891.73X.10D36AA-V1-C32769 
+</p>
+<pre class="code">   If you do see an Available vasi adapter in a slot that ends in C32XXX, the procedure is complete.
+   If you do NOT see a vasi adapter that ends in C32XXX, it can be added using the HMC. Continue to step 2. 
+- b. Creating the VASI adapter. 
+ - This procedure can be done using either the HMC GUI or Command line (CLI).
+   Using the HMC GUI: 
+    1. Select the VIOS partition then click Properties. On the properties panel un-check Mover Service Partition and click OK. 
+    2. Click Properties again. On the properties panel check Mover Service Partition and click OK. 
+   HMC CLI:&lt;code&gt;chsyscfg -m &lt;system name&gt; -r lpar -i lpar_id=1,msp=0&lt;/code&gt; &lt;code&gt;chsyscfg -m &lt;system name&gt; -r lpar -i lpar_id=1,msp=1&lt;/code&gt;</pre>
+
+</div>

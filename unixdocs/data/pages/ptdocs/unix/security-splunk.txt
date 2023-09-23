@@ -1,0 +1,49 @@
+====== Splunk ======
+
+  - Create the splunk filesystem<code>sudo pvcreate -f /dev/sdb
+sudo vgcreate datavg01 /dev/sdb
+sudo lvcreate -l 100%FREE -n opt_splunk /dev/datavg01
+sudo mkfs -t ext4 /dev/datavg01/opt_splunk
+echo "/dev/mapper/datavg01-opt_splunk        /opt/splunk          ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir /opt/splunk
+sudo mount /opt/splunk</code>
+  - Create security accounts, groups for service and team members<code>sudo groupadd -g 6786 hg_dm
+sudo useradd -g secteam -d /opt/splunk    -c "Splunk Account"      -m -u 6747 splunk
+sudo useradd -g secteam -d /home/jhahn    -c "John Hahn"           -m -u 6692 jhahn
+sudo useradd -g secteam -d /home/kevimitc -c "Kevin Mitchel"       -m -u 6858 kevimitc
+sudo useradd -g secteam -d /home/abdumush -c "Abdul Mushtaq"       -m -u 6950 abdumush
+sudo useradd -g hg_dm   -d /home/hg_dm    -c "Herjavec Group"      -m -u 6786 hg_dm
+sudo useradd -g secteam -d /home/ses8739  -c "Steven E Satkiewicz" -m -u 6145 ses8739</code>
+  - Set an initial password for security team<code>for user in splunk jhahn kevimitc abdumush hg_dm ses8739
+do
+   echo "${user}:sa/1Ryd7Wk0z." | sudo chpasswd -e
+done</code>
+  - Disable Transparent hugepages<code>sudo vi /etc/default/grub</code>Add this to the end of the line that starts with ''GRUB_CMDLINE_LINUX ''<code>transparent_hugepage=never</code>
+    - Or use this short cut<code>sudo ex -sc "/GRUB_CMDLINE_LINUX/s/\"$/ transparent_hugepage=never\"/|x" /etc/default/grub</code>
+  - Rebuild the grub.cfg file<code>sudo grub2-mkconfig -o /boot/grub2/grub.cfg</code>
+  - Update limits for splunk user<code>cat << EOF | sudo tee -a /etc/security/limits.conf
+splunk          soft    nofile           64000
+splunk          hard    nofile           64000
+splunk          soft    nproc            16000
+splunk          hard    nproc            16000
+splunk          soft    data             1073741824
+splunk          hard    data             1073741824
+EOF</code>
+  - Install EPEL repositories<code>cat << EOF | sudo tee -a /etc/yum.repos.d/epel-rhel7.repo
+[local-tenneco-epel-rhel7]
+name=local-tenneco-nbu
+baseurl=http://pcdcunxlxap01/sources/epel-rhel7/
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</code>
+  - Install Splunk repositories<code>cat << EOF | sudo tee -a /etc/yum.repos.d/splunk.repo
+[local-tenneco-splunk]
+name=local-tenneco-nbu
+baseurl=http://pcdcunxlxap01/sources/splunk/
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</code>
+  - Install splunk and syslog-ng packages<code>sudo yum clean all
+sudo yum install splunk syslog-ng</code>

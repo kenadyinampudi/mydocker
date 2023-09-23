@@ -1,0 +1,118 @@
+====== IMO Project clones - DRiV - RHEL build documentation -- Mock build - cloned VM ======
+
+  * In most cases , the DNS name and IP addresses are already secured.
+  * Firewall is in place, there is no need for host level network isolations.
+
+===== Build the VM =====
+
+  - Most builds are clones of systems from Legacy Tenneco.
+  - Email the Wintel project resource to build a clone in the FMMP vCenter
+
+===== Setup console database =====
+
+  - Login to the DRiV NIM server ''pcdcunxaxap01''
+  - Export a variable to store the system and vCenter hostname
+    - Legacy FMMP vCenter<code>export vcenter=cdcvilms156.fmmp.fmmotorparts.com</code>
+    - DRiV vCenter<code>export vcenter=egdcilms010.driv.com</code>
+  - Export a variable pointing to the hostname to be built<code>export tgtsystem=name_of_the_system</code>
+  - Add the system to console database<code>echo "${tgtsystem}:std-vmware-vsphere:${vcenter}:ADACCOUNT" | sudo tee -a /prod/images/etc/unix_sys_console</code>
+
+===== Power on the VM and change the hostname and remove Network configs =====
+
+  - Login to vCenter ''cdcvilms156.fmmp.fmmotorparts.com''
+    - Select the VM -> Edit settings and remove the NIC.
+  - Power on the VM and access console, login as root.
+  - Change hostname<code>hostname <new_host_name>
+echo "new_host_name" > /etc/hostname</code>
+  - Remove network definitions<code>rm -i /etc/sysconfig/network-scripts/ifcfg-e*</code>
+
+==== Remove monitoring and cron and clean NFS  ====
+
+  - Remove openview software<code>/opt/OV/bin/OpC/install/oasetup.sh -remove</code>
+  - Disable crond<code>systemctl disable crond</code>
+  - Shutdown the server<code>init 0</code>
+
+==== Add the NICs and boot the system ====
+
+  - [[unix:driv:infrastructureservices|Subnets are documented here]]
+  - Access vCenter and NIC(s)
+    - First NIC should be the one on which the hostname's IP resolves to.
+    - Once done -- Power on the VM
+
+==== Access console and configure network interfaces. ====
+
+  - Login as root and temporarily assign IP address
+    - List the interfaces<code>ip link show</code>You should see something like this<code>1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: ens224: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether 00:50:56:98:42:78 brd ff:ff:ff:ff:ff:ff
+3: ens225: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether 00:50:56:98:42:78 brd ff:ff:ff:ff:ff:ff</code>
+    - The second interface "ens224" is the primary NIC
+    - Configure IP address<code>ifconfig ens224 a.b.c.d netmask 255.255.255.0 up</code>
+    - Configure gateway<code>route add -net 0.0.0.0 gw a.b.c.1</code>
+
+==== Tasks from the NIM server ====
+
+  - Login to DRiV NIM server pcdcunxaxap01 and define a variable pointing to the system you are building<code>export tgtsystem=<host_name></code>
+  - Create a hosts file<code>echo "127.0.0.1               loopback localhost" > hostsfile.${tgtsystem}
+host ${tgtsystem} | awk '{print $3"\t"$1,$1"d"}' | sed "s;.driv.comd;;g" | sed "s;,;;g" >> hostsfile.${tgtsystem}</code>
+  - Copy the hosts file<code>sudo scp hostsfile.${tgtsystem} ${tgtsystem}:/etc/hosts</code>
+  - Enable DNS, NTP<code>sudo scp /prod/images/etc/resolv.conf.driv ${tgtsystem}:/etc/resolv.conf
+sudo scp /prod/images/etc/ntp.conf.rhel.driv ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com "ntpdate -u cdcvildns001.fmmotorparts.com"
+sudo ssh ${tgtsystem}.driv.com "systemctl restart ntpd"</code>
+
+==== Post installation - generic tasks from the host ====
+
+  - Login to the host<code>ssh ${tgtsystem}</code>
+  - Configure the primary interface<code>my_ip=$(grep $(uname -n) /etc/hosts | awk '{print $1}' )
+my_iface=$(sudo ip link show | grep ^2: | awk '{print $2}'  | sed "s;:;;g")
+my_network=$(echo ${my_ip} | awk -F "." '{print $1"."$2"."$3".0"}')
+echo "DEVICE=${my_iface}"        | sudo tee    /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "BOOTPROTO=static"          | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "IPADDR=${my_ip}"           | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "NETMASK=255.255.255.0"     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "NETWORK=${my_network}"     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "ONBOOT=yes"                | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}</code>
+  - Configure default gateway<code>echo ${my_ip} | awk -F "." '{print "GATEWAY="$1"."$2"."$3".1" }' | sudo tee /etc/sysconfig/network</code>Restart network services<code>sudo systemctl restart network</code>
+  - Remove cron jobs for application accounts<code>for file in $(sudo ls -1 /var/spool/cron/ | egrep -v "^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$")
+do
+   sudo rm -i /var/spool/cron/${file} # Remove the -i if you are confident
+done</code>
+  - Enable cron<code>sudo systemctl enable crond</code>
+  - Review the checklist and perform whatever work is needed, NFS mounts etc.
+    - [[unix:imoaixbuildclonefordriv-networkisolated-accenturebasisusers-rhel|If requested, create Accenture Basis accounts]]
+    - In most cases, you will need to configure virtual IPs
+      - Export a variable to automate<code>virtual_ip="e.f.g.h"</code>
+      - Create the configuration<code>my_iface=$(sudo ip link show | grep ^2: | awk '{print $2}'  | sed "s;:;;g")
+echo "DEVICE=${my_iface}:0"        | sudo tee    /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0
+echo "BOOTPROTO=static"            | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0
+echo "IPADDR=${virtual_ip}"        | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0
+echo "NETMASK=255.255.255.0"       | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0
+echo "ONBOOT=yes"                  | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0</code>Bring up the interface<code>sudo ifup ${my_iface}:0 ; sudo systemctl restart network</code>
+    - Reconfigure syslog<code>sudo cp /etc/rsyslog.conf /etc/rsyslog.conf.$(date +%M%d%Y)
+sudo sed -i '/pglgsv01/d' /etc/rsyslog.conf
+sudo sed -i '/pcdcunxlxap04/d' /etc/rsyslog.conf
+echo "*.*         @unixlogs.driv.com" | sudo tee -a /etc/rsyslog.conf
+sudo systemctl restart rsyslog</code>
+    - NFS mounts 
+      - Remove all NFS mounts from fstab<code>sudo cp /etc/fstab /etc/fstab.$(date +%m%d%Y)
+cat /etc/fstab | grep -v nfs > 1
+sudo cp 1 /etc/fstab</code>Check fstab<code>cat /etc/fstab</code>
+      - Add any NFS mounts requested. A sample entry is here<code>qaerdb01:/sapmnt/FTA/exe /sapmnt/FTA/exe nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp</code>Add this to /etc/fstab and mount each filesystem
+    - NFS exports
+      - Add any NFS exports requested<code>sudo vi /etc/exports</code>A sample entry would be<code>/sapmnt/PS1 pcdcps1axdb01(rw,no_root_squash)</code>
+  - Create solarwinds account for monitoring<code>sudo useradd -K PASS_MAX_DAYS=-1 -g users -d /home/solwinds -c "Solarwinds - ssh monitoring account" -m -u 6851 solwinds
+echo "solwinds:sa3qlTY77TwFs" | sudo chpasswd -e
+sudo chage -I -1 -m 0 -M 99999 -E -1 solwinds
+sudo usermod -U solwinds
+sudo passwd -u solwinds</code>
+  - Update local repositories to point to the cobbler at DRiV<code>
+[[ -f /etc/yum.repos.d/local.repo   ]]   && sudo sed -i 's/pablsv02/pcdcunxlxap01/' /etc/yum.repos.d/local.repo
+[[ -f /etc/yum.repos.d/sap.repo     ]]   && sudo sed -i 's/pablsv02/pcdcunxlxap01/' /etc/yum.repos.d/sap.repo
+[[ -f /etc/yum.repos.d/saphana.repo ]]   && sudo sed -i 's/pablsv02/pcdcunxlxap01/' /etc/yum.repos.d/saphana.repo</code>
+  - [[unix:lpar2rrd-os-agent&#installing_lpar2rrd_agent_-_rhel|Setup lpar2rrd agent]]
+  - Perform a final reboot<code>sudo init 6</code>
+  - Send an email to John Ziegler and Koushik to setup monitoring.
+  - Send an email to giosdatapres@tenneco.com to setup backups.

@@ -1,0 +1,12 @@
+<code>cat migratepv.datavg01.mapping | while read line
+do
+   echo "$(date)   :   Migrating ${line} ..."
+   sourcedisk=$(echo ${line} | awk '{print $1}' )
+   targetdisk=$(echo ${line} | awk '{print $2}' )
+   echo "$(date)   :   Adding ${targetdisk} to datavg01 ..."
+   sudo extendvg datavg01 ${targetdisk}
+   echo "$(date)   :   Migrating ${sourcedisk} to ${targetdisk} in datavg01 ..."
+   sudo migratepv ${sourcedisk} ${targetdisk} 
+   echo "$(date)   :   Removing ${sourcedisk} from datavg01 ..."
+   sudo reducevg datavg01 ${sourcedisk}
+done</code>

@@ -1,0 +1,113 @@
+
+<p>
+<strong>taprvio140 / taprvio141 cluster supports the following  tagged  vlans:
+4(Native)
+48, 
+49,  
+406,  
+460,  
+450,  
+451</strong>
+</p>
+
+<p>
+<a href="/lib/exe/fetch.php?media=unix:itc_-_lincolnshire_ibm_mmd_-_ta2_frame_-_unix_chassis_taprvio140_and_141_final.pdf" class="media mediafile mf_pdf" title="unix:itc_-_lincolnshire_ibm_mmd_-_ta2_frame_-_unix_chassis_taprvio140_and_141_final.pdf">{{:unix:itc_-_lincolnshire_ibm_mmd_-_ta2_frame_-_unix_chassis_taprvio140_and_141_final.pdf|</a>}}
+</p>
+
+<p>
+taprvio140-trunk 802.3ad going to switch#1 native vlan=4,tagged vlans=48,406,450
+</p>
+<pre class="code">U3.1 - 29 - Core Switch#1 - ent0 (top port Location...U2C4E.001.DBJX011-P2-C4-T1)						
+U3.1 - 30 - Core Switch#1 - ent1 (2nd port Location...U2C4E.001.DBJX011-P2-C4-T1)</pre>
+
+<p>
+taprvio140 - trunk 802.3ad going to switch#2 tagged vlans=49,451,460
+</p>
+<pre class="code">U3.1 - 31 - Core Switch#2 - ent2 (3rd port Location...U2C4E.001.DBJX011-P2-C4-T1)			
+U3.1 - 32 - Core Switch#2 - ent3 (4th port Location...U2C4E.001.DBJX011-P2-C4-T1)	</pre>
+
+<p>
+as padmin: For vlans: 48,  406,  450
+</p>
+<pre class="code">mkvdev -lnagg ent0 ent1 -attr mode=8023ad
+ent4 Available
+en4
+et4</pre>
+
+<p>
+as padmin: For backup vlans: 49,  460,  451
+</p>
+<pre class="code">mkvdev -lnagg ent2 ent3 -attr mode=8023ad
+ent5 Available
+en5
+et5</pre>
+
+<p>
+In HMC create two virtual adapters:
+1)  Vadapter ID=2, VLANID=1, 802.1q compatible, supported vlans=48,  406,  450, priority=1
+2)  Vadapter ID=3, VLANID=2, 802.1q compatible, supported vlans=49,  451,  460, priority=2
+</p>
+<pre class="code">ent4             Available   EtherChannel / IEEE 802.3ad Link Aggregation  &lt;--- production vlans 48,406,450
+ent5             Available   EtherChannel / IEEE 802.3ad Link Aggregation  &lt;--- backup vlans 49,451,460
+ent6    Available       Virtual I/O Ethernet Adapter (l-lan)
+ent7    Available       Virtual I/O Ethernet Adapter (l-lan)
+ent8    Available       Virtual I/O Ethernet Adapter (l-lan)  &lt;--- control 99
+ent9    Available       Virtual I/O Ethernet Adapter (l-lan)  &lt;--- control 98</pre>
+
+<p>
+taprvio140
+</p>
+<hr />
+<pre class="code">entstat -all ent6 | grep -iE &quot;Priority|Port VLAN ID&quot;
+  Priority: 1  Active: True
+  Port VLAN ID:     1</pre>
+<pre class="code">entstat -all ent7 | grep -iE &quot;Priority|Port VLAN ID&quot;
+  Priority: 2  Active: True
+  Port VLAN ID:     2</pre>
+
+<p>
+taprvio141
+</p>
+<hr />
+<pre class="code">entstat -all ent6 | grep -iE &quot;Priority|Port VLAN ID&quot;
+  Priority: 2  Active: False
+  Port VLAN ID:     1</pre>
+<pre class="code">entstat -all ent7 | grep -iE &quot;Priority|Port VLAN ID&quot;
+  Priority: 1  Active: False
+  Port VLAN ID:     2</pre>
+
+<p>
+Create the Shared Ethernet Adapter for vlans=48,  406,  450
+</p>
+<pre class="code">mkvdev -sea ent4 -vadapter ent6 -default ent6 -defaultid 1 -attr ha_mode=auto ctl_chan=ent8 largesend=1 large_receive=yes
+ent10 Available
+en10
+et10</pre>
+
+<p>
+Create the Shared Ethernet Adapter for vlans=49,  451,  460
+</p>
+<pre class="code">mkvdev -sea ent5 -vadapter ent7 -default ent7 -defaultid 2 -attr ha_mode=auto ctl_chan=ent9 largesend=1 large_receive=yes
+ent11 Available
+en11
+et11</pre>
+
+<p>
+Configure IP on front end SEA (ent10) 
+</p>
+<pre class="code">smitty tcpip</pre>
+
+<p>
+Increase paging space to 16Gig on hd6 device
+</p>
+<pre class="code">chps -s 32 hd6</pre>
+
+<p>
+<strong>paap3p01-mmd - Fiber Configuration</strong>
+</p>
+<pre class="code">taprvio140:Adapter_ID=6 paap3p01-mmd:Adapter_ID=4
+taprvio140:Adapter_ID=7 paap3p01-mmd:Adapter_ID=5
+taprvio141:Adapter_ID=6 paap3p01-mmd:Adapter_ID=6
+taprvio141:Adapter_ID=7 paap3p01-mmd:Adapter_ID=7</pre>
+<pre class="code">vfcmap -vadapter vfchost0 -fcp fcs0</pre>
+<pre class="code">vfcmap -vadapter vfchost1 -fcp fcs1</pre>

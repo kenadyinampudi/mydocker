@@ -1,0 +1,88 @@
+====== Redhat notes - Secret - secret - don't look ======
+
+====== Building cobbler 2.6.11 (testing on kapiltest1) ======
+
+===== Build a RHEL6 system =====
+
+  - Login to the existing build server and define a new server<code>sudo cobbler system add --name=kapiltest1 --profile=rhel-6.6-x86_64 --netboot-enabled=False --name-servers=10.32.8.53 \
+--name-servers-search=amer.int.tenneco.com --gateway=10.32.40.1 --interface=eth0 --management=True --static=True \
+--mac=08:00:27:CF:50:41 --ip-address=10.32.40.40 --netmask=255.255.255.0 --server=pablsv01.amer.int.tenneco.com</code>
+  - Build an iso file for install<code>sudo cobbler buildiso --systems="kapiltest1" --iso=/var/www/html/servers/kapiltest1.iso</code>
+  - Copy the iso file to the hypervisor<code>scp /var/www/html/servers/kapiltest1.iso kaps-fedora-dt01:Downloads/</code>
+  - Boot from the CD and perform an install
+  - [[unix:postinstallationsteps-redhat|Complete the post installation activities.]]
+
+===== Configure a HTTP based repository =====
+
+  - Create a filesystem ''/var/www'' on the datavg<code>sudo fdisk -l | grep sd | grep -v Linux
+Disk /dev/sda: 75.2 GB, 75161927680 bytes
+Disk /dev/sdb: 107.4 GB, 107374182400 bytes</code>Pick sdb, create pv<code>sudo pvcreate /dev/sdb</code>Create datavg<code>sudo vgcreate datavg01 /dev/sdb</code>Create LV<code>sudo lvcreate -L 50G -n data01 /dev/datavg01</code>Create filesystem<code>sudo mkfs -t ext4 /dev/datavg01/data01</code>Make entry in fstab<code>echo "/dev/mapper/datavg01-data01   /var/www              ext4    defaults        1 2" | sudo tee -a /etc/fstab</code>Mount it<code>sudo mkdir -p /var/www
+sudo mount /var/www</code>
+  - Install httpd and createrepo<code>sudo yum -y install httpd createrepo</code>
+  - Copy the RHEL DVD from NFS datastore<code>scp pgnmsv01:/prod/images/cds/redhat/cds/rhel*6.6*.iso /var/tmp</code>
+  - Mount the DVD<code>sudo mkdir -p /cdrom ; sudo mount -r -t iso9660 -o loop -v /var/tmp/rhel-server-6.6-x86_64-dvd.iso /cdrom</code>
+  - Copy the contents of the cdrom to DocumentRoot<code>sudo mkdir -p /var/www/html/sources/rhel-6.6-x86_64
+sudo rsync -avv /cdrom/ /var/www/html/sources/rhel-6.6-x86_64/</code>
+  - Create repository<code>sudo createrepo /var/www/html/sources/rhel-6.6-x86_64</code>
+  - Enable & start httpd<code>sudo chkconfig --level 2345 httpd on
+sudo service httpd start</code>
+
+===== Download and install the latest RHEL patches =====
+
+  - Get RHEL 6.8 DVD from pgnmsv01<code>scp pgnmsv01:/prod/images/cds/redhat/cds/rhel*6.8*.iso /var/tmp</code>
+  - Mount it<code>sudo mount -r -t iso9660 -o loop -v /var/tmp/rhel-server-6.8-x86_64-dvd.iso  /cdrom</code>
+  - Copy the contents of cdrom to DocumentRoot<code>sudo rsync -avv /cdrom/ /var/www/html/sources/rhel-6.8-x86_64/</code>
+  - Create the RHEL 6.8 repository<code>sudo createrepo /var/www/html/sources/rhel-6.8-x86_64</code>
+  - Change local.repo point to RHEL 6.8<code>sudo vi /etc/yum.repos.d/local.repo</code>From<code>[local-rhel-6.6-x86_64]
+name=local-rhel-6.6-x86_64
+baseurl=http://pablsv01/sources/rhel-6.6-x86_64/
+enabled=1
+gpgcheck=0
+[local-tenneco-noarch]
+name=local-tenneco-noarch
+baseurl=http://pablsv01/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0</code>To<code>[local-rhel-6.8-x86_64]
+name=local-rhel-6.8-x86_64
+baseurl=http://kapiltest1/sources/rhel-6.8-x86_64/
+enabled=1
+gpgcheck=1
+proxy=_none_</code>
+  - Clean and list contents<code>sudo yum clean all
+sudo yum list all</code>
+  - Update to RHEL8<code>sudo yum update</code>Reboot<code>sudo init 6</code>
+
+
+===== Install latest version of cobbler =====
+
+  - Cobbler comes from the EPEL package ''https://fedoraproject.org/wiki/EPEL''
+  - Enable proxy for RPM temporarily<code>export https_proxy=http://username:password@170.64.0.72:8080/</code>Use "\" to escape shell specific characters
+  - Install EPEL repository for RHEL6<code>sudo rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm</code>
+  - Enable proxy for yum<code>sudo vi /etc/yum.conf</code>Add these<code>proxy=http://170.64.0.72:8080
+proxy_username=<username>
+proxy_password=<password></code>
+  - Install cobbler<code>sudo yum install cobbler</code>
+  - Check<code>sudo cobbler check</code>
+  - Add servername in ''/etc/cobbler/settings''
+  - Stop cobbler<code>sudo cobblerd stop</code>If it doesn't die, kill it
+  - Start cobbler & sync<code>sudo cobblerd start
+sudo cobbler sync</code>
+  - Run check again<code>sudo cobbler check</code>
+
+===== Create kickstart files for RHEL =====
+
+  - Create the kickstart file for RHEL6<code>sudo vi /var/lib/cobbler/kickstarts/tenneco.rhel-6.ks</code>
+    - [[kapil:kickstartrhel6|Use this for RHEL6]]
+  - Create the kickstart file for RHEL7<code>sudo vi /var/lib/cobbler/kickstarts/tenneco.rhel-7.ks</code>
+    - [[kapil:kickstartrhel7|Use this for RHEL7]]
+
+===== Import RHEL 6.8 & RHEL 7.2 distribution =====
+
+  - Import RHEL 6.8 distribution<code>sudo cobbler import --path=/var/www/html/sources/rhel-6.8-x86_64 --name=rhel-6.8-x86_64 --arch=x86_64</code>
+  - Attach a kickstart for RHEL 6.8 profile<code>sudo cobbler profile edit --name rhel-6.8-x86_64 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-6.ks</code>
+  - Copy the rhel7 DVD<code>scp pgnmsv01:/prod/images/cds/redhat/cds/rhel-server-7.2-x86_64-dvd.iso /var/tmp</code>
+  - Mount & copy the contents<code>suod umount /cdrom ; sudo mount -r -t iso9660 -o loop -v /var/tmp/rhel-server-7.2-x86_64-dvd.iso  /cdrom</code>
+  - Copy the contents of cdrom to DocumentRoot<code>sudo rsync -avv /cdrom/ /var/www/html/sources/rhel-7.2-x86_64/</code>
+  - Create the RHEL 7.2 repository<code>sudo createrepo /var/www/html/sources/rhel-7.2-x86_64</code>
+  - Import RHEL 7.2 distribution<code>sudo cobbler import --path=/cdrom --name=rhel-7.2-x86_64 --arch=x86_64</code>
+  - Attach a kickstart for RHEL 7.2 profile<code>sudo cobbler profile edit --name rhel-7.2-x86_64 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-7.ks</code>

@@ -1,0 +1,144 @@
+====== My netbackup notes -- don't believe them ======
+
+==== Some basic commands - recovery ====
+
+  - List backup policies<code>sudo bppllist</code>
+  - Most SAP related backup policies follow a naming standard ''SAP_C11'' ''SAP_PTA'' likewise
+  - List details of a policy in human readable format<code>sudo bppllist SAP_C11_FLASHCP -U</code>
+  - List currently active jobs<code>bpdbjobs |grep Active</code>
+  - Cancel a backup job<code>sudo bpdbjobs -cancel <id></code>
+  - If you were to restore a backup for a given host, say SAP_TA2, this is how you do it.
+    - Login to the media-server from which it was backed up, In this case it is, teprbk01.
+    - List the backups in the last 96 hours<code>sudo bpimagelist -policy SAP_TA2 -hoursago 96 -U</code>
+    - List in a different format<code>sudo bpimagelist -policy SAP_TA2 -hoursago 96 -idonly</code>
+    - To see what is backed up on each streams that you see on the above output<code>sudo bplist -C teprbk01 -t 17 -k SAP_TA2 -s 02/07/2016 16:23:12 -e 02/07/2016 16:23:12 -R /</code>
+    - To restore this on a different system,
+      - First drop a file on the master server, taqa1d01 at this location<code>sudo touch /usr/openv/netbackup/db/altnames/No.Restrictions</code>This allows any client to be restored anywhere.
+      - Login to the target system<code>sudo bprestore –B –L /tmp/ta2_progress_1st-stream.log –C teprbk01 –t 17 –p SAP_TA2 -s 02/07/2016 16:23:12 -e 02/07/2016 16:23:12 /oracle/</code>Execute this for each stream.
+
+==== Install netbackup client & perform a complete recovery of a host ====
+
+  - Make sure network connectivity is established. i.e. Ping from client to master and master to client.
+  - Login to the master server<code>ssh ibmnbu5230ams</code>Set some path variables if not set already<code>export PATH=${PATH}:/usr/openv/netbackup/bin:/usr/openv/netbackup/bin/admincmd</code>Install the client<code>install_client_files ssh <client_host_name></code>
+  - Restore standard backups ( except database etc ). Standard backups are backed up using the host's standard policy. The naming standard is STD_<hostname> i.e. STD_peerdb99
+    - Check the backup database so we can pick the latest backup. ''Looks like this need to be executed on the Netbackup master server''. Set some path variables if not set already<code>export PATH=${PATH}:/usr/openv/netbackup/bin:/usr/openv/netbackup/bin/admincmd</code>
+      - List the backups<code>sudo bpimagelist -policy STD_PEERDB99 -U -hoursago 240</code>You would see something like this<code>Backed Up         Expires       Files       KB  C  Sched Type      On Hold Policy
+----------------  ---------- -------- --------  -  --------------- ------- ------------
+06/08/2016 05:40  07/09/2016   180577 117138904  N  Full Backup     0       STD_PEERDB99
+06/08/2016 02:41  07/09/2016   180503 124475853  N  Full Backup     0       STD_PEERDB99</code>
+      - List the same data in a different format<code>sudo bpimagelist -policy STD_PEERDB99 -idonly -hoursago 24
+Time: Wed 08 Jun 2016 05:40:46 AM ED   ID: peerdb99bck_1465378846   FULL (0)
+Time: Wed 08 Jun 2016 02:41:48 AM ED   ID: peerdb99bck_1465368108   FULL (0)</code>
+    - Login to the client with your own account. Set some path variables if not set already<code>export PATH=${PATH}:/usr/openv/netbackup/bin</code>
+    - Create a text file with all filesystems to be restored<code>lsvg -o | grep -v -e rootvg -e pagingvg | xargs -n1 lsvgfs | tee 2restore</code>
+    - Check the contents of file ''2restore''<code>cat 2restore</code>
+    - Issue the restore command<code>sudo bprestore -L /tmp/pocafasv01-restore.log -C peerdb99bck -p STD_PEERDB99 -X -s 1465378846 -e 1465378846 -f 2restore</code>The start and end times are picked up from the second command executed on the Netbackup master server.
+  - Restore database backups. Database backups using BCV are backed up using special policies. Basically, this applied only for TA2 & PTA backups.<code>PTA      SAP_PTA_SCHED
+TA2      SAP_TA2_plusTAPE</code>
+    - Check the backups in the netbackup database<code>bpimagelist -policy SAP_TA2_plusTAPE -idonly -hoursago 240</code>You would see something like this<code>Time: Mon 06 Jun 2016 10:09:06 AM ED   ID: teprbk01_1465222146   UBAK (2)
+Time: Mon 06 Jun 2016 10:09:05 AM ED   ID: teprbk01_1465222145   UBAK (2)
+Time: Mon 06 Jun 2016 10:09:04 AM ED   ID: teprbk01_1465222144   UBAK (2)
+Time: Mon 06 Jun 2016 10:09:03 AM ED   ID: teprbk01_1465222143   UBAK (2)
+Time: Mon 06 Jun 2016 10:09:02 AM ED   ID: teprbk01_1465222142   UBAK (2)
+Time: Mon 06 Jun 2016 10:09:00 AM ED   ID: teprbk01_1465222140   UBAK (2)
+Time: Mon 06 Jun 2016 10:08:59 AM ED   ID: teprbk01_1465222139   UBAK (2)
+Time: Thu 02 Jun 2016 06:23:31 PM ED   ID: teprbk01_1464906211   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:32 AM ED   ID: teprbk01_1464876512   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:31 AM ED   ID: teprbk01_1464876511   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:30 AM ED   ID: teprbk01_1464876510   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:29 AM ED   ID: teprbk01_1464876509   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:28 AM ED   ID: teprbk01_1464876508   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:27 AM ED   ID: teprbk01_1464876507   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:26 AM ED   ID: teprbk01_1464876506   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:25 AM ED   ID: teprbk01_1464876505   UBAK (2)
+Time: Mon 30 May 2016 06:05:37 PM ED   ID: teprbk01_1464645937   UBAK (2)
+Time: Mon 30 May 2016 10:08:52 AM ED   ID: teprbk01_1464617332   UBAK (2)
+Time: Mon 30 May 2016 10:08:51 AM ED   ID: teprbk01_1464617331   UBAK (2)
+Time: Mon 30 May 2016 10:08:50 AM ED   ID: teprbk01_1464617330   UBAK (2)
+Time: Mon 30 May 2016 10:08:49 AM ED   ID: teprbk01_1464617329   UBAK (2)
+Time: Mon 30 May 2016 10:08:48 AM ED   ID: teprbk01_1464617328   UBAK (2)
+Time: Mon 30 May 2016 10:08:47 AM ED   ID: teprbk01_1464617327   UBAK (2)
+Time: Mon 30 May 2016 10:08:46 AM ED   ID: teprbk01_1464617326   UBAK (2)
+Time: Mon 30 May 2016 10:08:45 AM ED   ID: teprbk01_1464617325   UBAK (2)</code>
+    - Check & list the backups streams for a given date.<code>bpimagelist -policy SAP_TA2_plusTAPE -idonly -d 06/02/2016 10:00:00 -e 06/02/2016 19:00:00
+Time: Thu 02 Jun 2016 06:23:31 PM ED   ID: teprbk01_1464906211   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:32 AM ED   ID: teprbk01_1464876512   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:31 AM ED   ID: teprbk01_1464876511   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:30 AM ED   ID: teprbk01_1464876510   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:29 AM ED   ID: teprbk01_1464876509   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:28 AM ED   ID: teprbk01_1464876508   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:27 AM ED   ID: teprbk01_1464876507   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:26 AM ED   ID: teprbk01_1464876506   UBAK (2)
+Time: Thu 02 Jun 2016 10:08:25 AM ED   ID: teprbk01_1464876505   UBAK (2)</code>
+    - Issue the restore commands<code>sudo ./bprestore -L /tmp/progress_1464906211 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464906211 -e 1464906211 /oracle
+sudo ./bprestore -L /tmp/progress_1464876512 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464876512 -e 1464876512 /oracle
+sudo ./bprestore -L /tmp/progress_1464876511 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464876511 -e 1464876511 /oracle
+sudo ./bprestore -L /tmp/progress_1464876510 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464876510 -e 1464876510 /oracle
+sudo ./bprestore -L /tmp/progress_1464876509 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464876509 -e 1464876509 /oracle
+sudo ./bprestore -L /tmp/progress_1464876508 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464876508 -e 1464876508 /oracle
+sudo ./bprestore -L /tmp/progress_1464876507 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464876507 -e 1464876507 /oracle
+sudo ./bprestore -L /tmp/progress_1464876506 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464876506 -e 1464876506 /oracle
+sudo ./bprestore -L /tmp/progress_1464876505 -C teprbk01 -t 17 -p SAP_TA2_plusTAPE -X -s 1464876505 -e 1464876505 /oracle</code>
+  - Restoring archive logs for DBAs. Archive logs are backed up using a whole different policy BRA_SID i.e. BRA_TA2
+  - List the files<code>sudo bplist -C peerdb99bck -t 17 -s 06/02/2016 09:00:00 -e 06/02/2016 11:00:00 -R -k BRA_TA2 /oracle/TA2/oraarch/ |sort -u |tee ta2_archive_logs_2_restore</code>
+  - Restore command as Pawel had to do this on taqa1d01 and copy them to poc server. Cleanup this document later<code>and the restore command 
+Since I will be doing this on taqa1d01 as destination client there are needed some preparation like to create file responsible for redirecting this restore from 
+/oracle/TA2/oraarch/
+
+to 
+/stage_area/TA2_testing_NBU
+
+I am doing this as on taqa1d01 there is no such /oracle/TA2/oraarch as well in /stage_area I do have available space
+so file which will do this redirect contents is
+taqa1d01:/root>cat TA2_redirect
+change /oracle/TA2/oraarch/ to /stage_area/TA2_testing_NBU
+taqa1d01:/root>bprestore -L /tmp/archive_logs_progress -C peerdb99bck -s 06/02/2016 09:00:00 -e 06/02/2016 11:00:00 -R /root/TA2_redirect -t 17 -p BRA_TA2 -f ta2_archive_logs_2_restore
+taqa1d01:/root>tail -f /tmp/archive_logs_progress
+ Restore Job Id=4390731
+Restore started 06/09/2016 02:15:38
+
+02:15:40 (4390731.xxx) Found (188) files in (45) images for Restore Job ID 4390731.xxx
+02:15:56 (4390731.xxx) Searched ( 68) files of (188) files for Restore Job ID 4390731.xxx
+02:15:56 (4390731.001) Restoring from copy 1 of image created Thu Jun  2 09:01:07 CDT 2016 from policy BRA_TA2
+02:16:00 (4390731.001) TAR STARTED 37355550
+02:16:03 (4390731.001) INF - Beginning restore from server taqa1d01 to client taqa1d01.
+02:16:04 (4390731.001) /oracle/TA2/oraarch/TA2arch1_401590_681897300.dbf
+02:16:04 (4390731.001) Changed /oracle/TA2/oraarch/TA2arch1_401590_681897300.dbf to /stage_area/TA2_testing_NBU/TA2arch1_401590_681897300.dbf
+02:16:16 (4390731.001) INF - TAR EXITING WITH STATUS = 0
+02:16:16 (4390731.001) INF - TAR RESTORED 1 OF 1 FILES SUCCESSFULLY
+02:16:16 (4390731.001) INF - TAR KEPT 0 EXISTING FILES
+02:16:16 (4390731.001) INF - TAR PARTIALLY RESTORED 0 FILES
+
+02:16:17 (4390731.001) Status of restore from copy 1 of image created Thu Jun  2 09:01:07 CDT 2016 = the requested operation was successfully completed
+
+....
+lines remove
+....
+
+02:24:33 (4390731.xxx) Found (188) files in (45) images for Restore Job ID 4390731.xxx
+02:24:33 (4390731.016) Restoring from copy 1 of image created Thu Jun  2 10:32:24 CDT 2016 from policy BRA_TA2
+02:24:37 (4390731.016) TAR STARTED 45547748
+02:24:40 (4390731.016) INF - Beginning restore from server taqa1d01 to client taqa1d01.
+02:24:41 (4390731.016) /oracle/TA2/oraarch/TA2arch1_401623_681897300.dbf
+02:24:41 (4390731.016) Changed /oracle/TA2/oraarch/TA2arch1_401623_681897300.dbf to /stage_area/TA2_testing_NBU/TA2arch1_401623_681897300.dbf
+02:24:52 (4390731.016) /oracle/TA2/oraarch/TA2arch1_401624_681897300.dbf
+02:24:52 (4390731.016) Changed /oracle/TA2/oraarch/TA2arch1_401624_681897300.dbf to /stage_area/TA2_testing_NBU/TA2arch1_401624_681897300.dbf
+02:25:04 (4390731.016) /oracle/TA2/oraarch/TA2arch1_401625_681897300.dbf
+02:25:04 (4390731.016) Changed /oracle/TA2/oraarch/TA2arch1_401625_681897300.dbf to /stage_area/TA2_testing_NBU/TA2arch1_401625_681897300.dbf
+02:25:16 (4390731.016) INF - TAR EXITING WITH STATUS = 0
+02:25:16 (4390731.016) INF - TAR RESTORED 3 OF 3 FILES SUCCESSFULLY
+02:25:16 (4390731.016) INF - TAR KEPT 0 EXISTING FILES
+02:25:16 (4390731.016) INF - TAR PARTIALLY RESTORED 0 FILES
+
+02:25:17 (4390731.016) Status of restore from copy 1 of image created Thu Jun  2 10:32:24 CDT 2016 = the requested operation was successfully completed
+
+02:25:19 INF - Server status = 0
+02:25:19 (4390731.xxx) INF - Status = the requested operation was successfully completed.
+taqa1d01:/stage_area/TA2_testing_NBU>scp TA2* root@pocafasv01:/oracle/TA2/oraarch
+Warning: Permanently added 'pocafasv01,10.32.6.32' (RSA) to the list of known hosts.
+root@pocafasv01's password:
+TA2arch1_401590_681897300.dbf                                                                                                                                      100%  900MB  39.1MB/s   00:23
+TA2arch1_401591_681897300.dbf                                                                                                                                      100%  899MB  34.6MB/s   00:26
+TA2arch1_401592_681897300.dbf                                                                                                                                      100%  900MB  32.1MB/s   00:28
+TA2arch1_401593_681897300.dbf                                                                                                                                        9%   92MB  32.1MB/s   00:26 ETA
+(...)</code>

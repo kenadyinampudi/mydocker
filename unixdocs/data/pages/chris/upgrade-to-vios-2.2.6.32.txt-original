@@ -1,0 +1,95 @@
+====== Upgrading VIOS Servers to VIOS 2.2.6.32 ======
+** Note these are the instructions are based on documented steps that were used to upgrade Grass Lake, Monroe, taprvio110, taprvio111, taprvio120 and taprvio121 VIOS servers. **
+** They were developed at Tenneco with the on site assitnace of Dave Buffaline, Senior Managing Consultant Virtualization, Performance, & Technology Integration IBM as best practice VIOS upgrade proceedures, and are based on the replacement theory of upgrade. That is the VIOS is replaced with a complete server image instead of being upgrades with individual patch levels.** 
+** The taprvio120 and taprvio121 Upgrades were done during a UNIX Team meeting with all menbers present, and participating. **
+
+** This is specifically designed for "new" VIOS installations and the upgrade of vacated hadrware VIOS servers.t contain no fuinctioning VIOS client lpars. **
+===== Pre Upgrade Checks =====
+  - Before installing the Service Release 2.2.6.32 The update could fail if there is a loaded media repository. Check for a loaded media repository 
+  -To check for a loaded media repository, and then unload it, follow these steps. 
+To check for loaded images, run the following command:<code>lsvopt</code>
+The Media column lists any loaded media. 
+To unload media images, run the following commands on all Virtual Target Devices that have loaded images.<code>unloadopt -vtd <file-backed_virtual_optical_device ></code>
+To verify that all media are unloaded, run the following command again.<code>lsvopt</code> The command output should show No Media for all VTDs.
+
+
+** PRE UPGRADE PROCESS STARTS HERE **
+
+  - Log in to the VIOS as the user padmin.  
+  - Commit previous updates, by running the updateios command. <code>updateios -commit </code>
+  - Verify no maps are in place. <code> lsmap -all </code>
+  - Exit thte restricted shell <code> oem-setup_env> </code> <code> set -o vi </code> 
+  - Change to the /usrlocal/sbin directory  <code> oem_setup_env </code> <code> set -o vi </code> <code> cd /usr/local/sbin </code>
+  - Run the checkit script to check VIOS recomended Adapter settings. <code> ./checkit </code> The last line of the output should be similiar to the following.  <code> taprvio110 - CHECKIT completed without issue on Mon Dec 10 11:07:36 CST 2018 </code> If there are any recomendatains run the setit script to correct the settings <code> ./setit </code> Reexecute the checkit script to comdirm that all settings have been updated. 
+  - Execute the following script to get the boot disk information. Make a note/save it, you will need later in the installation process. <code> ./get-bootdisk.sh </code> The output will look simiiar to this <code>uname -a
+***************************************
+AIX taprvio15 1 6 0002C6FAD400
+
+BOOT Disk
+***************************************
+hdisk1
+hdisk1          0002c6fa2fdebd4f                    rootvg          active
+U78A5.001.WIH27C3-P1-C7-L1-T2-W500601653EE01288-L0 </code> This is also captured in the snap output below. it i easier to have it readly availale instead of looking it up.
+  - Run the pre_upgrade_snapit.sh command.  This creates a "snap" of the VIOS server. <code> pre_upgrade_snapit.sh </code> The output will be in tHe /usr/local/logs directory and will be in the format Pre_upgrade-{host name}-snapit.   
+  - Create a backup of the VIOS infrastructure. This will be used to restore the network etc. after the upgrade. <code> pre_upgrade_viosbr.sh </code> The output will be in the /home/padmin/cfgbackups directory and will be in the format Pre_upgrade-{host name}-viosbr.tar.gz
+  - Verify the viosbr <code> viosbr -restore -file /home/padmin/cfgbackups/Pre_upgrade-{host name}-viosbr.tar.gz </code>
+  - Follow the standard AIX preupgrade steps.
+  - [[chris:backupconfig|Perform the configuration backup]]
+  - copy the  snap and viodbr files to the repository. You will need to copy the viosbr output back to the system being upgraded after the upgrade has completed. Adjust toe folloing command accordingly. <code> sudo scp ${host2patch}:/usr/local/logs/Pre_upgrade-${host2patch}-snapit /preupgrade/reports/Pre_upgrade-${host2patch}-snapit </code> <code> sudo scp ${host2patch}:/home/padmin/Pre_upgrade-${host2patch}-viosbr.tar.gz /preupgrade/reports/Pre_upgrade-${host2patch}-viosbr.tar.gz </code>
+ 
+
+** UPGRADE PROCESS STARTS HERE **
+
+  - 
+  - Check and clear any errors in the error report <code> errpt </code> If there are errors then clean them <code> errclear 00 </code>
+  - Note the adapter that has the server ip address assigned to it. <code> ifconfig -a </code> Output should resemble the following <code>taprvio110[/home/padmin] ># ifconfig -a
+en4: flags=1e084863,15c0<UP,BROADCAST,NOTRAILERS,RUNNING,SIMPLEX,MULTICAST,GROUP                                                                 RT,64BIT,CHECKSUM_OFFLOAD(ACTIVE),LARGESEND,CHAIN>
+        inet 10.0.4.210 netmask 0xfffffc00 broadcast 10.0.7.255
+         tcp_sendspace 262144 tcp_recvspace 262144 rfc1323 1
+lo0: flags=e08084b,1c0<UP,BROADCAST,LOOPBACK,RUNNING,SIMPLEX,MULTICAST,GROUPRT,6                                                                 4BIT,LARGESEND,CHAIN>
+        inet 127.0.0.1 netmask 0xff000000 broadcast 127.255.255.255
+        inet6 ::1%1/0
+         tcp_sendspace 131072 tcp_recvspace 131072 rfc1323 1</code>
+  - Check SEA adapter and put it into backup mode <code> ./chksea |grep SEA | awk -F: '{print $2}'</code> <code> chdev -l {output from previous comand} -a ha_mode=standby </code> 
+  - Verifty the SEA is in standby mode <code> lsattr -El {SEA from previous command} | grep ha_mode </code> Output should be similiar to the following <code> ha_mode       standby     High Availability Mode</code>
+  - Shutdown the VIOS server <code> shutdown </code> 
+
+===== Configure NIM =====
+
+  - Update the console database. Login to pgnmsv01<code>sudo vi /prod/images/etc/unix_sys_console</code>Make an entry similar to this<code>taprvio3:blade-ibm:tgprbld1:1:root</code>
+  - Login to the respective NIM server and define the VIO server as a NIM client<code>sudo nim -o define -t standalone -a \
+platform=chrp -a if1="find_net <vioservername> 0" -a netboot_kernel=mp <viosservername></code>
+  - Prepare the NIM client(VIO server) for a NIM bosinst operation<code>sudo nim -o bos_inst -a source=mksysb -a spot=vios-vios_2_2_6_32_spot -a \
+bosinst_data=vios-vios-2-2-6-32-bosinst_data -a accept_licenses=yes -a \
+no_client_boot=yes -a mksysb=vios-vio-2-2-6-32-gold <vioservername></code>
+
+===== Install VIOS using NIM =====
+
+  - Login to pgnmsv01 and open a console session to the VIO server<code>sudo getconsole <vioservername></code>
+  - From the HMC Power on the VIOS partition set to stop at SMS. 
+  - At the console, set up the server fro network boot installation. Continue with the boot process. 
+  - At the installation prompt select the option to select the boot disk. do not rely on the automatically chosen hdisk0 that is displayed. View the disks and select the disk that has the matching information that you saved from the get-bootdisk.sh  command in step 7 above. 
+  - Once you have selected the correct disk continue with the installation. 
+  - After the installation the server will reboot. login as padmn and run the followning command <code> license -accept </code> 
+
+
+===== Restore the VIOS Settings - adapter mappings =====
+
+  - Exit the restricted shell <code> oem_setup_env </code> <code> set -o vi </code>
+  - Assign  the IP Address on the VIOS server to the ethernet port you noted / saved from the ifconfig -a command above.
+  - Export the host name of the server being patched <code> export  host2patch=<host> </code>
+  - Log on to the NIM server and copy the viosbr backup you saved in the Pre_upgrade section from /preupgrade/reports/Pre_upgrade-${host2patch}-viosbr.tar.gz to the server you are upgrading <code> scp /preupgrade/reports/Pre_upgrade-${host2patch}-viosbr.tar.gz {host2patch}:/home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz </code>
+  - Log back on to the VIOS server being patched as padmin and execute the following command <code>viosbr -restore -file /home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz </code> This creates the initial devices
+  - Shutdown and restart the server <code> shutdown -force -restart </code>
+  - After the reboot log back into the server as padmin
+  - Run the viosbr resotore command again <code> viosbr -restore -file /home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz </code>  This brings in the virtual devices. 
+  - Shutdown and restart the server <code> shutdown -force -restart </code>
+  - After the reboot log back into the server as padmin
+  - Run the viosbr resotore command again <code> viosbr -restore -file /home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz </code>  This brings in the remaining SEA devices 
+
+  - Exit the restricted shell <code> oem_setup_env </code> <code> set -o vi </code> Check the status of the SEA and reset it. <code> /usr/local/sbin/chksea |grep SEA | awk -F: '{print $2}'</code>
+  - <code>chdev -l {SEA from above command} -a ha_mode=sharing</code>
+  - Run the checkit command, it should retrun with no errors <code> /usr/local/sbin/checkit </code>
+
+
+

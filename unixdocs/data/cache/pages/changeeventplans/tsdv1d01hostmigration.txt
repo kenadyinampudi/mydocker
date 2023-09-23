@@ -1,0 +1,45 @@
+====== Migrate tsdv1d01 from taprvio12 to taprvio17 ======
+
+  - The change is to start on Tuesday 07/02/2013 at 12:00 (Noon) CDT - after the change the host will be migrated to taprvio17
+  - On Tuesday 06/25/2013, Chris will create profile on taprvio17 34GB memory 1.6 Virtual CPU
+  - On Wednesday 06/26/2013 Ravi Sharma wil put notice in SAP Banner that server will be unavailable on all SAP development logons. 
+  - On Wednesday 6/26/2013 Chris will remove the alt disk copy altinst_rootvg <code>alt_rootvg_op -X altinst_rootvg</code>this will allow for the boot disk to be mirrored so to save time after migration <code>extendvg -f rootvg hdisk0</code><code>nohup mirrorvg rootvg &</code><code>bosboot -a -d /dev/hdisk0</code><code>bootlist -m normal -o hdisk0 hdisk1</code>
+  - On Tuesday, July 2 2013, at 12:00 (noon) CDT the folowing steps will be done on tsdv1d01.
+    - Ravi will shutdown all applications on tsdv1d01
+    - Ravi will shutdown all SAP applications SRM (DSR),PI_XI (DPI), Portal (DEP) on tsdvad01
+    - Chris will comment out NFS services startup in /etc/inittab<code>:rcnfs:23456789:off:/etc/rc.nfs > /dev/console 2>&1 # Start NFS Daemons</code>
+    - Chris will shutdown the server tsdv1d01
+  - On On Tuesday, July 2 2013 teh following steps will be done on taprvio12
+    - Chris will unmap the following disk devices from tsdv1d01<code>hdisk17:138090:tsdv1d01:2:vhost0:000b8a7e38e52162:APM00125129684:0254
+hdisk18:138090:tsdv1d01:2:vhost0:000b8a7e38e41463:APM00125129684:0253 
+hdisk29:103566:tsdv1d01:2:vhost0:000b8a7e34e09274:APM00125129684:0252 
+hdisk30:103566:tsdv1d01:2:vhost0:000b8a7e34e0956b:APM00125129684:0251
+hdisk31:103566:tsdv1d01:2:vhost0:000b8a7e34e09a58:APM00125129684:0250
+hdisk32:103566:tsdv1d01:2:vhost0:000b8a7e34e09d14:APM00125129684:0249
+hdisk33:103566:tsdv1d01:2:vhost0:000b8a7e34e09f1c:APM00125129684:0248</code>
+    - Chris will remove the following devices from taprgio12 and send the information to Kapil<code>hdisk17:138090:tsdv1d01:2:vhost0:000b8a7e38e52162:APM00125129684:0254
+hdisk18:138090:tsdv1d01:2:vhost0:000b8a7e38e41463:APM00125129684:0253
+hdisk29:103566:tsdv1d01:2:vhost0:000b8a7e34e09274:APM00125129684:0252
+hdisk30:103566:tsdv1d01:2:vhost0:000b8a7e34e0956b:APM00125129684:0251
+hdisk31:103566:tsdv1d01:2:vhost0:000b8a7e34e09a58:APM00125129684:0250
+hdisk32:103566:tsdv1d01:2:vhost0:000b8a7e34e09d14:APM00125129684:0249
+hdisk33:103566:tsdv1d01:2:vhost0:000b8a7e34e09f1c:APM00125129684:0248</code>
+    - Kapil will unmap the following devices in the VNX server from taprvio12 and present them to taprvio17<code>hdisk17:138090:tsdv1d01:2:vhost0:000b8a7e38e52162:APM00125129684:0254
+hdisk18:138090:tsdv1d01:2:vhost0:000b8a7e38e41463:APM00125129684:0253
+hdisk29:103566:tsdv1d01:2:vhost0:000b8a7e34e09274:APM00125129684:0252
+hdisk30:103566:tsdv1d01:2:vhost0:000b8a7e34e0956b:APM00125129684:0251
+hdisk31:103566:tsdv1d01:2:vhost0:000b8a7e34e09a58:APM00125129684:0250
+hdisk32:103566:tsdv1d01:2:vhost0:000b8a7e34e09d14:APM00125129684:0249
+hdisk33:103566:tsdv1d01:2:vhost0:000b8a7e34e09f1c:APM00125129684:0248</code>
+  - While Kapil is moving the disks to the new server Chris will update the ''/prod/images/etc/unix_sys_console'' file with the new location of tsdv1d01 on taprvio17<code>tsdv1d01:blade-ibm-vio:taprvio17:3:padmin</code>and comment out the old location<code>#tsdv1d01:lpar-ibm:taitc051:SRM-GTS-DEV-55A-SN06D309G:tsdv1d01:2:hscroot</code>
+  - On Tuesday 02 July 2013 The following steps will be done on taprvio17 after Kapil has presented the disks.
+    - Chris will set the reserve lock to off for the disks presented. As padmin on taprvio17<code>chdev -dev hdisk### -attr reserve_policy=no_reserve</code>Chris as oem_setup_env  will set round robin disk policy on the disks presented<code>sudo chdev hdisk### -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</code>
+    - Chris will map the drives to the new tsdv1d01 client lpar on taprvio17
+  - Chris will establish a ''getconcole'' setting from taitc118 to the new tsdv1d01.On taitc118<code>sudo getconsole tsdv1d01</code>
+  - Once the remote console session has been established, the lpar tsdv1d01 will be booted to SMS mode to insure the correct boot disk is selected and all disks are present. Once selected the lpar will be allowed to complete the IPL.  After the server completed the IPL the folowing steps take place as root on tsdv1d01
+    - Set the network IP address es on the ethernet adapters. Configure the front end IP<code>sudo /usr/sbin/mktcpip -h'tsdv1d01' -a'10.32.6.110' -m 255.255.255.0' -d'amer.int.tenneco.com' -g'10.32.6.1' -A'no' -t'N/A' -s''</code>
+    - Configure the backup network<code>sudo chdev -l en1 -a  netaddr=10.32.51.110 -a state=up</code>
+    - Reset NFS services to restart at IPL in /etc/inittab<code>rcnfs:23456789:wait:/etc/rc.nfs > /dev/console 2>&1 # Start NFS Daemons</code>
+  - Reboot server to insure all NFS file systems are remounted correctly at system restart
+  - Check servers in /etc/exports to make sure files exported from tsdv1d01 correctly NFS mounted on them
+  - Contact Ravi to install new SAP License Keys on server and start SAP applications.

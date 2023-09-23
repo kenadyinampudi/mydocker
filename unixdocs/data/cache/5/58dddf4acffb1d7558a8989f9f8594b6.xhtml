@@ -1,0 +1,46 @@
+<ol>
+<li class="level1"><div class="li"> Create your cryptic password using this command<pre class="code">perl -e &#039;print crypt(&quot;YourPasswd&quot;, &quot;salt&quot;),&quot;\n&quot;&#039;</pre>
+
+<p>
+Replace “YourPasswd” with your actual password. Output would be something like this
+</p>
+<pre class="code">safv8d8ESMmWk</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define a function<pre class="code">function change_user_pwd {
+export user=$1
+shift
+export pass=${2}
+shift
+export hosts=${*}
+if [ &quot;hello${hosts}&quot; = &quot;hello&quot; ]
+then
+   hosts=$(cat /prod/images/etc/allhosts.tenneco )
+fi
+
+for host in ${hosts}
+do
+   ssh ${host} grep ${user} /etc/passwd &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -eq 0 ]
+   then
+      type=$(ssh ${host} uname )
+      case ${type} in
+      AIX)
+         echo &quot;Changing password on ${host} &quot;
+         ssh ${host} &quot;echo &#039;${user}:${pass}&#039; | sudo /usr/bin/chpasswd -e &quot;
+         ssh ${host} sudo pwdadm -c ${user}
+         ssh ${host} sudo /usr/local/scripts/unlockuser ${user} &gt; /dev/null 2&gt;&amp;1
+      ;;
+      Linux)
+         echo &quot;Changing password on ${host} &quot;
+         ssh ${host} &quot;echo &#039;${user}:${pass}&#039; | sudo /usr/sbin/chpasswd -e &quot;
+      ;;
+   fi
+done
+}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now execute it from the NIM server<pre class="code">change_user_pwd x1kxk630 safv8d8ESMmWk</pre>
+</div>
+</li>
+</ol>

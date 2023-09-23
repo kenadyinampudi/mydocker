@@ -1,0 +1,89 @@
+<pre class="code">for host in $(cat listofhosts )
+do
+   echo &quot;Working on ${host} &quot;
+   ping -w 1 -c 1 ${host} &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -eq 0 ]
+   then
+      echo &quot;Creating users on ${host} ... &quot;
+      ostype=$(ssh ${host} uname)
+      case ${ostype} in
+      AIX)
+         ssh ${host} &#039;sudo mkuser &quot;id=6885&quot; &quot;pgrp=sapteam&quot;  &quot;home=/home/x1dnyata&quot; &quot;gecos=Dnyanesh Tamboli&quot;  x1dnyata&#039;
+         ssh ${host} &#039;sudo mkuser &quot;id=6101&quot; &quot;pgrp=sapteam&quot;  &quot;home=/home/x1netrdi&quot; &quot;gecos=Netra Dixit&quot;       x1netrdi&#039;
+         ssh ${host} &#039;sudo mkuser &quot;id=6066&quot; &quot;pgrp=sapteam&quot;  &quot;home=/home/x1sayadh&quot; &quot;gecos=Sayantani Dhar&quot;    x1sayadh&#039;
+         ssh ${host} &#039;sudo mkuser &quot;id=6946&quot; &quot;pgrp=sapteam&quot;  &quot;home=/home/x1abhine&quot; &quot;gecos=Abhijit Nerkar&quot;    x1abhine&#039;
+         ssh ${host} &#039;sudo mkuser &quot;id=6083&quot; &quot;pgrp=sapteam&quot;  &quot;home=/home/x1meghsh&quot; &quot;gecos=Megha Sharma&quot;      x1meghsh&#039;
+         ssh ${host} &#039;sudo mkuser &quot;id=6331&quot; &quot;pgrp=sapteam&quot;  &quot;home=/home/x1deeps3&quot; &quot;gecos=Deepshikha Sharma&quot; x1deeps3&#039;
+
+         ssh ${host} &#039;echo &quot;x1dnyata:saZs.XXp59b2Q&quot; | sudo /usr/bin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1netrdi:saZs.XXp59b2Q&quot; | sudo /usr/bin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1sayadh:saZs.XXp59b2Q&quot; | sudo /usr/bin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1abhine:saZs.XXp59b2Q&quot; | sudo /usr/bin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1meghsh:saZs.XXp59b2Q&quot; | sudo /usr/bin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1deeps3:saZs.XXp59b2Q&quot; | sudo /usr/bin/chpasswd -e&#039;
+      ;; 
+      Linux)
+         ssh ${host} &#039;sudo /usr/sbin/useradd -g sapteam -d /home/x1dnyata -c &quot;Dnyanesh Tamboli&quot;  -m -u 6885 x1dnyata&#039;
+         ssh ${host} &#039;sudo /usr/sbin/useradd -g sapteam -d /home/x1netrdi -c &quot;Dnyanesh Tamboli&quot;  -m -u 6101 x1netrdi&#039;
+         ssh ${host} &#039;sudo /usr/sbin/useradd -g sapteam -d /home/x1sayadh -c &quot;Sayantani Dhar&quot;    -m -u 6066 x1sayadh&#039;
+         ssh ${host} &#039;sudo /usr/sbin/useradd -g sapteam -d /home/x1abhine -c &quot;Abhijit Nerkar&quot;    -m -u 6946 x1abhine&#039;
+         ssh ${host} &#039;sudo /usr/sbin/useradd -g sapteam -d /home/x1meghsh -c &quot;Megha Sharma&quot;      -m -u 6083 x1meghsh&#039;
+         ssh ${host} &#039;sudo /usr/sbin/useradd -g sapteam -d /home/x1deeps3 -c &quot;Deepshikha Sharma&quot; -m -u 6331 x1deeps3&#039;
+
+         ssh ${host} &#039;echo &quot;x1dnyata:saZs.XXp59b2Q&quot; | sudo /usr/sbin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1netrdi:saZs.XXp59b2Q&quot; | sudo /usr/sbin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1sayadh:saZs.XXp59b2Q&quot; | sudo /usr/sbin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1abhine:saZs.XXp59b2Q&quot; | sudo /usr/sbin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1meghsh:saZs.XXp59b2Q&quot; | sudo /usr/sbin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1deeps3:saZs.XXp59b2Q&quot; | sudo /usr/sbin/chpasswd -e&#039;
+      ;;
+      esac
+      echo &quot;Sleeping before proceeding for 2 seconds ... &quot;
+      sleep 2
+   else
+      echo &quot;${host} does not ping &quot;
+   fi
+done
+</pre>
+<ol>
+<li class="level1"><div class="li"> The additional accounts<pre class="code">
+for host in $(cat listofhosts )
+do
+   echo &quot;Working on ${host} &quot;
+   ping -w 1 -c 1 ${host} &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -eq 0 ]
+   then
+      echo &quot;Creating users on ${host} ... &quot;
+      ostype=$(ssh ${host} uname)
+      case ${ostype} in
+      AIX)
+         ssh ${host} &#039;sudo mkuser &quot;id=6829&quot; &quot;pgrp=sapteam&quot;  &quot;home=/home/x1jerrsm&quot; &quot;gecos=Jerry Smith&quot;   x1jerrsm&#039;
+         ssh ${host} &#039;sudo mkuser &quot;id=6296&quot; &quot;pgrp=sapteam&quot;  &quot;home=/home/x1michxi&quot; &quot;gecos=Michael Xiong&quot; x1michxi&#039;
+
+         ssh ${host} &#039;echo &quot;x1jerrsm:saZs.XXp59b2Q&quot; | sudo /usr/bin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1michxi:saZs.XXp59b2Q&quot; | sudo /usr/bin/chpasswd -e&#039;
+      ;; 
+      Linux)
+         ssh ${host} &#039;sudo /usr/sbin/useradd -g sapteam -d /home/x1jerrsm -c &quot;Jerry Smith&quot;    -m -u 6829 x1jerrsm&#039;
+         ssh ${host} &#039;sudo /usr/sbin/useradd -g sapteam -d /home/x1michxi -c &quot;Michael Xiong&quot;  -m -u 6296 x1michxi&#039;
+
+         ssh ${host} &#039;echo &quot;x1jerrsm:saZs.XXp59b2Q&quot; | sudo /usr/sbin/chpasswd -e&#039;
+         ssh ${host} &#039;echo &quot;x1michxi:saZs.XXp59b2Q&quot; | sudo /usr/sbin/chpasswd -e&#039;
+      ;;
+      esac
+      echo &quot;Sleeping before proceeding for 2 seconds ... &quot;
+      sleep 2
+   else
+      echo &quot;${host} does not ping &quot;
+   fi
+done
+
+
+
+
+
+
+</pre>
+</div>
+</li>
+</ol>

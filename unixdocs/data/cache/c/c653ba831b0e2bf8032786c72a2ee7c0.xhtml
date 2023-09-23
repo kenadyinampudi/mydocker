@@ -1,0 +1,41 @@
+
+<h1 class="sectionedit1" id="disable_ibm_systems_director_agent_on_aix">Disable IBM Systems Director Agent on AIX</h1>
+<div class="level1">
+<pre class="code">To permanently disable the Director agent, do the following:</pre>
+<ol>
+<li class="level1"><div class="li"> Stop and permanently disable the common agent: <pre class="code">sudo /opt/ibm/director/agent/runtime/agent/bin/endpoint.sh stop</pre>
+<pre class="code">sudo ./opt/ibm/director/agent/runtime/nonstop/bin/installnonstop.sh -uninstallservice</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Stop the platform agent: <pre class="code">sudo stopsrc -s platform_agent</pre>
+</div>
+</li>
+</ol>
+
+<p>
+  Stop and permanently disable the cimserver if there are no other applications depending on the cimserver:
+</p>
+<ol>
+<li class="level1"><div class="li"> Stop cimserver: <pre class="code">sudo stopsrc -s cimsys</pre>
+</div>
+</li>
+</ol>
+
+<p>
+  Modify inittab file to permanently disable the cimserver if there are no other applications depending on the cimserver:
+</p>
+<ol>
+<li class="level1"><div class="li"> Create a backup copy of /etc/inittab  where .yn = your initials <pre class="code">cd /etc</pre>
+<pre class="code">sudo  cp -p inittab inittabg-$(date +%Y%m%d-%H:%M:%S).yn </pre>
+</div>
+</li>
+</ol>
+
+<p>
+  Comment out the following lines in /etc/inittab file and save the file when finished:
+</p>
+<pre class="code"> sudo vi /etc/inittab</pre>
+<pre class="code"> platform_agent:2:once:/usr/bin/startsrc -s platform_agent &gt;/dev/null 2&gt;&amp;1</pre>
+<pre class="code">cimservices:2:once:/usr/bin/startsrc -s cimsys &gt;/dev/null 2&gt;&amp;1</pre>
+
+</div>

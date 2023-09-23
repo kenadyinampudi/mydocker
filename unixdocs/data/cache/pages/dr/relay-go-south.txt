@@ -1,0 +1,30 @@
+====== If relay1 server goes down for a long time ======
+
+Instructions from Dirk De Craemere on how to move the workload of relay1 to relay2.
+
+There is a script on the NIM server that takes the backups and push the config to a directory on relay2.<code>pgnmsv01:/prod/images/scripts/backup_relayhosts</code>
+
+** Failover **
+
+  - Backup configuration files on relay2<code>for file in /etc/hosts /etc/httpd/conf.d/redir.conf /etc/httpd/conf.d/ssl.conf
+do
+   filename=$(basename ${file} )
+   sudo cp -p ${file} /usr/local/scripts/backups/${filename}.$(uname -n)
+done</code>
+  - Configure relay1's IP on relay2<code>sudo ifconfig eth0:1 170.64.0.70 netmask 255.255.255.192 up</code>
+  - Concatenate the config files on relay2.<code>for file in /etc/hosts /etc/httpd/conf.d/redir.conf /etc/httpd/conf.d/ssl.conf
+do
+   filename=$(basename ${file} )
+   cat /usr/local/scripts/backups/${filename}.relay1 | sudo tee -a ${file}
+done</code>
+  - Restart Apache<code>sudo service httpd restart</code>
+
+** Fall back services to relay1 **
+
+  - Remove the IP address of relay1 from relay2<code>sudo ifconfig eth0:1 0.0.0.0</code>
+  - Restore the config files<code>for file in /etc/hosts /etc/httpd/conf.d/redir.conf /etc/httpd/conf.d/ssl.conf
+do
+   filename=$(basename ${file} )
+   sudo cp -p /usr/local/scripts/backups/${filename} ${file}
+done</code>
+  - Restart Apache<code>sudo service httpd restart</code>

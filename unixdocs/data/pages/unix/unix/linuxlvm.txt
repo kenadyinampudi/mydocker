@@ -1,0 +1,75 @@
+====== Linux LVM notes ======
+
+==== Redhat ====
+
+== Discover a newly added VMWare disk ==
+
+  * Dont know which host has it hence<code>echo "- - -" | sudo tee /sys/class/scsi_host/host0/scan
+echo "- - -" | sudo tee /sys/class/scsi_host/host1/scan
+echo "- - -" | sudo tee /sys/class/scsi_host/host2/scan</code>
+
+== Extend a filesystem ==
+
+  * Extend the logical volume<code> lvextend -L 13G /dev/datavg/fslv12</code>
+  * Extend the filesystem<code>resize2fs /dev/datavg/fslv12</code>
+
+== Create a new filesystem ==
+
+  * Create a logical volume<code>lvcreate -L 12G -n fslv26 /dev/datavg</code>
+  * Create a filesystem<code>mkfs -t ext4 /dev/datavg/fslv26</code>
+  * Make an entry in fstab<code>echo "/dev/mapper/datavg-fslv26   /data/fsname                    ext4    defaults        1 2" | sudo tee -a /etc/fstab</code>
+  * Create Mount point and mount the filesystem<code>mkdir -p /data/fsname
+mount /data/fsname</code>
+
+
+
+==== SuSE ====
+
+== Managing disks ==
+
+  * List all disks<code>x1kxk630@paitap01:~> sudo lsscsi
+[2:0:0:16]   disk    EMC      SYMMETRIX        5773  /dev/sda
+[2:0:0:255]  disk    EMC      SYMMETRIX        5773  /dev/sdb
+[2:0:1:0]    disk    EMC      SYMMETRIX        5773  /dev/sdc
+....lines removed....
+[2:0:2:0]    disk    DGC      VRAID            0532  /dev/sdl
+[5:0:1:0]    disk    EMC      SYMMETRIX        5773  /dev/sdj
+[5:0:1:239]  disk    EMC      SYMMETRIX        5773  /dev/sdk</code>
+  * Remove a disk<code>echo 1 | sudo tee -a /sys/block/sdX/device/delete</code>**sdX** is the device that gets deleted.
+  * Rescan the bus for new disks<code>sudo rescan-scsi-bus.sh -l</code>
+
+== Extend a filesystem ==
+
+  * Extend the logical volume<code> lvextend -L 13G /dev/datavg/fslv12
+  Extending logical volume fslv12 to 13.00 GB
+  Logical volume fslv12 successfully resized</code>
+  * Extend the filesystem<code>/sbin/resize_reiserfs /dev/datavg/fslv12
+resize_reiserfs 3.6.19 (2003 www.namesys.com)
+resize_reiserfs: On-line resizing finished successfully.</code>
+
+== Create a new filesystem ==
+
+  * Create a logical volume<code>lvcreate -L 12G -n fslv26 /dev/datavg
+  Logical volume "fslv26" created</code>
+  * Create a filesystem<code>/sbin/mkreiserfs -f /dev/datavg/fslv26
+mkreiserfs 3.6.19 (2003 www.namesys.com)
+....... lines removed .....
+....... lines removed .....
+Initializing journal - 0%....20%....40%....60%....80%....100%
+Syncing..ok
+ReiserFS is successfully created on /dev/datavg/fslv26.</code>
+  * Make an entry in fstab<code>echo "/dev/datavg/fslv26 /oracle/QCU/11203 reiserfs   acl,user_xattr        1 2" >> /etc/fstab</code>
+  * Create Mount point and mount the filesystem<code>mkdir -p /oracle/QCU/11203
+mount /oracle/QCU/11203</code>
+
+
+== Remove a filesystem ==
+
+   * Unmount the file system<code>umount /oracle/TCOG/11203</code>
+   * Remove the logical volume and file system <code>  lvremove /dev/datavg/fslv36
+Do you really want to remove active logical volume "fslv36"? [y/n]: y
+  Logical volume "fslv36" successfully removed </code>
+   * Remove entry from /etc/fstab
+   * vi /etc/fstab 
+   * Delete line for file system <code> /dev/datavg/fslv36 /oracle/TCOG/11203 reiserfs   acl,user_xattr        1 2,</code>
+   * Remove mount point <code> rmdir /oracle/TCOG/11203</code>

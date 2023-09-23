@@ -1,0 +1,62 @@
+
+<h1 class="sectionedit1" id="granting_sudo_access_for_l_users">Granting sudo access for (l)users</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> We get entitlement request(s) to grant a specific user root ( sudo su - ) access, you should have the following data<pre class="code">Username : 
+Hostname : </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> An important rule.</div>
+<ol>
+<li class="level2"><div class="li"> The username must be an individual account, <strong> not a service account like orata2, ta2adm, plsware etc etc </strong></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> To grant access to a specific user on a host(s)<pre class="code">sudo /prod/images/scripts/manage_sudo enable &lt;username&gt; &lt;host1&gt; &lt;host2&gt;</pre>
+
+<p>
+e.g.
+</p>
+<pre class="code">sudo /prod/images/scripts/manage_sudo enable x1kxk630 panmsv02
+Granting omnipotent permission for x1kxk630 on panmsv02</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> To revoke the access<pre class="code">sudo /prod/images/scripts/manage_sudo disable &lt;username&gt; &lt;host1&gt; &lt;host2&gt;</pre>
+
+<p>
+e.g.
+</p>
+<pre class="code">sudo /prod/images/scripts/manage_sudo disable x1kxk630 panmsv02
+Taking away omnipotent like permissions from x1kxk630 on panmsv02</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Granting sudo access for (l)users" [1-874] -->
+<h1 class="sectionedit2" id="granting_temporary_sudo_access_for_somebody_who_needs_it_right_away_or_projects_which_need_longer_retention_exceptions">Granting temporary sudo access for somebody who needs it right away or projects which need longer retention ( exceptions )</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> We can use the above steps to grant the access as long as you have the exception approved by your team manager <code>Robert</code></div>
+</li>
+<li class="level1"><div class="li"> We often forget to take the temporary access back.</div>
+</li>
+<li class="level1"><div class="li"> The following step may also be used when you are on a project and the resource needs “sudo su -” access for an extended period of time + it is approved + is an exception approved by Robert.</div>
+</li>
+<li class="level1"><div class="li"> In all of the above conditions, please do this after you grant the access. This way, you don&#039;t have to remember to remove them manually.</div>
+<ol>
+<li class="level2"><div class="li"> Disable after 1 day<pre class="code">echo &quot;sudo /prod/images/scripts/manage_sudo disable x1kxk630 panmsv02 &quot; | at now + 1 day</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Disable after 1 hour<pre class="code">echo &quot;sudo /prod/images/scripts/manage_sudo disable x1kxk630 panmsv02 &quot; | at now + 1 hour</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Disable after 10 days<pre class="code">echo &quot;sudo /prod/images/scripts/manage_sudo disable x1kxk630 panmsv02 &quot; | at now + 10 day</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Granting temporary sudo access for somebody who needs it right away or projects which need longer retention ( exceptions )" [875-] -->

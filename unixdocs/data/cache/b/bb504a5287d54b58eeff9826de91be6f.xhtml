@@ -1,0 +1,169 @@
+
+<h1 class="sectionedit1" id="install_ssh_solaris8">Install SSH Solaris8</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Install SSH Solaris8" [1-36] -->
+<h2 class="sectionedit2" id="get_the_packages_for_sshd">Get the packages for SSHD</h2>
+<div class="level2">
+
+<p>
+<abbr title="Secure Shell">SSH</abbr> needs the following packages
+</p>
+<ul>
+<li class="level1"><div class="li"> openssh</div>
+</li>
+<li class="level1"><div class="li"> openssl (<abbr title="Secure Sockets Layer">SSL</abbr>)</div>
+</li>
+<li class="level1"><div class="li"> prngd (Psuedo Random Generator Daemon)</div>
+</li>
+<li class="level1"><div class="li"> zlib (Z library)</div>
+</li>
+</ul>
+<ol>
+<li class="level1"><div class="li"> Download them and store in the NIM server [ A lot of packages are found here <a href="ftp://ftp.fh-brandenburg.de/pub/fhb/software/sunfreeware/solaris8-sparc/index.html" class="urlextern" title="ftp://ftp.fh-brandenburg.de/pub/fhb/software/sunfreeware/solaris8-sparc/index.html"  rel="nofollow">ftp://ftp.fh-brandenburg.de/pub/fhb/software/sunfreeware/solaris8-sparc/index.html</a></div>
+<ol>
+<li class="level2"><div class="li"> Login to pgnmsv01<pre class="code">cd /prod/images/Sun/solaris8
+wget ftp://mirrors.easynews.com/sunfreeware/sparc/8/openssl-0.9.6c-sol8-sparc-local.gz
+wget ftp://sunsite.informatik.rwth-aachen.de/pub/mirror/ftp.sunfreeware.com/sparc/8/prngd-0.9.23-sol8-sparc-local.gz
+wget ftp://sunsite.informatik.rwth-aachen.de/pub/mirror/ftp.sunfreeware.com/sparc/8/zlib-1.1.4-sol8-sparc-local.gz
+wget ftp://sunsite.informatik.rwth-aachen.de/pub/mirror/ftp.sunfreeware.com/sparc/8/openssh-3.1p1-sol8-sparc-local.gz</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Get the packages for SSHD" [37-875] -->
+<h2 class="sectionedit3" id="installing_on_a_solaris8_server">Installing on a Solaris8 Server</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Get the files from NIM server<pre class="code">mkdir -p /var/tmp/ssh
+cd /var/tmp/ssh
+ftp 10.32.51.118
+ftp&gt; cd /prod/images/Sun/solaris8
+prompt
+mget *</pre>
+
+<p>
+Gunzip them
+</p>
+<pre class="code">gunzip openssl-0.9.6c-sol8-sparc-local.gz
+gunzip prngd-0.9.23-sol8-sparc-local.gz
+gunzip zlib-1.1.4-sol8-sparc-local.gz
+gunzip openssh-3.1p1-sol8-sparc-local.gz</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install OpenSSL<pre class="code">pkgadd -d openssl-0.9.6c-sol8-sparc-local</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Pseudo Random number generator<pre class="code">pkgadd -d prngd-0.9.23-sol8-sparc-local</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install ZLIB<pre class="code">pkgadd -d zlib-1.1.4-sol8-sparc-local</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install OpenSSH<pre class="code">pkgadd -d openssh-3.1p1-sol8-sparc-local</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup the directory<pre class="code">cd 
+rm -rf /var/tmp/ssh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a startup script<pre class="code">vi /etc/init.d/sshd</pre>
+
+<p>
+Here is the script
+</p>
+<pre class="code">#! /bin/sh
+#
+# start/stop the secure shell daemon
+
+case &quot;$1&quot; in
+
+&#039;start&#039;)
+     # Start the ssh daemon
+     if [ -f /usr/local/sbin/sshd ]; then
+          echo &quot;starting SSHD daemon&quot;
+          /usr/local/sbin/sshd &amp;
+     fi
+     ;;
+
+&#039;stop&#039;)
+     # Stop the ssh deamon
+     PID=`/usr/bin/ps -e -u 0 | /usr/bin/fgrep sshd | /usr/bin/awk &#039;{print $1}&#039;`
+     if [ ! -z &quot;$PID&quot; ] ; then
+          /usr/bin/kill ${PID} &gt;/dev/null 2&gt;&amp;1
+     fi
+     ;;
+
+*)
+     echo &quot;usage: /etc/init.d/sshd {start|stop}&quot;
+     ;;
+
+esac</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make it executable<pre class="code">chmod +x /etc/init.d/sshd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add it to the RC script<pre class="code">ln -s /etc/init.d/sshd /etc/rc2.d/S99sshd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a startup script for PRNGD<pre class="code">vi /etc/init.d/prngd</pre>
+
+<p>
+Enter this code
+</p>
+<pre class="code">#! /bin/sh
+#
+# start/stop the pseudo random generator daemon
+
+case &quot;$1&quot; in
+
+&#039;start&#039;)
+     # Start the ssh daemon
+     if [ -f /usr/local/bin/prngd ]; then
+          echo &quot;starting PRNG daemon&quot;
+          /usr/local/bin/prngd /var/spool/prngd/pool&amp;
+     fi
+     ;;
+
+&#039;stop&#039;)
+     # Stop the ssh deamon
+     PID=`/usr/bin/ps -e -u 0 | /usr/bin/fgrep prngd | /usr/bin/awk &#039;{print $1}&#039;`
+     if [ ! -z &quot;$PID&quot; ] ; then
+          /usr/bin/kill ${PID} &gt;/dev/null 2&gt;&amp;1
+     fi
+     ;;
+
+*)
+     echo &quot;usage: /etc/init.d/prngd {start|stop}&quot;
+     ;;
+
+esac</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make it executable<pre class="code">chmod +x /etc/init.d/prngd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add it to RC<pre class="code">ln -s /etc/init.d/prngd /etc/rc2.d/S99prngd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make this directory<pre class="code">mkdir -p /var/spool/prngd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start prngd<pre class="code">/etc/init.d/prngd start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the DSA keys<pre class="code">/usr/local/bin/ssh-keygen -d -f /usr/local/etc/ssh_host_dsa_key -N &quot;&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start <abbr title="Secure Shell">SSH</abbr><pre class="code">/etc/init.d/sshd start</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Installing on a Solaris8 Server" [876-] -->

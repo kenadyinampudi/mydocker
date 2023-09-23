@@ -1,0 +1,723 @@
+==== EU_DR_Procedures_For_INX_DC ====
+
+this is still being produced!! 
+
+To be executed only we are having DR exercise or real DR
+
+List of things to be done:
+  - Prepare the DR container with required tapes based on the DR date announced and the binaries in USB stick well before the test. [[#DR_Container|steps]]
+  - On the declared DR date update hosts file we receive from network team in your laptop/desktop so you can access only the DR servers.[[#Hosts_File|steps]]
+  - Connect to the DR master server via remote desktop, check if we have the drive letters same as in production.
+  - Type hostname in the command prompt and check if the hostname is exact as in production.[[#Host_Name_Verification|steps]]
+  - Check if we can see the tape library and the drive(s) are visible without any conflicts in the device manager.[[#Device_Manager_Verification|steps]]
+  - Check for Master server name before starting NetBackup software installation.[[#NBU_Server_name_check|steps]]
+  - Connect USB stick to the DR server taitc138, check the binaries
+  - Install the NetBackup software in the same drive or partition as in production (Currently in E drive of TAITC138)[[#NBU_Install|steps]]
+  - Configure the NetBackup, library after the installation is successful.[[#NBU_Server_name_check|steps]]
+  - Recover the catalog from the catalog file we receive in the breports database.[[#Catalog_Recovery|steps]]
+  - Restart the Netbackup services [[#NBU_restart|steps]]
+  - Reconfigure the tape library and the drive form the device manager again once the catalog is recovered successfully.
+  - Deactivate all the policies.[[#Deactivate_Policies_SLPs|steps]]
+  - Promote second copy to primary copy [[#Second_copy|steps]]
+  - Force all backups made by appliance to be restored by taitc138[[#Force_media_server|steps]]
+  - Start installing NBU agent and start the file system restore for all the three Unix clients (pehrdb99/pehrap99/pehrap01)[[#UNIX_Client_Installation|steps]]
+  - Steps to restore data on to a Unix client.[[#Restore_Unix_Clients|steps]] 
+  - Configure ESX server to the DR master server - should be aware of the hostname of the ESX server and have the credentials ready before we start).[[#VM_Ware_Configuration|steps]]
+  - Start VM ware restores -  Reach out the Wintel team to know the name and location of the data store which we will use during the DR. 
+  - Restoring MS SQL Server and its content Restoring_SQL_Server.[[#Restoring_SQL_Server|steps]]
+
+==== DR_Container ====
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+DR site address:<code>
+SunGard Availability Services (France) S.A
+Customer#:  BK445
+attn: Patrick Titone
+93 Cours des Petites Ecuries,
+77185 Lognes, France</code>
+==== Hosts_File ====
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+Gather information from network team. They will provide us the DR hosts file with IPs prior to the test. 
+
+<code>
+# Copyright (c) 1993-1999 Microsoft Corp.			
+#			
+# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.			
+#			
+# This file contains the mappings of IP addresses to host names. Each			
+# entry should be kept on an individual line. The IP address should			
+# be placed in the first column followed by the corresponding host name.			
+# The IP address and the host name should be separated by at least one			
+# space.			
+#			
+# Additionally, comments (such as these) may be inserted on individual			
+# lines or following the machine name denoted by a '#' symbol.			
+#			
+# For example:			
+#			
+#      102.54.94.97     rhino.acme.com          # source server			
+#       38.25.63.10     x.acme.com              # x client host			
+			
+127.0.0.1       localhost			
+#			
+			
+10.63.193.99 	pcbe		# Remote PC Brussels BE
+10.63.193.100	pcfr		# Remote PC Lognes FR
+			
+# The H1P DB server			
+10.63.193.101	pehrdb99		# EU SAP HR - H1P Unix MO: 10/10/2013
+10.63.193.101	pehrdb00		# EU SAP HR - H1P Unix  MO: 10/10/2013
+10.63.193.101	pehrdb99.emea.int.tenneco.com		# EU SAP HR - H1P Unix MO: 10/10/2013
+10.63.193.101	pehrdb00.emea.int.tenneco.com		# EU SAP HR - H1P Unix  MO: 10/10/2013
+10.63.193.101	pehrdb99bck.emea.int.tenneco.com		# EU SAP HR - H1P Unix BackupNic MO: 10/10/2013
+10.63.193.101	pehrdb00bck.emea.int.tenneco.com		# EU SAP HR - H1P Unix BackupNic MO: 10/10/2013
+			
+# The H1P CI (Central Instance)			
+10.63.193.126	pehrap99		# EU SAP HR CI - H1P Unix MO: 10/10/2013
+10.63.193.126	pehrdb01		# EU SAP HR CI - H1P Unix MO: 10/10/2013
+10.63.193.126	pehrap99.emea.int.tenneco.com		# EU SAP HR CI - H1P Unix MO: 10/10/2013
+10.63.193.126	pehrap99bck.emea.int.tenneco.com		# EU SAP HR CI - H1P Unix MO: 10/10/2013
+10.63.193.126	pehrdb01.emea.int.tenneco.com		# EU SAP HR CI - H1P Unix MO: 10/10/2013
+10.63.193.126	pehrdb01bck.emea.int.tenneco.com		# EU SAP HR CI - H1P Unix MO: 10/10/2013
+10.63.193.126	tepr2d02.eu.ten		# alias EU SAP HR - H1P - Central Instance (pehrap00-99 & pehrdb01)
+10.63.193.126	h1pmsgsv.emea.int.tenneco.com		# alias EU SAP HR - H1P - Central Instance (pehrap00-99 & pe
+10.63.193.126	h1pspro.eu.ten		# alias EU SAP HR - H1P - Central Instance (pehrap00-99 & pehrdb01)
+10.63.193.126	tah1pro.eu.ten		# alias EU SAP HR - H1P - Central Instance (pehrap00-99 & pehrdb01)
+10.63.193.126	tapr2d02.emea.int.tenneco.com		# alias EU SAP HR - H1P - Central Instance (pehrap00-99 & pe
+			
+# The H1P APS (Application server)			
+10.63.193.119	pehrap01		# EU SAP HR AP - H1P Unix MO: 10/10/2013
+10.63.193.119	pehrap01.emea.int.tenneco.com		# EU SAP HR AP - H1P Unix MO: 10/10/2013
+10.63.193.119	pehrap01bck.emea.int.tenneco.com		# EU SAP HR AP - H1P Unix MO: 10/10/2013
+			
+# Backup Server			
+10.63.193.103	taitc138		# Backup Server Wintel
+10.63.193.103	taitc138bck		# Backup Server Wintel
+10.63.193.103	taitc138bck2		# Backup Server Wintel
+10.63.193.103	taitc138bck3		# Backup Server Wintel
+10.63.193.103	taitc138.emea.int.tenneco.com		# Backup Server Wintel MO: added 18/10/2013
+10.63.193.104	taitc138rmb		# Backup Server Wintel
+#			
+# ESX servers			
+10.63.193.102	taitc360		# ESX Server
+10.63.193.102	taitc360.emea.int.tenneco.com		# ESX Server MO: added 18/10/2013
+10.63.193.105	taitc360rmb		# ESX Server ILO
+10.63.193.123	taitc361		# ESX Server MO: address taken from ACS server, added 27/03/2015
+10.63.193.123	taitc361.emea.int.tenneco.com		# ESX Server MO: address taken from ACS server added 27/03/2015
+10.63.193.117	taitc361rmb		# ESX Server ILO MO:address taken from tape library, redord added 27/03/
+#			
+# USPSD servers			
+10.63.193.106	taitc073		# USPSD DB server virtual Wintel
+10.63.193.106	taitc073bck		# USPSD DB server virtual Wintel BackupNic
+10.63.193.106	taitc073.emea.int.tenneco.com		# alias USPSD DB server
+#			
+10.63.193.108	taitc072		# USPSD APP server virtual Wintel
+10.63.193.108	taitc072bck		# USPSD APP server virtual Wintel BackupNic
+10.63.193.108	taitc072.eu.ten		# alias USPSD APP server
+10.63.193.108	helpdesk.na.ten		# alias USPSD APP server
+10.63.193.108	helpdesk.int.tenneco.com		# alias USPSD APP server
+10.63.193.108	helpdesk.emea.int.tenneco.com		# alias USPSD APP server
+10.63.193.108	helpdesk.amer.int.tenneco.com		# alias USPSD APP server
+#			
+10.63.193.111	taitc071		# KABA db server MO: 10/10/2013
+10.63.193.111	taitc071.emea.int.tenneco.com		# alias for KABA db server MO: 10/10/2013
+			
+10.63.193.112	drbemon		# AS400 Sint Truiden - this IP will be active for AS/400 tests
+10.63.193.113	dresmond		# AS400 Sint Truiden - this IP will be active for AS/400 tests
+10.63.193.114	drfrmonr		# AS400 Sint Truiden - this IP will be active for AS/400 tests
+#			
+10.63.193.115	tawol064		# TOPCALL server MO: 10/10/2013
+10.63.193.115	tawol064.eu.ten		# TOPCALL server MO: 18/10/2013
+10.63.193.115	tawol064.emea.int.tenneco.com		# alias for TOPCALL server MO: 18/10/2013
+#			
+10.63.193.116	taitc131		# TECCOM server
+#			
+10.63.193.118	taitc090		# TAEUR1 LN SERVER
+10.63.193.118	taitc090bck		# TAEUR1 LN SERVER BackupNic
+10.63.193.118	taeeur001.eu.ten		# alias TAEUR1 LN SERVER
+10.63.193.118	taeur1.eu.ten		# alias TAEUR1 LN SERVER
+10.63.193.118	taeur1.emea.int.tenneco.com		# alias TAEUR1 LN SERVER
+#			
+10.63.193.120	taitc091a		# EUMAIL - INOTES
+10.63.193.120	eumail.eu.ten		# alias EUMAIL - INOTES
+10.63.193.120	eumail.emea.int.tenneco.com		# alias EUMAIL - INOTES
+10.63.193.120	taitc091a.emea.int.tenneco.com		# EUMAIL - INOTES MO: 10/10/2013
+#			
+10.63.193.121	taitc150.emea.int.tenneco.com		# ESX Management server (vCenter - optional)
+10.63.193.121	taitc150		# VCenter server  MO 2 Oct 2014
+10.63.193.122	taitc081		# EMEA AD Controler MO: added 18/10/2013
+10.63.193.122	taitc081.emea.int.tenneco.com		# EMEA AD Controler
+10.63.193.124	taitc070		# KABA application server MO: added 18/10/2013
+10.63.193.124	taitc070.emea.int.tenneco.com		# KABA application server MO: added 18/10/2013
+#			
+10.63.193.125	taitc134		# GLOBAL DNS
+10.63.193.125	taitc134.emea.int.tenneco.com		# GLOBAL DNS MO: 18/10/2013
+			
+10.63.193.126	taitc185		# EU ACS
+10.63.193.126	taitc185.emea.int.tenneco.com		# EU ACS
+10.63.193.127	taitc410		# HR India Time Mgt and Payroll - Test Server
+10.63.193.127	taitc410.emea.int.tenneco.com		# HR India Time Mgt and Payroll - Test Server
+10.63.193.128	taitc411		# HR India Time Mgt and Payroll - Application Server
+10.63.193.128	taitc411.emea.int.tenneco.com		# HR India Time Mgt and Payroll - Application Server
+10.63.193.129	taitc412		# HR India Time Mgt and Payroll - DB Server
+10.63.193.129	taitc412.emea.int.tenneco.com		# HR India Time Mgt and Payroll - DB Server
+10.63.193.130	taitc497		# Business Connector for EDE
+10.63.193.130	taitc497.emea.int.tenneco.com		# Business Connector for EDE
+10.63.193.131	tawol064		# STR Topcall server
+10.63.193.131	tawol064.eu.ten		# STR Topcall server
+10.63.193.131	tawol064.emea.int.tenneco.com		# STR Topcall server
+10.63.193.140	tadrfw01		# DR Firewall
+10.63.193.140	tadrfw01.emea.int.tenneco.com		# alias DR Firewall
+10.63.193.141	tadrfw01rmb		# DR Firewall ilo
+10.63.193.141	tadrfw01rmb.emea.int.tenneco.com		# alias DR Firewall ilo
+10.63.193.151	pehrwd00		# Web Dispatcher
+10.63.193.151	pehrwd00.emea.int.tenneco.com		# alias Web Dispatcher
+10.63.193.169	taitc069		# LN server  MO 2 Oct 2014
+10.63.193.169	taitc069.emea.int.tenneco.com		# alias LN server  MO 2 Oct 2014
+10.63.193.221	remotepc1		# RemotePC via VPN
+10.63.193.222	remotepc2		# RemotePC via VPN
+10.63.193.223	remotepc3		# RemotePC via VPN
+10.63.193.224	remotepc4		# RemotePC via VPN
+10.63.193.225	remotepc5		# RemotePC via VPN
+10.63.193.226	remotepc6		# RemotePC via VPN
+10.63.193.227	remotepc7		# RemotePC via VPN
+10.63.193.228	remotepc8		# RemotePC via VPN
+10.63.193.229	remotepc9		# RemotePC via VPN
+10.63.193.230	remotepc10		# RemotePC via VPN
+10.63.193.231	remotepc11		# RemotePC via VPN
+10.63.193.232	remotepc12		# RemotePC via VPN
+10.63.193.233	remotepc13		# RemotePC via VPN
+10.63.193.234	remotepc14		# RemotePC via VPN
+10.63.193.235	remotepc15		# RemotePC via VPN
+10.63.193.236	remotepc16		# RemotePC via VPN
+
+</code>
+
+Save the DR host file here - C:\Windows\System32\drivers\etc on taitc138   (DR Server)
+
+==== Host_Name_Verification ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+1. Login to the DR server TAITC138
+
+2. Type hostname in the command prompt
+
+3. Ensure the DR servers hostname is same as in production
+
+<code>C:\Windows\system32>hostname
+taitc138</code>
+
+==== Device_Manager_Verification ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+{{ :dr:device_manager_sample.png |}}
+
+
+
+
+==== NBU_Server_name_check ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+
+After ensuring the hostname of the DR server is exactly as in production-
+
+Check how it is mentioned in the Netbackup software in production with FQDN
+
+{{ :dr:nbu_master_name.png |}}
+
+
+==== NBU_Install ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+Starting with NBU 8.1.2 - version used in INX DC, there is special option to install NBU - Disaster Recovery Master Server, see picture.
+{{ :dp:nbu_dr_install.png |}}
+After selection this option you will be asked to provide dr package. This is the file which is being send via email with each and every hot catalog backup. Provide the file used with the hot catalog backup you want to restore from. DR package will ask for password - it is ours standard one with the three first letters in capital.
+In the event of a catastrophic failure, use the following procedure to rebuild the previous NetBackup environment. Of course we do not have NBU appliance in DR site so remember about this.
+
+Important Notes:
+- If new hardware is required, make sure that the devices contain drives capable of reading the media and that the drive controllers are capable of mounting the drives.
+- Keep the passphrase associated with the DR Package file handy. This passphrase is set before the catalog backup policy configuration using the NetBackup Administration Console or the nbseccmd command.
+  - Ordered List ItemInstall NetBackup.
+  * Unordered List ItemThe installation procedure prompts you to confirm if this is a DR scenario.
+  * On the UNIX installer, you can see a prompt as "Are you currently performing a disaster recovery of a master server? [y,n] (y)". Select "y"
+  * On the Windows installer click the "Disaster Recovery Master Server" button.
+  * The installation procedure prompts you for the master server’s DR Package (refer to the C:\NBU_DR-info\HOT_INX_1542020707_INCR.drpkg mentioned earlier). Make sure that the master server can access the attached DR package file.
+  * Type the passphrase associated with the DR package, when prompted.
+  * The installer validates the DR package using the passphrase.
+  * In case of errors in validation, the installer aborts the operation. To work around the issue, refer to the following article: http://www.veritas.com/docs/000125933
+  - Ordered List ItemConfigure the devices necessary to read the media listed above.
+  - Inventory the media.
+  - Make sure that the master server can access the attached DR image file.
+  - Start the NetBackup Recovery Wizard from the NetBackup Administration Console. Or, start the wizard from a command line by entering bprecover -wizard.
+In DR 2018 there were issues in recovering catalaog, here are some useful links:
+https://www.veritas.com/support/en_US/article.100043536
+https://www.veritas.com/support/en_US/article.000125933
+
+==== Catalog_Recovery ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+Netbackup Master Server Catalog recovery:
+
+Tech note - https://www.veritas.com/support/en_US/article.000032075 
+
+1) If the media server is offline, or not available or no longer exists,( NBU appliance),  a manual edit of the disaster recovery (DR) file is necessary so the restore process can go to the correct server(taitc138 -DR server) for the catalog file.
+
+2 )  Make copies of all disaster recovery files.  These files can be emailed to an administrative account as a part of the backup policy.  Additionally, they can be found in the location specified on the Disaster Recovery tab in the catalog policy  
+
+{{ :dr:CATALOG_1.png |}}
+
+3)  Open the Hot_INX_<ctime>_FULL file from the location C:\NBU_DR-info on the Production taitc138 and replace all references to inxnbu5230amd with taitc138.emea.int.tenneco.com 
+
+Example :
+
+
+# FRAG: c# f# K rem mt den fn id/path host bs off md dwo f_flags desc exp mpx rl chkpt rsm_nbr seq_no media_subtype keep_date copy_date fragment_state data_format slp_index_num resumable expiration_count copy_type
+FRAGMENT 1 -1 5929 0 2 6 5 IS8838 inxnbu5230amd 262144 404294 1510041887 1 0 *NULL* 0 0 0 0 0 0 1 0 0 1 0 0 0 1 0
+FRAGMENT 1 1 40960000 0 2 6 2 IS8838 inxnbu5230amd 262144 2136 1510041887 1 0 *NULL* 1510906078 0 65547 0 0 0 1 0 1510043689 1 1 0 0 0 0
+FRAGMENT 1 2 40960000 0 2 6 3 IS8838 inxnbu5230amd 262144 162138 1510041887 1 0 *NULL* 0 0 0 0 0 0 1 0 0 1 0 0 0 1 0
+FRAGMENT 1 3 21030845 0 2 6 4 IS8838 inxnbu5230amd 262144 322140 1510041887 1 0 *NULL* 0 0 0 0 0 0 1 0 0 1 0 0 0 1 0
+
+  -> Replace inxnbu5230amd with taitc138.emea.int.tenneco.com 
+
+# FRAG: c# f# K rem mt den fn id/path host bs off md dwo f_flags desc exp mpx rl chkpt rsm_nbr seq_no media_subtype keep_date copy_date fragment_state data_format slp_index_num resumable expiration_count copy_type
+FRAGMENT 1 -1 5929 0 2 6 5 IS8838 taitc138.emea.int.tenneco.com  262144 404294 1510041887 1 0 *NULL* 0 0 0 0 0 0 1 0 0 1 0 0 0 1 0
+FRAGMENT 1 1 40960000 0 2 6 2 IS8838 taitc138.emea.int.tenneco.com 262144 2136 1510041887 1 0 *NULL* 1510906078 0 65547 0 0 0 1 0 1510043689 1 1 0 0 0 0
+FRAGMENT 1 2 40960000 0 2 6 3 IS8838 taitc138.emea.int.tenneco.com 262144 162138 1510041887 1 0 *NULL* 0 0 0 0 0 0 1 0 0 1 0 0 0 1 0
+FRAGMENT 1 3 21030845 0 2 6 4 IS8838 taitc138.emea.int.tenneco.com 262144 322140 1510041887 1 0 *NULL* 0 0 0 0 0 0 1 0 0 1 0 0 0 1 0
+
+4) This instructs the Catalog recovery to reference taitc138.emea.int.tenneco.com to find the tape  IS8838 for the recovery. Once this change has been made proceed with the catalog recovery as follows: 
+
+
+5) Set the restore failover Media Server in the Restore Failover settings in the Master Server Host Properties 
+
+{{ :dr:CATALOG_2.png |}}
+
+6) Check for recent email with subject line "NetBackup Catalog Backup successful on host taitc138.emea.int.tenneco.com status 0" from giosdatapresalerts@tenneco.com
+
+{{ :dr:catalog_file_email.png |}}
+
+7) Download the attachment from the email "HOT_INX_1494484963_FULL" and save it locally and then to the DR server TAITC138
+
+8) Then using the catalog recovery wizard access the file and follow the steps. 
+
+
+{{ :dr:CAT_recovery_1.png |}}
+
+{{ :dr:CAT_recovery_2.png |}}
+
+
+
+==== NBU_Restart ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+IN order to restart NBU services please do the following<code>bpdown -f -v
+bpps
+bpup -f -v</code>
+
+
+==== Deactivate_Policies_SLPs ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+In order to deactivate the policies please do the following from CMD prompt:<code>mkdir c:\temp\NBU_upgrade
+FOR /F "usebackq" %i IN (`bppllist`) DO (
+echo %i
+bpplinfo %i -U |findstr Active > c:\temp\NBU_upgrade\%i)
+dir c:\temp\NBU_upgrade 
+FOR /F "usebackq" %i IN (`bppllist`) DO bpplinfo %i -modify -inactive</code>
+
+To deactivate all SLPs use the following<code>FOR /F "tokens=2" %a IN ('nbstl -L^|findstr Name^|findstr -v Window') DO (echo %a&& nbstlutil inactive -lifecycle %a)</code>
+Once this command is executed, ensure that all policies and SLPs are deactivated by looking in to the Java GUI policies window and Storage Lifecycle Policies.
+
+
+
+==== Second_copy ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+
+Create the following text file on the Master Server.<code>echo 2 > "E:\Program Files\VERITAS\NetBackup\ALT_RESTORE_COPY_NUMBER"
+type "E:\Program Files\VERITAS\NetBackup\ALT_RESTORE_COPY_NUMBER"</code>
+
+Note: After creating the file we need to access the file with note pad and hit back space. This gets rid of the empty line next to 2.
+
+<code>notepad "E:\Program Files\VERITAS\NetBackup\ALT_RESTORE_COPY_NUMBER"</code>
+
+
+
+==== Force_Media_Server ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+There are two options we can achieve the same.
+Option 1 - Forcing media server restore<code>nbemmcmd -listhosts |findstr media
+echo FORCE_RESTORE_MEDIA_SERVER=inxnbu5230amd taitc138 |bpsetconfig</code>Bare in mind that first server after equal sign is the media server not in service any longer. The other one which we require for the restores. 
+
+Option 2 -
+
+<code>nbdecommission -oldserver inxnbu5230amd -list_ref -v -machinetype media</code>
+
+Server inxnbu5230amd is a media server
+
+Server inxnbu5230amd is a member of the following media sharing groups:
+UNRESTRICTED_SHARING_GROUP
+
+Deleting the appliance images and promoting to first copy
+
+<code>nbdecommission -oldserver inxnbu5230amd -newserver taitc138 -v -machinetype media</code>
+You want to decommission inxnbu5230amd. Is that correct? (y/n) [n]: y
+
+Server inxnbu5230amd is a media server
+
+
+Administrative Pause set for machine inxnbu5230amd
+
+Before proceeding further, please make sure that no jobs are running on
+media server inxnbu5230amd. This command may not be able to decommission the media
+server with active jobs on it.
+
+Continue? (y/n) [n]:
+
+
+
+
+
+==== UNIX_Client_Installation ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+
+The DR clients will have the binaries in the MKSYSB image itself. So we may proceed directly to the NBU client software installation.
+
+The NBU binaries are in /usr/NBU_client
+
+Login to the DR client via putty interface and execute the following steps
+
+Example - pehrdb99, along with the prompt from where we need to give the commands are mentioned inside the code.
+
+pehrdb99:/home/pawetkac>ls -la /usr/NBU_client
+
+<code>ls -la /usr/NBU_client
+total 1880576
+drwxr-xr-x    2 root     system          256 Oct 26 14:34 .
+drwxr-xr-x   59 bin      bin            4096 Oct 26 14:33 ..
+-rw-r--r--    1 root     staff     962846720 Oct 26 14:35 SYMCnbclient_RS6000-AIX6_8.0.tar</code>
+
+Go to the directory /usr/NBU_client and then issue the following commands
+
+pehrdb99:/usr/NBU_client>echo Start NBU client
+
+<code>echo Start NBU client</code>
+
+pehrdb99:/usr/NBU_client>ls -la
+
+<code>ls -la
+total 1880576
+drwxr-xr-x    2 root     system          256 Oct 26 14:43 .
+drwxr-xr-x   59 bin      bin            4096 Oct 26 14:37 ..
+-rw-r--r--    1 root     staff     962846720 Oct 26 14:35 SYMCnbclient_RS6000-AIX6_8.0.tar</code>
+
+pehrdb99:/usr/NBU_client>df -gI
+
+<code>df -gI
+Filesystem    GB blocks      Used      Free %Used Mounted on
+/dev/hd4           2.25      0.90      1.35   40% /
+/dev/hd2           7.00      4.69      2.31   68% /usr
+/dev/hd9var        2.50      0.91      1.59   37% /var
+/dev/hd3           4.00      0.03      3.97    1% /tmp
+/dev/hd1           1.25      0.46      0.79   38% /home
+/dev/hd10opt       1.50      0.34      1.16   23% /opt
+/dev/fslv01       11.00      2.23      8.77   21% /bkpmksb
+/dev/fslv00        6.00      4.44      1.56   74% /usr/openv
+/dev/fslv32       15.00      0.00     15.00    1% /mksysb
+/proc                 -         -         -    - /proc
+/dev/livedump      0.25      0.00      0.25    1% /var/adm/ras/livedump
+/dev/fslv02        0.50      0.02      0.48    4% /application/OmniVision
+/dev/fslv04        0.50      0.40      0.10   80% /oracle
+/dev/fslv07        9.00      7.64      1.36   85% /oracle/H1P
+/dev/fslv08        8.00      3.00      5.00   38% /oracle/H1P/mirrlogA
+/dev/fslv09        5.00      3.00      2.00   61% /oracle/H1P/mirrlogB
+/dev/fslv10      100.00      6.16     93.84    7% /oracle/H1P/oraarch
+/dev/fslv11       50.00     10.67     39.33   22% /oracle/H1P/oraarch/duplex
+/dev/fslv12        5.00      3.11      1.89   63% /oracle/H1P/origlogA
+/dev/fslv13        5.00      3.11      1.89   63% /oracle/H1P/origlogB
+/dev/fslv14        1.00      0.04      0.96    5% /oracle/H1P/saparch
+/dev/fslv15        5.00      1.00      4.00   21% /oracle/H1P/sapreorg
+/dev/fslv16        0.50      0.43      0.07   86% /oracle/client
+/dev/fslv03        1.00      0.02      0.98    2% /usr/sap
+/dev/fslv17       13.50      2.41     11.09   18% /usr/sap/H1P
+/dev/fslv18       10.00      7.87      2.13   79% /oracle/H1P/11203
+/dev/fslv19       10.00      7.00      3.00   71% /oracle/H1P/standbylog
+/dev/fslv06       20.00      0.00     20.00    1% /oracle/H1P/12102
+/dev/lv01        304.88    288.27     16.61   95% /oracle/H1P/sapdata1
+/dev/lv02        320.00    300.05     19.95   94% /oracle/H1P/sapdata10
+/dev/lv03        400.00    324.95     75.05   82% /oracle/H1P/sapdata11
+/dev/lv04        419.00    321.05     97.95   77% /oracle/H1P/sapdata12
+/dev/lv05        346.62    233.73    112.89   68% /oracle/H1P/sapdata13
+/dev/lv06        498.50    376.48    122.02   76% /oracle/H1P/sapdata14
+/dev/lv07        304.88    283.08     21.80   93% /oracle/H1P/sapdata2
+/dev/lv08        300.88    280.05     20.83   94% /oracle/H1P/sapdata3
+/dev/lv09        300.88    280.05     20.83   94% /oracle/H1P/sapdata4
+/dev/lv10        300.00    280.05     19.95   94% /oracle/H1P/sapdata5
+/dev/lv11        300.00    280.05     19.95   94% /oracle/H1P/sapdata6
+/dev/lv12        301.00    277.84     23.16   93% /oracle/H1P/sapdata7
+/dev/lv13        300.00    280.05     19.95   94% /oracle/H1P/sapdata8
+/dev/lv14        300.00    280.05     19.95   94% /oracle/H1P/sapdata9
+/dev/lv15        500.00    460.08     39.92   93% /oracle/H1P/sapdata15
+pehrap00:/sapmnt/H1P      10.00      2.77      7.23   28% /sapmnt/H1P</code>
+
+pehrdb99:/usr/NBU_client>cd /mksysb
+
+<code>cd /mksysb</code>
+
+pehrdb99:/mksysb>ls -la
+
+<code>ls -la
+total 8
+drwxr-xr-x    3 root     system          256 Oct 26 14:37 .
+drwxr-xr-x   45 root     system         4096 Oct 26 14:37 ..
+drwxr-xr-x    2 root     system          256 Jul 19 2014  lost+found</code>
+
+pehrdb99:/mksysb>sudo mkdir nbucliet
+
+<code>sudo mkdir nbucliet</code>
+
+pehrdb99:/mksysb>ls -al
+
+<code>ls -al
+total 8
+drwxr-xr-x    3 root     system          256 Oct 26 14:37 .
+drwxr-xr-x   45 root     system         4096 Oct 26 14:37 ..
+drwxr-xr-x    2 root     system          256 Jul 19 2014  lost+found</code>
+
+pehrdb99:/mksysb>cd ../bkpmksb/
+
+<code>cd ../bkpmksb/</code>
+
+pehrdb99:/bkpmksb>ls -la
+
+<code>ls -la
+total 4671624
+drwxr-xr-x    3 root     system          256 Oct 26 14:37 .
+drwxr-xr-x   45 root     system         4096 Oct 26 14:37 ..
+-rw-r--r--    1 root     system   2391866655 Oct 23 23:02 bos.obj.pehrdb99.gz
+drwxr-xr-x    2 root     system          256 Jul 19 2014  lost+found</code>
+
+pehrdb99:/bkpmksb>sudo mkdir NBUclient
+
+<code>sudo mkdir NBUclient</code>
+
+pehrdb99:/bkpmksb>cd NBUclient/
+
+<code>cd NBUclient/</code>
+
+pehrdb99:/bkpmksb/NBUclient>ls -la
+
+<code>ls -la
+total 0
+drwxr-xr-x    2 root     system          256 Oct 26 14:45 .
+drwxr-xr-x    4 root     system          256 Oct 26 14:45 ..</code>
+
+pehrdb99:/bkpmksb/NBUclient>sudo tar xf /usr/NBU_client/SYMCnbclient_RS6000-AIX6_8.0.tar
+
+<code>sudo tar xf /usr/NBU_client/SYMCnbclient_RS6000-AIX6_8.0.tar</code>
+pehrdb99:/bkpmksb/NBUclient>ls -la
+
+<code>ls -la
+total 0
+drwxr-xr-x    3 root     system          256 Oct 26 14:45 .
+drwxr-xr-x    4 root     system          256 Oct 26 14:45 ..
+drwxr-xr-x    3 root     bin             256 Oct 26 14:45 SYMCnbclient_RS6000-AIX6_8.0</code>
+
+pehrdb99:/bkpmksb/NBUclient>cd SYMCnbclient_RS6000-AIX6_8.0/
+
+<code>cd SYMCnbclient_RS6000-AIX6_8.0/</code>
+
+pehrdb99:/bkpmksb/NBUclient/SYMCnbclient_RS6000-AIX6_8.0>ls -al
+
+<code>ls -al
+total 112
+drwxr-xr-x    3 root     bin             256 Oct 26 14:45 .
+drwxr-xr-x    3 root     system          256 Oct 26 14:45 ..
+drwxr-xr-x    4 root     bin             256 Oct 26 14:45 NBClients
+-rwxr-xr-x    1 root     bin           54515 Nov 10 2016  install</code>
+
+pehrdb99:/bkpmksb/NBUclient/SYMCnbclient_RS6000-AIX6_8.0>./install
+
+<code>sudo ./install</code>
+==== Restore_Unix_Clients====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+Before we start the restore, we need to find out what we have (in tapes)
+Pick up the most recent version/dates - remember we may not have the very recent one (tapes are yet to be shipped)
+
+On respective client, execute the following,
+
+1. Determine what file systems are going to be restored by executing the following command:
+
+<code>for i in `lsvg |grep -v rootvg` ;do lsvgfs ${i} |grep -v "/usr/openv" ; done</code> 
+
+2. Visually inspect the output and if all is OK redirect this output to a file, ie FSes_2_restore.txt
+
+<code>for i in `lsvg |grep -v rootvg` ;do lsvgfs ${i} |grep -v "/usr/openv"  ; done > /tmp/FSes_2_restore.txt</code>
+
+3. Change the working directory to bin of NBU installlation folder on NetBackup destination client (in this example pehrdb99 - you need to be root there),in ours environment it is /usr/openv/netbackup/bin 
+
+Like this -> pehrdb99:/usr/openv/netbackup/bin>
+
+On the master server
+
+4. Check the available backup images on the master server - need to know the date from which backup date the restore should take place - most recent one, have other Putty session  On master server and run the following (use pehrdb99 is know as pehrdb99bck.emea.int.tenneco.com - name is really important):
+
+<code>bpimagelist -client pehrdb99bck.emea.int.tenneco.com -policy STD_PEHRDB99 -hoursago 240 -U</code>
+
+5. Need to determine the unix time stamp for this backup
+
+<code>bpimagelist -client pehrdb99bck.emea.int.tenneco.com -policy STD_PEHRDB99 -d 10/27/2017 00:30:00 -e 10/27/2017 00:31:00 -idonly</code>
+
+Time:   10/27/2017 12:30:00 AM   ID: pehrdb99bck.emea.int.tenneco.com_1509057000   FULL (0)
+
+6. As we can see the UNIX time stamp is 1509057000 now we have everything to perform restore, to verify if we can see any files from this selected backup run the following:
+
+<code>bplist -C pehrdb99bck.emea.int.tenneco.com -t 0 -k STD_PEHRDB99 -R 1 -X -s 1509057000 -e 1509057000 /</code>
+
+7.Restore command using backup taken in this example taken on 10/27/2017 00:30(unix timestamp 1509057000)
+IMPORTANT NOTE : Restore command would be executing from the respective CLIENT ( here it is pehrdb99)
+
+<code>pehrdb99:./bprestore -C pehrdb99bck.emea.int.tenneco.com -D pehrdb99bck.emea.int.tenneco.com -L
+/tmp/pehrdb99bck.emea.int.tenneco.com_restore-log.txt -t 0 -p STD_PEHRDB99 -X -s 1509057000 -e 1509057000 \ -f /tmp/FSes_2_restore.txt</code>
+
+8.To check restore progress run this command 
+
+<code>tail -f /tmp/pehrdb99bck.emea.int.tenneco.com_restore-log.txt</code>
+
+9. Similarly we will do the other Unix clients such as pehrap99, pehrap01 ( Follow the same procedure)
+
+10. Once the restore done, hand over to DBA 
+
+
+
+
+
+==== VM_Ware_Configuration ====
+
+Configure access to VM Ware Farm: 
+
+Have the VM Ware Farm credentials ready from Wintel team (svcbackup/login and password/Esx server and VCenter details)
+
+Step 1 :Add VCenter machine name , Need to Configure VCenter server 
+
+From the NBU admin console, select Media and Device Management -> Credentials -> Virtual Machine Servers - > On the right hand side, right click -> New Virtual Machine Server -> Enter the server name 
+
+{{ :dr:VM_1.png |}}
+
+Step - 2 - Enter the credentials ( User name and Password ) 
+
+{{ :dr:VM_2.png |}}
+
+Step 3 : From the NBU admin console, select, Host Properties -> Master Servers -> Click on master server ->  Go to VM Ware Accces Hosts and click on Add button to add the hosts.
+
+
+{{ :dr:VM_3.png |}}
+
+
+Based on the priority list provided by DR coordinator/Wintel team, start the restores one by one using the word document and screen shots below:
+
+
+Select the VMware client - > Choose VMware policy type -> Give OK
+
+Press the down arrow Select for Restore and highlight “Restore from Virtual Machine Backup”
+
+Select the most recent available full backup and check the check box, then press the Start Restore of Marked Files
+
+
+{{ :dr:VM_4.png |}}
+
+
+{{ :dr:VM_5.png |}}
+
+
+
+{{ :dr:VM_6.png |}}
+
+Select alternate location and press next button
+
+{{ :dr:VM_7.png |}}
+
+
+Note : Vmware restores to run  via SAN not over the network
+
+{{ :dr:VM_8.png |}}
+
+
+{{ :dr:VM_9.png |}}
+
+
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+
+
+
+
+
+
+
+
+
+
+Lets put it all the Vmware /vmdk restore jobs in Q, so the restore jobs start and finish one after another automatically.
+Next, for the Physical machine restore 
+Go to BAR window - > Choose or navigate to TAITC138, K drive, and start the restore.
+K:\to-burn\taitc131DR_2016\taitc131dr
+
+Note: The backup of this server/image is in the K drive of TAITC138 (NBU master sever)
+Give OK -> then choose Normal Backups on restore type - > Give the start and End date -> then choose the desired folder/file to restore 
+
+
+
+Restore everything to its Original location or the location specified by the Wintel team during the DR tests. 
+
+==== Restoring_SQL_Server ====
+
+[[#EU_DR_Procedures_For_INX_DC|go_to_top]]
+
+Restoring_SQL_Server
+
+Restoring Procedure for MSSQL DBs ( The below example shows the MSSQL server taitc071) Based on the same procedure, we need to restore the other SQL DB taitc412 from the DR scope. 
+
+Note: First do the VM restore of client taitc071.emea.int.tenneco.com and then proceed with the db restore procedure
+
+For this client the backup policy name at taitc138 is “MSSQL_KABA_TAITC071” The backup selection list is 
+E:\Program Files\Veritas\NetBackup\DbExt\MsSql\mssql_full.bch
+
+Now login through mstsc of taitc071 server using our q1 credentials
+
+Go to → start → All Programs - > Symantec Netbackup - > Netbackup Agents - > Right click on Netbackup MS SQL Clients and open Run as administrator
+
+ {{ :dr:mssql_1.png |}}
+
+Next, on the GUI choose → Go to file - > Restore SQL server objects 
+
+ {{ :dr:mssql_2.png |}}
+
+Then per the below screenshot choose the source client with exact FQDN(taitc071.emea.int.tenneco.com) and give OK , to check the exact name as in the production environment. 
+
+<code>bpimagelist -policy MSSQL_KABA_TAITC071 -idonly</code>
+
+ {{ :dr:mssql_3.png |}}
+
+Once we give OK,On the next window → Expand taitc071 - > bcomm460 - > choose the desired backup images and click Restore 
+
+ {{ :dr:mssql_4.png |}} 
+   
+Once the restore done, inform SQL team for further operations.
+

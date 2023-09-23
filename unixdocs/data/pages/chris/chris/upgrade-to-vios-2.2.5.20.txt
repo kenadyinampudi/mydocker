@@ -1,0 +1,56 @@
+====== Applying VIOS 2.2.5.20 updates from a New Base mksysb mage ====== 
+
+===== Work to be done prior to the VIOS upgrade =====
+
+  - Login to the host and preserve a copy of rootvg
+    - [[chris:vio-preupgrade-instructions|Save the VIOS Configuration Information]]
+    - [[chris:upgrade-to-vios-2.2.5.10InternalDisks|Power8 Servers are booting from Internal Disks (Mirrored Disks)]]
+    - Disable the alt_disk_copy script<code>sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</code>
+  - Make sure that NIM server has a latest copy of mksysb
+    - On the server to be upgraded, find out the NIM server<code>grep mksysb /var/adm/.information
+mksysbhost:pgnmsv01</code>In this case, it is pgnmsv01
+    - Login to the NIM server we figured out above, make sure a latest copy of mksysb image backup exists<code>sudo ls -l /mksysb-images/bos.obj.<hostname>.gz</code>**Check the timestamp on the file, it has to be less than 3 days old.**  If the mksysb is 3 days old or less Proceed to Step 4
+    - On the server to be upgraded create a new mksysb image. When the command has completed proceed to next step<code>sudo /usr/local/scripts/mksysb.sh adhoc</code>
+  - On NIM server copy the mksysb image to the repository.<code>sudo cp -p /mksysb-images/bos.obj.<hostname>.gz /preupgrade/mksysb/</code>
+
+
+===== Work to be done during the VIOS upgrade =====
+
+  - Create necessary paperwork, secure outages if necessary
+    - Ensure necessary blackouts are in place.
+    - As Power8 VIOS cluster has LPM capability. We will evacuate the frame, by migrating the LPAR one by one. (Please validate first before migrating any LPAR to another Frame)
+  - Check that your alt_disk_copy is bootable  Note this is extremely important - do not skip this step this is your backout !!!
+    - Find the altinst_rootvg disk <code> lspv | grep altinst_rootvg </code> and set the boot list so the server boots from it<code> bootlist -m normal -o {hdisk from previous command}</code>
+  - Perform a reboot at this time<code>sudo shutdown -Fr</code>Verify that the server has booted correctly to the alternate disk. 
+  - Reset the bootlist or boot back to the original disk and reboot.<code>lspv | grep old_rootvg </code> and set the boot list so the server boots from it<code> bootlist -m normal -o {hdisk from previous command}</code> and boot back to it <code>sudo shutdown -Fr</code>
+  - Installing the Update Release
+    - There is now a method to verify the VIOS update files before installation. This process requires access to openssl by the 'padmin' User, which can be accomplished by creating a link. To verify the VIOS update files, follow these steps:
+    - Login to the respective VIO server and execute this command.<code>oem_setup_env</code>
+    - Create a link to openssl<code>ln -s /usr/bin/openssl /usr/ios/utils/openssl</code>
+    - Verify the link to openssl was created<code>ls -alL /usr/bin/openssl /usr/ios/utils/openssl</code>
+    - Both files should display similar owner and size and then exit<code>exit</code>
+  - Create a directory and Mount the remote directory onto the Virtual I/O Server<code>sudo mkdir -p /mnt/viosupdates</code>Then<code>sudo mount 10.0.48.12:/prod/images/vio/vios2/fixpacks /mnt/viosupdates</code>
+  - Login as padmin user and commit previous updates by running the updateios command<code>sudo su - padmin</code><code>updateios -commit</code>
+  - Install the updates by running the updateios command.<code>updateios -accept -install -dev /mnt/viosupdates/VIOS_FP_2.2.5.10</code>**NOTE: Depending on the VIOs level, one or more of the LPPs below may be reported as "Missing Requisites", and they may be ignored.**<code> MISSING REQUISITES:
+      
+X11.loc.fr_FR.base.lib 4.3.0.0        # Base Level Fileset
+bos.INed 6.1.6.0                      # Base Level Fileset
+bos.loc.pc.Ja_JP 6.1.0.0              # Base Level Fileset
+bos.loc.utf.EN_US 6.1.0.0             # Base Level Fileset
+bos.mls.rte 6.1.x.x                   # Base Level Fileset
+bos.mls.rte 6.1.9.200                 # Base Level Fileset or #Fileset Update
+bos.svprint.rte 6.1.9.200             # Fileset Update</code>
+  - To activate the changes, reboot the VIOS server as user padmin .<code>shutdown -force -restart</code>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.5.10.<code>ioslevel</code>
+  - Accept the license command for all upgrades<code>license -accept</code>
+  - Commit all the updates <code>updateios -commit</code>
+
+===== Work to be done after the VIOS upgrade =====
+  - Migrate one non production system back and run it for few hours before we migrate all workloads.
+  - Validate the paths are online for all the guests running on that frame<code>for host in host1 host2 host3
+do
+   ssh ${host} /usr/local/scripts/chkdsk
+done</code>
+  - Capture a snap of the upgraded VIOS system, and send it to IBM to generate iFixes<code>sudo su - padmin</code><code>snap -r</code>
+  - The snap will be stored under /tmp/ibmsupt/snap.pax.Z
+  - Remove blackouts

@@ -1,0 +1,65 @@
+
+<h1 class="sectionedit1" id="setting_up_nim_resources_for_a_mksysb_installation">Setting up nim resources for a mksysb installation</h1>
+<div class="level1">
+
+<p>
+<strong>This documentation was written while building peerap09 using the mksysb of peerap07</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Login to the NIM Server (pgnmsv01 - LDC and penmsv01 - Interexion) and identify the mksysb.<pre class="code">ls -ld /mksysb-images/bos.obj.peerap07.*
+-rw-r-----    1 mksysftp system   1573758245 Aug 11 17:06 /mksysb-images/bos.obj.peerap07.gz</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the mksysb to a temp location<pre class="code">sudo cp /mksysb-images/bos.obj.peerap07.gz /preupgrade/mksysb/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unzip the mksysb file<pre class="code">cd /preupgrade/mksysb/ ; sudo gunzip bos.obj.peerap07.gz</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define a mksysb resource(if doesn&#039;t exist already) using the unzipped mksysb file<pre class="code">sudo nim -o define -t mksysb -a server=master -a location=/preupgrade/mksysb/bos.obj.peerap07 peerap07-mksysb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the OSLEVEL on the system that we plan to clone<pre class="code">ssh peerap07 oslevel -s
+5300-12-01-1016</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the correct Spot and LPPSRC for the above AIX release level. In this case they are,<pre class="code">530TL12-01_spot
+530TL12-01_lppsrc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define the new server as a NIM client.</div>
+<ol>
+<li class="level2"><div class="li"> CLI method<pre class="code">sudo nim -o define -t standalone -a platform=chrp -a if1=&quot;find_net peerap09 0&quot; -a netboot_kernel=mp peerap09</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> smitty method<pre class="code">sudo smitty nim --&gt; Perform NIM Administration Tasks --&gt; Manage Machines --&gt; Define a Machine --&gt; Type in the hostname (hit enter) --&gt; select &quot;ent&quot; --&gt; Fill in and hit enter</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure the server for a bosinst operation<pre class="code">sudo nim -o bos_inst -a source=mksysb -a spot=530TL12-01_spot -a lpp_source=530TL12-01_lppsrc -a no_client_boot=yes -a script=postinstallCloning -a mksysb=peerap07-mksysb peerap09</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If the server being built is in the 10.32.50 network and NIM server is taitc118 (This is a bad network configuration on taitc118), fix these files <strong> If you are building the system from pgnmsv01, ignore the following fixes </strong></div>
+<ol>
+<li class="level2"><div class="li"> /etc/bootptab Change this line<pre class="code">peerap09.amer.int.tenneco.com:bf=/tftpboot/peerap09.amer.int.tenneco.com:ip=10.32.50.94:ht=ethernet:sa=10.32.51.118:gw=10.32.50.1:sm=255.255.255.0:</pre>
+
+<p>
+as
+</p>
+<pre class="code">peerap09.amer.int.tenneco.com:bf=/tftpboot/peerap09.amer.int.tenneco.com:ip=10.32.50.94:ht=ethernet:sa=10.32.50.7:gw=10.32.50.1:sm=255.255.255.0:</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> /tftpboot/peerap09.amer.int.tenneco.com.info - Change this<pre class="code">export NIM_HOSTS=&quot; 127.0.0.1:loopback:localhost  10.32.50.94:peerap09.amer.int.tenneco.com  10.32.51.118:pgnmsv01.amer.int.tenneco.com</pre>
+
+<p>
+as
+</p>
+<pre class="code">export NIM_HOSTS=&quot; 127.0.0.1:loopback:localhost  10.32.50.94:peerap09.amer.int.tenneco.com  10.32.50.7:pgnmsv01.amer.int.tenneco.com &quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

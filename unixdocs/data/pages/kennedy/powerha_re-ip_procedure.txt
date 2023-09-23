@@ -1,0 +1,130 @@
+====== PowerHA Re-IP procedure ======
+===== Overview =====
+  *The objective of this document it to re-IP all the nodes in the PowerHA/hacmp cluster.
+  *Basic cluster in our environment contains three nodes one service IP and two boot IP’s. Two boot IP’s can be changed in the regular way using smit tcpip or mktcpip, to change the service IP there is no easy way we need to remove the cluster network and re-add with the new IP’s
+
+===== Backup/roll back plan =====
+First line of defense is cluster snapshot, if something didn’t go as planned, we can roll back using the cluster snapshot.
+==== Cluster Snapshot ====
+To take a snapshot use the below command or use smitty
+<code>clsnapshot –c backup_snapshot</code>
+To restore a snapshot
+<HTML>
+<p style="border:2px dashed red;"><b>Note: </b><i>do not restore the snapshot when the cluster is active</i></p>
+</HTML>
+
+<code>clsnapshot –a backup_snapshot</code>
+To list the snapshot you created
+<code>clsnapshot –l</code>
+==== Take alt_clone on both nodes ====
+Clean up the previous alt_clone disk
+<code>alt_disk_install -X altinst_rootvg</code>
+Create a new alt_Clone
+<code>nohup alt_disk_copy -B -d hdiskX &
+tail -f nohup.out</code>
+==== Take a mksysb of both nodes ====
+<code>mount cdcvilax118:/export/mksysb /mnt</code>
+<code>nohup mksybs -i -e /mnt/servername.mksysb &</code>
+<code>tail -f nohup.out</code>
+==== Take profile backup of both nodes ====
+Login it to HMC select the LPAR – Configuration – Manage Profile (select the active profile) – Actions – Copy
+
+===== Procedure =====
+==== Stop the Cluster ====
+<code>
+smitty hacmp
+       System Management (C-SPOC)
+              HACMP Services
+                     Stop Cluster Services
+               	          (Provide necessary details) stop now / provide node names/ Bring RG offline.
+</code>
+=== Validation ===
+To check the RG online status
+<code>clRGinfo</code>
+To check the cluster manager status on both nodes
+<code>lssrc -ls clstrmgrES</code>
+==== Change the VLAN on both nodes ====
+  -Login it to HMC - Select the LPAR - Configuration - Manage Profile (select the active profile) - Actions - Edit -Virtual Adapters (select Ethernet) - Actions - Edit (Port Virtual Ethernet (VLAN ID)) change it to the desired VLAN 
+  -Save the profile 
+  -shutdown and start the LPAR for the changes to take affect
+=== Validation ===
+<code>entstat -d enX | grep 'Port VLAN ID'</code>
+==== Change the IP address on both nodes ====
+  -Edit the /etc/hosts file with the new IP entries of the three nodes
+  -You can change the IP using smit tcpip or mktcpip
+<code>/usr/sbin/mktcpip -h hostname -a xxx.xxx.xxx.xxx((IP address)  -m xxx.xxx.xxx.xxx(subnet) -i en0 -g xxx.xxx.xxx.xxx(gateway) -A no</code>
+=== Validation ===
+  *ping hostname
+  *ssh hostname
+==== Cluster reconfiguration ====
+=== Remove the cluster network ===
+<code>smitty hacmp
+	Extended Configuration
+		Extended Topology Configuration
+			Configure HACMP Networks
+                                Remove a Network from the HACMP Cluster (select the network net_ether_01 (xxx.xxx.xxx.xxx/24))</code>
+This will remove the network and interfaces with it
+=== Re-add the network ===
+<code>smitty hacmp
+	Extended Configuration
+		Extended Topology Configuration
+			Configure HACMP Networks
+				Add a Network to the HACMP Cluster (select “ether”)</code>
+and Provide necessary details
+<code>* Network Name                                      [net_ether_01]
+* Network Type                                        ether
+* Netmask (IPv4)/Prefix Length (IPv6)                  [XXX.XXX.XXX.XXX]
+* Enable IP Address Takeover via IP Aliases         [Yes]                                                                                     
+  IP Address Offset for Heart beating over IP Aliases []
+</code>
+=== Add Communication Interfaces ===
+<code>
+smitty hacmp
+	Extended Configuration
+		Extended Topology Configuration
+			Configure HACMP Communication Interfaces/Devices
+				Add Communication Interfaces/Devices
+					Add Pre-defined Communication Interfaces and Devices
+						Communication Interfaces
+</code>
+Select network (Provide necessary details)
+<code>
+* IP Label/Address                                   [node name]                                                                                        
+* Network Type                                        ether
+* Network Name                                        net_ether_01
+* Node Name                                          [node name]                                                                                        
+  Network Interface                                  [enX]
+</code>
+=== Add service IP Label ===
+<code>
+smitty hacmp
+	Extended Configuration
+		Extended Resource Configuration
+			HACMP Extended Resources Configuration
+				Configure HACMP Service IP Labels/Addresses
+					Add a Service IP Label/Address
+</code>
+input the service IP
+=== Add the service IP to resource group ===
+<code>
+smitty hacmp
+	Extended Configuration
+		Extended Resource Configuration
+			HACMP Extended Resource Group Configuration
+				Change/Show Resources and Attributes for a Resource Group		
+</code>
+<HTML>
+<p style="border:2px dashed red;"><b>Note:</b><i>Repeat this on both nodes and start the cluster</i></p>
+</HTML>
+
+==== Start the Cluster ====
+<code>
+smitty hacmp
+	System Management (C-SPOC)
+		HACMP Services
+			Start cluster services
+				(Provide necessary details) start now / provide node names/  Choose Automatic for manage RG
+</code>
+
+===== Conclusion  =====
+Validate by logging in all three nodes

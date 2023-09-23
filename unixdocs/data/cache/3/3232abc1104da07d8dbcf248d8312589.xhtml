@@ -1,0 +1,52 @@
+
+<h1 class="sectionedit1" id="remove_openview_monitoring_client">Remove OpenView Monitoring Client</h1>
+<div class="level1">
+
+<p>
+<strong>If you have added removeOV NIM resource while building the server, this step has been done already</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Stop the OVO agent<pre class="code">/usr/lpp/OV/bin/ovc -kill</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Kill ov processes<pre class="code">ps -ef | grep -i ov</pre>
+
+<p>
+kill if there are any.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the version<pre class="code">/usr/lpp/OV/bin/opcagt -version</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> If the version is 11.x</div>
+<ol>
+<li class="level3"><div class="li"> Remove the 11.x agent<pre class="code">/usr/lpp/OV/bin/OpC/install/oainstall.sh -remove -agent</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Delete these directories<pre class="code">rm -rf /usr/lpp/OV /usr/lpp/perf /var/opt/OV /var/opt/perf</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> If the version is not 11.x</div>
+<ol>
+<li class="level3"><div class="li"> Remove the OVO agent<pre class="code">/usr/lpp/perf/bin/ovpa.remove</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Kill perf processes<pre class="code">ps -ef | grep perf</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Uninstall the OVO agent<pre class="code">/usr/lpp/OV/bin/OpC/install/opc_inst -r</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Delete these directories<pre class="code">rm -rf /usr/lpp/OV /usr/lpp/perf /var/opt/OV /var/opt/perf</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

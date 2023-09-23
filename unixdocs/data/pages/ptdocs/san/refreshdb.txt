@@ -1,0 +1,148 @@
+====== Pure Storage Refresh The Classic Tenneco Way ======
+===== Prep work =====
+- Login to cdcpillx151 and set a easy variable for the ssh command<code>export SSH2PHLY="sudo -u storage ssh storage@phlypans016"</code>
+- Get list of devices assigned to H1S - sehrdb01 server<code>${SSH2PHLY} purevol list | grep sehrdb 
+sehrdb01_001      138G     -                 2016-12-08 07:03:24 CET   2E954D8D74EF4B8D0001101E 
+sehrdb01_002      138G     -                 2016-12-08 07:03:33 CET   2E954D8D74EF4B8D0001101F 
+sehrdb01_003      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D0001104B 
+sehrdb01_004      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D0001104C 
+sehrdb01_005      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D0001104D 
+sehrdb01_006      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D0001104E 
+sehrdb01_007      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D0001104F 
+sehrdb01_008      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D00011050 
+sehrdb01_009      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D00011051 
+sehrdb01_010      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D00011052 
+sehrdb01_011      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D00011053 
+sehrdb01_012      102G     -                 2016-12-10 02:12:34 CET   2E954D8D74EF4B8D00011054 
+sehrdb01_013      102G     -                 2016-12-10 02:12:35 CET   2E954D8D74EF4B8D00011055 
+sehrdb01_014      102G     -                 2016-12-10 02:12:35 CET   2E954D8D74EF4B8D00011056 
+sehrdb01_015      102G     -                 2017-04-12 17:27:37 CEST  2E954D8D74EF4B8D000111A3</code>From above we can tell that the disks 138 GB are most likely in rootvg and remaining ones in datavg. So we will be playing around only with the LUNs starting from 003 till 015 in below loops. 
+  - Rename the current data volumes on sehrdb01<code>for volume in {003..015} 
+do 
+   echo "Renaming sehrdb01_${volume} to oldsehrdb01_${volume} .." 
+   ${SSH2PHLY}  purevol rename sehrdb01_${volume} oldsehrdb01_${volume} 
+done</code> 
+  - Create new volumes for h1s db<code>for volume in {003..015} 
+do 
+   ${SSH2PHLY}  purevol create --size 102G sehrdb01_${volume} 
+done</code> 
+Gather the datavg01 disks from dehrdb99 and their serials - copy the file to pgunap01 and then grep for a serial from 99 to locate the LUNs to be snapped.... 
+===== Shutdown standby database and disconnect volumes ===== 
+Not in this case as we do present new luns... but for H1D refresh and other H1S this will be needed so please follow these steps: 
+  - Disconnect old dbdata volumes from dehrdb98 or dehrdb99 or sehrdb01 (in this procedure I will use dehrdb98 - but you need to match your case) 
+  - Ask the DBA team to shutdown the database on dehrdb98 
+  - Login to dehrdb98, take a snapshot of current config<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.6</code> 
+  - Offline and export the VG<code>lsvgfs datavg01 | xargs -n1 sudo umount 
+sudo varyoffvg datavg01 
+sudo exportvg datavg01</code> 
+  - Delete the datavg01 disks<code>grep datavg01 lsvpcfg.out.6 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code> 
+  - Disconnect the volumes from dehrdb98. Login to pgunap01 - Most likely not required <code>for volume in {003..019} 
+do 
+   echo "Disconnecting dehrdb98_${volume} from dehrdb98" 
+   ${SSH2PHLY} purevol disconnect --host pehrdb98 dehrdb99_${volume} 
+done</code> 
+ 
+===== Create a protection group for H1D database volumes ===== 
+ 
+  - Let's see what protection groups are exisiting<code> ${SSH2PHLY} purepgroup list 
+Name        Source     Targets  Host Groups  Hosts  Volumes 
+Prod-SAPHR  INXPM20V1  -        -            -      - ></code> So there is one Prod_SAPHR existing. Let's create ours one 
+  - Create an empty protection H1D-PROTECT group<code>${SSH2PHLY} purepgroup create H1D-PROTECT 
+Name         Source     Targets  Host Groups  Hosts  Volumes 
+H1D-PROTECT  INXPM20V1  -        -            -      -</code> 
+  - Check how many LUNs are now for dehrdb99 server<code> ${SSH2PHLY} purevol list |grep dehrdb99 
+dehrdb99_001      138G     -                 2016-12-08 07:03:44 CET   2E954D8D74EF4B8D00011022 
+dehrdb99_002      138G     -                 2016-12-08 07:03:47 CET   2E954D8D74EF4B8D00011023 
+dehrdb99_003      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D00011029 
+dehrdb99_004      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D0001102A 
+dehrdb99_005      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D0001102B 
+dehrdb99_006      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D0001102C 
+dehrdb99_007      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D0001102D 
+dehrdb99_008      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D0001102E 
+dehrdb99_009      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D0001102F 
+dehrdb99_010      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D00011030 
+dehrdb99_011      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D00011031 
+dehrdb99_012      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D00011032 
+dehrdb99_013      102G     -                 2016-12-09 21:18:57 CET   2E954D8D74EF4B8D00011033 
+dehrdb99_014      102G     -                 2016-12-09 21:18:58 CET   2E954D8D74EF4B8D00011034 
+dehrdb99_015      102G     -                 2016-12-09 21:18:58 CET   2E954D8D74EF4B8D00011035 
+dehrdb99_016      102G     -                 2016-12-09 21:18:58 CET   2E954D8D74EF4B8D00011036 
+dehrdb99_017      102G     -                 2016-12-09 21:18:58 CET   2E954D8D74EF4B8D00011037 
+dehrdb99_018      102G     -                 2016-12-09 21:18:58 CET   2E954D8D74EF4B8D00011038 
+dehrdb99_019      102G     -                 2017-04-12 16:49:17 CEST  2E954D8D74EF4B8D000111A1</code>So there are 19 LUNs two are again 138 GB in size so most likely members of rootvg (to be double checked with UNIX admins). 
+  - Add LUNs starting from dehrdb99_003 to dehrdb99_019  to the protection group<code>for volume in {003..019} 
+do 
+   ${SSH2PHLY} purepgroup setattr --addvollist dehrdb99_${volume} H1D-PROTECT 
+done</code> 
+  - List the protection group<code>${SSH2PHLY} purepgroup list H1D-PROTECT 
+Name         Source     Targets  Host Groups  Hosts  Volumes 
+H1D-PROTECT  INXPM20V1  -        -            -      dehrdb99_003 
+                                                     dehrdb99_004 
+                                                     dehrdb99_005 
+                                                     dehrdb99_006 
+                                                     dehrdb99_007 
+                                                     dehrdb99_008 
+                                                     dehrdb99_009 
+                                                     dehrdb99_010 
+                                                     dehrdb99_011 
+                                                     dehrdb99_012 
+                                                     dehrdb99_013 
+                                                     dehrdb99_014 
+                                                     dehrdb99_015 
+                                                     dehrdb99_016 
+                                                     dehrdb99_017 
+                                                     dehrdb99_018 
+                                                     dehrdb99_019</code>From the above we can tell we are short of 4 LUNs for sehrdb01 server, thus we need to create more. 
+<code>for volume in {016..019} 
+do 
+   ${SSH2PHLY}  purevol create --size 102G sehrdb01_${volume} 
+done</code> 
+===== Create a snapshot of the protection group ===== 
+ 
+  - Ask DBA team to put H1D primary database on hot backup mode. 
+  - List the exisitng snapshots<code>${SSH2PHLY} purevol list --snap</code>To avoid using the same suffixes... 
+  - Take a snapshot of H1D primary<code>${SSH2PHLY} purepgroup snap --suffix H1SDrefresh H1D-PROTECT</code> 
+  - Ask DBA team to put the DB in to end backup mode 
+  - Copy the snapshot to new volumes.<code>for volume in {003..019} 
+do 
+   echo "Copying snapshot H1D-PROTECT.H1SDrefresh.dehrdb99_${volume} to sehrdb01_${volume} " 
+   ${SSH2PHLY} purevol copy --overwrite H1D-PROTECT.H1SDrefresh.dehrdb99_${volume} sehrdb01_${volume} 
+done</code> 
+  - Connect the snapshot volumes to sehrdb01<code>for volume in {003..019} 
+do 
+   ${SSH2PHLY} purevol connect --host sehrdb01 sehrdb01_${volume} 
+done</code> 
+  - Login to sehrdb01<code>sudo lsvpcfg.sh > lsvpcfg.out.7 
+sudo cfgmgr 
+sudo lsvpcfg.sh > lsvpcfg.out.8</code> 
+  - Recreate VG on sehrdb01<code>ssh dehrdb99 lspv | grep datavg01 | awk '{print $2}' > dehrdb99.datavg01.pvids</code>Document the disks<code>lspv | grep -f dehrdb99.datavg01.pvids | awk '{print $1}' | tr "\n" " "</code>Then recreatevg <code>sudo recreatevg -L/ -Y/ -y datavg01 <list of disks from above comand></code> 
+  - Change the mount point of all filesystems from H1D to H1S<code>for vg in datavg01 
+do 
+   for fs in $(sudo lsvgfs ${vg} ) 
+   do 
+      newfs=$(echo ${fs} | sed "s;H1D;H1S;g" ) 
+      sudo chfs -m ${newfs} ${fs} 
+   done 
+done</code> 
+  - Run fsck on each filesystem<code>for vg in datavg01 
+do 
+   for fs in $(lsvgfs ${vg} ) 
+   do 
+      echo working on ${fs} 
+      sudo fsck -y ${fs}  
+   done 
+done</code> 
+  - Mount all filesystems and fix permissions<code>for vg in datavg01 
+do 
+   for fs in $(lsvgfs ${vg} ) 
+   do 
+      sudo mount ${fs} 
+      if [ ${?} -eq 0 ] 
+      then 
+         sudo chown -R orah1s:dba ${fs} 
+      else 
+         echo "Unable to mount ${fs} - please fix and don't forget to change the permissions using chown -R orah1s:dba ${fs}" 
+      fi          
+   done 
+done</code> 
+  - Handover to DBA team

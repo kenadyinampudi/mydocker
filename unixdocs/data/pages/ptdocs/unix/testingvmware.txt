@@ -1,0 +1,26 @@
+====== Using PhotonOS to test VMWare networking ======
+
+Photon is a really lightweight OS distributed by VMWare to work in their environment.  In theory, this can be a container host.
+To test VM networking, let's spin up two new servers using PhotonOS, give them adjacent IPs in the same subnet and see if they can ping each other.
+
+===== Build the servers =====
+  - Get permissions to create a VM in the cluster you are testing.
+  - Choose //Deploy OVF Template//.
+  - Name this "Test1"
+  - When asked, choose URL (assuming the site is on the internet, which is usually yes.) \\ Enter ''https://packages.vmware.com/photon/3.0/Rev3/ova/photon-hw11-3.0-a383732.ova'' as the OVF source.
+  - Click through the rest of the prompts.
+  - Make sure the networking is set to the VLAN you are testing.
+  - Make sure you have a free IP in the range of the VLAN you are testing.
+  - Clone this as "Test2"
+
+===== Configure the server =====
+  - Log into the machine.  \\  First login the root passwd is ''changeme''.  You will be forced to change the password.
+  - Set a static IP address.   [[https://vmware.github.io/photon/assets/files/html/3.0/photon_admin/setting-a-static-ip-address.html]]
+  - Permit root login. [[https://vmware.github.io/photon/assets/files/html/3.0/photon_troubleshoot/permitting-root-login-with-ssh.html]]
+  - Add a default route.  ''ip route add default via 192.168.1.254'' [[https://www.cyberciti.biz/faq/howto-linux-configuring-default-route-with-ipcommand/]]
+  - Kill the firewall. <code>iptables -F
+iptables -I INPUT -j ACCEPT
+iptables -I OUTPUT -j ACCEPT
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT </code>
+  - Changed /etc/ssh/sshd_config.  '' MaxAuthTries 6'', ''PasswordAuthentication yes'', ''PubkeyAuthentication yes''

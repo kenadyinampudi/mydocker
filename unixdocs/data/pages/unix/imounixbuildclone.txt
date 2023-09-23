@@ -1,0 +1,182 @@
+====== IMO Project clones - unix build documentation ======
+
+  * In most cases , the DNS name and IP addresses are already secured.
+  * IMO builds are DNS disabled to prevent corruption to production.
+  * Build AIX systems on these frames
+
+^HMC     ^Frame                    ^
+|tgprhmc5|Server-8284-22A-SN215D22V|
+|tgprhmc5|Server-8284-22A-SN215D24V|
+|tgprhmc5|Server-8284-22A-SN21F075V|
+|tgprhmc5|Server-8284-22A-SN847584V|
+
+
+===== For IMO cloned systems -- Sizing guidelines =====
+
+^Configuration Item                   ^Notes                                                       ^
+|Virtual CPU                          |Configure all systems 1,2 and 10                            |
+|Processing Units                     |Configure all systems 0.1,0.2,4                             |
+|Memory - For source systems under 16G|For systems under 16G - Use same amount as the source system|
+|Memory - For source systems 17G-64G  |Use 32 G                                                    |
+|Memory - For source systems over 64G |Use 64 G                                                    |
+|Network - VLAN                       |Use VLAN 460                                                |
+
+
+==== NIM installation Steps ====
+
+
+  - For ease of documentation, export variables for source and target systems<code>export srcsystem=<system_of_which_you_plan_to_use_mksysb_from>
+export tgtsystem=<system_which_you_plan_to_built></code>
+  - Copy the mksysb to a temp location and umcompress it<code>sudo cp /mksysb-images/bos.obj.${srcsystem}.gz /preupgrade/mksysb/
+cd /preupgrade/mksysb/ ; sudo gunzip bos.obj.${srcsystem}.gz</code>
+  - Define a mksysb resource<code>sudo nim -o define -t mksysb -a server=master -a location=/preupgrade/mksysb/bos.obj.${srcsystem} ${srcsystem}-mksysb</code>If NIM complains there is an existing resource with that name, please remove it<code>sudo nim -o remove ${srcsystem}-mksysb</code>
+  - Find out the OSLEVEL on the system that we plan to clone<code>ssh ${srcsystem} oslevel -s
+7100-05-02-1810	</code>
+  - Find out the correct Spot and LPPSRC for the above AIX release level. In this case they are,<code>710TL05-02_spot
+710TL05-02_lppsrc</code>
+  - For clients in the MP AIX subnet '10.128.40.0/24', add systems to /etc/hosts file because the reverse lookups don't work.<code>host ${tgtsystem} | grep -q "10.128.40" ; [[ ${?} -eq 0 ]] &&  host ${tgtsystem} | awk '{print $NF"\t"$1}' | sed "s;.fmmotorparts.com;;g" | sudo tee -a /etc/hosts</code>
+  - Define system on NIM<code>host ${tgtsystem} | grep -q "10.32.60" ; [[ ${?} -eq 0 ]] && sudo nim -o define -t standalone -a platform=chrp -a if1="ent-Network6 ${tgtsystem} 0" -a netboot_kernel=mp\
+ ${tgtsystem} || sudo nim -o define -t standalone -a platform=chrp -a if1="find_net ${tgtsystem} 0" -a netboot_kernel=mp ${tgtsystem}</code>
+  - Prepare for a NIM installation<code>sudo nim -o bos_inst -a source=mksysb -a spot=710TL05-02_spot -a lpp_source=710TL05-02_lppsrc -a no_client_boot=yes -a script=postinstallCloningIMO -a\
+ mksysb=${srcsystem}-mksysb ${tgtsystem}</code>
+    - For clients in the MP AIX subnet '10.128.40.0/24', change the bootp config<code>host ${tgtsystem} | grep -q "10.128.40" ; [[ ${?} -eq 0 ]] && sudo ex -sc "/${tgtsystem}/s/10.0.48.12/10.32.60.60/|x" /etc/bootptab</code>
+  - Add the server to the console database **/prod/images/etc/unix_sys_console**<code>sudo vi /prod/images/etc/unix_sys_console</code>
+    - A regular lpar on a P Series frame<code>pcdcunxaxap01:lpar-ibm:taitc051:pcdcunxaxap01-9111-520-SN10B4F8D:pcdcunxaxap01:2:hscroot</code>
+  - Open up a console session to the new server. On pcdcunxaxap01<code>sudo getconsole ${tgtsystem}</code>
+  - Power on the server to SMS from HMC. 
+  - At the console, setup Remote IPL as normal and perform a network boot.
+    - Details you need<code>Client IP : The IP address of the host you are building
+Server IP : 10.32.60.60
+Netmask   : 255.255.255.0
+Def Route : 10.128.40.1 (MP AIX systems), 10.32.60.1 (LDC Clones)</code>
+  - Wait for the installation to complete
+==== Tasks on first boot from console ====
+
+  - Login on console as root.
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>cfgmgr</code>
+  - Configure IP address.
+    - Configure the front end IP address on en0 interface<code>/usr/sbin/mktcpip -h <hostname> -a 10.32.60.X -m 255.255.255.0 -i en0 -g 10.32.60.1 -A no -s</code>
+  - Once done, disconnect from the console, get back to NIM server and remove the temporary /etc/hosts entry if applicable<code>sudo cp /etc/hosts /etc/hosts.$(date +%m%d%Y) ; host ${tgtsystem} | grep -q "10.128.40" ; [[ ${?} -eq 0 ]] &&  sudo ex -sc "/${tgtsystem}/d|x" /etc/hosts</code>
+
+==== Post installation tasks from NIM server ====
+
+  - Login to pcdcunxaxap01 and define a variable pointing to the system you are building<code>export targethost=<host_name></code>
+  - Disable DNS, push hosts file, NTP etc<code>sudo ssh ${targethost} rm /etc/resolv.conf
+sudo scp /prod/images/etc/hostsfile.imoclone ${targethost}:/etc/hosts
+sudo scp /prod/images/etc/ntp.conf.aix.imoclone ${targethost}:/etc/ntp.conf
+sudo ssh ${targethost} "chrctcp -S -a xntpd"
+sudo ssh ${targethost} "ntpdate -u 10.43.8.130"</code>
+  - Push a standard information file<code>sudo scp /prod/images/etc/.information.aix.imoclone ${targethost}:/var/adm/.information</code>
+  - Push IMO clone services file<code>sudo scp /prod/images/etc/services.imoclone ${targethost}:/etc/services.imoclone</code>
+
+==== Post installation - generic tasks from the host ====
+
+  - Login to the host you are building
+  - Delete application cron jobs<code>for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v "^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$")
+do
+   sudo rm /var/spool/cron/crontabs/${file} 
+done</code>
+  - Enable cron<code>sudo mkitab cron:23456789:respawn:/usr/sbin/cron</code>
+  - Add additional services entries<code>cat /etc/services.imoclone | sudo tee -a /etc/services</code>
+  - Define a meaningful PS1 variable<code>sudo vi /etc/profile</code>Append this to the end<code>HNAME=$(uname -n)
+export PS1='$HNAME:-IMO-CLONE:$PWD>'
+TMOUT=3600
+readonly TMOUT</code>
+  - Disable production VLANs using dummy VLAN tagged interfaces<code>for dummyvlan in 500 501 502 503 504 505
+do
+   sudo mkdev -t eth -a base_adapter=ent1 -a vlan_tag_id=${dummyvlan}
+done</code>Then discover new devices<code>sudo cfgmgr</code>Configure dummy IPs to production subnets<code>inum=2
+for IP in 10.0.48.22 10.0.49.21 10.32.50.23 10.32.51.31 10.32.6.44 10.56.1.121
+do
+   sudo chdev -l en${inum} -a netaddr=${IP} -a netmask=255.255.255.0 -a state=up
+   inum=$(echo "${inum} + 1" | bc )
+done</code>
+
+==== Rename the system to the target SID ====
+
+  - Set a variable pointing to new and old names<code>export oldsid=PTA
+export newsid=ENP</code>Massage it<code>export oldsidlowercase=$(echo ${oldsid} | tr [A-Z] [a-z])
+export newsidlowercase=$(echo ${newsid} | tr [A-Z] [a-z])
+export oldsiduppercase=$(echo ${oldsid} | tr [a-z] [A-Z])
+export newsiduppercase=$(echo ${newsid} | tr [a-z] [A-Z])</code>
+  - Rename the service accounts<code>sudo usermod -l ora${newsidlowercase} ora${oldsidlowercase}
+neworaclehome=$(grep ^oracle: /etc/passwd | awk -F: '{print $6}' | sed "s;${oldsiduppercase};${newsiduppercase};g" )
+sudo usermod -d ${neworaclehome} oracle
+sudo usermod -d /oracle/${newsiduppercase} ora${newsidlowercase}
+
+sudo usermod -l ${newsidlowercase}adm ${oldsidlowercase}adm
+newsidadmhome=$(grep ^${newsidlowercase}adm /etc/passwd | awk -F: '{print $6}' | sed "s;${oldsidlowercase};${newsidlowercase};g" )
+sudo usermod -d ${newsidadmhome} ${newsidlowercase}adm
+sudo mv /home/${oldsidlowercase}adm /home/${newsidlowercase}adm</code>
+**Note**: If you get an error like "Error changing "host_last_login" to "::ffff:10.47.248.98" : Value is invalid" Please sudo vi /etc/security/lastlog and remove host_last_login entry for that user id
+  - Set a generic password for Database and SAP accounts<code>
+echo "oracle:saiq8abFEuNbo" | sudo chpasswd -e
+echo "ora${newsidlowercase}:saiq8abFEuNbo" | sudo chpasswd -e
+echo "${newsidlowercase}adm:sapGnLWHKGvf6" | sudo chpasswd -e</code>
+  - Rename filesystems
+    - Ask Storage team to present a crash consistent copy of all the devices except rootvg LUNs ( 138G )
+    - Run cfgmgr<code>sudo cfgmgr</code>
+    - Get the disk configuration from rpt_config<code>sudo cat /home/tauxrpt/rpt_config/file_systems.txt |\
+sed -n "/Printing diskmap/,/Done Printing diskmap/p" | egrep "datavg|redovg|binvg|nfsvg|logvg|dgtvg01|dwvg01|edivg|edivg01|erappvg01|hydvg01\
+|hypvg01|internalsasvg|nim6vg01|nimvg|orasoftvg|pagevg01|psbivg01|pujmvg|pujmvg01|raid5vg01|sanpagevg01|sapexportvg|sapmedia|sapsoft_V6|softvg01\
+|srmvg01|srmvg02|swvg01|tctpvg|testvg01|tmplppvg|transfervg|tsbivg01|veritasvg|zycusvg" > /var/tmp/diskmap.imoclone</code>
+    - Recreate the VGs, fsck and mount them<code>for vg in $(awk -F: '{print $NF}' /var/tmp/diskmap.imoclone | sort -u | sort)
+do
+   echo "Working on ${vg} ... "
+   grep ${vg}$ /var/tmp/diskmap.imoclone | awk -F: '{print $2}' > ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   echo "Recreating ${vg} using ${disks} ... "
+   sudo recreatevg -L/ -Y/ -y ${vg} ${disks}
+   if [ ${?} -eq 0 ]
+   then
+      for fs in $(lsvgfs ${vg} | sort )
+      do
+         newname=$(echo ${fs} | sed "s;${oldsiduppercase};${newsiduppercase};g")
+         if [ "${fs}" != "${newfs}" ]
+         then
+            echo "Renaming filesystem ${fs} to ${newname} ... "
+            sudo chfs -m ${newname} ${fs} 2> /dev/null
+            if [ ${?} -ne 0 ]
+            then
+               echo "Unable to rename filesystem ${fs} to ${newname} ... -- Check and fix"
+               newname=${fs}
+            fi
+         fi
+         echo "Mounting and fscking ${newname} ... "
+         sudo fsck -y ${newname}
+         sudo mkdir -p ${newname}
+         sudo mount ${newname}
+         if [ ${?} -ne 0 ]
+         then
+            echo "Unable to mount ${newname} -- Fix and proceed "
+         fi
+      done
+   else
+      echo "Error running recreatevg ${vg} using ${disks} -- Fix and proceed "
+   fi
+done</code>
+  - If this is a system with databases, setup symbolic link<code>sudo rm -rf /oracle/${oldsiduppercase}
+sudo ln -s /oracle/${newsiduppercase} /oracle/${oldsiduppercase}</code>
+  - [[unix:setup-iocp-for-oracle|Setup IOCP for Oracle]]
+  - Setup alt_rootvg
+    - Look for another 138G device that is not allocated to any volume group<code>sudo /usr/local/scripts/lsvpcfg.sh</code>Create a alt_disk_copy<code>sudo alt_disk_copy -B -d hdiskX</code>
+  - Some systems are part of clusters. Let's change the automount and autovarryon values<code>lsvg | grep -v rootvg | xargs -n1 sudo chvg -a y
+
+for vg in $(lsvg | grep -v rootvg )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo chfs -A yes ${fs}
+      echo "Enabling ${vg} - ${fs} "
+   done
+done</code>
+  - Send an email to Storage team to enable 'Pure storage snapshots backups for this host'

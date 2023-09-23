@@ -1,0 +1,31 @@
+====== Monroe Power outage shutdown / startup VNX - 5300 ======
+
+** Shutdown the Datamovers **
+
+  - Login to control station<code>ssh nasadmin@monvnxcs1</code>And switch to root<code>su</code>
+  - Run the health check and make sure everything is "Pass"<code>/nas/bin/nas_checkup</code>
+  - Shutdown the NAS<code>/nasmcd/sbin/nas_halt now</code>Confirm "yes" when prompted.
+  - Disconnect the power cables from both Data Movers and Control stations.
+
+** Shutdown the Service Processors **
+
+  - Turn the SPS switches to the off position "0 position".
+  - Disconnect the power cables.
+
+
+** Startup the SPs
+
+  - Plugin the power cables to SPs
+  - Turn the SPS switches ON.
+
+** Startup the Datamovers **
+
+  - Connect the power cables to Data movers
+  - Wait 5 minutes.
+  - Connect cables to Control station 0
+  - Verify looking at power LED that VNX is powered on.
+  - ssh to the control station<code>ssh nasadmin@monvnxcs1</code>Switch to root<code>su</code>Check status<code>/nasmcd/sbin/getreason</code>It should display something like this<code>10 - slot_0 primary control station
+11 - slot_1 secondary control station
+ 5 - slot_2 contacted
+ 5 - slot_3 contacted</code>
+  - Plugin the cables for Control station 1

@@ -1,0 +1,44 @@
+====== Rename Brocade zone objects ======
+
+FIXME -- When somebody have enough time -- please write up a clean doc
+
+There are times when HBAs go bad or our customers replace a hardware by another and we need to rezone the whole thing for the specific host.
+  - Here is an easy way to accomplish this... I don;t have time to write up a clean documentation -- so cut & paste from an email Pawel sent out<code>Hello
+On today on CLI I had to amend the alias with new wwpn for a give host. Then I had to change the alias to reflect this change... Here is what I did - for zones too...
+
+inxds5300a:FID128:admin> alishow taitc361*
+ alias: taitc361_136c
+                50:01:43:80:29:6c:6f:bc
+
+inxds5300a:FID128:admin> zoneobjectrename taitc361_136c,taitc361_6c6fbc
+inxds5300a:FID128:admin> zoneshow taitc361*
+ zone:  taitc361_136c__ns480spb3_6f
+                ns480spb3_6f; taitc361_6c6fbc
+ zone:  taitc361_136c_ns480spa2_66
+                ns480spa2_66; taitc361_6c6fbc
+
+inxds5300a:FID128:admin> zoneobjectrename taitc361_136c__ns480spb3_6f,taitc361_6c6fbc__ns480spb3_6f
+inxds5300a:FID128:admin> zoneobjectrename taitc361_136c_ns480spa2_66,taitc361_6c6fbc__ns480spa2_66
+inxds5300a:FID128:admin> zoneshow taitc361*
+ zone:  taitc361_6c6fbc__ns480spa2_66
+                ns480spa2_66; taitc361_6c6fbc
+ zone:  taitc361_6c6fbc__ns480spb3_6f
+                ns480spb3_6f; taitc361_6c6fbc
+
+inxds5300a:FID128:admin> alishow taitc361*
+ alias: taitc361_6c6fbc
+                50:01:43:80:29:6c:6f:bc
+
+inxds5300a:FID128:admin> cfgsave
+You are about to save the Defined zoning configuration. This
+action will only save the changes on Defined configuration.
+Any changes made on the Effective configuration will not
+take effect until it is re-enabled.
+Do you want to save Defined zoning configuration only?  (yes, y, no, n): [no] yes
+Updating flash ...
+inxds5300a:FID128:admin>cfgenable Production_1</code>
+
+The original email is here which has colors ...
+
+
+{{:san:email.png|}}

@@ -1,0 +1,132 @@
+<code>
+NDMP backup using snapsure fails
+
+server_logs show:
+(When the backup is started)
+2015-05-05 12:10:10: 26041581568: NDMP: 6: Active NDMP backup/restore streams: 1, system configured concurrent streams: 8, maximum concurrent sessions supported: 8.
+2015-05-05 12:10:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) < Backup type: tar >
+2015-05-05 12:10:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) Name: TYPE Value: tar
+2015-05-05 12:10:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) Name: FILESYSTEM Value: /root_vdm_1/fs_test
+2015-05-05 12:10:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) Name: PREFIX Value: /root_vdm_1/fs_test
+2015-05-05 12:10:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) Name: LEVEL Value: 0
+2015-05-05 12:10:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) Name: HIST Value: y
+2015-05-05 12:10:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) Name: UPDATE Value: y
+2015-05-05 12:10:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) Name: snapsure Value: y
+2015-05-05 12:10:10: 26046431232: CMD: 6: checkCkptCnt: concurrentCkptCnt(10) > concurrentDataStreams(8), need to wait  <<< This means there is already 8 backup/restore 
+sessions in progress
+....
+...
+(Finally after the snapTimeout value expires It fails with the below error message)
+2015-05-05 12:40:10: 13161529344: CMD: 3: Timer expired when waiting for concurrentCkptCnt decreasing
+2015-05-05 12:40:10: 13156679680: NDMP: 3: < LOG type: 2, msg_id: 0, entry: SnapSure file system creation fails, hasAssociatedMsg: 0, associatedMsgSeq: 0 >
+2015-05-05 12:40:10: 17451646976: NDMP: 4: Session 570 (thread ndmp570) NdmpdData::startBackup, SnapSure creation for backup failed
+2015-05-05 12:40:10: 150595633163: NDMP: 3: Thread ndmp570 fails at SendStream, status=92.
+2015-05-05 12:40:10: 150595633159: NDMP: 3: Thread ndmp570 encountered xdrrec_endofrecord error (Protocol not available ) for msg 0x501, message_type=0.
+2015-05-05 12:40:10: 150595633184: NDMP: 3: Session 570 (thread ndmp570 fails in sendRequest, msg=1281, err=0, fileName=../NdmpdData.cxx, lineNo=629.
+2015-05-05 12:40:10: 13156679680: NDMP: 3: Session 570 (thread ndmp570) Error sending notify_halted request.
+2015-05-05 12:40:10: 26041581568: NDMP: 6: Cleanup: Active NDMP backup/restore sessions back to: 0, system configured concurrent streams: 8, 
+maximum concurrent sessions allowed: 8.
+
+We can see that the snaptimeout value is set to 30 Minutes : [ If this was set to default 5 minutes the you will see the backup fail in 5 minutes]
+# server_param server_2 -facility -all -list | grep -i snaptimeout
+snapTimeout                         NDMP          5         30         30   
+
+
+We can see entries under backupSnapDB folder which are of old date:
+# cd /nas/quota/slot_2/.etc/backupSnapDB
+# ls -al
+total 96
+drwxr-xr-x  2 root bin 1024 Mar 10 19:39 .
+dr-xr-xr-x 16 root bin 3072 Apr 28 18:26 ..
+lrwxr-xr-x  1 root bin   95 Mar 10 19:39 automaticTempNDMPCkpt10-19-1426016353 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1555 CKMxxx_2_1556
+lrwxr-xr-x  1 root bin   95 Mar 10 19:01 automaticTempNDMPCkpt1-15-1426014086 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1537 CKMxxx_2_1538
+lrwxr-xr-x  1 root bin   95 Mar 10 19:02 automaticTempNDMPCkpt2-26-1426014131 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx1_2_1539 CKMxxx_2_1540
+lrwxr-xr-x  1 root bin   95 Mar 10 19:02 automaticTempNDMPCkpt3-17-1426014156 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx1_2_1541 CKMxxx_2_1542
+lrwxr-xr-x  1 root bin   95 Mar 10 19:03 automaticTempNDMPCkpt4-19-1426014201 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1543 CKMxxx_2_1544
+lrwxr-xr-x  1 root bin   95 Mar 10 19:04 automaticTempNDMPCkpt5-38-1426014257 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1545 CKMxxx_2_1546
+lrwxr-xr-x  1 root bin   95 Mar 10 19:07 automaticTempNDMPCkpt6-23-1426014422 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1547 CKMxxx_2_1548
+lrwxr-xr-x  1 root bin   95 Mar 10 19:27 automaticTempNDMPCkpt7-15-1426015678 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1549 CKMxxx_2_1550
+lrwxr-xr-x  1 root bin   95 Mar 10 19:33 automaticTempNDMPCkpt8-26-1426016015 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1551 CKMxxx_2_1552
+lrwxr-xr-x  1 root bin   95 Mar 10 19:34 automaticTempNDMPCkpt9-17-1426016048 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1553 CKMxxx_2_1554
+
+
+There are no current backups/restores running  :
+#  server_pax server_2 -stats
+server_2 :
+**************  SUMMARY PAX STATS ****************
+----  NASS STATS ----
+nass00 is not doing backup
+nass01 is not doing backup
+nass02 is not doing backup
+nass03 is not doing backup
+nass04 is not doing backup
+nass05 is not doing backup
+nass06 is not doing backup
+nass07 is not doing backup
+----  NASA STATS ----
+nasa00 is not doing backup/restore
+nasa01 is not doing backup/restore
+nasa02 is not doing backup/restore
+nasa03 is not doing backup/restore
+nasa04 is not doing backup/restore
+nasa05 is not doing backup/restore
+nasa06 is not doing backup/restore
+nasa07 is not doing backup/restore
+----  NASW STATS ----
+nasw00 No session found
+nasw01 No session found
+nasw02 No session found
+nasw03 No session found
+nasw04 No session found
+nasw05 No session found
+nasw06 No session found
+nasw07 No session found
+
+Also there are no automaticTempNDMPCkpt present :
+# nas_fs -l -a | grep -i auto
+#  
+
+
+ 
+ Cause  The automaticTempNDMPCkpt entries that are left over in the backupSnapDB is the cause for the backup/restore failure. 
+These entries along with the automaticTempNDMP Ckpt should be cleaned up by the system automatically if the backup completes successfully or not. 
+But here due to some reason it didn't which caused the entries in the backupSnapDB to remain there.  
+
+
+ 
+ Resolution  Fix  is to delete the automaticTempNDMPCkpt if present any and also the stale entries in the backupSnapDB folder.
+IMPORTANT : There is no need to reboot the DM from this 8.1.3.x code onwards . Just following the steps below should fix.
+
+Steps :
+1. Permanently unmount and delete the automaticTempNDMPCkpt if present.
+2. Delete the stale entries from the backupSnapDB folder.
+# cd /nas/quota/slot_2/.etc/backupSnapDB
+# ls -al
+total 96
+drwxr-xr-x  2 root bin 1024 Mar 10 19:39 .
+dr-xr-xr-x 16 root bin 3072 Apr 28 18:26 ..
+lrwxr-xr-x  1 root bin   95 Mar 10 19:39 automaticTempNDMPCkpt10-19-1426016353 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1555 CKMxxx_2_1556
+lrwxr-xr-x  1 root bin   95 Mar 10 19:01 automaticTempNDMPCkpt1-15-1426014086 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1537 CKMxxx_2_1538
+lrwxr-xr-x  1 root bin   95 Mar 10 19:02 automaticTempNDMPCkpt2-26-1426014131 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx1_2_1539 CKMxxx_2_1540
+lrwxr-xr-x  1 root bin   95 Mar 10 19:02 automaticTempNDMPCkpt3-17-1426014156 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx1_2_1541 CKMxxx_2_1542
+lrwxr-xr-x  1 root bin   95 Mar 10 19:03 automaticTempNDMPCkpt4-19-1426014201 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1543 CKMxxx_2_1544
+lrwxr-xr-x  1 root bin   95 Mar 10 19:04 automaticTempNDMPCkpt5-38-1426014257 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1545 CKMxxx_2_1546
+lrwxr-xr-x  1 root bin   95 Mar 10 19:07 automaticTempNDMPCkpt6-23-1426014422 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1547 CKMxxx_2_1548
+lrwxr-xr-x  1 root bin   95 Mar 10 19:27 automaticTempNDMPCkpt7-15-1426015678 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1549 CKMxxx_2_1550
+lrwxr-xr-x  1 root bin   95 Mar 10 19:33 automaticTempNDMPCkpt8-26-1426016015 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1551 CKMxxx_2_1552
+lrwxr-xr-x  1 root bin   95 Mar 10 19:34 automaticTempNDMPCkpt9-17-1426016048 -> 4294967295 0 /root_vdm_1/automaticNDMPCkpts CKMxxx_2_1553 CKMxxx_2_1554
+
+# rm -rf auto*
+# ls -al
+total 96
+drwxr-xr-x  2 root bin 1024 Mar 10 19:39 .
+dr-xr-xr-x 16 root bin 3072 Apr 28 18:26 ..
+#
+
+Now run the backup and it should succeed.  
+ 
+ Notes  This problem is not seen when SNAPSURE ckpts are not used for taking backup 
+but the problem is when backups are taken without SNAPSURE feature the backups will be fuzzy and the backups might also fail if there are changes happening on the FS.  
+ 
+ Product  VNX5200, VNX5400, VNX5600, VNX5800, VNX7600, VNX8000, VNX2 Series  
+Dell Technologies </code>

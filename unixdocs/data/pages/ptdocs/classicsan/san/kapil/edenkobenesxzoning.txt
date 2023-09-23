@@ -1,0 +1,70 @@
+<code>Fabric A
+
+ alias: edevnxspa4_2
+                50:06:01:66:09:60:02:56
+ alias: edevnxspb4_3
+                50:06:01:6f:09:60:02:56
+
+zonecreate "taede501_7055__edevnxspa4_2","taede501_7055;edevnxspa4_2"
+zonecreate "taede501_7055__edevnxspb4_3","taede501_7055;edevnxspb4_3"
+zonecreate "taede502_6fff__edevnxspa4_2","taede502_6fff;edevnxspa4_2"
+zonecreate "taede502_6fff__edevnxspb4_3","taede502_6fff;edevnxspb4_3"
+zonecreate "taede503_7087__edevnxspa4_2","taede503_7087;edevnxspa4_2"
+zonecreate "taede503_7087__edevnxspb4_3","taede503_7087;edevnxspb4_3"
+zonecreate "taede504_2570__edevnxspa4_2","taede504_2570;edevnxspa4_2"
+zonecreate "taede504_2570__edevnxspb4_3","taede504_2570;edevnxspb4_3"
+zonecreate "taede505_2fea__edevnxspa4_2","taede505_2fea;edevnxspa4_2"
+zonecreate "taede505_2fea__edevnxspb4_3","taede505_2fea;edevnxspb4_3"
+
+cfgadd "production_2","taede501_7055__edevnxspa4_2;taede501_7055__edevnxspb4_3"
+cfgadd "production_2","taede502_6fff__edevnxspa4_2;taede502_6fff__edevnxspb4_3"
+cfgadd "production_2","taede503_7087__edevnxspa4_2;taede503_7087__edevnxspb4_3"
+cfgadd "production_2","taede504_2570__edevnxspa4_2;taede504_2570__edevnxspb4_3"
+cfgadd "production_2","taede505_2fea__edevnxspa4_2;taede505_2fea__edevnxspb4_3"
+
+cfgsave
+
+cfgenable  "production_2"
+
+
+
+Fabric B
+
+
+ alias: edevnxspa4_3
+                50:06:01:67:09:60:02:56
+ alias: edevnxspb4_2
+                50:06:01:6e:09:60:02:56
+
+
+zonecreate "taede501_7054__edevnxspa4_3","taede501_7054;edevnxspa4_3"
+zonecreate "taede501_7054__edevnxspb4_2","taede501_7054;edevnxspb4_2"
+
+zonecreate "taede502_6ffe__edevnxspa4_3","taede502_6ffe;edevnxspa4_3"
+zonecreate "taede502_6ffe__edevnxspb4_2","taede502_6ffe;edevnxspb4_2"
+
+zonecreate "taede503_7086__edevnxspa4_3","taede503_7086;edevnxspa4_3"
+zonecreate "taede503_7086__edevnxspb4_2","taede503_7086;edevnxspb4_2"
+
+zonecreate "taede504_2571__edevnxspa4_3","taede504_2571;edevnxspa4_3"
+zonecreate "taede504_2571__edevnxspb4_2","taede504_2571;edevnxspb4_2"
+
+zonecreate "taede505_2feb__edevnxspa4_3","taede505_2feb;edevnxspa4_3"
+zonecreate "taede505_2feb__edevnxspb4_2","taede505_2feb;edevnxspb4_2"
+
+
+cfgadd "producion","taede501_7054__edevnxspa4_3;taede501_7054__edevnxspb4_2"
+cfgadd "producion","taede502_6ffe__edevnxspa4_3;taede502_6ffe__edevnxspb4_2"
+cfgadd "producion","taede503_7086__edevnxspa4_3;taede503_7086__edevnxspb4_2"
+cfgadd "producion","taede504_2571__edevnxspa4_3;taede504_2571__edevnxspb4_2"
+cfgadd "producion","taede505_2feb__edevnxspa4_3;taede505_2feb__edevnxspb4_2"
+
+cfgsave
+
+cfgenable "producion"
+
+naviseccli -h edevnx5400spa lun -create -type Thin -capacity 2097152 -sq mb -poolName BLOCK_POOL -aa 1 -l 152 -name EDE_VMWARE_FARM_152
+naviseccli -h edevnx5400spa lun -create -type Thin -capacity 2097152 -sq mb -poolName BLOCK_POOL -aa 1 -l 153 -name EDE_VMWARE_FARM_153
+naviseccli -h edevnx5400spa lun -create -type Thin -capacity 2097152 -sq mb -poolName BLOCK_POOL -aa 1 -l 154 -name EDE_VMWARE_FARM_154
+naviseccli -h edevnx5400spa lun -create -type Thin -capacity 1048576 -sq mb -poolName BLOCK_POOL -aa 1 -l 155 -name EDE_VMWARE_FARM_155
+naviseccli -h edevnx5400spa lun -create -type Thin -capacity 1048576 -sq mb -poolName BLOCK_POOL -aa 1 -l 156 -name EDE_VMWARE_FARM_156</code>

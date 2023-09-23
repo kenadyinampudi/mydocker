@@ -1,0 +1,107 @@
+====== Troubleshooting Mellanox ======
+
+===== MST =====
+mst is the Mellanox software toolbox.  It will let you do a variety of things.  For now, I use it to see what's connected to the switch.  
+<cli prompt="#">
+[root@brscdelx023 ~]# mst start
+Starting MST (Mellanox Software Tools) driver set
+Loading MST PCI module - Success
+Loading MST PCI configuration module - Success
+Create devices
+-W- Missing "lsusb" command, skipping MTUSB devices detection
+Unloading MST PCI module (unused) - Success
+[root@brscdelx023 ~]# mst ib add
+-I- Discovering the fabric - Running: ibdiagnet -skip all
+-I- Added 4 in-band devices
+[root@brscdelx023 ~]# mst status
+MST modules:
+------------
+    MST PCI module is not loaded
+    MST PCI configuration module loaded
+
+MST devices:
+------------
+/dev/mst/mt4119_pciconf0         - PCI configuration cycles access.
+                                   domain:bus:dev.fn=0000:25:00.0 addr.reg=88 data.reg=92 cr_bar.gw_offset=-1
+                                   Chip revision is: 00
+
+Inband devices:
+-------------------
+/dev/mst/CA_MT4119_brscdelx022_HCA-1_lid-0x0001
+/dev/mst/CA_MT4119_brscdelx023_HCA-1_lid-0x0004
+/dev/mst/CA_MT53001_Mellanox_Technologies_Aggregation_Node_lid-0x0003
+/dev/mst/SW_MT53000_SwitchIB_Mellanox_Technologies_lid-0x0002
+[root@brscdelx023 ~]#
+</cli>
+
+===== Other Tools =====
+
+  * flint \\ Once mst adds the devices, you can use '''flint''' to discover facts about the device.  You have to pass it the device names that are created when you do the mst start/add cycle. \\ <cli prompt="#">[root@brscdelx023 ~]# flint -d /dev/mst/mt4119_pciconf0 q
+Image type:            FS4
+FW Version:            16.27.6106
+FW Release Date:       30.6.2020
+Product Version:       16.27.6106
+Rom Info:              type=PXE version=3.5.903 cpu=AMD64
+Description:           UID                GuidsNumber
+Base GUID:             043f720300ca7042        4
+Base MAC:              043f72ca7042            4
+Image VSD:             N/A
+Device VSD:            N/A
+PSID:                  DEL0000000005
+Security Attributes:   N/A
+[root@brscdelx023 ~]#</cli>
+  * ibnetdiscover \\ This will walk through the Infiniband network and show what's attached.  It's similar to the '''mst status''', but a different format. \\ <cli prompt="#">[root@brscdelx023 ~]# ibnetdiscover
+#
+# Topology file: generated on Fri Jan 15 16:03:59 2021
+#
+# Initiated from node 043f720300ca7042 port 043f720300ca7042
+
+vendid=0x2c9
+devid=0xcf08
+sysimgguid=0x1c34da0300dcc330
+switchguid=0x1c34da0300dcc330(1c34da0300dcc330)
+Switch  37 "S-1c34da0300dcc330"         # "SwitchIB Mellanox Technologies" base port 0 lid 2 lmc 0
+[1]     "H-1c34da03005a1e84"[1](1c34da03005a1e84)               # "brscdelx022 HCA-1" lid 1 4xEDR
+[2]     "H-043f720300ca7042"[1](43f720300ca7042)                # "brscdelx023 HCA-1" lid 4 4xEDR
+[37]    "H-1c34da0300dcc338"[1](1c34da0300dcc338)               # "Mellanox Technologies Aggregation Node" lid 3 4xEDR
+
+vendid=0x2c9
+devid=0x1017
+sysimgguid=0x1c34da03005a1e84
+caguid=0x1c34da03005a1e84
+Ca      1 "H-1c34da03005a1e84"          # "brscdelx022 HCA-1"
+[1](1c34da03005a1e84)   "S-1c34da0300dcc330"[1]         # lid 1 lmc 0 "SwitchIB Mellanox Technologies" lid 2 4xEDR
+
+vendid=0x2c9
+devid=0xcf09
+sysimgguid=0x1c34da0300dcc330
+caguid=0x1c34da0300dcc338
+Ca      1 "H-1c34da0300dcc338"          # "Mellanox Technologies Aggregation Node"
+[1](1c34da0300dcc338)   "S-1c34da0300dcc330"[37]                # lid 3 lmc 0 "SwitchIB Mellanox Technologies" lid 2 4xEDR
+
+vendid=0x2c9
+devid=0x1017
+sysimgguid=0x43f720300ca7042
+caguid=0x43f720300ca7042
+Ca      1 "H-043f720300ca7042"          # "brscdelx023 HCA-1"
+[1](43f720300ca7042)    "S-1c34da0300dcc330"[2]         # lid 4 lmc 0 "SwitchIB Mellanox Technologies" lid 2 4xEDR
+[root@brscdelx023 ~]#</cli>
+  * ibstat \\ This shows the current status of the local node.<cli prompt="#">[root@brscdelx023 ~]# ibstat
+CA 'mlx5_0'
+        CA type: MT4119
+        Number of ports: 1
+        Firmware version: 16.27.6106
+        Hardware version: 0
+        Node GUID: 0x043f720300ca7042
+        System image GUID: 0x043f720300ca7042
+        Port 1:
+                State: Active
+                Physical state: LinkUp
+                Rate: 100
+                Base lid: 4
+                LMC: 0
+                SM lid: 1
+                Capability mask: 0x2651e848
+                Port GUID: 0x043f720300ca7042
+                Link layer: InfiniBand
+[root@brscdelx023 ~]#</cli>

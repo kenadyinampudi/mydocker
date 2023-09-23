@@ -1,0 +1,37 @@
+I did some research and here is the process to disable the Transparent Huge Pages. All links are to Red Hat documentation on the subject and all steps are from those documents. 
+Red Hat documents referenced
+<code>https://access.redhat.com/solutions/46111</code>
+<code>https://access.redhat.com/solutions/422283</code>
+
+Issue  Disable Transparent Huge Pages on below servers 
+
+TAITC490     RHEL6.6  
+TAITC491     RHEL6.6    
+TAROS492   RHEL6.6
+TASHA493   RHEL6.6
+
+First step  take a snapshot of the servers before making any changes . backout if needed
+
+Steps to remediate issue from https://access.redhat.com/solutions/46111
+To disable THP at boot time
+Append the following to the kernel command line in grub.conf:
+transparent_hugepage=never  
+<code>sudo cp -p /boot/grub/grub.conf  </code>
+<code>echo "transparent_hugepage=never"  | sudo tee -a  /boot/grub/grub.conf </code>
+
+To disable THP at run time
+echo never > /sys/kernel/mm/redhat_transparent_hugepage/enabled <= command from web page
+<code>echo "never" | sudo tee /sys/kernel/mm/redhat_transparent_hugepage/enabled </code>
+
+echo never > /sys/kernel/mm/redhat_transparent_hugepage/defrag <= command from web page
+<code>echo "never" | sudo tee /sys/kernel/mm/redhat_transparent_hugepage/defrag</code> 
+
+
+The following link is referenced if the above solution does not resolve the issue. 
+https://access.redhat.com/solutions/422283
+
+Create a customized tuned profile with disabled THP
+The tuned-adm   command is not present on the servers
+tuned-adm  active   following the documentation on the link I looked for the /etc/tune-profiles directory. 
+No servers have the  /etc/tune-profiles/ directory -> no need to follow this process.
+

@@ -1,0 +1,44 @@
+====== Storage Migration - taglk055 ======
+
+===== Shutdown Applications =====
+
+  - Run the RC script that brings down application<code>sudo /etc/rc.d/rc2.d/K02content
+sudo /etc/rc.d/rc2.d/K02plotmng
+sudo /etc/rc.d/rc2.d/K02UnicenterAT</code>
+  - Make sure applications are shutdown.
+
+===== Fix NTP =====
+
+  - Fix NTP<code>sudo cp /etc/ntp.conf /etc/ntp.conf.07262014
+sudo cp /home/x1kxk630/sanmigration/ntp.conf /etc/ntp.conf
+sudo stopsrc -s xntpd
+sudo chrctcp -S -a xntpd
+date ; sudo ntpdate -u 10.1.1.1 ; date
+sudo xntpdc -l</code>
+
+===== Start the Rename  process =====
+
+  - Rename old filesystems with a /OLD prefix and disable automount<code> sudo ./home/x1cxs952/rename/rename_OLD.sh</code>
+  - Mount the "OLD" filesystems <code>sudo ./home/x1cxs952/rename/mount_OLD.sh</code>
+  - Build the "NEW" filesystems <code> sudo ./home/x1cxs952/rename/build-NEWFS.sh</code>
+
+===== Start the Copy  process =====
+
+  - Start the copy processes
+    - Thread 1<code>sudo /home/x1cxs92/sanmigration/thread1</code>
+    - Thread 2<code>sudo /home/x1cxs952/sanmigration/thread2</code>
+    - Thread 3<code>sudo /home/x1cxs952/sanmigration/thread3</code>
+    - Thread 4<code>sudo /home/x1cxs952/sanmigration/thread4</code>
+    - Thread 5<code>sudo /home/x1cxs952/sanmigration/thread5</code>
+
+===== Rename mnd Mount Original File Systems =====
+
+  - Unmount and Rename the new filesystems to the correct mount point.<code>sudo ./home/x1cxs952/rename/rename_ORIG.sh</code>
+  - Mount the Original  filesystems<code>sudo sh /home/x1cxs952/rename/mount_ORIG.sh</code>
+
+
+===== Start the applications =====
+
+  - Run the RC start script<code>sudo /etc/rc.d/rc2.d/S99content
+S99UnicenterAT
+S99plotmng</code>

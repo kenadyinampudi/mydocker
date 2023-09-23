@@ -1,0 +1,94 @@
+====== AIX 7100-05-05 Technology Level Upgrade ======
+
+  - Create proper change controls and paper work, get approvals from business, get apps contacts to manage applications etc. As Chris would say, **the whole nine yards**
+  - [[http://itchome/cgi-bin/active_bo.cgi|Verify blackouts are in place for all the servers we plan to work on]]
+**!!! Attention !!! Make sure you have updated Change Event Record START for this in the CMDB ** 
+  - [[unix:backupconfig|Perform the configuration backup]]
+  - At this point open a console window to the server being upgraded.  These reboots to / from the alt disk should be done from the console.
+  - Check that your alt_disk_copy is bootable  Note this is extremely important - do not skip this step this is your backout !!!
+    - Find the altinst_rootvg disk <code> lspv | grep altinst_rootvg </code> and set the boot list so the server boots from it<code> sudo bootlist -m normal -o {hdisk from previous command}</code>
+  - Perform a reboot at this time<code>sudo shutdown -Fr</code> Verify that the server has booted correcly to the alternate disk. 
+  - Rest the bootlist or boot back to the original disk and reboot.  <code> lspv | grep old_rootvg </code> and set the boot list so the server boots from it<code>sudo bootlist -m normal -o {hdisk from previous command}</code> and boot back to it <code>sudo shutdown -Fr </code>
+  - [[changeeventplans:cleanupusrsap|Cleanup /usr/sap/ filesytem]]
+  - Check for and commit any uncommitted LPP's left from past upgrades. 
+    - List any uncommited LPPS <code>sudo installp -s</code> If there are no uncommitted LPP's the output should be <code>
+     0503-459 installp:  No filesets were found in the Software
+        Vital Product Database in the APPLIED state.</code>
+    - Commit all LPP's (if any) listed in output from installp -s commnd <code>sudo installp -c all</code>
+  - Check and remove e-Fixes if any on system Below is an **EXAMPLE** Efixes may vary by release and server depending upon requirements
+    - List e-Fixes if any<code>sudo /usr/sbin/emgr -P</code>You should see something similar if the system has e-Fixes<code>xeerap01:/root> /usr/sbin/emgr -P
+
+PACKAGE                                                  INSTALLER   LABEL
+======================================================== =========== ==========
+openssl.base                                             installp    102oa_ifix
+openssh.base.client                                      installp    15473_fix
+openssh.base.server                                      installp    15473_fix
+</code>
+    - Remove them all Comand is  sudo /usr/sbin/emgr -r -L {e-Fix Label} **EXAMPLE** command <code>sudo /usr/sbin/emgr -r -L 15473_fix</code>
+  - Make sure /var/log/aso exists
+    - Check if bos.aso is installed<code>lslpp -l bos.aso</code>If it exists, you should see something similar<code>lslpp -l bos.aso
+  Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  bos.aso                   7.1.5.0  COMMITTED  Active System Optimizer
+
+Path: /etc/objrepos
+  bos.aso                   7.1.5.0  COMMITTED  Active System Optimizer</code>
+    - If it does, then make sure there is a log directory for it.<code>ls -ld /var/log/aso</code>If the directory does not exist, create it<code>sudo mkdir -p /var/log/aso
+sudo chown root:system /var/log/aso</code>
+  - On the NIM server find the correct lppsrc and export the directory to the target server.
+    - To export AIX 7.1 TL 05 SP05<code>sudo exportfs -i /prod/images/resources/lppsrc/aix-7100-05-05-1939</code>
+  - On the NIM server find the correct AIX 7100-05-05 iFix and export the directory to the target server.
+    - To export AIX 7.1 TL 05 iFix <code>sudo exportfs -i /prod/images/resources/service-packs/7100-05-05-iFix</code> 
+  - On the Server to be patched, NFS mount the lppsrc location<code>sudo mkdir -p /mnt/aixupdates
+sudo mount pcdcunxaxap01:/prod/images/resources/lppsrc/aix-7100-05-05-1939 /mnt/aixupdates</code>
+  - For the smitty lovers,
+      - Change to the mount point<code>cd /mnt/aixupdates</code>Invoke smitty<code>sudo smitty update_all</code>Then select "."
+        * PREVIEW only - should be set to no
+        * COMMIT software updates must be set to yes
+        * ACCEPT new license agreements? must be set to yes
+        * Then hit enter :)
+  - For the CLI lovers
+    - Perform a preview upgrade<code>cd /mnt/aixupdates
+sudo install_all_updates -d . -c -p -r -V -Y</code>
+    - If no errors found, perform the upgrade<code>cd /mnt/aixupdates</code>
+      - If you have a reliable connection i.e. Office, RDP
+        - Start patching<code>sudo install_all_updates -d . -c -r -V -Y</code>
+      - If you have an un-reliable connection to work i.e. VPN, working remote.
+        - Start patching using nohup<code>nohup sudo install_all_updates -d . -c -r -V -Y > /tmp/$(uname -n).tlupdate.log 2>&1 &</code>
+        - Watch the progress<code>tail -f /tmp/$(uname -n).tlupdate.log</code>
+    - More details on the arguments<code>d  ---> Location
+c  ---> Commit the updates
+p  ---> Preview
+r  ---> Update rpms as well
+V  ---> Verbose output
+Y  ---> Accept license agreements</code>
+  - After he update completes check the oslevel. <code> oslevel -s </code> 
+  - Remove the xmdaily entry from /etc/inittab.<code>sudo rmitab "xmdaily"</code> 
+  - Run the following command to remove IBM Electrornic Service Agent Annoying Constant Reminder that fills root mail <code>sudo /usr/esa/sbin/rmESAReminder</code>
+  - Check for and commit any uncommitted LPP's left from upgrade. 
+    - List any uncommitted LPPS <code>sudo installp -s</code> If there are no uncommitted LPP's the output should be <code>
+     0503-459 installp:  No filesets were found in the Software
+        Vital Product Database in the APPLIED state.</code>
+    - Commit all LPP's (if any) listed in output from installp -s commnd <code>sudo installp -c all</code>
+  - On the Server to be patched, now NFS mount the AIX 7100-05-05 ifix patch location <code> sudo mount pcdcunxaxap01:/prod/images/resources/service-packs/7100-05-05-iFix /mnt/aixupdates </code>  cd to the directory you just mounted<code> cd /mnt/aixupdates; ls </code> Use the code that follows to install the updates.
+    - Install iFix IJ21577 for Fibre Channel <code> sudo  emgr -e IJ21577s5a.191216.AIX71TL05SP05.epkg.Z</code> Output should be success<code>Operation Summary
++-----------------------------------------------------------------------------+
+Log file is /var/adm/ras/emgr.log
+
+EPKG NUMBER       LABEL               OPERATION              RESULT
+===========       ==============      =================      ==============
+1                 IJ21577s5a           INSTALL                SUCCESS
+Return Status = SUCCESS 
+</code>
+  - After the upgrade has successfully completed, reboot the server to complete the upgrade<code>sudo shutdown -Fr</code>
+  - Once the server has successfully rebooted login and check to see that the upgrade completed successfully
+    - Check system date and time<code>date </code> Verify against the expected results. 
+    - Check oslevel<code>oslevel -s </code> Verify against the expected results. 
+    - Check lppchk<code>sudo lppchk -vm3</code>No output is good.
+  - Verify DS record matches the one that is present in the backup taken prior to the upgrade.<code>sudo grep DS /etc/mail/sendmail.cf
+sudo grep DS /tmp/Pre_Upgrade_report/etc/mail/sendmail.cf</code> If they do not match, update the current sendmail.cf file with the DS entry from the saved version from /tmp/Pre_Upgrade_report/etc/mail/sendmail.cf 
+  - Confirm that the SSH host keys are not overwritten. Login to pcdcunxaxap01, ssh to the server you just upgraded.<code> sudo ssh SERVERNAME ls -ld /tmp/</code>If successful, SSH keys were not over written, we are good. In case of failure due to SSH keys, Restore the SSH keys. First backup the existing one<code>sudo rsync -avv /etc/ssh /root/etc/ssh.backup/</code>Restore<code>sudo rsync -avv /tmp/Pre_Upgrade_report/etc/ssh/ /etc/ssh/</code>
+  - Check - Double Check  /etc/exports and verify that exported file systems are correctly mounted on the targed servers<code>cat /etc/exports </code> Logon to target destination servers and verify file is correctly mounted i Double Check This <code>cd {file system name}</code> <code> ls -lia</code>
+**!!! Attention !!! Make sure you have updated Change Event Record CLOSE for this in the CMDB ** 
+

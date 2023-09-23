@@ -1,0 +1,105 @@
+====== Host based storage migration  to Pure Storage -- Lincolnshire ======
+
+===== Preperation =====
+
+  - Create change controls and get approvals necessary. [ In most cases - this is done by Storage team ]
+  - Figure out the storage requirement and email them to Storage team in advance.
+    - Login to the server<code>ssh <hostname></code>
+    - Define this function<code>function find_disks {
+sudo /usr/local/scripts/lsvpcfg.sh | grep -v ^"Disk" | awk -F: '{if ($5!="2") print $0}' > lsvpcfg.out.1
+echo "VG                   Count      Size(GB)"
+
+for VG in $(awk -F: '{print $NF}' lsvpcfg.out.1 | sort -u | grep -v ^$ )
+do
+   grep :${VG}$ lsvpcfg.out.1 > ${VG}.out.1
+   for size in $(awk -F: '{print $5}' ${VG}.out.1 | sort -u )
+   do
+      count=$(grep :${size}: ${VG}.out.1 | wc -l )
+      siZe=$(echo ${size} | awk '{printf "%.2f",$1/1024}')
+      echo "${VG} ${count} ${siZe}" | awk '{printf "%-20s %-10s %-10s \n",$1,$2,$3}'
+   done
+   rm ${VG}.out.1
+done
+}</code>
+    - Execute it<code>find_disks</code>
+    - Email the result to SAN Storage team and request the storage to be allocated. 
+      - Exclude local disks used for paging or boot disks
+      - If the system is vSCSI, please find out the VIOS servers and ask for storage on the VIOS servers. Do include the hostname/guestname.
+  - Use the following table to figure out if we need Pure ODM drivers<code>Virtualized SCSI disks - Do not install on the Guest( Instead, install them on the VIOS servers )
+NPIV Virtualised disks - Install the device drivers
+Direct Connect         - Install the device drivers</code>
+    - Check if pure ODM has been installed.<code>lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte</code>You should see this if ODM is installed<code> Fileset                      Level  State      Description         
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  devices.fcp.disk.pure.flasharray.mpio.rte
+                             1.0.0.4  COMMITTED  AIX MPIO Support for PURE
+                                                 Flash Arrays(New Install)</code>If Pure ODM is not installed, you would find something like this<code>lslpp: 0504-132  Fileset devices.fcp.disk.pure.flasharray.mpio.rte not installed.</code>
+      - If Pure ODM is not installed, install it now.
+      - NFS mount the source for packages<code>sudo mkdir -p /mnt/pure ;sudo  mount pgnmsv01:/prod/images/storage /mnt/pure</code>
+      - Install the ODM<code>sudo installp -acX -d /mnt/pure/PureODM all</code>It will say reboot, but don't reboot. i.e. Please ignore this message<code>    * * *  A T T E N T I O N  * * *
+    System boot image has been updated. You should reboot the
+    system as soon as possible to properly integrate the changes
+    and to avoid disruption of current functionality.</code>
+      - Unmount the nfs mount<code>sudo umount /mnt/pure</code>
+===== Migration =====
+
+//FIXME// This procedure was modified on Feb 2 2019 --- Please test at least once, make necessary modifications and then remove this warning.
+
+  - Assuming storage admins have allocated the disks. Run cfgmgr
+    - Capture the before state<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+    - Cfgmgr<code>sudo cfgmgr</code>
+    - Capture the after state<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+    - Validate the number of required drives are present.<code>diff lsvpcfg.out.1 lsvpcfg.out.2</code>
+  - Store the disks in different variables
+    - rootvg disk in a variable<code>export targetrootvgdisk="hdiskA"</code>
+    - alt_rootvg disk in a variable<code>export targetaltrootvgdisk="hdiskB"</code>
+    - Create a file for each VG that needs migration<code>vi datavgmigration.txt</code>Something like this. Syntax is "vgname:target disk"<code>binvg01:hdiskC
+binvg01:hdiskD
+datavg01:hdiskE
+datavg01:hdiskF</code>
+    - Capture current rootvg disks
+      - rootvg<code>export currentrootvgdisk=$(lspv | grep -w rootvg | awk '{print $1}' )</code>
+      - altinst_rootvg<code>export currentaltinstrootvgdisk=$(lspv | grep -w altinst_rootvg | awk '{print $1}')</code>
+  - Execute this command to prepare commands to mirror, migrate, unmirror and reducevg, verify and execute<code>for vgname in $(awk -F: '{print $1}' datavgmigration.txt | sort -u )
+do
+   export targetdisks=$(grep -w ^${vgname} datavgmigration.txt | awk -F: '{print $NF}' | tr "\n" " " )
+   export sourcedisks=$(lsvg -p ${vgname} | grep ^hdisk | awk '{print $1}' | tr "\n" " " )
+   echo "sudo extendvg ${vgname} ${targetdisks}"
+   echo "sudo mirrorvg -S ${vgname} ${targetdisks}"
+   echo "sudo unmirrorvg ${vgname} ${sourcedisks}"
+   echo "sudo reducevg ${vgname} ${sourcedisks}"
+done</code>
+  - To check progress of mirroring<code>while [ $(ps -ef | grep "syncvg" | grep -v grep | wc -l ) -gt 0 ]
+do
+   for vgname in $(awk -F: '{print $1}' datavgmigration.txt | sort -u )
+   do
+      echo $(date) :: ${vgname} :: $(lsvg ${vgname} | grep "STALE PPs" | awk '{print $6}') of $(lsvg ${vgname} | grep "USED PPs" | awk '{print int($5)/2 " PPs remaining"}' )
+   done
+   sleep 20
+done</code>
+  - Prepare commands for delete and communication to Storage team. Carefully examine and execute<code>for vgname in $(awk -F: '{print $1}' datavgmigration.txt | sort -u )
+do
+   grep -w ${vg_name} lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 echo "sudo rmdev -dl "
+   echo "Please send these disks to storage team to reclaim"
+   grep -w ${vg_name} lsvpcfg.out.1 
+done</code>
+  - Migrate rootvg
+    - [[kapil:function2migraterootvg|A function that let's you migrate rootvg]]
+    - Mirror rootvg too<code>export LVM_HOTSWAP_BOOTDISK=1
+sudo extendvg rootvg ${targetrootvgdisk}
+sudo mirrorvg rootvg ${targetrootvgdisk}
+sudo bosboot -ad /dev/${targetrootvgdisk}
+sudo bosboot -ad /dev/${currentrootvgdisk}
+sudo bootlist -m normal ${targetrootvgdisk}
+sudo unmirrorvg rootvg ${currentrootvgdisk}
+sudo migratepv  ${currentrootvgdisk}
+sudo reducevg rootvg ${currentrootvgdisk}
+sudo bosboot -ad /dev/${targetrootvgdisk}</code>
+    - Migrate the alt_disk. This step does not delete the data off of alt_rootvg<code>sudo alt_disk_install -X altinst_rootvg</code>
+    - Delete the old disks<code>sudo rmdev -dl ${currentrootvgdisk}
+sudo rmdev -dl ${currentaltinstrootvgdisk}</code>
+    - Create a new alt_disk_copy<code>sudo alt_disk_copy -g -B -d ${targetaltrootvgdisk}</code>
+
+===== Cleanup =====
+
+  - After sufficient wait time ( say a week ) please send a request to Storage admins to cleanup old storage and zoning etc. ** Ignore this step for now ** We will cleanup all of them together at a later date.

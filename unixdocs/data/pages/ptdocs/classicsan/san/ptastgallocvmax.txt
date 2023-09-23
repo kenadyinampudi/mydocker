@@ -1,0 +1,46 @@
+====== PTA storage allocation ( VMAX ) ======
+
+** We need to complete these steps for PTA storage allocation. **
+
+  * Create LUNs on VMAX - 0301
+  * Allocate storage to tapr1d01 and taqa1d01(BCV) from VMAX - 0301
+  * Add the devices to BCV group for PTA.
+  * Run a full sync on the new volumes using a mapfile.
+
+===== Create LUNs on VMAX - 0301 =====
+
+PTA, FTA and BCV uses 120G LUNs.
+
+    * Create PTA volumes copying one of the existing volume
+      * Preview<code>sudo symconfigure -sid 0301 -cmd "configure <number_of_devices> devices copying dev <dev_serial_number>;" preview -nop</code>
+      * Commit<code>sudo symconfigure -sid 0301 -cmd "configure <number_of_devices> devices copying dev <dev_serial_number>;" commit -nop</code>
+
+    * Create BCV volumes copying one of the existing volumes from ( taqa1d01 - datavg01, 02, 03 )
+      * Preview<code>sudo symconfigure -sid 0301 -cmd "configure <number_of_devices> devices copying dev <dev_serial_number>;" preview -nop</code>
+      * Commit<code>sudo symconfigure -sid 0301 -cmd "configure <number_of_devices> devices copying dev <dev_serial_number>;" commit -nop</code>
+
+===== Allocate storage to tapr1d01 & taqa1d01 from VMAX - 0301 =====
+
+  * Add the device to the PTA storage group<code>sudo symaccess -sid 0301 -type storage -name tapr1d01_SG add devs <meta head></code>
+  * Add the device to the BCV storage group<code>sudo symaccess -sid 0301 -type storage -name PTABCV_SG add devs <meta head></code>
+
+===== Add the LUNs to BCV Device Group for PTA =====
+
+Add the STD and BCV devices to device group "PTA_BACKUP_DG" on taqa1d01. **Make sure you are not doing this when a backup is about to kick off** PTA backups start at 6PM CDT.
+
+  * Add STD devices to the group<code>sudo symld -g PTA_BACKUP_DG add dev ABCD</code>
+  * Add BCV devices to the group<code>sudo symbcv -g PTA_BACKUP_DG associate dev EFGH</code>
+  * Run a full establish on the newly added devices.
+    * Create a textfile<code>ABCD EFGH</code>
+    * Run a full establish<code>sudo symmir -sid 0301 -f <bcvmapfile> establish -full</code>
+    * Check the status and wait until it completes<code>sudo symmir -sid 0301 -f <bcvmapfile> query</code>
+    * Once complete, split the BCV pair.<code>sudo symmir -sid 0301 -f <bcvmapfile> split</code>
+  * If the new LUNs are being used to create a new VG on tapr1d01, please update the following file on taqa1d01<code>sudo vi /admin/backups/scripts/include_vg.PTA</code>Add a new line as per the format<code># This is including list for VG of production.
+# Format will be the following.
+#
+#     VG:VG2                    include VG2 volume group
+#
+VG:datavg01
+VG:datavg02
+VG:datavg03
+VG:datavg04</code>

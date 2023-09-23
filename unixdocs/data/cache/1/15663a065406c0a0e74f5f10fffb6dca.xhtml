@@ -1,0 +1,22 @@
+
+<h1 class="sectionedit1" id="install_nbu_client_on_linux">Install NBU client on Linux</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create /usr/openv filesystem<pre class="code">sudo lvcreate -n openv -L 4G datavg01
+sudo mkfs -t ext4 /dev/datavg01/openv
+echo &quot;/dev/mapper/datavg01-openv   /usr/openv                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+sudo mkdir -p /usr/openv
+sudo mount /usr/openv</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Download answer file<pre class="code">cd /tmp
+wget http://pablsv02/config/NBInstallAnswer.conf
+echo &quot;CLIENT_NAME=`uname -n`.amer.int.tenneco.com&quot; &gt;&gt; NBInstallAnswer.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install NBU client<pre class="code">sudo yum -y install VRTSnbcfg VRTSnbclt VRTSnbjava VRTSnbjre VRTSnbpck VRTSpbx VRTSpddea</pre>
+</div>
+</li>
+</ol>
+
+</div>

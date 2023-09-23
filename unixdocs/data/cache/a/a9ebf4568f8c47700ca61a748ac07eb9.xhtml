@@ -1,0 +1,30 @@
+<pre class="code">The hpsa driver has the following module option hpsa_allow_any=1.
+This module option allows the use of PCI IDs that are not listed in the driver&#039;s 
+pci-id table (recognition of Smart Array cards that are not tested/qualified with the hpsa driver).
+To make the installer detect the controller at install time, 
+pass the following hpsa.hpsa_allow_any=1 at the install prompt. Per the RHEL 7 release notes, 
+any cards detected by using this option are not supported by Red Hat.</pre>
+<ol>
+<li class="level1"><div class="li"> At the installation screen, hit tab and the following towards the end<pre class="code">hpsa.hpsa_allow_any=1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The first boot fails, this is to be done to fix that.Boot from DVD into rescue mode, press tab to get the options and add<pre class="code">&quot;hpsa.hpsa_allow_any=1&quot;</pre>
+
+<p>
+ to the end. Mount the root filesystem. Get to the prompt
+</p>
+<pre class="code">chroot /mnt/sysimage</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the default grub file<pre class="code">vi /etc/default/grub</pre>
+
+<p>
+Add this to the options
+</p>
+<pre class="code">hpsa.hpsa_allow_any=1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remake grub2<pre class="code">grub2-mkconfig -o /boot/grub2/grub.cfg</pre>
+</div>
+</li>
+</ol>

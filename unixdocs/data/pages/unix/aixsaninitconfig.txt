@@ -1,0 +1,22 @@
+====== AIX initial configuration of SAN connected systems ======
+
+  - Configure FC SCSI attributes<code>for FSCSI in $(lscfg | grep fscsi | awk '{print $2}' )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</code>
+
+===== Storage Array specific device drivers =====
+
+  - What type of operating system is this ?
+    - AIX
+      - What type of disks are we using on this LPAR ?
+        - vSCSI 
+          - Do not install any device drivers
+        - NPIV
+          - [[unix:installstgdevicedrivers|Install storage array specific device drivers on AIX/VIOS]]
+    - VIOS
+      - What type of I/O virtualization are we planning to use on this frame/VIOS ?
+        - vSCSI 
+          - [[unix:installstgdevicedrivers|Install storage array specific device drivers on AIX/VIOS]]
+        - NPIV
+          - Do not install any device drivers

@@ -1,0 +1,169 @@
+====== SAP VMWARE Storage work ======
+
+  - I got this file from Mikael<code>Hello Kapil, 
+
+Here are all the WWNs
+
+Host	VMHBA0 (WWN)	VMHBA1 (WWN)
+
+taitc326	10:00:06:07:d9:c0:00:03 10:00:06:07:d9:c0:00:02	10:00:06:07:d9:c0:00:01 10:00:06:07:d9:c0:00:00
+taitc327	10:00:06:07:d9:c0:00:05 10:00:06:07:d9:c0:00:04	10:00:06:07:d9:c0:00:07 10:00:06:07:d9:c0:00:06
+taitc328	10:00:06:07:d9:c0:00:09 10:00:06:07:d9:c0:00:08	10:00:06:07:d9:c0:00:0b 10:00:06:07:d9:c0:00:0a
+taitc329	10:00:06:07:d9:c0:00:0d 10:00:06:07:d9:c0:00:0c	10:00:06:07:d9:c0:00:0f 10:00:06:07:d9:c0:00:0e
+taitc330	10:00:06:07:d9:c0:00:11 10:00:06:07:d9:c0:00:10	10:00:06:07:d9:c0:00:13 10:00:06:07:d9:c0:00:12
+taitc331	10:00:06:07:d9:c0:00:15 10:00:06:07:d9:c0:00:14	10:00:06:07:d9:c0:00:17 10:00:06:07:d9:c0:00:16
+taitc332	10:00:06:07:d9:c0:00:19 10:00:06:07:d9:c0:00:18	10:00:06:07:d9:c0:00:1b 10:00:06:07:d9:c0:00:1a
+taitc333	10:00:06:07:d9:c0:00:1d 10:00:06:07:d9:c0:00:1c	10:00:06:07:d9:c0:00:1f 10:00:06:07:d9:c0:00:1e
+taitc334	10:00:06:07:d9:c0:00:21 10:00:06:07:d9:c0:00:20	10:00:06:07:d9:c0:00:23 10:00:06:07:d9:c0:00:22
+taitc338	10:00:06:07:d9:c0:00:25 10:00:06:07:d9:c0:00:24	10:00:06:07:d9:c0:00:27 10:00:06:07:d9:c0:00:26
+taitc336	10:00:06:07:d9:c0:00:29 10:00:06:07:d9:c0:00:28	10:00:06:07:d9:c0:00:2b 10:00:06:07:d9:c0:00:2a
+taitc337	10:00:06:07:d9:c0:00:2d 10:00:06:07:d9:c0:00:2c	10:00:06:07:d9:c0:00:2f 10:00:06:07:d9:c0:00:2e</code>
+  - So I put that in a file and then used this script on pgunap01<code>#!/bin/bash
+#
+lookupfile=/prod/storageteam/dokuwiki/data/pages/san/stats/tennecosanswitchwwnsall.txt
+FABA=Fab.A.sapvmware
+FABB=Fab.B.sapvmware
+ESXifile=esxihosts
+
+
+for host in $(awk '{print $1}' ${ESXifile} )
+do
+    for wwn in $(grep -w ${host} ${ESXifile} | awk '{print $3,$5}')
+    do
+        wwn1=${wwn}
+        wwn2=$(echo ${wwn1} | sed "s;:;;g")
+        last6=$(echo ${wwn2} | cut -c 11-16)
+        fabric=$(grep -i ${wwn2} ${lookupfile} | awk -F"|" '{print $3}' | head -1 )
+        case ${fabric} in
+        ldcds5300a1)
+            echo "alicreate \"${host}_${last6}\",\"${wwn1}\"" >> ${FABA}
+            echo "zonecreate \"${host}_${last6}__ldcv9ac2n1_112fbf\",\"${host}_${last6};ldcv9ac2n1_112fbf\"" >> ${FABA}
+            echo "zonecreate \"${host}_${last6}__ldcv9ac2n2_112fc0\",\"${host}_${last6};ldcv9ac2n2_112fc0\"" >> ${FABA}
+            echo "cfgadd \"fab_a_act_config\",\"${host}_${last6}__ldcv9ac2n1_112fbf;${host}_${last6}__ldcv9ac2n2_112fc0\"" >> ${FABA}
+       ;;
+        ldcds5300b1)
+            echo "alicreate \"${host}_${last6}\",\"${wwn1}\"" >> ${FABB}
+            echo "zonecreate \"${host}_${last6}__ldcv9ac2n1_122fbf\",\"${host}_${last6};ldcv9ac2n1_122fbf\"" >> ${FABB}
+            echo "zonecreate \"${host}_${last6}__ldcv9ac2n2_122fc0\",\"${host}_${last6};ldcv9ac2n2_122fc0\"" >> ${FABB}
+            echo "cfgadd \"fab_b_act_config\",\"${host}_${last6}__ldcv9ac2n1_122fbf;${host}_${last6}__ldcv9ac2n2_122fc0\"" >> ${FABB}
+       ;;
+       esac
+    done
+done
+echo "cfgsave" >> ${FABA}
+echo "cfgsave" >> ${FABB}
+echo "cfgenable \"fab_a_act_config\"" >> ${FABA}
+echo "cfgenable \"fab_b_act_config\"" >> ${FABB}
+
+</code>It spit commands like this. Fabric A<code>x1kxk630 on pgunap01:/home/x1kxk630/sapvmwarecluster $ cat Fab.A.sapvmware
+alicreate "taitc326_c00002","10:00:06:07:d9:c0:00:02"
+zonecreate "taitc326_c00002__ldcv9ac2n1_112fbf","taitc326_c00002;ldcv9ac2n1_112fbf"
+zonecreate "taitc326_c00002__ldcv9ac2n2_112fc0","taitc326_c00002;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc326_c00002__ldcv9ac2n1_112fbf;taitc326_c00002__ldcv9ac2n2_112fc0"
+alicreate "taitc327_c00004","10:00:06:07:d9:c0:00:04"
+zonecreate "taitc327_c00004__ldcv9ac2n1_112fbf","taitc327_c00004;ldcv9ac2n1_112fbf"
+zonecreate "taitc327_c00004__ldcv9ac2n2_112fc0","taitc327_c00004;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc327_c00004__ldcv9ac2n1_112fbf;taitc327_c00004__ldcv9ac2n2_112fc0"
+alicreate "taitc328_c00008","10:00:06:07:d9:c0:00:08"
+zonecreate "taitc328_c00008__ldcv9ac2n1_112fbf","taitc328_c00008;ldcv9ac2n1_112fbf"
+zonecreate "taitc328_c00008__ldcv9ac2n2_112fc0","taitc328_c00008;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc328_c00008__ldcv9ac2n1_112fbf;taitc328_c00008__ldcv9ac2n2_112fc0"
+alicreate "taitc329_c0000c","10:00:06:07:d9:c0:00:0c"
+zonecreate "taitc329_c0000c__ldcv9ac2n1_112fbf","taitc329_c0000c;ldcv9ac2n1_112fbf"
+zonecreate "taitc329_c0000c__ldcv9ac2n2_112fc0","taitc329_c0000c;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc329_c0000c__ldcv9ac2n1_112fbf;taitc329_c0000c__ldcv9ac2n2_112fc0"
+alicreate "taitc330_c00010","10:00:06:07:d9:c0:00:10"
+zonecreate "taitc330_c00010__ldcv9ac2n1_112fbf","taitc330_c00010;ldcv9ac2n1_112fbf"
+zonecreate "taitc330_c00010__ldcv9ac2n2_112fc0","taitc330_c00010;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc330_c00010__ldcv9ac2n1_112fbf;taitc330_c00010__ldcv9ac2n2_112fc0"
+alicreate "taitc331_c00014","10:00:06:07:d9:c0:00:14"
+zonecreate "taitc331_c00014__ldcv9ac2n1_112fbf","taitc331_c00014;ldcv9ac2n1_112fbf"
+zonecreate "taitc331_c00014__ldcv9ac2n2_112fc0","taitc331_c00014;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc331_c00014__ldcv9ac2n1_112fbf;taitc331_c00014__ldcv9ac2n2_112fc0"
+alicreate "taitc332_c00018","10:00:06:07:d9:c0:00:18"
+zonecreate "taitc332_c00018__ldcv9ac2n1_112fbf","taitc332_c00018;ldcv9ac2n1_112fbf"
+zonecreate "taitc332_c00018__ldcv9ac2n2_112fc0","taitc332_c00018;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc332_c00018__ldcv9ac2n1_112fbf;taitc332_c00018__ldcv9ac2n2_112fc0"
+alicreate "taitc333_c0001c","10:00:06:07:d9:c0:00:1c"
+zonecreate "taitc333_c0001c__ldcv9ac2n1_112fbf","taitc333_c0001c;ldcv9ac2n1_112fbf"
+zonecreate "taitc333_c0001c__ldcv9ac2n2_112fc0","taitc333_c0001c;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc333_c0001c__ldcv9ac2n1_112fbf;taitc333_c0001c__ldcv9ac2n2_112fc0"
+alicreate "taitc334_c00020","10:00:06:07:d9:c0:00:20"
+zonecreate "taitc334_c00020__ldcv9ac2n1_112fbf","taitc334_c00020;ldcv9ac2n1_112fbf"
+zonecreate "taitc334_c00020__ldcv9ac2n2_112fc0","taitc334_c00020;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc334_c00020__ldcv9ac2n1_112fbf;taitc334_c00020__ldcv9ac2n2_112fc0"
+alicreate "taitc338_c00024","10:00:06:07:d9:c0:00:24"
+zonecreate "taitc338_c00024__ldcv9ac2n1_112fbf","taitc338_c00024;ldcv9ac2n1_112fbf"
+zonecreate "taitc338_c00024__ldcv9ac2n2_112fc0","taitc338_c00024;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc338_c00024__ldcv9ac2n1_112fbf;taitc338_c00024__ldcv9ac2n2_112fc0"
+alicreate "taitc336_c00028","10:00:06:07:d9:c0:00:28"
+zonecreate "taitc336_c00028__ldcv9ac2n1_112fbf","taitc336_c00028;ldcv9ac2n1_112fbf"
+zonecreate "taitc336_c00028__ldcv9ac2n2_112fc0","taitc336_c00028;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc336_c00028__ldcv9ac2n1_112fbf;taitc336_c00028__ldcv9ac2n2_112fc0"
+alicreate "taitc337_c0002c","10:00:06:07:d9:c0:00:2c"
+zonecreate "taitc337_c0002c__ldcv9ac2n1_112fbf","taitc337_c0002c;ldcv9ac2n1_112fbf"
+zonecreate "taitc337_c0002c__ldcv9ac2n2_112fc0","taitc337_c0002c;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","taitc337_c0002c__ldcv9ac2n1_112fbf;taitc337_c0002c__ldcv9ac2n2_112fc0"
+cfgsave
+cfgenable "fab_a_act_config"</code>Fabric B<code>alicreate "taitc326_c00000","10:00:06:07:d9:c0:00:00"
+zonecreate "taitc326_c00000__ldcv9ac2n1_122fbf","taitc326_c00000;ldcv9ac2n1_122fbf"
+zonecreate "taitc326_c00000__ldcv9ac2n2_122fc0","taitc326_c00000;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc326_c00000__ldcv9ac2n1_122fbf;taitc326_c00000__ldcv9ac2n2_122fc0"
+alicreate "taitc327_c00006","10:00:06:07:d9:c0:00:06"
+zonecreate "taitc327_c00006__ldcv9ac2n1_122fbf","taitc327_c00006;ldcv9ac2n1_122fbf"
+zonecreate "taitc327_c00006__ldcv9ac2n2_122fc0","taitc327_c00006;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc327_c00006__ldcv9ac2n1_122fbf;taitc327_c00006__ldcv9ac2n2_122fc0"
+alicreate "taitc328_c0000a","10:00:06:07:d9:c0:00:0a"
+zonecreate "taitc328_c0000a__ldcv9ac2n1_122fbf","taitc328_c0000a;ldcv9ac2n1_122fbf"
+zonecreate "taitc328_c0000a__ldcv9ac2n2_122fc0","taitc328_c0000a;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc328_c0000a__ldcv9ac2n1_122fbf;taitc328_c0000a__ldcv9ac2n2_122fc0"
+alicreate "taitc329_c0000e","10:00:06:07:d9:c0:00:0e"
+zonecreate "taitc329_c0000e__ldcv9ac2n1_122fbf","taitc329_c0000e;ldcv9ac2n1_122fbf"
+zonecreate "taitc329_c0000e__ldcv9ac2n2_122fc0","taitc329_c0000e;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc329_c0000e__ldcv9ac2n1_122fbf;taitc329_c0000e__ldcv9ac2n2_122fc0"
+alicreate "taitc330_c00012","10:00:06:07:d9:c0:00:12"
+zonecreate "taitc330_c00012__ldcv9ac2n1_122fbf","taitc330_c00012;ldcv9ac2n1_122fbf"
+zonecreate "taitc330_c00012__ldcv9ac2n2_122fc0","taitc330_c00012;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc330_c00012__ldcv9ac2n1_122fbf;taitc330_c00012__ldcv9ac2n2_122fc0"
+alicreate "taitc331_c00016","10:00:06:07:d9:c0:00:16"
+zonecreate "taitc331_c00016__ldcv9ac2n1_122fbf","taitc331_c00016;ldcv9ac2n1_122fbf"
+zonecreate "taitc331_c00016__ldcv9ac2n2_122fc0","taitc331_c00016;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc331_c00016__ldcv9ac2n1_122fbf;taitc331_c00016__ldcv9ac2n2_122fc0"
+alicreate "taitc332_c0001a","10:00:06:07:d9:c0:00:1a"
+zonecreate "taitc332_c0001a__ldcv9ac2n1_122fbf","taitc332_c0001a;ldcv9ac2n1_122fbf"
+zonecreate "taitc332_c0001a__ldcv9ac2n2_122fc0","taitc332_c0001a;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc332_c0001a__ldcv9ac2n1_122fbf;taitc332_c0001a__ldcv9ac2n2_122fc0"
+alicreate "taitc333_c0001e","10:00:06:07:d9:c0:00:1e"
+zonecreate "taitc333_c0001e__ldcv9ac2n1_122fbf","taitc333_c0001e;ldcv9ac2n1_122fbf"
+zonecreate "taitc333_c0001e__ldcv9ac2n2_122fc0","taitc333_c0001e;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc333_c0001e__ldcv9ac2n1_122fbf;taitc333_c0001e__ldcv9ac2n2_122fc0"
+alicreate "taitc334_c00022","10:00:06:07:d9:c0:00:22"
+zonecreate "taitc334_c00022__ldcv9ac2n1_122fbf","taitc334_c00022;ldcv9ac2n1_122fbf"
+zonecreate "taitc334_c00022__ldcv9ac2n2_122fc0","taitc334_c00022;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc334_c00022__ldcv9ac2n1_122fbf;taitc334_c00022__ldcv9ac2n2_122fc0"
+alicreate "taitc338_c00026","10:00:06:07:d9:c0:00:26"
+zonecreate "taitc338_c00026__ldcv9ac2n1_122fbf","taitc338_c00026;ldcv9ac2n1_122fbf"
+zonecreate "taitc338_c00026__ldcv9ac2n2_122fc0","taitc338_c00026;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc338_c00026__ldcv9ac2n1_122fbf;taitc338_c00026__ldcv9ac2n2_122fc0"
+alicreate "taitc336_c0002a","10:00:06:07:d9:c0:00:2a"
+zonecreate "taitc336_c0002a__ldcv9ac2n1_122fbf","taitc336_c0002a;ldcv9ac2n1_122fbf"
+zonecreate "taitc336_c0002a__ldcv9ac2n2_122fc0","taitc336_c0002a;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc336_c0002a__ldcv9ac2n1_122fbf;taitc336_c0002a__ldcv9ac2n2_122fc0"
+alicreate "taitc337_c0002e","10:00:06:07:d9:c0:00:2e"
+zonecreate "taitc337_c0002e__ldcv9ac2n1_122fbf","taitc337_c0002e;ldcv9ac2n1_122fbf"
+zonecreate "taitc337_c0002e__ldcv9ac2n2_122fc0","taitc337_c0002e;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","taitc337_c0002e__ldcv9ac2n1_122fbf;taitc337_c0002e__ldcv9ac2n2_122fc0"
+cfgsave
+cfgenable "fab_b_act_config"</code>
+  - Then used this one to create the V9000 registration<code>x1kxk630 on pgunap01:/home/x1kxk630/sapvmwarecluster $ cat esxihosts | sed "s;:;;g" | awk '{print "ssh ldcv9ac2vip1 mkhost -fcwwpn "$3":"$5,"-force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_"$1,"-type generic"}'</code>It spit these commands<code>ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00002:10000607d9c00000 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc326 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00004:10000607d9c00006 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc327 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00008:10000607d9c0000a -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc328 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c0000c:10000607d9c0000e -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc329 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00010:10000607d9c00012 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc330 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00014:10000607d9c00016 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc331 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00018:10000607d9c0001a -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc332 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c0001c:10000607d9c0001e -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc333 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00020:10000607d9c00022 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc334 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00024:10000607d9c00026 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc338 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c00028:10000607d9c0002a -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc336 -type generic
+ssh ldcv9ac2vip1 mkhost -fcwwpn 10000607d9c0002c:10000607d9c0002e -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name sap_esx_taitc337 -type generic</code>

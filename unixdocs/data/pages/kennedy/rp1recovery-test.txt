@@ -1,0 +1,216 @@
+P1 recovery plans Storage and Unix ======
+
+  - Shutdown RP3 SAP and DB RP3 on cdcvilax129
+
+===== Rename all RP3 file systems and dismount them on cdcvilax129 =====
+
+  - Capture the current state
+    - Disk map<code>sudo lsvpcfg.sh</code>Output<code>hdisk0:00faaa4faf9fa2c0:PURE-FLASH-451CEEAA321E4808:012E122B:153600::altinst_rootvg
+hdisk1:00faaa4fe9d15b19:PURE-FLASH-451CEEAA321E4808:012B9CA0:153600::rootvg
+hdisk2:00faaa4fb59c92fd:PURE-FLASH-451CEEAA321E4808:013C522F:256000::sapvg1
+hdisk3:00faaa4fb59c929d:PURE-FLASH-451CEEAA321E4808:013C5230:256000::sapvg1
+hdisk4:00faaa4fb59c9241:PURE-FLASH-451CEEAA321E4808:013C5231:256000::sapvg1
+hdisk5:00faaa4fb59c91e7:PURE-FLASH-451CEEAA321E4808:013C5232:256000::sapvg1
+hdisk6:00faaa4fb59c918a:PURE-FLASH-451CEEAA321E4808:013C5233:256000::sapvg1
+hdisk7:00faaa4fb59c912d:PURE-FLASH-451CEEAA321E4808:013C5234:256000::sapvg1
+hdisk8:00faaa4fb59c90d1:PURE-FLASH-451CEEAA321E4808:013C5235:256000::sapvg1
+hdisk9:00faaa4fb59c9074:PURE-FLASH-451CEEAA321E4808:013C5237:256000::sapvg1
+hdisk10:00fa3f38e91db6ac:PURE-FLASH-451CEEAA321E4808:013C5238:256000::sapvg1
+hdisk11:00faaa4fb59c9019:PURE-FLASH-451CEEAA321E4808:013C5239:281600::sapvg2
+hdisk12:00faaa4fb59c8fc1:PURE-FLASH-451CEEAA321E4808:013C523A:281600::sapvg2
+hdisk13:00faaa4fb59c8f65:PURE-FLASH-451CEEAA321E4808:013C523B:281600::sapvg2
+hdisk14:00faaa4fb59c8f06:PURE-FLASH-451CEEAA321E4808:013C523C:281600::sapvg2
+hdisk15:00faaa4fb59c8e96:PURE-FLASH-451CEEAA321E4808:013C523D:281600::sapvg2
+hdisk16:00faaa4fb59c8a1c:PURE-FLASH-451CEEAA321E4808:013C5247:307200::sapvg3
+hdisk17:00faaa4fb59c8945:PURE-FLASH-451CEEAA321E4808:013C5248:307200::sapvg3
+hdisk18:00faaa4fb59c887d:PURE-FLASH-451CEEAA321E4808:013C5249:307200::sapvg3
+hdisk19:00faaa4fb59c87c4:PURE-FLASH-451CEEAA321E4808:013C524A:307200::sapvg3
+hdisk20:00faaa4fb59c8e37:PURE-FLASH-451CEEAA321E4808:013C524B:256000::sapvg4
+hdisk21:00faaa4fb59c8dc4:PURE-FLASH-451CEEAA321E4808:013C524C:256000::sapvg4
+hdisk22:00faaa4fb59c8d6c:PURE-FLASH-451CEEAA321E4808:013C524D:256000::sapvg4
+hdisk23:00faaa4fb59c8d16:PURE-FLASH-451CEEAA321E4808:013C524E:256000::sapvg4
+hdisk24:00faaa4fb59c8cc3:PURE-FLASH-451CEEAA321E4808:013C524F:256000::sapvg4
+hdisk25:00faaa4fb59c8c71:PURE-FLASH-451CEEAA321E4808:013C5254:256000::sapvg4
+hdisk26:00faaa4fb59c8c1e:PURE-FLASH-451CEEAA321E4808:013C5255:256000::sapvg4
+hdisk27:00faaa4fb59c8bc4:PURE-FLASH-451CEEAA321E4808:013C5256:256000::sapvg4
+hdisk28:00faaa4fb59c8b6e:PURE-FLASH-451CEEAA321E4808:013C5257:204800::sapvg5
+hdisk29:00faaa4fb59c8b18:PURE-FLASH-451CEEAA321E4808:013C5258:204800::sapvg5
+hdisk30:00faaa4fb59c8ac2:PURE-FLASH-451CEEAA321E4808:013C5259:204800::sapvg5
+hdisk32:00faaa4fb59c8a71:PURE-FLASH-451CEEAA321E4808:013C525A:204800::sapvg5
+hdisk33:00faaa59d3b47bf2:PURE-FLASH-451CEEAA321E4808:018687BF:286720::appvg</code>
+    - Filesystems<code>for vg in appvg sapvg1 sapvg2 sapvg3 sapvg4 sapvg5
+do
+   echo "Printing filesystems on ${vg} "
+   lsvgfs ${vg} | xargs -n1 df -k | grep -v ^File
+done</code>Output<code>Printing filesystems on appvg
+/dev/fslv00      34603008  20430108   41%    29767     1% /sapexport/public
+/dev/fslv01      17170432   8662544   50%   173407     9% /sapexport/usr/sap/trans
+/dev/fslv02      11927552   6087260   49%   183258    12% /sapexport/sapmnt/RP3
+/dev/fslv06      47972352  14112952   71%   198113     6% /oracle/agent
+/dev/fslv04      20054016  14947192   26%      474     1% /sapexport/usr/sap/RP3
+/dev/fslv05     141557760  88904248   38%      785     1% /sapexport/usr/sap/RP3/archive
+/dev/oracle1     47972352  14112952   71%   198113     6% /oracle
+/dev/daalv        5242880   5241720    1%        3     1% /usr/sap/DAA
+/dev/hostctrllv     1048576   1048088    1%        4     1% /usr/sap/hostctrl
+Printing filesystems on sapvg1
+/dev/RP1sd01    417857536  46522276   89%      190     1% /oracle/RP3/sapdata1
+/dev/RP1sd02    407371776  55866868   87%      136     1% /oracle/RP3/sapdata2
+/dev/RP1sd03    440926208  52614644   89%      162     1% /oracle/RP3/sapdata3
+/dev/RP1sd11    387448832  51103012   87%      118     1% /oracle/RP3/sapdata11
+/dev/RP1org1     57409536   6170168   90%      749     1% /oracle/RP3/sapreorg
+/dev/RP1arch1   275775488 243735636   12%    31598     1% /oracle/RP3/saparch
+/dev/RP1sd07    214958080  28215312   87%       58     1% /oracle/RP3/sapdata7
+Printing filesystems on sapvg2
+/dev/RP1sd04    375914496  45858480   88%      142     1% /oracle/RP3/sapdata4
+/dev/RP1sd05    428343296  39131548   91%      221     1% /oracle/RP3/sapdata5
+/dev/RP1sd17    307757056  16215236   95%       98     1% /oracle/RP3/sapdata17
+/dev/RP1sd15    317718528  18714276   95%      168     1% /oracle/RP3/sapdata15
+/dev/RP1mlogA     2490368    339224   87%       11     1% /oracle/RP3/mirrlogA
+/dev/RP1mlogB     2490368    339224   87%       11     1% /oracle/RP3/mirrlogB
+/dev/VP1lv01      4194304   4193036    1%      430     1% /oracle/VP1
+Printing filesystems on sapvg3
+/dev/RP1sd06    456130560  51110428   89%      242     1% /oracle/RP3/sapdata6
+/dev/RP1sd08    419430400  33680020   92%      177     1% /oracle/RP3/sapdata8
+/dev/RP1sd13    341180416  43327612   88%      180     1% /oracle/RP3/sapdata13
+Printing filesystems on sapvg4
+/dev/RP1sd10    407371776  46986124   89%      188     1% /oracle/RP3/sapdata10
+/dev/RP1sd14    299892736  35212780   89%      200     1% /oracle/RP3/sapdata14
+/dev/RP1sd16    360185856  41916232   89%       88     1% /oracle/RP3/sapdata16
+/dev/RP1sd18    498073600  52196840   90%     1167     1% /oracle/RP3/sapdata18
+/dev/RP1plog1     3145728    956036   70%       13     1% /oracle/RP3/origlogA
+/dev/RP1plog2     3145728    994484   69%       11     1% /oracle/RP3/origlogB
+/dev/sapdr        4194304   2088960   51%    25663     6% /FDC
+/dev/bidatalv    10485760  10087424    4%       13     1% /bidata_naerp
+Printing filesystems on sapvg5
+/dev/RP1sd09    375914496  42116268   89%      173     1% /oracle/RP3/sapdata9
+/dev/RP1sd12    361758720  40629156   89%      224     1% /oracle/RP3/sapdata12</code>
+  - Dismount all filesystems - RP3<code>for fs in $(echo "appvg sapvg1 sapvg2 sapvg3 sapvg4 sapvg5" | xargs -n1 lsvgfs | sort -r )
+do
+   echo "Dismounting ${fs} "
+   sudo umount ${fs}
+done</code>If any errors - do them manually
+  - Rename all RP3 Original filesystems with a unique prefix<code>for vg in appvg sapvg1 sapvg2 sapvg3 sapvg4 sapvg5
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      echo "Renaming ${fs} to /RP3ORIG${fs}"
+      sudo chfs -m /RP3ORIG${fs} ${fs}
+   done
+done</code>
+
+===== Present copy of RP1 software and data file systems to cdcvilax129 =====
+
+  - Identify the snapshot to be restored<code>ssh cdcvilns015 purepgroup list --snap dailysnapshot</code>Output<code>Name               Source         Created
+dailysnapshot.285  dailysnapshot  2021-08-18 03:00:00 CDT
+dailysnapshot.284  dailysnapshot  2021-08-17 03:00:00 CDT
+dailysnapshot.283  dailysnapshot  2021-08-16 03:00:00 CDT
+dailysnapshot.282  dailysnapshot  2021-08-15 03:00:00 CDT
+dailysnapshot.281  dailysnapshot  2021-08-14 03:00:00 CDT
+dailysnapshot.280  dailysnapshot  2021-08-13 03:00:00 CDT
+dailysnapshot.279  dailysnapshot  2021-08-12 03:00:00 CDT
+dailysnapshot.278  dailysnapshot  2021-08-11 03:00:00 CDT
+dailysnapshot.277  dailysnapshot  2021-08-10 03:00:00 CDT
+dailysnapshot.276  dailysnapshot  2021-08-09 03:00:00 CDT</code>We will pick<code>dailysnapshot.281  dailysnapshot  2021-08-14 03:00:00 CDT</code>
+  - List the contents of the snapshot and store in a file<code>ssh cdcvilns015 "purevol list --snap --pgrouplist dailysnapshot.281 " > dailysnapshot.281.08-14-2021-03AM.snapshot</code>
+  - Figure out which volumes need to be restored(Unix team sent you lspv -u)<code>cat sfldmiax153.lspv-u | awk '{print $5}' | cut -c 14-37 > rp1devices.out</code>
+  - Copy from snapshot and provision them<code>count=100
+volstopresent=""
+for volume in $(ssh cdcvilns015 "purevol list " | grep -f ./rp1devices.out | awk '{print $1}')
+do
+   ssh cdcvilns015 purevol copy dailysnapshot.281.${volume} cdc-h-cdcvilax129_${count}
+   volstopresent="${volstopresent} cdc-h-cdcvilax129_${count}"
+   count=$(echo "${count} + 1" | bc)
+done</code>
+  - Validate the volumes are not connected elsewhere - just in case<code>ssh cdcvilns015 purevol listobj --type host ${volstopresent}</code>
+  - Present the volumes to cdcvilax129<code>ssh cdcvilns015 purevol connect --host cdc-h-cdcvilax129 ${volstopresent}</code>
+
+===== Import vg's mount file systems of RP1 on cdcvilax129 =====
+
+  - Take a current device map<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Discover devices<code>sudo cfgmgr</code>
+  - Take a current device map<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Check the new devices and Store the new devices to a file<code>diff lsvpcfg.out.1 lsvpcfg.out.2 | grep hdisk | sed "s;> ;;g" > newdevices</code>
+  - Take a LVM map from production<code>ssh sfldmiax153 "lspv -u" > sfldmiax153.lspv-u</code>
+  - CLear PVIDs on the devices we just copied just in case<code>cat newdevices | grep vg |  awk -F: '{print $1}' | xargs -n1 sudo chdev -a pv=clear -l</code>
+  - Execute recreatevg on all the copied volume groups<code>for vg in appvg sapvg1 sapvg2 sapvg3 sapvg4 sapvg5
+do
+   echo "Re-creating ${vg} as tmp${vg} "
+   grep -w ${vg} sfldmiax153.lspv-u | awk '{print $2}' > ${vg}.pvids
+   disks=$(grep -f ${vg}.pvids newdevices | awk -F: '{print $1}' | tr "\n" " " )
+   sudo recreatevg -O -y tmp${vg} -Ycpy -L/cpy ${disks}
+done</code>
+  - Remove the label changes, repair filesystems and mount them in order<code>for fs in $(echo "tmpappvg tmpsapvg1 tmpsapvg2 tmpsapvg3 tmpsapvg4 tmpsapvg5" | xargs -n1 lsvgfs | sort )
+do
+   newfs=$(echo ${fs} | sed "s;/cpy;;g" )
+   echo "Renaming ${fs} to ${newfs} "
+   sudo chfs -m ${newfs} ${fs}
+done</code>
+  - Repair and mount the filesystems<code>for fs in $(echo "tmpappvg tmpsapvg1 tmpsapvg2 tmpsapvg3 tmpsapvg4 tmpsapvg5" | xargs -n1 lsvgfs | sort )
+do
+   echo "Repairing and mounting filesystem - ${fs}"
+   sudo fsck -y ${fs}
+   sudo mkdir -p ${fs}
+   sudo mount ${fs}
+   echo ""
+   echo ""
+done</code>
+
+===== Rename orarp3 as orarp1 =====
+
+  - Rename the user<code>sudo usermod -l orarp1 orarp3</code>
+  - Change the home directory<code>sudo chuser "home=/oracle/RP1" orarp1</code>
+
+
+===== Bring up RP1 database as-is ===== 
+  * 	Perfomred by DBA team
+===== Shutdown RP1 database =====
+  *	Perfomred by DBA team
+===== Rename all RP1 file systems as RP3 =====
+  - Umount the current filesystem<code>for fs in $(echo "tmpappvg tmpsapvg1 tmpsapvg2 tmpsapvg3 tmpsapvg4 tmpsapvg5" | xargs -n1 lsvgfs | sort )
+do
+  umount ${fs}
+done</code>
+  - Rename RP1 to RP3 and mount the filesystem<code>for fs in $(echo "tmpappvg tmpsapvg1 tmpsapvg2 tmpsapvg3 tmpsapvg4 tmpsapvg5" | xargs -n1 lsvgfs | sort )
+do
+  newfs=$(echo ${fs} | sed "s/RP1/RP3/g")
+  sudo chfs -m ${newfs} ${fs}
+  mount ${newfs}
+done</code>
+===== Rename orarp1 as orarp3 =====
+  - Rename the user<code>sudo usermod -l orarp3 orarp1</code>
+  - Change the home directory<code>sudo chuser "home=/oracle/RP3" orarp3</code>
+
+===== Rename RP1 database as RP3 ===== 
+  *	Perfomred by DBA team
+===== Put DB in no-archive log mode ===== 
+  *	Perfomred by DBA team
+===== Start RP3 database ===== 
+  *	Perfomred by DBA team
+===== Work to do later =====
+  - "Start SAP:
+  - - Lock bg jobs
+  - - Disable RFC connections
+  - - Create one super user or grant SAP_ALL/SAP_NEW
+  - - Lock down users
+  - - Run system rename from RP1 to RP
+  - Shutdown SAP RP3
+  - Run R3 export of tables ANLP, ANLC, TABA, T093D
+  - Shutdown database RP3
+  - Take RP3 storage snapshot (needed for Dress/Rehearsal)
+  - Start RP3 SAP and DB - release system
+  - Functional team to break tables
+  - Stop SAP RP3
+  - Run R3 import of tables ANLP, ANLC, TABA, T093D
+  - Start SAP RP3
+  - Functional validation
+  - Stop SAP and DB RP3 on cdcvilax129
+  - Dismount RP3 file systems, export vgs and cleanup devices
+  - Remove old devices and present copy of RP3 taken on step xx
+  - Import vg's mount file systems of RP3 on cdcvilax129
+  - Repeat xx-xx
+  - Copy R3 exports of ANLP, ANLC, TABA, T093D to RP1
+  - Shutdown RP3 SAP and DB
+  - Dismount RP3 file systems, export vgs and cleanup devices
+  - Remove old devices and destroy snapshots
+  - Rename all RP3 file systems to original name
+

@@ -1,0 +1,7 @@
+If MS-SQL DB is running in a VM for which we do already run VMWARE based backups we can enable DB recovery from such backups. In order to do so we need to do few things:
+  - NBU client server should be running on doamin\svcbackup user - you do it during NBU client installation - it is required for such VM.
+  - Above user has to belong to Administrators group.
+  - Above user needs to be granted with sysadmin role within this SQL server - DBA can do it for you.
+  - Above user must have the provileges to Impersonate a client after authentication and Replace a proces level token - use secpol to add these.
+  - On VMWARE policy in VMware tab in section Application Protection tick the check box for Enable SQL Server Recovery
+By doing all above, after such VMWARE based backup on client we can start up NBU SQL Client software and restore SQL DB if need will be.

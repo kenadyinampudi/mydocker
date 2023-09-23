@@ -1,0 +1,130 @@
+  * [[hpcc_build|HPCC Build]]
+  * [[hpcc_postinstall|HPCC Post-installation tasks]]
+  * [[hpcc_finalcheckout|HPCC final checkout]]
+
+
+<markdown>
+# Build Process for HPCC Boxes
+
+High Performance Computing boxes have special requirements.
+In general, they are required to be physical boxes to get the most processing out of them.
+
+Headnodes do not run at such a high CPU utilization and can be virtual nodes.
+
+Two build process are involved then, once for physical boxes and one for virtual boxes.
+
+## Physical boxes
+
+### Disk requirements
+
+Dells are usually ordered with a physical RAID card and 4 drives, two smaller and two larger.
+The specs from engineering are as follows:
+
+* Raid 1 - Two smaller drives.  This becomes root.
+* Standalone larger drive.  This is for results.
+* Standalone larger drive.  This is for scratch.
+
+!!! note "Always mirror the root volume if possible."
+
+To configure the RAID controller, you will need to reboot the box and hit the key combination during the boot process.
+
+The Dells are usually ordered preconfigured, so the drives may be correctly configured out of the box, but it is always good to check.
+
+### DRAC requirements
+
+DRAC is very important, and usually the first thing which is configured.  It needs to be configured physically on the console in order for it to be remotely available to the admins.  Usually this is handled by the local GSS that installs the box.
+
+!!! note "Put the DRAC admin password in the secret server!"
+
+The password used for the admin account needs to be changed from whatever default the local GSS assigns to a secure password provided by our secret server.
+
+### Get networking set up and ready for install.
+
+Prior to handing the box over, the local GSS should have patched one of the network connections into a local switch.
+
+The networking team then should have turned up the port and configured it as an access port for the server already.
+
+In case you need help identifying what the VLAN should be, find the appropriate site in the GSS SharePoint site and check for VLANs and IP addresses.
+[GSS SharePoint Site](http://fmeworld.federalmogul.com/depts/IS/ISD/GSS/Shared%20Documents/Forms/AllItems.aspx)
+
+Next, you'll want to identify the MAC address of the NIC that was wired.  This can be a bit of guess work, but will need to be positively identified for the network installation via SUSE manager to work correctly.
+
+## Virtual boxes
+
+Virtual boxes are easy to get set up and running.  In order for the SUSE manager process to be able to run, a shell should be stood up in VMWare with a large enough disk to handle the root volume.  The rest of the disk may be added later if necessary.
+
+When creating the VM, make sure to select "SUSE 12" as the OS (or the closest version you can get.)  This automatically selects virtual hardware compatible with SUSE.  In particular, SUSE is really particular about ethernet adapters.
+Use the VMXNet 3 adapter to make sure things will boot.
+
+Make sure the ethernet adapter is in the correct virtual network for the new IP address you will be using.
+
+While you are editied the server, grab the MAC address of the adapter you've added to the server via the "Edit Properties".  This will be necessary for the SUSE Manager install.
+
+Additionally, for reasons unknown to me, the initial load of the server from SUSE Manager isn't correct for VMWare.  After the initial install, you will need to use the VM console to log into the box, then use *yast* to modify some inconsequential portion of the network settings to trigger a rewrite of the network files and restart the network services.
+
+This problem does not come up with physical boxes.
+
+## Using SUSE Manager to install
+
+### Collect pre-install info
+
+Collect the following information prior to installation:
+
+* Get the short name and fully qualified name of the new server.
+* Get the IP address for the new machine, netmask and gateway
+* Get the local domain controller.  You will be pushed to use the "virtual IP" for the DC cluster.  Don't.  Try to find a local DC to use for response sake
+* Get the [local timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+* Get the MAC address of the NIC which will be hosting the main address.
+
+### Configure SUSE manager for the install
+
+1) Clone an autoinstallation instance in Suse Manager.
+
+2) Go to "Systems"/"Autoinstallation"/"Profiles".
+
+3) Choose a profile which is closest to what you want.
+
+4) Within the top right that existing profile will be a "Clone Autoinstallation" link.
+
+5) Use the name of the new server in the "Kickstarter Label."  (This isn't really Kickstart, just a leftover label.)
+
+6) On the "Autoinstallation Details" section, change the kernel options to include the IP address for that server.
+   The autoyast installation script will use this IP to log into the network and download all the files.
+
+        hostip=10.131.12.23 netmask=255.255.255.0 nameserver=134.238.107.252 gateway=10.131.12.1
+
+7) On the "Variables" section, change the values to reflect server settings.
+   There may always be new variables added, but at the time of this writing, you'll want to make sure to have the following:
+
+        myipaddress=10.131.12.23
+        mynetmask=255.255.255.0
+        mygateway=10.131.12.1
+        mydomaincontroller=134.238.103.60
+        org=1
+        myservername=cdcpillx096
+        mytimezone=America/Detroit
+        myfullservername=cdcpillx096.federalmogul.com
+        myactiveethernetmac=18:66:DA:E8:CB:9C
+
+!!! note "SUSE hasn't been real forgiving with MAC addresses.  Always keep an alternate login method available just in case."
+
+8) Click the "Update Variables" button to make sure the changes are saved.
+
+9) You can verify it looks good by clicking on the "Autoinstallation file".  That represents a compiled version of the autoyast file with the variable substitutions.
+
+### Generate the boot CD with the profile name
+
+The boot CD is a small Linux kernel which starts just enough to get networking working.  Essentially, this is the alternate to PXE.  If we had DHCP enabled for PXE, we wouldn't need to do this step.
+
+You need to have the name of the profile you've defined above.
+
+On the SUSE Manager, I run the following:
+
+        `cobbler buildiso --profile="cdcpillx096:1:Federal-Mogul sfldmilx140:1:Federal-Mogul sles12_1:1:Federal-Mogul sles11_3:1:Federal-Mogul rhel5_7_x86_64:1:Federal-Mogul" --iso="/misc/iso/drivers/generated.iso"`
+### Run the install
+!!! warning "Now's the time to double-check you are willing to completely erase everyone on the server"
+Although the automated install tries to make sane assumptions about which disk to use for the root volume, it's still possible for it to screw up and not do things correclty.  Double-check that you feel it's OK to nuke any and all data on the server.
+
+Done!
+Move on to the post-install processes.
+</markdown>

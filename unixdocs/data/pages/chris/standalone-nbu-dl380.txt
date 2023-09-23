@@ -1,0 +1,21 @@
+====== Standalone NBU home made appliance ======
+
+  * Mount the virtual media on iLO Virtual Media
+    * HP DL3*
+      * Login to the iLO<code>ssh LAN@${shortname}rmb</code>Use the standard password for "LAN".
+      * Mount the Media<code>vm cdrom insert http://pcdcunxlxap01.driv.com/servers/HOSTNAME.iso
+vm cdrom set connect</code>Replace ''HOSTNAME'' with the actual hostname you are building.
+    * DELL Power Ridge
+      * Login to iDRAC<code>ssh root@${shortname}rmb</code>
+      * Login to iDRAC<code>ssh LAN@${shortname}rmb</code>
+      * Disconnect any previous connections<code>racadm vmdisconnect</code>
+      * Connect the media<code>racadm remoteimage -c -l http://pcdcunxlxap01.driv.com/servers/HOSTNAME.iso</code>Replace ''HOSTNAME'' with the actual hostname you are building.
+  * Login to the Remote Console ''https://HOSTNAMErmb'' --> Login with LAN --> Remote console
+  * Power on the server ''Virtual Power''
+  * When the system boots --> At the BIOS screen --> Press "F11" --> 
+    * HP DL3
+      *Select the Virtual CDROM to boot from --> Hit enter.
+    * DELL Power Ridge
+      *Select EUFI Boot --> Select Virtual DVD Device
+  * At the grub menu, it will display the HOSTNAME --> hit enter to start the installation.
+  * [[unix:postinstallationsteps-redhat|Proceed to post install steps]]

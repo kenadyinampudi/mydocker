@@ -1,0 +1,349 @@
+
+<h1 class="sectionedit1" id="build_a_vio_server">Build a VIO server</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Build a VIO server" [1-34] -->
+<h1 class="sectionedit2" id="create_vios_partitions">Create VIOS partitions</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> In most cases, we will have a design as follows prior to the hardware arriving.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Create VIOS partitions" [35-157] -->
+<h2 class="sectionedit3" id="vios_hardware_design">VIOS hardware Design</h2>
+<div class="level2">
+<div class="table sectionedit4"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">VIOS      </th><th class="col1 leftalign">Location Code           </th><th class="col2 leftalign">Description              </th><th class="col3 leftalign">Notes     </th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">taprvio110</td><td class="col1">U78CB.001.WZS02HL-P1-C14</td><td class="col2 leftalign">SAS Adapter              </td><td class="col3">Boot drive</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">taprvio110</td><td class="col1">U78CB.001.WZS02HL-P1-C2 </td><td class="col2 leftalign">Dual Fiber Channel HBA   </td><td class="col3 leftalign">SAN       </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">taprvio110</td><td class="col1">U78CB.001.WZS02HL-P1-C3 </td><td class="col2">Dual port Network Adapter</td><td class="col3 leftalign"><abbr title="Local Area Network">LAN</abbr>       </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">taprvio111</td><td class="col1">U78CB.001.WZS02HL-P1-C15</td><td class="col2 leftalign">SAS Adapter              </td><td class="col3">Boot Drive</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">taprvio111</td><td class="col1">U78CB.001.WZS02HL-P1-C11</td><td class="col2 leftalign">Dual Fiber Channel HBA   </td><td class="col3 leftalign">SAN       </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">taprvio111</td><td class="col1">U78CB.001.WZS02HL-P1-C7 </td><td class="col2">Dual port Network Adapter</td><td class="col3 leftalign"><abbr title="Local Area Network">LAN</abbr>       </td>
+	</tr>
+</table></div>
+<!-- EDIT4 TABLE [192-716] -->
+</div>
+<!-- EDIT3 SECTION "VIOS hardware Design" [158-717] -->
+<h2 class="sectionedit5" id="vios_network_virtualization_design">VIOS Network virtualization Design</h2>
+<div class="level2">
+<div class="table sectionedit6"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">VIOS      </th><th class="col1">Location / Slot</th><th class="col2 leftalign">Description             </th><th class="col3 leftalign">VLAN IDs          </th><th class="col4">802.1q?</th><th class="col5">Trunk Priority</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">taprvio110</td><td class="col1 leftalign">2              </td><td class="col2">Virtual NIC1 - VLANs - A</td><td class="col3 leftalign">4,48,49           </td><td class="col4 leftalign">Yes    </td><td class="col5 leftalign">1             </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">taprvio110</td><td class="col1 leftalign">3              </td><td class="col2">Virtual NIC2 - VLANs - B</td><td class="col3 leftalign">450,451,406,460   </td><td class="col4 leftalign">Yes    </td><td class="col5 leftalign">1             </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">taprvio110</td><td class="col1 leftalign">4              </td><td class="col2">Virtual NIC3 - VIOS <abbr title="Local Area Network">LAN</abbr> </td><td class="col3 leftalign">808               </td><td class="col4 leftalign">No     </td><td class="col5 leftalign">N/A           </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">taprvio110</td><td class="col1 leftalign">5              </td><td class="col2">Virtual NIC2 - CTRL Chan</td><td class="col3 leftalign">999               </td><td class="col4 leftalign">No     </td><td class="col5 leftalign">N/A           </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">taprvio111</td><td class="col1 leftalign">2              </td><td class="col2">Virtual NIC1 - VLANs - A</td><td class="col3 leftalign">48,49             </td><td class="col4 leftalign">Yes    </td><td class="col5 leftalign">1             </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">taprvio111</td><td class="col1 leftalign">3              </td><td class="col2">Virtual NIC2 - VLANs - B</td><td class="col3 leftalign">450,451,406,460   </td><td class="col4 leftalign">Yes    </td><td class="col5 leftalign">1             </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">taprvio111</td><td class="col1 leftalign">4              </td><td class="col2">Virtual NIC3 - VIOS <abbr title="Local Area Network">LAN</abbr> </td><td class="col3 leftalign">808               </td><td class="col4 leftalign">No     </td><td class="col5 leftalign">N/A           </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">taprvio111</td><td class="col1 leftalign">5              </td><td class="col2">Virtual NIC2 - CTRL Chan</td><td class="col3 leftalign">999               </td><td class="col4 leftalign">No     </td><td class="col5 leftalign">N/A           </td>
+	</tr>
+</table></div>
+<!-- EDIT6 TABLE [766-1629] -->
+</div>
+<!-- EDIT5 SECTION "VIOS Network virtualization Design" [718-1631] -->
+<h2 class="sectionedit7" id="cable_up_work_with_san_lan_admins">Cable up &amp; Work with SAN &amp; LAN Admins</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create the VIOS partitions as per the above design.</div>
+</li>
+<li class="level1"><div class="li"> Cable up the servers to the correct <abbr title="Local Area Network">LAN</abbr> and SAN ports.</div>
+</li>
+<li class="level1"><div class="li"> Additional configurations are required on the <abbr title="Local Area Network">LAN</abbr> ports. Please create a request as follows,<pre class="code">Network Team,
+
+Please configure the following network ports in a Virtual port channel 802.3ad and add these VLANs to the allowed VLANs list,
+
+VLANs :- 4,48,49,450,451,406,460
+
+Virtual Port Channel 1 Members,
+
+taprvio110 - U78CB.001.WZS02HL-P1-C3-T1 --- Connect to Core Switch1 - port XX
+taprvio110 - U78CB.001.WZS02HL-P1-C3-T2 --- Connect to Core Switch2 - port XX
+
+Virtual Port Channel 2 Members,
+
+taprvio111 - U78CB.001.WZS02HL-P1-C7-T1 --- Connect to Core Switch1 - port XY
+taprvio111 - U78CB.001.WZS02HL-P1-C7-T2 --- Connect to Core Switch2 - port XY</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Cable up & Work with SAN & LAN Admins" [1632-2462] -->
+<h2 class="sectionedit8" id="configure_nim">Configure NIM</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the NIM server pgnmsv01. Export a variable pointing to the VIOS server<pre class="code">export hostname=&lt;vios_server_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update the console database. Login to pgnmsv01<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Make an entry similar to this
+</p>
+<pre class="code">taprvio110:lpar-ibm:tgprhmc6:Server-8284-22A-SN215D24V:taprvio110:2:hscroot</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> For MP builds, please make entries in /etc/hosts on the NIM server pgnmsv01. </div>
+<ol>
+<li class="level2"><div class="li"> E.g.<pre class="code">10.128.112.70       cdcvilpv117.fmmotorparts.com   cdcvilpv117
+10.128.112.71       cdcvilpv118.fmmotorparts.com   cdcvilpv118</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> You could use the snippet<pre class="code">echo $(host ${hostname} | awk &#039;{print $NF,$1}&#039;) ${hostname} | sudo tee -a /etc/hosts</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the NIM server - pgnmsv01 and define the VIO server as a NIM client<pre class="code">sudo nim -o define -t standalone -a \
+platform=chrp -a if1=&quot;find_net ${hostname} 0&quot; -a netboot_kernel=mp ${hostname}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> As of March 12th 2019, these are the VIOS resources to be used for installation<pre class="code">vios-2-2-6-32-bosinst_data      resources       bosinst_data
+vios-2-2-6-32-mksysb            resources       mksysb
+vios-2-2-6-32-spot              resources       spot</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare the NIM client(VIO server) for a NIM bosinst operation<pre class="code">sudo nim -o bos_inst -a \
+source=mksysb -a \
+spot=vios-2-2-6-32-spot -a \
+bosinst_data=vios-2-2-6-32-bosinst_data -a \
+mksysb=vios-2-2-6-32-mksysb -a \
+accept_licenses=yes -a \
+no_client_boot=yes ${hostname}</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT8 SECTION "Configure NIM" [2463-3964] -->
+<h2 class="sectionedit9" id="install_vios_using_nim">Install VIOS using NIM</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the LDC NIM server <code>pgnmsv01</code></div>
+</li>
+<li class="level1"><div class="li"> Export a variable pointing to the VIOS server we are planning to work on<pre class="code">export hostname=&lt;viosserver_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Power on the VIOS partition to SMS</div>
+<ol>
+<li class="level2"><div class="li"> Find out the frame and HMC<pre class="code">export frame=$(grep -i ^${hostname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $4}&#039; )
+export hmc=$(grep -i ^${hostname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $3}&#039; )</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Execute power on<pre class="code">ssh ${hmc} &quot;chsysstate -r lpar -o on -b sms -m ${frame} -n ${hostname}&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Enable LPAR2RRD data collection<pre class="code">ssh ${hmc} chlparutil -m ${frame} -r config -s 60</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to pgnmsv01 and open a console session to the VIO server<pre class="code">sudo getconsole ${hostname}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure network ISL and perform a network boot.</div>
+</li>
+<li class="level1"><div class="li"> After the installation, the lpar will automatically restart.</div>
+</li>
+<li class="level1"><div class="li"> Login as padmin then accept the license<pre class="code">license -accept</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT9 SECTION "Install VIOS using NIM" [3965-4944] -->
+<h2 class="sectionedit10" id="configure_networking_on_vios">Configure Networking on VIOS</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Remove all the network configurations<pre class="code">oem_setup_env</pre>
+
+<p>
+detach the network config
+</p>
+<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+
+<p>
+Remove them from ODM
+</p>
+<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a look at the adapters and figure out which adapters are to be used.<pre class="code">lscfg | grep ent</pre>
+
+<p>
+The output would look like this
+</p>
+<pre class="code">* ent11            U9009.42A.7823D40-V1-C5-T1                                   Virtual I/O Ethernet Adapter (l-lan)
+* ent10            U9009.42A.7823D40-V1-C4-T1                                   Virtual I/O Ethernet Adapter (l-lan)
+* ent9             U9009.42A.7823D40-V1-C3-T1                                   Virtual I/O Ethernet Adapter (l-lan)
+* ent8             U9009.42A.7823D40-V1-C2-T1                                   Virtual I/O Ethernet Adapter (l-lan)
++ ent4             U78D2.001.WZS039A-P1-C4-T1                                   PCIe2 4-Port Adapter (10GbE SFP+) (e4148a1614109304)
++ ent5             U78D2.001.WZS039A-P1-C4-T2                                   PCIe2 4-Port Adapter (10GbE SFP+) (e4148a1614109304)
++ ent6             U78D2.001.WZS039A-P1-C4-T3                                   PCIe2 4-Port Adapter (1GbE RJ45) (e4148a1614109404)
++ ent7             U78D2.001.WZS039A-P1-C4-T4                                   PCIe2 4-Port Adapter (1GbE RJ45) (e4148a1614109404)
++ ent0             U78D2.001.WZS039A-P1-C2-T1                                   PCIe2 4-Port Adapter (10GbE SFP+) (e4148a1614109304)
++ ent1             U78D2.001.WZS039A-P1-C2-T2                                   PCIe2 4-Port Adapter (10GbE SFP+) (e4148a1614109304)
++ ent2             U78D2.001.WZS039A-P1-C2-T3                                   PCIe2 4-Port Adapter (1GbE RJ45) (e4148a1614109404)
++ ent3             U78D2.001.WZS039A-P1-C2-T4                                   PCIe2 4-Port Adapter (1GbE RJ45) (e4148a1614109404)</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT10 SECTION "Configure Networking on VIOS" [4945-7120] -->
+<h2 class="sectionedit11" id="document_the_details">Document the details</h2>
+<div class="level2">
+<div class="table sectionedit12"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Adapter name</th><th class="col1 leftalign">Location Code             </th><th class="col2 leftalign">Role                     </th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">ent0        </td><td class="col1">U78D2.001.WZS039A-P1-C2-T1</td><td class="col2 leftalign">10G Interface 1          </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign">ent1        </td><td class="col1">U78D2.001.WZS039A-P1-C2-T2</td><td class="col2 leftalign">                         </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0 leftalign">ent2        </td><td class="col1">U78D2.001.WZS039A-P1-C2-T3</td><td class="col2 leftalign">                         </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0 leftalign">ent3        </td><td class="col1">U78D2.001.WZS039A-P1-C2-T4</td><td class="col2 leftalign">                         </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0 leftalign">ent4        </td><td class="col1">U78D2.001.WZS039A-P1-C4-T1</td><td class="col2 leftalign">10G Interface 2          </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0 leftalign">ent5        </td><td class="col1">U78D2.001.WZS039A-P1-C4-T2</td><td class="col2 leftalign">                         </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0 leftalign">ent6        </td><td class="col1">U78D2.001.WZS039A-P1-C4-T3</td><td class="col2 leftalign">                         </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0 leftalign">ent7        </td><td class="col1">U78D2.001.WZS039A-P1-C4-T4</td><td class="col2 leftalign">                         </td>
+	</tr>
+	<tr class="row9">
+		<td class="col0 leftalign">ent8        </td><td class="col1">U9009.42A.7823D40-V1-C2-T1</td><td class="col2 leftalign">Virtual NIC1             </td>
+	</tr>
+	<tr class="row10">
+		<td class="col0 leftalign">ent9        </td><td class="col1">U9009.42A.7823D40-V1-C3-T1</td><td class="col2 leftalign">Virtual NIC2             </td>
+	</tr>
+	<tr class="row11">
+		<td class="col0 leftalign">ent10       </td><td class="col1">U9009.42A.7823D40-V1-C4-T1</td><td class="col2">VIOS server&#039;s Primary NIC</td>
+	</tr>
+	<tr class="row12">
+		<td class="col0 leftalign">ent11       </td><td class="col1">U9009.42A.7823D40-V1-C5-T1</td><td class="col2 leftalign">SEA Control Channel      </td>
+	</tr>
+</table></div>
+<!-- EDIT12 TABLE [7156-8039] -->
+</div>
+<!-- EDIT11 SECTION "Document the details" [7121-8041] -->
+<h2 class="sectionedit13" id="configure_link_aggregation_and_sea">Configure Link Aggregation and SEA</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Configure Link aggregation<pre class="code">mkvdev -lnagg ent0 ent4 -attr mode=&#039;8023ad&#039; hash_mode=&#039;src_dst_port&#039;</pre>
+
+<p>
+You should see a similar output
+</p>
+<pre class="code">ent12 Available
+en12
+et12</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the SEA interface<pre class="code">mkvdev -sea ent12 -vadapter ent8,ent9 -default ent8 -defaultid 1 -attr ha_mode=sharing ctl_chan=ent11</pre>
+
+<p>
+You should see something similar output
+</p>
+<pre class="code">ent12 Available
+en12
+et12</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the hostname to the shortname<pre class="code">sudo chdev -l inet0 -a hostname=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the primary interface of the VIOS server<pre class="code">mktcpip -hostname &lt;hostname_of_the_vios&gt; inetaddr &lt;ip_address&gt; -interface en10 -netmask &lt;netmask&gt; -gateway &lt;gateway&gt; -start</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT13 SECTION "Configure Link Aggregation and SEA" [8042-8778] -->
+<h2 class="sectionedit14" id="further_configurations">Further configurations</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:enable-mover-partition" class="wikilink1" title="unix:enable-mover-partition"> Enable Mover Partition for Live Partition Mobility</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:enable-lpm-lun-checking" class="wikilink1" title="unix:enable-lpm-lun-checking"> Enable Live Partition Mobility Lun Checking</a></div>
+</li>
+<li class="level1"><div class="li"> Login to pgnmsv01 and store the hostname<pre class="code">export targethost=&lt;host&gt;</pre>
+
+<p>
+&#039;host&#039; is the one being built.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:usersandgroups" class="wikilink1" title="unix:usersandgroups">Create basic unix group and users</a></div>
+</li>
+<li class="level1"><div class="li"> If booting from internal disks, Mirror rootvg</div>
+<ol>
+<li class="level2"><div class="li"> AIX<pre class="code">extendvg rootvg hdiskX
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdiskX
+sudo bootlist -m normal hdiskX hdiskY</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the NIM server and perform a NIM client cleanup&lt;code&gt;sudo nim -F -o reset &lt;hostname&gt;</div>
+</li>
+<li class="level1"><div class="li"> <strong> If you have build a New server, please fill the missing attributes of the new server in CMDB later. </strong></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT14 SECTION "Further configurations" [8779-] -->

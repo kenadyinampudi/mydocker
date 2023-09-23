@@ -1,0 +1,38 @@
+====== Move IT0 to a new Frame and DMX4 FAs (7C1 and 10C1) to Fabric A&B ======
+
+** Pre-work **
+
+  - Run cables from DMX4 - 07C:1 to LDCDS5300A1 - port 5 - Do not plug them in.
+  - Run cables from DMX4 - 10C:1 to LDCDS5300B1 - port 5 - Do not plug them in.
+  - Create am empty LPAR for target qeerdb01 on taprvio80/81 frame and secure WWNs
+
+** During the change **
+
+  - Shutdown IT0 server ( qeerdb01 )
+  - Disconnect direct connect cables from 7C:1 and 10C:1 and plug in the cables from Fabric A & B.
+  - Change the bit settings on 7C:1 and 10C:1
+    - Login to teprbk01 as the CLI host, Create this file ''bits.txt''<code>vi bits.txt</code>Enter the following commands<code>set port 7C:1 Init_Point_to_Point=enable;
+set port 10C:1 Init_Point_to_Point=enable;
+set port 7C:1 VCM_State=enable;
+set port 10C:1 VCM_State=enable;</code>Execute these commands one at a time<code>sudo symconfigure -sid 39 -f bits.txt preview
+sudo symconfigure -sid 39 -f bits.txt commit</code>
+  - Verify the FAs are logged in to the Fabrics, register them and zone them.
+    - Login to ldcds5300a1 as admin<code>alicreate "qeerdb01_0c0010","c0:50:76:06:cf:0c:00:10"
+alicreate "qeerdb01_0c0014","c0:50:76:06:cf:0c:00:14"
+alicreate "dmx4_3339_7c1","50:06:04:8A:D5:2F:CA:E6"</code>Create zoning<code>zonecreate "qeerdb01_0c0010__dmx4_3339_7c1","qeerdb01_0c0010;dmx4_3339_7c1"
+zonecreate "qeerdb01_0c0014__dmx4_3339_7c1","qeerdb01_0c0014;dmx4_3339_7c1"
+cfgadd "fab_a_act_config","qeerdb01_0c0010__dmx4_3339_7c1;qeerdb01_0c0014__dmx4_3339_7c1"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+    - Login to ldcds5300b1 as admin<code>alicreate "qeerdb01_0c0012","c0:50:76:06:cf:0c:00:12"
+alicreate "qeerdb01_0c0016","c0:50:76:06:cf:0c:00:16"
+alicreate "dmx4_3339_10c1","50:06:04:8A:D5:2F:CA:E9"</code>Create zoning<code>zonecreate "qeerdb01_0c0012__dmx4_3339_10c1","qeerdb01_0c0012;dmx4_3339_10c1"
+zonecreate "qeerdb01_0c0016__dmx4_3339_10c1","qeerdb01_0c0016;dmx4_3339_10c1"
+cfgadd "fab_b_act_config","qeerdb01_0c0012__dmx4_3339_10c1;qeerdb01_0c0016__dmx4_3339_10c1"
+cfgsave
+cfgenable "fab_b_act_config"</code>
+  - Mask the IT0 LUNs to qeerdb01 (Login to teprbk01 - CLI host)<code>sudo symmask -sid 39 -wwn c0507606cf0c0010 -dir 7c -p 1 add devs <comma seperated list of devices>
+sudo symmask -sid 39 -wwn c0507606cf0c0014 -dir 7c -p 1 add devs <comma seperated list of devices>
+sudo symmask -sid 39 -wwn c0507606cf0c0012 -dir 10c -p 1 add devs <comma seperated list of devices>
+sudo symmask -sid 39 -wwn c0507606cf0c0016 -dir 10c -p 1 add devs <comma seperated list of devices></code>
+  - Boot new IT0 system and fix powerpath.

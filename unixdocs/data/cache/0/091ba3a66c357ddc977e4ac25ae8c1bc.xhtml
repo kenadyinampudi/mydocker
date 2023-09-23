@@ -1,0 +1,40 @@
+
+<h1 class="sectionedit1" id="hp1_db_refresh_documentation">HP1 DB refresh documentation</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Get a latest copy of PVIDs from the source server and copy to the target system.</div>
+<ol>
+<li class="level2"><div class="li"> Login to one of the jump servers <code>pcdcunxaxap01</code><pre class="code">ssh cdcvilax027 &quot;lspv | grep -e sapsortvg -e vg1144HP1 -e vg1144HP1data -e vg1143CS1data -e \
+vg1143HP1orig -e vg1143HP1mirr -e vg1143data -e vg1143HP1 -e vg1143HP1sapdat -e vgpub&quot; &gt; HP1.pvids
+scp HP1.pvids acdchp1axdb01:</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the target server and perform the rest of the work<pre class="code">ssh acdchp1axdb01</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Discover the new disks<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Import VGs and mount filesystems<pre class="code">for vg in sapsortvg  vg1143data  vg1143HP1  vg1144HP1  vg1144HP1data  vg1143CS1data vg1143HP1orig  vg1143HP1mirr  vg1143HP1sapdat  vgpub
+do
+   echo &quot;Working on ${vg} &quot;
+   grep -w ${vg} HP1.pvids | awk &#039;{print $2 }&#039; &gt; ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot;)
+   sudo recreatevg -Y/ -L/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} | sort )
+   do
+      echo &quot;$(date) :: Working on ${vg} -- ${fs} fsck and mount in progress&quot;
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

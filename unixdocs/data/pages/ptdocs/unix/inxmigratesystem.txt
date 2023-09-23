@@ -1,0 +1,33 @@
+====== INX Specific Migration Steps ======
+
+Please remember to check the generic steps first.
+[[unix:migratesystem]]
+
+===== Interaxion HR server Move =====
+
+
+  - Inform MS team we will need 7 IP addresses with host names <code>
+For DEV 
+dehrap00(alias)		dehrdb00 (alias)	dehrap01(app server) 	                   
+dehrdb99 (db server)	dehrap99 (ci server)	dehrwd00 (alias)	
+H1Dmsgsv (DNS entry only  same IP as dehrap00)</code>
+  - CHANGE ROOT’s PASSWORD on all servers and check you have access
+  - Start snapshots 2 hrs prior to migration
+  - Add servers to Blackout list and inform Operations of the downtime
+  - Do a screen shot of “df -g”  “ifconfg -a”
+  - Just prior to shutting down the server do a copy of resolv.conf + /etc/filesystems then empty resolv.conf and dummy out any NFS filesystem entries from /etc/filesystems
+  - Change /root/cluster/alias99 on DB server to point to IP of ?ehrdb00 
+  - Change /root/cluster/alias-sapwebdspch99.sh  on CI  to point to new ?ehrwd00 
+  - Change /root/cluster/mount99.sh to point to IP for ?ehrap00
+  - Shutdown all servers 
+  - Start replication copy
+  - While replication copy running, inform Windows team to make the DNS changes 
+  - Bring up all servers starting with the CI first on the master console
+  - Remove all network cards and then run a cfgmgr
+  - Change net en0 network address to the new IP address and then start up network (server should be pingable)
+  - Run the alias scripts in point 6,7,8
+  - Check ifconfig -a with the screen shots and make sure it’s the correct amount of IP addresses
+  - Move /etc/filesystems and resolv.conf back from saved copy in point 6
+  - Do all NFS mounts as per “df -g” screenshots
+  - Start lsnrctl and then hand over the servers to the SAP Basis team 
+

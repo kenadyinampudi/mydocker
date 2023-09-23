@@ -1,0 +1,91 @@
+====== Etherchannel LACP failover test on VIOS / SEA ======
+
+  * Configuration of taprvio150 where I tested this,
+
+^Interface name^Type^Role^
+|ent0|Physical|Link to Core 1|
+|ent1|Physical|Link to Core 2|
+|ent2|Virtual|Links SEA to Power VM virtual switch for vlan ids 4, 48, 450, 406 (This is also the Control channel)|
+|ent3|Virtual|Links SEA to Power VM virtual switch for vlan ids 49, 451, 460|
+|ent4|Virtual|VLAN tagged (vlan 4)|
+|ent5|Etherchannel|Ether channel aggregated(LACP) ent0+ent1|
+|ent6|SEA|SEA adapter over ent5|
+
+  * Standard etherchannel management commands do not work on ent5 as you would expect, thanks to IBM programmers  ---  --- m(
+  * Let us define this confusing entstat command to a function so we don't have to repeat it. ** Change ent6 to the SEA device name **<code>function run_entstat {
+sudo entstat -d ent6 | sed -n \
+-e "/^Real Adapter:/,/^$/"p \
+-e "/Control Channel Adapter/,/^$/"p \
+-e "/Statistics for every adapter in the IEEE 802.3ad Link Aggregation:/,/Aggregation status/"p \
+-e "/^VLAN Ids/,/^Real Side/"p \
+-e "/^Virtual Adapter:/,/^$/"p
+}</code>
+  * When everything is normal, if we were to execute this command<code>run_entstat</code>We get something similar to this in the output<code>VLAN Ids :
+    ent3: 2 49 451 460
+    ent2: 1 4 48 406 450
+Real Side Statistics:
+Real Adapter: ent5
+Statistics for every adapter in the IEEE 802.3ad Link Aggregation:
+------------------------------------------------------------------
+Number of adapters: 2
+Operating mode: Standard mode (IEEE 802.3ad)
+IEEE 802.3ad Link Aggregation Statistics:
+Aggregation status: Aggregated
+Virtual Adapter: ent3
+Virtual Adapter: ent2
+Control Channel Adapter: ent2</code>The fields are self explanatory.
+  * To remove ent0 from LACP configuration of ent6(ent5), execute this command<code>sudo /usr/lib/methods/ethchan_config -d -p ent6 ent5 ent0 
+</code>
+  * Let us re-run the entstat function and see what is different<code>run_entstat</code>We get something similar to this in the output<code>VLAN Ids :
+    ent3: 2 49 451 460
+    ent2: 1 4 48 406 450
+Real Side Statistics:
+Real Adapter: ent5
+Statistics for every adapter in the IEEE 802.3ad Link Aggregation:
+------------------------------------------------------------------
+Number of adapters: 1
+Operating mode: Standard mode (IEEE 802.3ad)
+IEEE 802.3ad Link Aggregation Statistics:
+Aggregation status: Aggregated
+Virtual Adapter: ent3
+Virtual Adapter: ent2
+Control Channel Adapter: ent2</code>As we see, the Number of adapters have decreased to "1"
+  * To add ent0 back to LACP configuration of ent6(ent5), execute this command<code>sudo /usr/lib/methods/ethchan_config -a -p ent6 ent5 ent0 
+</code>
+  * At this time if we execute the entstat function<code>run_entstat</code>We would see<code>VLAN Ids :
+    ent3: 2 49 451 460
+    ent2: 1 4 48 406 450
+Real Side Statistics:
+Real Adapter: ent5
+
+Statistics for every adapter in the IEEE 802.3ad Link Aggregation:
+------------------------------------------------------------------
+
+Number of adapters: 2
+Operating mode: Standard mode (IEEE 802.3ad)
+IEEE 802.3ad Link Aggregation Statistics:
+Aggregation status: Negotiating
+Virtual Adapter: ent3
+
+Virtual Adapter: ent2
+
+Control Channel Adapter: ent2</code>The number of adapters have changed to "2", Aggregation status is "Negotiating". After a few seconds, you repeat the same command<code>run_entstat</code>We will see ...<code>VLAN Ids :
+    ent3: 2 49 451 460
+    ent2: 1 4 48 406 450
+Real Side Statistics:
+Real Adapter: ent5
+
+Statistics for every adapter in the IEEE 802.3ad Link Aggregation:
+------------------------------------------------------------------
+
+Number of adapters: 2
+Operating mode: Standard mode (IEEE 802.3ad)
+IEEE 802.3ad Link Aggregation Statistics:
+Aggregation status: Aggregated
+Virtual Adapter: ent3
+
+Virtual Adapter: ent2
+
+Control Channel Adapter: ent2</code>It is now "Aggregated", number of adapters are "2" - All good.
+  * Repeat the same for ent1 or whichever is the second physical NIC is.
+  * We could also use this shell script on the VIOS server instead of the function<code>/usr/local/scripts/chkviosnet</code>

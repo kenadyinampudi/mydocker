@@ -1,0 +1,435 @@
+
+<h1 class="sectionedit1" id="apollo_clone_build_-_linux">Apollo Clone build - Linux</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Apollo Clone build - Linux" [1-42] -->
+<h2 class="sectionedit2" id="build_the_vm">Build the VM</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> The entire VMs or at least the boot disks are cloned over from the original.</div>
+</li>
+<li class="level1"><div class="li"> All of those VMs need to be imported from the NFS datastore&#039;s.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Build the VM" [43-217] -->
+<h2 class="sectionedit3" id="setup_console_database">Setup console database</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the DRiV NIM server <code>pcdcunxaxap01</code></div>
+</li>
+<li class="level1"><div class="li"> Export a variable to store the system and vCenter hostname<pre class="code">export vcenter=cdcvilms156.driv.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export a variable pointing to the hostname to be built<pre class="code">export tgtsystem=name_of_the_system</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the system to console database<pre class="code">echo &quot;${tgtsystem}:std-vmware-vsphere:${vcenter}:ADACCOUNT&quot; | sudo tee -a /prod/images/etc/unix_sys_console</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Setup console database" [218-682] -->
+<h2 class="sectionedit4" id="power_on_the_vm_and_change_the_hostname_and_remove_network_configs">Power on the VM and change the hostname and remove Network configs</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to vCenter <code>cdcvilms156.driv.com</code></div>
+<ol>
+<li class="level2"><div class="li"> Select the VM → Edit settings → </div>
+<ol>
+<li class="level3"><div class="li"> Remove the NIC(s).</div>
+</li>
+<li class="level3"><div class="li"> Adjust CPU and memory parameters according to the checklist.</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Power on the VM and access console, login as root.</div>
+</li>
+<li class="level1"><div class="li"> Change hostname</div>
+<ol>
+<li class="level2"><div class="li"> RHEL<pre class="code">hostname &lt;new_host_name&gt;
+echo &quot;new_host_name&quot; &gt; /etc/hostname</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES<pre class="code">hostnamectl set-hostname &lt;new_host_name&gt;
+echo &quot;new_host_name&quot; &gt; /etc/hostname</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove network definitions</div>
+<ol>
+<li class="level2"><div class="li"> RHEL<pre class="code">rm -i /etc/sysconfig/network-scripts/ifcfg-e*</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> ELSE<pre class="code">rm -i /etc/sysconfig/network/ifcfg-e*</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Disable <abbr title="Domain Name System">DNS</abbr></div>
+<ol>
+<li class="level2"><div class="li"> Rename resolv.conf<pre class="code">mv /etc/resolv.conf /etc/resolv.conf.$(date +%Y%m%d)</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Edit nsswitch.conf<pre class="code">sudo vi /etc/nsswitch.conf</pre>
+
+<p>
+Make sure the line that starts with hosts is as follows
+</p>
+<pre class="code">hosts:          files</pre>
+
+<p>
+<strong>It should not have <code>dns</code></strong>
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES</div>
+<ol>
+<li class="level3"><div class="li"> Disable Netconfig control over resolv.conf<pre class="code">sudo cp /etc/sysconfig/network/config /etc/sysconfig/network/config.$(date +%m%d%y)
+sudo ex -sc &quot;/NETCONFIG_DNS_POLICY/s/auto//|x&quot; /etc/sysconfig/network/config</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Disable crond</div>
+<ol>
+<li class="level2"><div class="li"> RHEL<pre class="code">systemctl disable crond</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES11<pre class="code">chkconfig cron off</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES12 and above<pre class="code">systemctl disable cron</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Shutdown the server<pre class="code">init 0</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Power on the VM and change the hostname and remove Network configs" [683-2102] -->
+<h3 class="sectionedit5" id="add_the_nics_and_boot_the_system">Add the NICs and boot the system</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Add two virtual NICs on VLAN 775</div>
+</li>
+<li class="level1"><div class="li"> Once done – Power on the VM</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Add the NICs and boot the system" [2103-2217] -->
+<h3 class="sectionedit6" id="access_console_and_configure_network_interfaces">Access console and configure network interfaces.</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login as root and temporarily assign IP address</div>
+<ol>
+<li class="level2"><div class="li"> List the interfaces<pre class="code">ip link show</pre>
+
+<p>
+You should see something like this
+</p>
+<pre class="code">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: ens224: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether 00:50:56:98:42:78 brd ff:ff:ff:ff:ff:ff
+3: ens225: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether 00:50:56:98:42:78 brd ff:ff:ff:ff:ff:ff</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> The second interface “ens224” is the primary NIC</div>
+</li>
+<li class="level2"><div class="li"> Configure IP address<pre class="code">ifconfig ens224 a.b.c.d/24 up</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure gateway<pre class="code">route add -net 0.0.0.0 gw a.b.c.1</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Access console and configure network interfaces." [2218-3076] -->
+<h3 class="sectionedit7" id="tasks_from_the_nim_server">Tasks from the NIM server</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to DRiV NIM server pcdcunxaxap01 and define a variable pointing to the system you are building<pre class="code">export tgtsystem=&lt;host_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Push Apollo clone hosts file<pre class="code">sudo scp /prod/images/etc/hosts.apollo.clones ${tgtsystem}:/etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable <pre class="code">sudo scp /prod/images/etc/ntp.conf.linux.apollo ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com &quot;ntpdate -u plddntplxap02&quot;
+sudo ssh ${tgtsystem}.driv.com &quot;systemctl restart ntpd&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Tasks from the NIM server" [3077-3597] -->
+<h3 class="sectionedit8" id="post_installation_-_generic_tasks_from_the_host">Post installation - generic tasks from the host</h3>
+<div class="level3">
+
+<p>
+<strong> May need adjustments for SuSE </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Login to the host<pre class="code">ssh ${tgtsystem}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the primary interface<pre class="code">my_ip=$(grep $(uname -n) /etc/hosts | awk &#039;{print $1}&#039; )
+my_iface=$(sudo ip link show | grep ^2: | awk &#039;{print $2}&#039;  | sed &quot;s;:;;g&quot;)
+my_network=$(echo ${my_ip} | awk -F &quot;.&quot; &#039;{print $1&quot;.&quot;$2&quot;.&quot;$3&quot;.0&quot;}&#039;)</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> RHEL<pre class="code">echo &quot;DEVICE=${my_iface}&quot;        | sudo tee    /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;BOOTPROTO=static&quot;          | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;IPADDR=${my_ip}&quot;           | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;NETMASK=255.255.255.0&quot;     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;NETWORK=${my_network}&quot;     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;ONBOOT=yes&quot;                | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES<pre class="code">echo &quot;DEVICE=${my_iface}&quot;        | sudo tee    /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;BOOTPROTO=static&quot;          | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;IPADDR=${my_ip}&quot;           | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;NETMASK=255.255.255.0&quot;     | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;NETWORK=${my_network}&quot;     | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;STARTMODE=auto&quot;            | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure default gateway</div>
+<ol>
+<li class="level2"><div class="li"> RHEL<pre class="code">echo ${my_ip} | awk -F &quot;.&quot; &#039;{print &quot;GATEWAY=&quot;$1&quot;.&quot;$2&quot;.&quot;$3&quot;.1&quot; }&#039; | sudo tee /etc/sysconfig/network</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES<pre class="code">echo ${my_ip} | awk -F &quot;.&quot; &#039;{print &quot;default &quot;$1&quot;.&quot;$2&quot;.&quot;$3&quot;.1 - eth0&quot; }&#039; | sudo tee /etc/sysconfig/network/ifroute-eth0</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure the fake interface<pre class="code">my_ip=&quot;&quot; # Take the IP address from the checklist
+my_iface=$(sudo ip link show | grep ^3: | awk &#039;{print $2}&#039;  | sed &quot;s;:;;g&quot;)
+my_network=192.168.1.0</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> RHEL<pre class="code">echo &quot;DEVICE=${my_iface}&quot;        | sudo tee    /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;BOOTPROTO=static&quot;          | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;IPADDR=${my_ip}&quot;           | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;NETMASK=255.255.255.0&quot;     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;NETWORK=${my_network}&quot;     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;ONBOOT=yes&quot;                | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES<pre class="code">echo &quot;DEVICE=${my_iface}&quot;        | sudo tee    /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;BOOTPROTO=static&quot;          | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;IPADDR=${my_ip}&quot;           | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;NETMASK=255.255.255.0&quot;     | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;NETWORK=${my_network}&quot;     | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo &quot;STARTMODE=auto&quot;            | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart network services<pre class="code">sudo systemctl restart network</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove cron jobs for application accounts</div>
+<ol>
+<li class="level2"><div class="li"> RHEL<pre class="code">for file in $(sudo ls -1 /var/spool/cron/ | egrep -v &quot;^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$&quot;)
+do
+   sudo rm -i /var/spool/cron/${file} # Remove the -i if you are confident
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES<pre class="code">for file in $(sudo ls -1 /var/spool/cron/tabs | egrep -v &quot;^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$&quot;)
+do
+   sudo rm -i /var/spool/cron/tabs/${file} # Remove the -i if you are confident
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Prevent systems from talking back to their source systems</div>
+<ol>
+<li class="level2"><div class="li"> RHEL make sure we configure the routes on secondary/fake interface. create the file and define the routes<pre class="code">sudo touch /etc/sysconfig/network-scripts/route-ens224
+cat &lt;&lt; EOF | sudo tee -a /etc/sysconfig/network-scripts/route-ens224
+134.238.142.0/24 via 192.168.1.1 dev ens224
+10.135.48.0/24 via 192.168.1.1 dev ens224
+134.238.106.0/24 via 192.168.1.1 dev ens224
+10.128.114.0/24 via 192.168.1.1 dev ens224
+134.238.148.0/24 via 192.168.1.1 dev ens224
+10.128.44.0/24 via 192.168.1.1 dev ens224
+10.128.81.0/24 via 192.168.1.1 dev ens224
+10.128.45.0/24 via 192.168.1.1 dev ens224
+10.128.80.0/24 via 192.168.1.1 dev ens224
+10.135.2.0/24 via 192.168.1.1 dev ens224
+10.0.48.0/24 via 192.168.1.1 dev ens224
+10.128.10.0/24 via 192.168.1.1 dev ens224
+10.128.13.0/24 via 192.168.1.1 dev ens224
+10.128.47.0/24 via 192.168.1.1 dev ens224
+10.128.73.0/24 via 192.168.1.1 dev ens224
+10.129.24.0/24 via 192.168.1.1 dev ens224
+10.131.23.0/24 via 192.168.1.1 dev ens224
+10.131.24.0/24 via 192.168.1.1 dev ens224
+10.135.49.0/24 via 192.168.1.1 dev ens224
+10.135.52.0/24 via 192.168.1.1 dev ens224
+10.135.56.0/24 via 192.168.1.1 dev ens224
+10.217.32.0/24 via 192.168.1.1 dev ens224
+10.26.24.0/24 via 192.168.1.1 dev ens224
+10.3.124.0/24 via 192.168.1.1 dev ens224
+10.32.50.0/24 via 192.168.1.1 dev ens224
+10.32.52.0/24 via 192.168.1.1 dev ens224
+10.32.8.0/24 via 192.168.1.1 dev ens224
+10.34.69.0/24 via 192.168.1.1 dev ens224
+10.36.208.0/24 via 192.168.1.1 dev ens224
+10.58.148.0/24 via 192.168.1.1 dev ens224
+10.58.20.0/24 via 192.168.1.1 dev ens224
+10.72.107.0/24 via 192.168.1.1 dev ens224
+10.76.148.0/24 via 192.168.1.1 dev ens224
+134.238.101.0/24 via 192.168.1.1 dev ens224
+134.238.107.0/24 via 192.168.1.1 dev ens224
+134.238.125.0/24 via 192.168.1.1 dev ens224
+134.238.143.0/24 via 192.168.1.1 dev ens224
+134.238.150.0/24 via 192.168.1.1 dev ens224
+153.2.72.0/24 via 192.168.1.1 dev ens224
+153.2.73.0/24 via 192.168.1.1 dev ens224
+155.56.96.0/24 via 192.168.1.1 dev ens224
+157.133.26.0/24 via 192.168.1.1 dev ens224
+172.27.74.0/24 via 192.168.1.1 dev ens224
+192.55.165.0/24 via 192.168.1.1 dev ens224
+37.209.24.0/24 via 192.168.1.1 dev ens224
+EOF</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES<pre class="code">sudo cp /etc/sysconfig/network/routes /etc/sysconfig/network/routes.$(date +%m%d%y)
+cat &lt;&lt; EOF | sudo tee -a /etc/sysconfig/network/routes
+134.238.142.0 192.168.1.1 255.255.255.0 -
+10.135.48.0 192.168.1.1 255.255.255.0 -
+134.238.106.0 192.168.1.1 255.255.255.0 -
+10.128.114.0 192.168.1.1 255.255.255.0 -
+134.238.148.0 192.168.1.1 255.255.255.0 -
+10.128.44.0 192.168.1.1 255.255.255.0 -
+10.128.81.0 192.168.1.1 255.255.255.0 -
+10.128.45.0 192.168.1.1 255.255.255.0 -
+10.128.80.0 192.168.1.1 255.255.255.0 -
+10.135.2.0 192.168.1.1 255.255.255.0 -
+10.0.48.0 192.168.1.1 255.255.255.0 -
+10.128.10.0 192.168.1.1 255.255.255.0 -
+10.128.13.0 192.168.1.1 255.255.255.0 -
+10.128.47.0 192.168.1.1 255.255.255.0 -
+10.128.73.0 192.168.1.1 255.255.255.0 -
+10.129.24.0 192.168.1.1 255.255.255.0 -
+10.131.23.0 192.168.1.1 255.255.255.0 -
+10.131.24.0 192.168.1.1 255.255.255.0 -
+10.135.49.0 192.168.1.1 255.255.255.0 -
+10.135.52.0 192.168.1.1 255.255.255.0 -
+10.135.56.0 192.168.1.1 255.255.255.0 -
+10.217.32.0 192.168.1.1 255.255.255.0 -
+10.26.24.0 192.168.1.1 255.255.255.0 -
+10.3.124.0 192.168.1.1 255.255.255.0 -
+10.32.50.0 192.168.1.1 255.255.255.0 -
+10.32.52.0 192.168.1.1 255.255.255.0 -
+10.32.8.0 192.168.1.1 255.255.255.0 -
+10.34.69.0 192.168.1.1 255.255.255.0 -
+10.36.208.0 192.168.1.1 255.255.255.0 -
+10.58.148.0 192.168.1.1 255.255.255.0 -
+10.58.20.0 192.168.1.1 255.255.255.0 -
+10.72.107.0 192.168.1.1 255.255.255.0 -
+10.76.148.0 192.168.1.1 255.255.255.0 -
+134.238.101.0 192.168.1.1 255.255.255.0 -
+134.238.107.0 192.168.1.1 255.255.255.0 -
+134.238.125.0 192.168.1.1 255.255.255.0 -
+134.238.143.0 192.168.1.1 255.255.255.0 -
+134.238.150.0 192.168.1.1 255.255.255.0 -
+153.2.72.0 192.168.1.1 255.255.255.0 -
+153.2.73.0 192.168.1.1 255.255.255.0 -
+155.56.96.0 192.168.1.1 255.255.255.0 -
+157.133.26.0 192.168.1.1 255.255.255.0 -
+172.27.74.0 192.168.1.1 255.255.255.0 -
+192.55.165.0 192.168.1.1 255.255.255.0 -
+37.209.24.0 192.168.1.1 255.255.255.0 -
+EOF</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart network subsystem and verify the network routes<pre class="code">sudo systemctl restart network</pre>
+<pre class="code">netstat -rn</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Enable cron</div>
+<ol>
+<li class="level2"><div class="li"> RHEL<pre class="code">sudo systemctl enable crond</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> SLES<pre class="code">sudo systemctl enable cron</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> NFS mounts </div>
+<ol>
+<li class="level2"><div class="li"> Remove all NFS mounts from fstab<pre class="code">sudo cp /etc/fstab /etc/fstab.$(date +%m%d%Y)
+cat /etc/fstab | grep -v nfs &gt; 1
+sudo cp 1 /etc/fstab</pre>
+
+<p>
+Check fstab
+</p>
+<pre class="code">cat /etc/fstab</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add any NFS mounts requested. A sample entry is here<pre class="code">qaerdb01:/sapmnt/FTA/exe /sapmnt/FTA/exe nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp</pre>
+
+<p>
+Add this to /etc/fstab and mount each filesystem
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> NFS exports</div>
+<ol>
+<li class="level2"><div class="li"> Add any NFS exports requested<pre class="code">sudo vi /etc/exports</pre>
+
+<p>
+A sample entry would be
+</p>
+<pre class="code">/sapmnt/PS1 pcdcps1axdb01(rw,no_root_squash)</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform a final reboot<pre class="code">sudo /sbin/init 6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform validations</div>
+<ol>
+<li class="level2"><div class="li"> Check and make sure <abbr title="Domain Name System">DNS</abbr> is not working</div>
+</li>
+<li class="level2"><div class="li"> Check and make sure you are unable to ping to source systems</div>
+</li>
+<li class="level2"><div class="li"> Check all the IP configurations are working.</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT8 SECTION "Post installation - generic tasks from the host" [3598-] -->

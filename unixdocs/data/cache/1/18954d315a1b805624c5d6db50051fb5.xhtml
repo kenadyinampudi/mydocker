@@ -1,0 +1,73 @@
+
+<h1 class="sectionedit1" id="tweaking_the_nim_environment_for_wan_based_installations">Tweaking the NIM environment for WAN based installations</h1>
+<div class="level1">
+
+<p>
+<strong>Change the hostnames accordingly, taerm055 and 057 were used as an example</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> The idea is to use a local server in the same subnet as the container for NIM installation files. For this documentation purpose, I am using taerm055 as the container and taerm057 as the target. IP addresses are as follows<pre class="code">taerm055 ---&gt; 10.60.97.55
+taerm057 ---&gt; 10.60.97.57</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get the bootptab entry from taitc118 and change it as follows<pre class="code">grep ^taerm057 /etc/bootptab
+taerm057.emea.int.tenneco.com:bf=/tftpboot/taerm057.emea.int.tenneco.com:ip=10.60.97.57:ht=ethernet:sa=10.32.51.118:gw=10.60.97.1:sm=255.255.255.0:</pre>
+
+<p>
+Change it as this and add it to the /etc/bootptab on taerm055
+</p>
+<pre class="code">taerm057.emea.int.tenneco.com:bf=/tftpboot/taerm057.emea.int.tenneco.com:ip=10.60.97.57:ht=ethernet:sa=10.60.97.55:gw=10.60.97.1:sm=255.255.255.0:</pre>
+
+<p>
+Note the change from <strong>sa=10.32.51.118</strong> to <strong>sa=10.60.97.55</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Create this directory on taerm055<pre class="code">sudo mkdir -p /export/nim/scripts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy these files from taitc118 to taerm055<pre class="code">scp /tftpboot/taerm057.emea.int.tenneco.com taerm055:/tftpboot/taerm057.emea.int.tenneco.com
+scp /tftpboot/610TL07-05_spot.iplrecord.ent taerm055:/tftpboot/taerm057.emea.int.tenneco.com.iplrecord
+scp /tftpboot/taerm057.emea.int.tenneco.com.info taerm055:/tftpboot/taerm057.emea.int.tenneco.com.info
+scp /export/nim/scripts/taerm057.script taerm055:/export/nim/scripts/taerm057.script</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy over the LPPSRC and Spot to taerm055<pre class="code">cd &lt;lppsrc_dir&gt;
+tar cvf - . | gzip - | ssh taerm055 &quot;(cd /prod/nim/resources/lppsrc ; gunzip - | tar xvf - )&quot;
+cd &lt;spot_directory&gt;
+tar cvf - . | gzip - | ssh tamon055 &quot;(cd /prod/nim/resources/spot/610TL07-05_spot/usr ; gunzip - | tar xvf - )&quot;</pre>
+
+<p>
+<strong>This needs to be done in advance</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> NFS export LPPSRC, Spot and the script from taerm055<pre class="code">exportfs -i -o ro,root=taerm057.emea.int.tenneco.com,access=taerm057.emea.int.tenneco.com /prod/nim/resources/spot/610TL07-05_spot/usr
+exportfs -i -o ro,root=taerm057.emea.int.tenneco.com,access=taerm057.emea.int.tenneco.com /prod/nim/resources/lppsrc/610TL07-05
+exportfs -i -o ro,root=taerm057.emea.int.tenneco.com,access=taerm057.emea.int.tenneco.com /export/nim/scripts/taerm057.script</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit this file on taerm055 and make modifications<pre class="code">vi /tftpboot/taerm057.emea.int.tenneco.com.info</pre>
+
+<p>
+Change these sections
+</p>
+<pre class="code">export SPOT=taerm055.emea.int.tenneco.com:/prod/nim/resources/spot/610TL07-05_spot/usr
+export NIM_CUSTOM=&quot;/../SPOT/usr/lpp/bos.sysmgt/nim/methods/c_script -a location=taerm055.emea.int.tenneco.com:/export/nim/scripts/taerm057.script&quot;
+export NIM_HOSTS=&quot; 127.0.0.1:loopback:localhost  10.60.97.57:taerm057.emea.int.tenneco.com  10.60.97.55:taerm055.emea.int.tenneco.com &quot;
+export NIM_MOUNTS=&quot; taerm055.emea.int.tenneco.com:/prod/nim/resources/lppsrc/610TL07-05:/SPOT/usr/sys/inst.images:dir &quot;</pre>
+
+<p>
+Change all references to taitc118 to taerm055 in these sections. <strong>Also do not forget to change the LPPSRC &amp; Spot locations is they are different from NIM server taitc118.</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure bootpd and tftpd are uncommented in /etc/inetd.conf<pre class="code">egrep &quot;^tftp|^bootp&quot; /etc/inetd.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure tftpd is running<pre class="code">lssrc -s tftpd</pre>
+</div>
+</li>
+</ol>
+
+</div>

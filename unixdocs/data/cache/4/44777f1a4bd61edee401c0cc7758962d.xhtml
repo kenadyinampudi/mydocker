@@ -1,0 +1,331 @@
+
+<h1 class="sectionedit1" id="migrating_vios_servers_to_vios_v31">Migrating VIOS Servers to VIOS V3.1</h1>
+<div class="level1">
+
+<p>
+<strong> They were developed at Tenneco with the on site assitnace of Dave Buffaline, Senior Managing Consultant Virtualization, Performance, &amp; Technology Integration IBM as best practice VIOS upgrade proceedures, and are based on the replacement theory of upgrade. That is the VIOS is replaced with a complete server image instead of being upgrades with individual patch levels.</strong>
+</p>
+
+<p>
+<strong> This is specifically designed for “new” VIOS installations and the upgrade of vacated hadrware VIOS servers that contain no functioning VIOS client lpars. </strong>
+</p>
+
+<p>
+<strong> PRE UPGRADE PROCESS STARTS HERE </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Log in to the VIOS as the user padmin.  </div>
+</li>
+<li class="level1"><div class="li"> Commit previous updates, by running the updateios command. <pre class="code">updateios -commit </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify no maps are in place. <pre class="code"> lsmap -all </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Exit thte restricted shell <pre class="code"> oem_setup_env </pre>
+<pre class="code"> set -o vi </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export the hostname <pre class="code"> export hostname=$(uname -n)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change to the /usrlocal/sbin directory <pre class="code"> cd /usr/local/sbin </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the checkit script to check VIOS recomended Adapter settings. <pre class="code"> ./checkit </pre>
+
+<p>
+ The last line of the output should be similiar to the following.  
+</p>
+<pre class="code"> cdcvilpv102 - CHECKIT completed without issue on Mon Dec 10 11:07:36 CST 2018 </pre>
+
+<p>
+ If there are any recomendatains run the setit script to correct the settings 
+</p>
+<pre class="code"> ./setit </pre>
+
+<p>
+ Reexecute the checkit script to comdirm that all settings have been updated. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Execute the following script to get the boot disk information. Make a note/save it, you will need later in the installation process. <pre class="code"> ./get-bootdisk.sh </pre>
+
+<p>
+ The output will look simiiar to this 
+</p>
+<pre class="code">uname -a
+***************************************
+AIX cdcvilpv102 1 6 0002C6FAD400
+
+BOOT Disk
+***************************************
+hdisk1
+hdisk1          0002c6fa2fdebd4f                    rootvg          active
+U78A5.001.WIH27C3-P1-C7-L1-T2-W500601653EE01288-L0 </pre>
+
+<p>
+ This is also captured in the snap output below. It is easier to have it readily available instead of looking it up.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the pre_upgrade_snapit.sh command.  This creates a “snap” of the VIOS server. <pre class="code"> ./pre_upgrade_snapit.sh </pre>
+
+<p>
+ The output will be in tHe /usr/local/logs directory and will be in the format Pre_upgrade-{host name}-snapit.   
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a backup of the VIOS infrastructure. This will be used to restore the network etc. after the upgrade. <pre class="code"> ./pre_upgrade_viosbr.sh </pre>
+
+<p>
+ The output will be in the /home/padmin/cfgbackups directory and will be in the format Pre_upgrade-{host name}-viosbr.tar.gz
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify the viosbr was successfully completed<pre class="code"> /usr/ios/cli/ioscli viosbr -view -file /home/padmin/cfgbackups/Pre_upgrade-$(hostname)-viosbr.tar.gz </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Follow the standard AIX preupgrade steps.</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=chris:backupconfig" class="wikilink1" title="chris:backupconfig">Perform the configuration backup</a></div>
+</li>
+</ol>
+
+<p>
+Log on to the NIM server so we can copy the confituration files to the repository for use later in the upgrade to put the server back together again
+</p>
+<ol>
+<li class="level1"><div class="li"> export the host name <pre class="code"> export host2patch={host name of server being patched}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> copy the  snap and viodbr files to the repository. You will need to copy the viosbr output back to the system being upgraded after the upgrade has completed. Adjust the following command accordingly. <pre class="code"> sudo scp ${host2patch}:/usr/local/logs/Pre_upgrade-${host2patch}-snapit /preupgrade/reports/Pre_upgrade-${host2patch}-snapit </pre>
+<pre class="code">sudo scp ${host2patch}:/home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz /preupgrade/reports/Pre_upgrade-${host2patch}-viosbr.tar.gz </pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> UPGRADE PROCESS STARTS HERE </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> logon to the server being patched as the user padmin.</div>
+</li>
+<li class="level1"><div class="li"> Exit thte restricted shell <pre class="code"> oem_setup_env </pre>
+<pre class="code"> set -o vi </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change to the /usrlocal/sbin directory <pre class="code"> cd /usr/local/sbin </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check and clear any errors in the error report <pre class="code"> errpt </pre>
+
+<p>
+ If there are errors then clean them 
+</p>
+<pre class="code"> errclear 00 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Note the adapter that has the server ip address assigned to it. <pre class="code"> ifconfig -a </pre>
+
+<p>
+ Output should resemble the following 
+</p>
+<pre class="code">cdcvilpv102[/home/padmin] &gt;# ifconfig -a
+en4: flags=1e084863,15c0&lt;UP,BROADCAST,NOTRAILERS,RUNNING,SIMPLEX,MULTICAST,GROUP                                                                 RT,64BIT,CHECKSUM_OFFLOAD(ACTIVE),LARGESEND,CHAIN&gt;
+        inet 10.0.4.210 netmask 0xfffffc00 broadcast 10.0.7.255
+         tcp_sendspace 262144 tcp_recvspace 262144 rfc1323 1
+lo0: flags=e08084b,1c0&lt;UP,BROADCAST,LOOPBACK,RUNNING,SIMPLEX,MULTICAST,GROUPRT,6                                                                 4BIT,LARGESEND,CHAIN&gt;
+        inet 127.0.0.1 netmask 0xff000000 broadcast 127.255.255.255
+        inet6 ::1%1/0
+         tcp_sendspace 131072 tcp_recvspace 131072 rfc1323 1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check SEA adapter and put it into backup mode <pre class="code"> export SEA=$(/usr/ios/cli/ioscli lsdev -virtual -field name description | awk &#039;$2 == &quot;Shared&quot; &amp;&amp; $3 == &quot;Ethernet&quot; &amp;&amp; $4 == &quot;Adapter&quot; {print $1}&#039; | awk -F&quot;x0a&quot; &#039;{print $1}&#039;) </pre>
+<pre class="code"> echo &quot;SEA ==&gt;&gt; $SEA&quot;</pre>
+<pre class="code"> chdev -l ${SEA} -a ha_mode=standby </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verifty the SEA is in standby mode <pre class="code"> lsattr -El ${SEA} | grep ha_mode </pre>
+
+<p>
+ Output should be similiar to the following 
+</p>
+<pre class="code"> ha_mode       standby     High Availability Mode</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown the VIOS server <pre class="code"> shutdown </pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Migrating VIOS Servers to VIOS V3.1" [1-5412] -->
+<h2 class="sectionedit2" id="configure_nim">Configure NIM</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the LDC NIM server pcdcunxaxap01</div>
+</li>
+<li class="level1"><div class="li"> Export a variable pointing to the VIOS server we are planning to work on<pre class="code">export host2patch=&lt;viosserver_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare the NIM client(VIO server) for a NIM bosinst operation<pre class="code">sudo nim -o bos_inst -a \
+source=mksysb -a \
+spot=vios_3_1_1_21_spot -a \
+mksysb=vios_3_1_1_21_mksysb -a \
+accept_licenses=yes -a \
+no_client_boot=yes ${host2patch}</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Configure NIM" [5413-5856] -->
+<h2 class="sectionedit3" id="install_upgrade_vios_using_nim">Install/Upgrade VIOS using NIM</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li">  Power on the VIOS partition to SMS. </div>
+<ol>
+<li class="level2"><div class="li"> Find out the frame and HMC<pre class="code">export frame=$(grep -i ^${host2patch} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $4}&#039; )
+export hmc=$(grep -i ^${host2patch} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $3}&#039; )</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Execute power on<pre class="code">ssh ${hmc} &quot;chsysstate -r lpar -o on -b sms -m ${frame} -n ${host2patch}&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to pgnmsv01 and open a console session to the VIO server<pre class="code">sudo getconsole $(host2patch)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At the console, set up the server for network boot installation. Continue with the boot process. </div>
+</li>
+<li class="level1"><div class="li"> At the installation prompt select the option to select the boot disk. do not rely on the automatically chosen hdisk0 that is displayed. View the disks and select the disk that has the matching information that you saved from the get-bootdisk.sh  command in step 7 above. </div>
+</li>
+<li class="level1"><div class="li"> Once you have selected the correct disk continue with the installation. </div>
+</li>
+<li class="level1"><div class="li"> After the installation the server will reboot. login as padmn and run the followning command <pre class="code"> license -accept </pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Install/Upgrade VIOS using NIM" [5857-6983] -->
+<h2 class="sectionedit4" id="restore_the_vios_settings_-_adapter_mappings">Restore the VIOS Settings - adapter mappings</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Exit the restricted shell <pre class="code"> oem_setup_env </pre>
+<pre class="code"> set -o vi </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Assign  the IP Address on the VIOS server to the ethernet port you noted / saved from the ifconfig -a command above.</div>
+</li>
+<li class="level1"><div class="li"> Export the host name of the server being patched <pre class="code"> export  host2patch=$(hostname) </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Log on to the NIM server and copy the viosbr backup you saved in the Pre_upgrade section from /preupgrade/reports/Pre_upgrade-${host2patch}-viosbr.tar.gz to the server you are upgrading <pre class="code"> sudo scp /preupgrade/reports/Pre_upgrade-${host2patch}-viosbr.tar.gz ${host2patch}:/home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> log back on to the NIM server and copy the resolv.conf file <pre class="code">sudo scp /prod/images/etc/resolv.conf.na {Vios Server you just updated}}:/etc/resolv.conf</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Restore the VIOS Settings - adapter mappings" [6984-7865] -->
+<h2 class="sectionedit5" id="configure_networking_on_vios">Configure Networking on VIOS</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Log back on to the VIOS server being patched as padmin </div>
+</li>
+<li class="level1"><div class="li"> Remove all the network configurations<pre class="code">oem_setup_env</pre>
+
+<p>
+detach the network config
+</p>
+<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+
+<p>
+Remove them from ODM
+</p>
+<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export the host name of the server being patched <pre class="code"> export  host2patch=$(uname -n) </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Execute the following command <pre class="code">viosbr -restore -file /home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz </pre>
+
+<p>
+ This creates the initial devices
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown and restart the server <pre class="code"> shutdown -force -restart </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> After the reboot log back into the server as padmin</div>
+</li>
+<li class="level1"><div class="li"> Export the host name of the server being patched <pre class="code"> export  host2patch=$(uname -n) </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the viosbr resotore command again <pre class="code"> viosbr -restore -file /home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz </pre>
+
+<p>
+  This brings in the virtual devices. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown and restart the server <pre class="code"> shutdown -force -restart </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> After the reboot log back into the server as padmin</div>
+</li>
+<li class="level1"><div class="li"> Export the host name of the server being patched <pre class="code"> export  host2patch=$(uname -n) </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the viosbr resotore command again <pre class="code"> viosbr -restore -file /home/padmin/cfgbackups/Pre_upgrade-${host2patch}-viosbr.tar.gz </pre>
+
+<p>
+  This brings in the remaining SEA devices 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Exit the restricted shell <pre class="code"> oem_setup_env </pre>
+<pre class="code"> set -o vi </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check SEA adapter and put back into sharing mode <pre class="code"> export SEA=$(/usr/ios/cli/ioscli lsdev -virtual -field name description | awk &#039;$2 == &quot;Shared&quot; &amp;&amp; $3 == &quot;Ethernet&quot; &amp;&amp; $4 == &quot;Adapter&quot; {print $1}&#039; | awk -F&quot;x0a&quot; &#039;{print $1}&#039;) </pre>
+<pre class="code"> echo &quot;SEA ==&gt;&gt; $SEA&quot;</pre>
+<pre class="code"> chdev -l ${SEA} -a ha_mode=sharing </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verifty the SEA is in sharing mode <pre class="code"> lsattr -El ${SEA} | grep ha_mode </pre>
+
+<p>
+ Output should be similiar to the following 
+</p>
+<pre class="code"> ha_mode       sharing     High Availability Mode</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the checkit command, it should retrun with no errors <pre class="code"> /usr/local/sbin/checkit </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set Live Partition Mobility NPIV disk Validation <pre class="code"> chdev -dev vioslpm0 -attr src_lun_val=on </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:consise-cdc-vios" class="wikilink1" title="unix:consise-cdc-vios">Final VIOS CDC Configuration Check </a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Configure Networking on VIOS" [7866-] -->

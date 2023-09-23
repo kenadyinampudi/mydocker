@@ -1,0 +1,37 @@
+====== taitc311 - Blade addition in LDC ======
+
+  - Fabric A<code>alicreate "taitc311_d7ef52","10:00:00:90:fa:d7:ef:52"
+
+zonecreate "taitc311_d7ef52__vmax_0301_4f0","taitc311_d7ef52;vmax_0301_4f0"
+zonecreate "taitc311_d7ef52__vnx53001_spa0","taitc311_d7ef52;vnx53001_spa0"
+zonecreate "taitc311_d7ef52__vnx53001_spb0","taitc311_d7ef52;vnx53001_spb0"
+zonecreate "taitc311_d7ef52__ldcv9ac2n1_112fbf","taitc311_d7ef52;ldcv9ac2n1_112fbf"
+zonecreate "taitc311_d7ef52__ldcv9ac2n2_112fc0","taitc311_d7ef52;ldcv9ac2n2_112fc0"
+
+cfgadd "fab_a_act_config","taitc311_d7ef52__vmax_0301_4f0;taitc311_d7ef52__vnx53001_spa0;taitc311_d7ef52__vnx53001_spb0;taitc311_d7ef52__ldcv9ac2n1_112fbf;taitc311_d7ef52__ldcv9ac2n2_112fc0"
+
+cfgsave
+
+cfgenable "fab_a_act_config"</code>
+  - Fabric B<code>alicreate "taitc311_d7ef53","10:00:00:90:fa:d7:ef:53"
+
+zonecreate "taitc311_d7ef53__vmax_0301_1f0","taitc311_d7ef53;vmax_0301_1f0"
+zonecreate "taitc311_d7ef53__vnx53001_spa1","taitc311_d7ef53;vnx53001_spa1"
+zonecreate "taitc311_d7ef53__vnx53001_spb1","taitc311_d7ef53;vnx53001_spb1"
+zonecreate "taitc311_d7ef53__ldcv9ac2n1_122fbf","taitc311_d7ef53;ldcv9ac2n1_122fbf"
+zonecreate "taitc311_d7ef53__ldcv9ac2n2_122fc0","taitc311_d7ef53;ldcv9ac2n2_122fc0"
+
+cfgadd "fab_b_act_config","taitc311_d7ef53__vmax_0301_1f0;taitc311_d7ef53__vnx53001_spa1;taitc311_d7ef53__vnx53001_spb1;taitc311_d7ef53__ldcv9ac2n1_122fbf;taitc311_d7ef53__ldcv9ac2n2_122fc0"
+
+cfgsave
+
+cfgenable "fab_b_act_config"</code>
+  - Add the system to VMAX<code>sudo symaccess -sid 0301 -name taitc311_IG -type initiator create
+sudo symaccess -sid 0301 -name taitc311_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name taitc311_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name taitc311_IG -type initiator -wwn 10000090fad7ef52 add
+sudo symaccess -sid 0301 -name pearfs01_IG -type initiator -wwn 10000090fad7ef53 add</code>From GUI add it to the Initiator group.
+  - Add the system to VNX from the GUI
+  - Add the system to V9000<code>SSH2V9="/usr/bin/ssh ldcv9ac2vip1"
+${SSH2V9} mkhost -fcwwpn 10000090fad7ef52:10000090fad7ef53 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name taitc311 -type generic</code>Add the LUNs, if any, to the host.
+

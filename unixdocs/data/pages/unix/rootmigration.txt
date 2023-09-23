@@ -1,0 +1,54 @@
+====== Redhat SAN boot disk migration ======
+
+  - Take a snapshot of existing disks<code>sudo multipath -ll > multipath.before.root</code>
+  - Find out the boot disk and store in a variable<code>df -hTP /boot</code>Output<code>Filesystem            Type  Size  Used Avail Use% Mounted on
+/dev/mapper/mpathajp1 ext3  516M   87M  403M  18% /boot</code>In this case, boot disk is<code>export oldbootdisk="/dev/mapper/mpathaj"</code>
+  - Rescan for new devices<code>for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk '{print $9}' )
+do
+   echo "- - -" | sudo tee ${dir}/scan
+done</code>
+  - Reload multipath maps<code>sudo multipath -r</code>
+  - Take a snapshot of disks now<code>sudo multipath -ll > multipath.after.root</code>
+  - Find out the new device and store in a variable<code>diff multipath.before.root multipath.after.root</code>Output looks like<code>< Oct 30 04:44:16 | /etc/multipath.conf line 11, duplicate keyword: defaults
+---
+> Oct 30 04:52:52 | /etc/multipath.conf line 11, duplicate keyword: defaults
+89a90,100
+> mpatham (3624a9370988902dc06ce4db204079cb2) dm-26 PURE,FlashArray
+> size=50G features='0' hwhandler='0' wp=rw
+> `-+- policy='queue-length 0' prio=1 status=active
+>   |- 6:0:1:5   sdbv 68:144 active ready running
+>   |- 6:0:0:5   sdbu 68:128 active ready running
+>   |- 6:0:2:5   sdbw 68:160 active ready running
+>   |- 6:0:3:5   sdbx 68:176 active ready running
+>   |- 7:0:0:5   sdby 68:192 active ready running
+>   |- 7:0:3:5   sdcb 68:240 active ready running
+>   |- 7:0:1:5   sdbz 68:208 active ready running
+>   `- 7:0:2:5   sdca 68:224 active ready running</code>That means **mpatham** is the new boot disk<code>export newbootdisk=/dev/mapper/mpatham</code>
+  - Copy the partition table from old boot disk to new boot disk<code>sudo sfdisk -d ${oldbootdisk} | sudo sfdisk --force ${newbootdisk}</code>
+  - Probe the new partition<code>sudo partprobe ${newbootdisk}</code>If partprobe returns error, try running partprobe couple of times. If that is also not working, run the previous fdisk command against the sd devices rather than the mpath devices. No need to delete & recreate the partition, just “w”(write) and exit and then run partprobe on the sd device file.
+  - Validate the partition on the new boot disk<code>sudo sfdisk -l ${newbootdisk}</code>There must be a "p1" - boot and "p2" - LVM
+  - Create the LVM partition, add to rootvg and start migration<code>sudo pvcreate ${newbootdisk}p2
+sudo vgextend vgroot ${newbootdisk}p2
+sudo pvmove ${oldbootdisk}p2
+sudo vgreduce vgroot ${oldbootdisk}p2
+sudo pvremove ${oldbootdisk}p2</code>
+  - Copy the boot partition to new disk<code>sudo umount /boot
+sudo dd if=${oldbootdisk}p1 of=${newbootdisk}p1 bs=512 conv=noerror,sync
+sudo mount /boot</code>
+  - Copy boot sector<code>sudo dd if=${oldbootdisk} of=${newbootdisk} bs=1 count=512</code>
+  - Try install grub - if this fails - ignore<code>sudo grub-install ${newbootdisk}</code>These messages are what I got and they still did boot<code>Probing devices to guess BIOS drives. This may take a long time.
+Unknown partition table signature
+Unknown partition table signature
+Unknown partition table signature
+Unknown partition table signature
+/dev/mapper/mpatham does not have any corresponding BIOS drive.</code>
+  - Install grub manually if the system doesn't boot by [[unix:booting_rhel6_in_rescue_mode|Booting RHEL6 in Rescue Mode]].<code>grub
+grub> device (hd0) /dev/mapper/<target mpath name>
+grub> root (hd0,0)
+grub> setup (hd0)
+grub> quit</code>
+  - Write the cache and shutdown<code>sudo sync; sudo init 0</code>
+  - Ask SAN team to remove the original disk
+  - Adjust the UCS boot order to boot from new controller
+  - Initiate boot.
+  - [[unix:lvmasmmigration|LVM and ASM Migration steps]]

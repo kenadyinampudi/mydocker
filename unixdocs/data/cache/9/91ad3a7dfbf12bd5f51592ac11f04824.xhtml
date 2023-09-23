@@ -1,0 +1,390 @@
+
+<h1 class="sectionedit1" id="linux_based_sap_system_refresh_using_storage_snapshot">Linux based SAP System Refresh using Storage Snapshot</h1>
+<div class="level1">
+
+<p>
+<strong> Some documented commands are PowerShell commands. Connect to the respective vCenter with your AD credentials and execute carefully, it is a very powerful tool - you can do a lot of damage if you have rights </strong>
+</p>
+
+<p>
+This document will give one an overview of how to perform a SAP system copy using storage snapshot, when the system is running Linux on VMware. 
+</p>
+
+<p>
+If you have powerCLI modules added to your PowerShell environment - Use these steps to connect 
+</p>
+<ol>
+<li class="level1"><div class="li"> Connect to vCenter<pre class="code">Connect-VIServer -server cdcpilvc005.pt.int.tenneco.com -User amer\x1naveka</pre>
+
+<p>
+Make sure to use the Tenneco domain username and password when it prompts for the credentials<code>&lt;domain&gt;\&lt;accountname&gt;</code> and supply credentials.  If powerCLI is not installed and configured, follow <a href="/doku.php?id=unix:install_powercli_desktop" class="wikilink1" title="unix:install_powercli_desktop">this</a> documentation to install &amp; configure powerCLI
+</p>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Linux based SAP System Refresh using Storage Snapshot" [2-921] -->
+<h2 class="sectionedit2" id="scope">Scope</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> In this case, we are performing a system copy of RLP to RLT.</div>
+</li>
+<li class="level1"><div class="li"> RLP is the production server and is on cdcpillx016, and is hosted on the PROD-SUSE1 Cluster</div>
+</li>
+<li class="level1"><div class="li"> RLT is the sandbox server and is on cdcpillx134, and is hosted on NON-PROD-SUSE1 Cluster</div>
+</li>
+<li class="level1"><div class="li"> During a system copy or refresh, SAP teams and <abbr title="Database Administrator">DBA</abbr> only needs the sapdata filesystems.  In case, they want to completely create a new cloned server, there are other documents that explains this process and this method shouldn&#039;t be used.</div>
+</li>
+</ol>
+<div class="table sectionedit3"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Source Server</th><th class="col1">Source VMware cluster</th><th class="col2">Source SID</th><th class="col3">Target server</th><th class="col4">Target VMware cluster</th><th class="col5">Target SID</th><th class="col6">Target ESXi Host</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">cdcpillx016  </td><td class="col1 leftalign">PROD-SUSE1       </td><td class="col2 leftalign">RLP       </td><td class="col3">cdcvillpx034</td><td class="col4 leftalign">NON-PROD-SUSE1      </td><td class="col5 leftalign">RLT       </td><td class="col6 leftalign">cdcpilvm103.pt.int.tenneco.com     </td>
+	</tr>
+</table></div>
+<!-- EDIT3 TABLE [1437-1675] -->
+</div>
+<!-- EDIT2 SECTION "Scope" [922-1676] -->
+<h2 class="sectionedit4" id="pre-steps">Pre-steps</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:powercli_disk_info" class="wikilink1" title="unix:powercli_disk_info">Identify the Datastores</a> that needs to be replicated. Using powerCLI is easier to get the the list of all disks presented to the source system (production)<pre class="code">Get-VMDiskAndRDM -vmName CDCPILLX016 -ShowVMDKDatastorePath | ft -a
+
+VMName      HardDiskName ScsiId DeviceDisplayName SizeGB ScsiCanonicalName VMDKDStorePath                                     
+------      ------------ ------ ----------------- ------ ----------------- --------------                                     
+CDCPILLX016 Hard disk 1  0:0                          50                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_3.vmdk 
+CDCPILLX016 Hard disk 2  0:1                          50                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_1.vmdk 
+CDCPILLX016 Hard disk 3  0:2                         200                   [PROD-SUSE1-PT-020] CDCPILLX016/CDCPILLX016_2.vmdk 
+CDCPILLX016 Hard disk 4  0:3                         500                   [PROD-SUSE1-PT-250] CDCPILLX016/CDCPILLX016_4.vmdk 
+CDCPILLX016 Hard disk 5  0:4                          40                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_5.vmdk 
+CDCPILLX016 Hard disk 6  0:5                          50                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_6.vmdk 
+CDCPILLX016 Hard disk 7  0:6                         600                   [PROD-SUSE1-PT-254] CDCPILLX016/CDCPILLX016_7.vmdk 
+CDCPILLX016 Hard disk 8  0:8                         650                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_8.vmdk 
+CDCPILLX016 Hard disk 9  0:9                         100                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_9.vmdk 
+CDCPILLX016 Hard disk 10 0:10                        710                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_10.vmdk
+CDCPILLX016 Hard disk 11 0:11                        800                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_11.vmdk
+CDCPILLX016 Hard disk 12 0:12                        550                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_12.vmdk
+CDCPILLX016 Hard disk 13 0:13                        500                   [PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_15.vmdk
+CDCPILLX016 Hard disk 14 0:14                        550                   [PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_14.vmdk
+CDCPILLX016 Hard disk 15 0:15                         50                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016.vmdk   
+CDCPILLX016 Hard disk 16 1:0                         250                   [PROD-SUSE1-PT-250] CDCPILLX016/CDCPILLX016_13.vmdk
+CDCPILLX016 Hard disk 17 1:1                          80                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_16.vmdk
+CDCPILLX016 Hard disk 18 1:2                         680                   [PROD-SUSE1-PT-020] CDCPILLX016/CDCPILLX016_17.vmdk
+CDCPILLX016 Hard disk 19 1:3                         450                   [PROD-SUSE1-PT-021] CDCPILLX016/CDCPILLX016.vmdk   </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the source systems (RLP in this case) and get the disk scsi number for the disks in the sapdata volume groups.<pre class="code">lsscsi
+df -h |grep sapdata
+vgs
+lvs |grep sapvg</pre>
+
+<p>
+SAMPLE OUTPUT:
+</p>
+<pre class="code">cdcpillx016:~ # lsscsi
+[0:0:0:0]    disk    VMware   Virtual disk     2.0   /dev/sda
+[0:0:1:0]    disk    VMware   Virtual disk     2.0   /dev/sdb
+[0:0:2:0]    disk    VMware   Virtual disk     2.0   /dev/sdc
+[0:0:3:0]    disk    VMware   Virtual disk     2.0   /dev/sdd
+[0:0:4:0]    disk    VMware   Virtual disk     2.0   /dev/sde
+[0:0:5:0]    disk    VMware   Virtual disk     2.0   /dev/sdf
+[0:0:6:0]    disk    VMware   Virtual disk     2.0   /dev/sdg
+[0:0:8:0]    disk    VMware   Virtual disk     2.0   /dev/sdh
+[0:0:9:0]    disk    VMware   Virtual disk     2.0   /dev/sdi
+[0:0:10:0]   disk    VMware   Virtual disk     2.0   /dev/sdj
+[0:0:11:0]   disk    VMware   Virtual disk     2.0   /dev/sdk
+[0:0:12:0]   disk    VMware   Virtual disk     2.0   /dev/sdl
+[0:0:13:0]   disk    VMware   Virtual disk     2.0   /dev/sdm
+[0:0:14:0]   disk    VMware   Virtual disk     2.0   /dev/sdn
+[0:0:15:0]   disk    VMware   Virtual disk     2.0   /dev/sdo
+[1:0:0:0]    disk    VMware   Virtual disk     2.0   /dev/sdp
+[1:0:1:0]    disk    VMware   Virtual disk     2.0   /dev/sdq
+[1:0:2:0]    disk    VMware   Virtual disk     2.0   /dev/sdr
+[1:0:3:0]    disk    VMware   Virtual disk     2.0   /dev/sds
+[2:0:0:0]    cd/dvd  NECVMWar VMware SATA CD00 1.00  /dev/sr0
+cdcpillx016:~ # df -h |grep sapdata
+/dev/mapper/sapvg-sapdata1lv     890G  829G   17G  99% /oracle/RLP/sapdata1
+/dev/mapper/sapvg-sapdata3lv     868G  813G   12G  99% /oracle/RLP/sapdata3
+/dev/mapper/sapvg-sapdata4lv     868G  789G   36G  96% /oracle/RLP/sapdata4
+/dev/mapper/sapvg-sapdata2lv     1.2T  1.1T   17G  99% /oracle/RLP/sapdata2
+/dev/mapper/sapvg-sapdata6lv     1.2T  466G  664G  42% /oracle/RLP/sapdata6
+/dev/mapper/sapvg-sapdata5lv     669G  611G   29G  96% /oracle/RLP/sapdata5
+cdcpillx016:~ # pvs |grep sapvg
+  /dev/sdd   sapvg    lvm2 a--  500.00g       0
+  /dev/sdg   sapvg    lvm2 a--  600.00g       0
+  /dev/sdh   sapvg    lvm2 a--  650.00g       0
+  /dev/sdj   sapvg    lvm2 a--  710.00g   32.97g
+  /dev/sdk   sapvg    lvm2 a--  800.00g       0
+  /dev/sdl   sapvg    lvm2 a--  550.00g       0
+  /dev/sdm   sapvg    lvm2 a--  500.00g       0
+  /dev/sdn   sapvg    lvm2 a--  550.00g       0
+  /dev/sdr   sapvg    lvm2 a--  680.00g       0
+  /dev/sds   sapvg    lvm2 a--  450.00g  229.99g
+cdcpillx016:~ #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Identify the disks that matters to us.  Make sure to use the correct sapdata volume group<pre class="code">for disk in `pvs |grep -w sapvg |awk &#039;{print $1}&#039;`
+do
+lsscsi |grep -w $disk
+done</pre>
+
+<p>
+SAMPLE OUTPUT:
+</p>
+<pre class="code">cdcpillx016:~ # for disk in `pvs |grep -w sapvg |awk &#039;{print $1}&#039;`
+&gt; do
+&gt; lsscsi |grep -w $disk
+&gt; done
+[0:0:3:0]    disk    VMware   Virtual disk     2.0   /dev/sdd
+[0:0:6:0]    disk    VMware   Virtual disk     2.0   /dev/sdg
+[0:0:8:0]    disk    VMware   Virtual disk     2.0   /dev/sdh
+[0:0:10:0]   disk    VMware   Virtual disk     2.0   /dev/sdj
+[0:0:11:0]   disk    VMware   Virtual disk     2.0   /dev/sdk
+[0:0:12:0]   disk    VMware   Virtual disk     2.0   /dev/sdl
+[0:0:13:0]   disk    VMware   Virtual disk     2.0   /dev/sdm
+[0:0:14:0]   disk    VMware   Virtual disk     2.0   /dev/sdn
+[1:0:2:0]    disk    VMware   Virtual disk     2.0   /dev/sdr
+[1:0:3:0]    disk    VMware   Virtual disk     2.0   /dev/sds
+cdcpillx016:~ #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> From the combination of step 1 and the above step, we need to identify the datastores that hosts the physical volumes.  We can see that on controller 0, disks with <abbr title="Small Computer System Interface">SCSI</abbr> ID 3,6,8,10,11,12,13,14 and on controller 1, disks with <abbr title="Small Computer System Interface">SCSI</abbr> ID of 2 &amp; 3 are used.  Please note that disks with <abbr title="Small Computer System Interface">SCSI</abbr> ID 3 is not necessarily the same as &#039;Hard Disk 3&#039;.  The following mapping can be derived.  <pre class="code">/dev/sdd	CDCPILLX016 Hard disk 4  0:3                         500                   [PROD-SUSE1-PT-250] CDCPILLX016/CDCPILLX016_4.vmdk 
+/dev/sdg	CDCPILLX016 Hard disk 7  0:6                         600                   [PROD-SUSE1-PT-254] CDCPILLX016/CDCPILLX016_7.vmdk 
+/dev/sdh	CDCPILLX016 Hard disk 8  0:8                         650                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_8.vmdk 
+/dev/sdj	CDCPILLX016 Hard disk 10 0:10                        710                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_10.vmdk
+/dev/sdk	CDCPILLX016 Hard disk 11 0:11                        800                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_11.vmdk
+/dev/sdl	CDCPILLX016 Hard disk 12 0:12                        550                   [PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_12.vmdk
+/dev/sdm	CDCPILLX016 Hard disk 13 0:13                        500                   [PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_15.vmdk
+/dev/sdn	CDCPILLX016 Hard disk 14 0:14                        550                   [PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_14.vmdk
+/dev/sdr	CDCPILLX016 Hard disk 18 1:2                         680                   [PROD-SUSE1-PT-020] CDCPILLX016/CDCPILLX016_17.vmdk
+/dev/sds	CDCPILLX016 Hard disk 19 1:3                         450                   [PROD-SUSE1-PT-021] CDCPILLX016/CDCPILLX016.vmdk</pre>
+
+<p>
+Or in summary, the following datastores needs to be snapmirrored.
+</p>
+<pre class="code">PROD-SUSE1-PT-250
+PROD-SUSE1-PT-254
+PROD-SUSE1-PT-015
+PROD-SUSE1-PT-014
+PROD-SUSE1-PT-020
+PROD-SUSE1-PT-021</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:powercli_datastore_cname" class="wikilink1" title="unix:powercli_datastore_cname">Identify the canonical name</a> to be provided to the storage team from PowerCLI<pre class="code">Name              CanonicalName                       
+----              -------------                       
+PROD-SUSE1-PT-015 naa.624a9370388f90324cca45010001143b
+PROD-SUSE1-PT-020 naa.624a9370388f90324cca4501009a2edc
+PROD-SUSE1-PT-250 naa.624a9370388f90324cca450100737b93
+PROD-SUSE1-PT-254 naa.624a9370388f90324cca4501004d2a59
+PROD-SUSE1-PT-014 naa.624a9370388f90324cca45010001143a
+PROD-SUSE1-PT-021 naa.624a9370388f90324cca4501009a2edd</pre>
+
+<p>
+It is very important to inform them in which cluster the snap mirrored copy of these disks should be presented.  This would be same cluster as the target system. It is also a good idea to give the list of VM Hosts in the cluster.  Note that the server cdcpillx034 is the name of the target VM (as the VM name in VCenter) which is being refreshed.  
+</p>
+<pre class="code">Get-Cluster NON-PROD-SUSE1 |Get-VMHost</pre>
+
+<p>
+SAMPLE OUTPUT:
+</p>
+<pre class="code">Name                 ConnectionState PowerState NumCpu CpuUsageMhz CpuTotalMhz   MemoryUsageGB   MemoryTotalGB Version
+----                 --------------- ---------- ------ ----------- -----------   -------------   ------------- -------
+cdcpilvm161.pt.in... Connected       PoweredOn      40        3076       87760         490.965         767.892   6.5.0
+cdcpilvm135.pt.in... Connected       PoweredOn      20         925       59980         162.186         383.932   6.5.0
+cdcpilvm108.pt.in... Connected       PoweredOn      20        4263       59980         212.648         383.932   6.5.0
+cdcpilvm153.pt.in... Connected       PoweredOn      20        1242       59980         292.172         383.932   6.5.0
+cdcpilvm214.pt.in... Connected       PoweredOn      20        4605       60000         180.936         383.932   6.5.0
+cdcpilvm109.pt.in... Connected       PoweredOn      20        4993       59980         223.685         383.932   6.5.0
+cdcpilvm129.pt.in... Connected       PoweredOn      20       17128       59980         153.677         383.932   6.5.0
+cdcpilvm162.pt.in... Connected       PoweredOn      20        1072       59980         195.592         383.932   6.5.0
+cdcpilvm160.pt.in... Connected       PoweredOn      40        5869       87760         512.184         767.892   6.5.0
+cdcpilvm220.pt.in... Connected       PoweredOn      40        6862       87760         627.423         767.891   6.7.0
+cdcpilvm116.pt.in... Connected       PoweredOn      20        3497       59980          93.262         383.932   6.5.0
+cdcpilvm218.pt.in... Connected       PoweredOn      40        5696       87760         621.977         767.825   6.7.0
+cdcpilvm130.pt.in... Connected       PoweredOn      20         908       59980         181.689         383.932   6.5.0
+cdcpilvm103.pt.in... Connected       PoweredOn      20        1090       59980         284.787         383.932   6.5.0
+cdcpilvm104.pt.in... Connected       PoweredOn      20        1447       59980         140.949         383.932   6.5.0
+
+
+
+PS C:\WINDOWS\system32&gt; </pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Pre-steps" [1677-13060] -->
+<h2 class="sectionedit5" id="actions_by_storage_team_dba">Actions by Storage Team &amp; DBA</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> The storage creates the mapping and zoning and performs the initial sync to new LUNs</div>
+</li>
+<li class="level1"><div class="li"> Once the initial sync is complete, <abbr title="Database Administrator">DBA</abbr> puts the database in backup mode.</div>
+</li>
+<li class="level1"><div class="li"> Storage Team performs the final sync </div>
+</li>
+<li class="level1"><div class="li"> <abbr title="Database Administrator">DBA</abbr> puts the database back to normal R/W operations.  </div>
+</li>
+<li class="level1"><div class="li"> Storage presents the LUN to the target Cluster and will provide details in the following format.<pre class="code">cdc-v-non-prod-suse1_non-prod-suse1-nr-001  4T    cdc-v-prod-suse1_prod-suse1-pt-014  2023-01-17 05:15:47 CST  388F90324CCA450100D9B630
+cdc-v-non-prod-suse1_non-prod-suse1-nr-002  4T    cdc-v-prod-suse1_prod-suse1-pt-015  2023-01-17 05:15:47 CST  388F90324CCA450100D9B631
+cdc-v-non-prod-suse1_non-prod-suse1-nr-003  4T    cdc-v-prod-suse1_prod-suse1-pt-020  2023-01-17 05:15:47 CST  388F90324CCA450100D9B632
+cdc-v-non-prod-suse1_non-prod-suse1-nr-004  4T    cdc-v-prod-suse1_prod-suse1-pt-021  2023-01-17 05:15:47 CST  388F90324CCA450100D9B633
+cdc-v-non-prod-suse1_non-prod-suse1-nr-005  4T    cdc-v-prod-suse1_prod-suse1-pt-250  2023-01-17 05:15:47 CST  388F90324CCA450100D9B634
+cdc-v-non-prod-suse1_non-prod-suse1-nr-006  4T    cdc-v-prod-suse1_prod-suse1-pt-254  2023-01-17 05:15:47 CST  388F90324CCA450100D9B635</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> SAP and Databse on the target should now be shutdown.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Actions by Storage Team & DBA" [13061-14357] -->
+<h2 class="sectionedit6" id="refresh_steps_by_unix">Refresh Steps by Unix</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Confirm that SAP &amp; Database are shutdown</div>
+</li>
+<li class="level1"><div class="li"> On the target system, in this case, cdcpillx134, dismount the existing sapdata filesystems<pre class="code">for fs in `df -h |grep sapdata |awk &#039;{print $2}&#039;
+do
+sudo umount $fs
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Deactivate all the LVs that has the sapdata filesystems and finally change the VG Name<pre class="code">lvchange -a n LV NAME
+vgrename sapvg oldsapvg
+vgchange -a n oldsapvg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the /etc/fstab file and comment out the sapdatas </div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:powercli_resignature_rename" class="wikilink1" title="unix:powercli_resignature_rename">Resignature the Disks</a> that Storage Team has presented and rename them if needed.</div>
+</li>
+<li class="level1"><div class="li"> In this case, since the source sapdatas were distributed across 6 datastores, we decided to consolidate all sapdata disks into two new datastores.  So, Storage Team had also presented two new datastores to the cluster.  Name the datastores according to the proper standard and vmotion the vmdks from the snapped-datastore to the new datastore. This can be done using the PowerCLI.  </div>
+</li>
+<li class="level1"><div class="li"> But first create a scsi controller on the target VM to differentiate &amp; not get confused with the existing disks on the target.  <strong>TO DO:Need to find the PowerCLI</strong>, but it was very easy to do from the vcenter by selecting the VM, editing the settings, adding a new device and a scsi controller with the same properties as the source.  Most of the time it is paravirtual.  </div>
+</li>
+<li class="level1"><div class="li"> Identify the datastore names. It will have a prefix of snap and a 8 digit random number which will get generated after resignature if it was not renamed.  In this case, we were using<pre class="code">[snap-33548319-PROD-SUSE1-PT-250] CDCPILLX016/CDCPILLX016_4.vmdk
+[snap-71e52f93-PROD-SUSE1-PT-254] CDCPILLX016/CDCPILLX016_7.vmdk
+[snap-4ff6dbf3-PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_15.vmdk
+[snap-4ff6dbf3-PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_14.vmdk
+[snap-304069e0-PROD-SUSE1-PT-020] CDCPILLX016/CDCPILLX016_17.vmdk
+[snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_8.vmdk
+[snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_10.vmdk
+[snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_11.vmdk
+[snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_12.vmdk
+[snap-4883100e-PROD-SUSE1-PT-021] CDCPILLX016/CDCPILLX016.vmdk</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add these disks to the target server.<pre class="code">New-HardDisk -VM &lt;target_vm_name&gt; -Controller &quot;Name_of_the_controller_you_just_added&quot; -DiskPath &quot;The_path_of_the_VMDK_along_with_datastore_and_VM_FOLDER&quot;</pre>
+
+<p>
+Example:
+</p>
+<pre class="code">New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-33548319-PROD-SUSE1-PT-250] CDCPILLX016/CDCPILLX016_4.vmdk&quot;</pre>
+
+<p>
+The entire commandset will look like this.
+</p>
+<pre class="code">New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-33548319-PROD-SUSE1-PT-250] CDCPILLX016/CDCPILLX016_4.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-71e52f93-PROD-SUSE1-PT-254] CDCPILLX016/CDCPILLX016_7.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_8.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_10.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_11.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_12.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-4ff6dbf3-PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_15.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-4ff6dbf3-PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_14.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-304069e0-PROD-SUSE1-PT-020] CDCPILLX016/CDCPILLX016_17.vmdk&quot;
+New-HardDisk -VM CDCPILLX134 -Controller &quot;SCSI Controller 1&quot; -DiskPath &quot;[snap-4883100e-PROD-SUSE1-PT-021] CDCPILLX016/CDCPILLX016.vmdk&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that the disks have been added and also note down the Disk Number as it will be needed in the next section to move the vmdk to the 2 new datastores that have been presented by storage/Wintel Team.<pre class="code">Get-VM CDCPILLX134 | Get-HardDisk | Select-Object Name,CapacityGB,Filename</pre>
+
+<p>
+OUTPUT:
+</p>
+<pre class="code">PS C:\WINDOWS\system32&gt; Get-VM CDCPILLX134 | Get-HardDisk | Select-Object Name,CapacityGB,Filename
+
+Name         CapacityGB Filename                                                         
+----         ---------- --------                                                         
+Hard disk 1          50 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_2-000001.vmdk    
+Hard disk 2         200 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_1-000001.vmdk    
+Hard disk 3         500 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_3-000001.vmdk    
+Hard disk 4          40 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_4-000001.vmdk    
+Hard disk 5          50 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_5-000001.vmdk    
+Hard disk 6         300 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_6-000001.vmdk    
+Hard disk 7         140 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_7-000001.vmdk    
+Hard disk 8         100 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_8-000001.vmdk    
+Hard disk 9         240 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_9-000001.vmdk    
+Hard disk 10        300 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_10-000001.vmdk   
+Hard disk 11        550 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_11-000001.vmdk   
+Hard disk 12        500 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_12-000001.vmdk   
+Hard disk 13        300 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_13-000001.vmdk   
+Hard disk 14         10 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134_14-000001.vmdk   
+Hard disk 15         80 [NON-PROD-SUSE1-NR-251] CDCPILLX134/CDCPILLX134-000001.vmdk      
+Hard disk 16        500 [snap-33548319-PROD-SUSE1-PT-250] CDCPILLX016/CDCPILLX016_4.vmdk 
+Hard disk 17        600 [snap-71e52f93-PROD-SUSE1-PT-254] CDCPILLX016/CDCPILLX016_7.vmdk 
+Hard disk 18        500 [snap-4ff6dbf3-PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_15.vmdk
+Hard disk 19        550 [snap-4ff6dbf3-PROD-SUSE1-PT-014] CDCPILLX016/CDCPILLX016_14.vmdk
+Hard disk 20        680 [snap-304069e0-PROD-SUSE1-PT-020] CDCPILLX016/CDCPILLX016_17.vmdk
+Hard disk 21        650 [snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_8.vmdk 
+Hard disk 22        710 [snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_10.vmdk
+Hard disk 23        800 [snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_11.vmdk
+Hard disk 24        550 [snap-47a01b30-PROD-SUSE1-PT-015] CDCPILLX016/CDCPILLX016_12.vmdk
+Hard disk 25        450 [snap-4883100e-PROD-SUSE1-PT-021] CDCPILLX016/CDCPILLX016.vmdk   
+PS C:\WINDOWS\system32&gt; </pre>
+
+<p>
+From the above output, we know that “Hard Disk 16” to “Hard Disk 25” are to be moved to the new datastores.  
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> We will generate the command moving them to alternating datastores.  In this case, the datastores that was created were 224 &amp; 225<pre class="code">Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 16&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-224 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 17&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-225 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 18&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-224 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 19&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-225 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 20&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-224 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 21&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-225 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 22&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-224 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 23&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-225 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 24&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-224 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM CDCPILLX134 | Get-HardDisk -Name &quot;Hard disk 25&quot;  | Move-HardDisk -Datastore NON-PROD-SUSE1-NR-225 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if all disks are available<pre class="code">sudo /sbin/pvs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Activate the volume groups<pre class="code">echo &quot;sapvg&quot; | xargs -n1 sudo /sbin/vgchange -a y </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Put the fstab for application filesystems, fsck and mount the filesystems<pre class="code">sudo cp /etc/fstab /etc/fstab.rootvgonly
+sudo vi /etc/fstab</pre>
+
+<p>
+Enter the following filesystems
+</p>
+<pre class="code">/dev/sapvg/sapdata1lv  /oracle/RLT/sapdata1    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata2lv  /oracle/RLT/sapdata2    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata3lv  /oracle/RLT/sapdata3    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata4lv  /oracle/RLT/sapdata4    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata5lv  /oracle/RLT/sapdata5    ext3    acl,user_xattr        1 2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Clean and mount the filesystems<pre class="code">for fs in /oracle/RLT/sapdata6 /oracle/RLT/sapdata5 /oracle/RLT/sapdata4 \
+/oracle/RLT/sapdata3 /oracle/RLT/sapdata2 /oracle/RLT/sapdata1
+do
+   sudo /usr/sbin/fsck -y ${fs}
+   sudo mount ${fs}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if there is a UID difference between source &amp; target, change the file ownership or UID in consultation with SAP Basis.</div>
+</li>
+<li class="level1"><div class="li"> Handover to <abbr title="Database Administrator">DBA</abbr></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Refresh Steps by Unix" [14358-] -->

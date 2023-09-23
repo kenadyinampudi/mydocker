@@ -1,0 +1,89 @@
+====== H1P and VIOS shutdown / startup procedures for the rack move work scheduled for March 10th ======
+
+===== Shutdown process =====
+
+==== While others are working (Steps that can go in parallel) ====
+
+  - Save current profile for all LPARs assigned to yourself. ( those dynamic lpar'ed but not saved )
+  - Login to pgnmsv01
+    - teprvio10<code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p teprvio10 -n teprvio10 --force</code>
+    - teprvio11<code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p teprvio11 -n teprvio11 --force</code>
+    - teprvio20<code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p teprvio20 -n teprvio20 --force</code>
+    - teprvio21<code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p teprvio21 -n teprvio21 --force</code>
+    - pehrdb99 <code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrdb99  -n pehrdb99  --force</code>
+    - pehrap99 <code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrap99  -n pehrap99  --force</code>
+    - pehrap01 <code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrap01  -n pehrap01  --force</code>
+    - pehrdb98 <code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p pehrdb98  -n pehrdb98  --force</code>
+    - pehrap98 <code>sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p pehrap98  -n pehrap98  --force</code>
+  - Shutdown pehrap98<code>sudo getconsole pehrap98</code>Then<code>shutdown -F</code>
+  - Shutdown pehrdb98
+    - Have the DBAs shutdown the database and stop replication
+    - Shutdown<code>sudo getconsole pehrdb98</code>Then<code>shutdown -F</code>
+
+==== After all applications and rest of the Unix servers are down ====
+
+=== Assumptions ===
+
+  - SAP HR Production, QA, Dev, Sandbox, Soln Mgr applications including databases are down.
+  - All non-production lpars and NIM servers are down ( operating system shutdown )
+
+=== Shutdown H1P systems ===
+
+  - Shutdown pehrdb99<code>sudo getconsole pehrdb99</code>Then<code>shutdown -F</code>
+  - Shutdown pehrap99<code>sudo getconsole pehrap99</code>Then<code>shutdown -F</code>
+  - Shutdown pehrap01<code>sudo getconsole pehrap01</code>Then<code>shutdown -F</code>
+
+=== Shutdown VIOS servers ===
+
+  - Shutdown teprvio10<code>sudo getconsole teprvio10</code>Then<code>shutdown -force</code>
+  - Shutdown teprvio11<code>sudo getconsole teprvio11</code>Then<code>shutdown -force</code>
+  - Shutdown teprvio20<code>sudo getconsole teprvio20</code>Then<code>shutdown -force</code>
+  - Shutdown teprvio21<code>sudo getconsole teprvio21</code>Then<code>shutdown -force</code>
+
+===== Startup process =====
+
+=== Assumptions ===
+
+  - All cables have been moved.
+  - HMC access has been restored.
+
+=== Startup VIOS servers ===
+
+  - Login to pgnmsv01
+  - Startup teprvio10<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8202-E4C-SN101260T -n teprvio10 -f teprvio10</code>
+  - Startup teprvio11<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8202-E4C-SN101260T -n teprvio11 -f teprvio11</code>
+  - Startup teprvio20<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n teprvio20 -f teprvio20</code>
+  - Startup teprvio21<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n teprvio21 -f teprvio21</code>
+
+=== Validate VIOS server's SAN connectivity ===
+
+  - Login to each VIOS server and execute<code>lspath</code>Make sure there are no failed paths.
+  - Check if VIOS server's network is healthy.
+  - At this time, it is a go ahead for non-production systems not dependent on NFS mounts.
+
+=== Startup H1P systems ===
+
+  - Login to pgnmsv01
+  - Startup pehrdb99<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n pehrdb99 -f pehrdb99</code>
+  - Startup pehrap99<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n pehrap99 -f pehrap99</code>
+  - Startup pehrap01<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n pehrap01 -f pehrap01</code>
+  - Startup pehrdb98<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8202-E4C-SN101260T -n pehrdb98 -f pehrdb98</code>
+  - Startup pehrap98<code>sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8202-E4C-SN101260T -n pehrap98 -f pehrap98</code>
+
+=== Validate and activate cluster resources for H1P ===
+
+  - pehrdb99
+    - Check missing paths<code>lsdev -Ccdisk ; lspath</code>
+    - Activate the cluster resource<code>sudo /root/cluster/alias99.sh</code>
+  - pehrap99
+    - Check missing paths<code>lsdev -Ccdisk ; lspath</code>
+    - Activate the cluster resource<code>sudo /root/cluster/mount99.sh</code>
+  - pehrap01
+    - Check missing paths<code>lsdev -Ccdisk ; lspath</code>
+  - ** At this time, H1P can be handed over to SAP Basis to bring up**
+  - ** At this time, it is a go ahead for rest of the non-production systems **
+  - pehrdb98
+    - Check missing paths<code>lsdev -Ccdisk ; lspath</code>
+    - Handover to DBA to re-establish Dataguard.
+  - pehrap98
+    - Check missing paths<code>lsdev -Ccdisk ; lspath</code>

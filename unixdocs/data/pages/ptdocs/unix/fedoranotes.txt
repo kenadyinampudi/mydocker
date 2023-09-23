@@ -1,0 +1,62 @@
+====== Fedora post install activities ======
+
+  * Edit sudoers<code>su -
+echo 'x1rzb826        ALL=(ALL)       NOPASSWD: ALL' >> /etc/sudoers</code>
+  * Configure proxy for yum<code>sudo vi /etc/yum.conf</code>Add<code>proxy=http://170.64.0.72:8080
+proxy_username=XX
+proxy_password=XX</code>
+  * Update to the latest patch level.<code>sudo yum update</code>
+  * Install some basic softwares<code>sudo yum -y install wget shutter putty geany</code>
+  * Install Libre Office<code>sudo yum groupinstall "Office/Productivity"</code>
+  * Configure proxy in firefox 'edit-preferences'
+  * Install nvidia drivers**use the default drivers unless needed**<code>sudo yum localinstall --nogpgcheck http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-stable.noarch.rpm http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-stable.noarch.rpm
+sudo yum install akmod-nvidia xorg-x11-drv-nvidia-libs
+sudo mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r)-nouveau.img
+sudo dracut /boot/initramfs-$(uname -r).img $(uname -r)</code>Now reboot<code>sudo init 6</code>
+  * Install VirtualBox<code>sudo vi /etc/yum.repos.d/virtualbox.repo</code>Edit it <code>[virtualbox]
+name=Fedora $releasever - $basearch - VirtualBox
+baseurl=http://download.virtualbox.org/virtualbox/rpm/fedora/$releasever/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://www.virtualbox.org/download/oracle_vbox.asc</code>
+  * Install some more <code>sudo yum install binutils gcc make patch libgomp glibc-headers glibc-devel kernel-headers kernel-devel dkms</code>
+  * Install VirtualBox<code>sudo yum install VirtualBox</code><code>sudo /etc/init.d/vboxdrv setup</code><code>sudo usermod -a -G vboxusers x1kxk630</code>
+  * Turn off firewall
+    * iptables<code>sudo chkconfig --level 234 iptables off
+sudo service iptables stop</code>
+    * On F20 and F21 it is firewald<code>sudo systemctl disable firewalld.service</code>
+  * Install Google Chrome.<code>sudo vi /etc/yum.repos.d/google-chrome.repo</code>Add this<code>[google-chrome]
+name=google-chrome
+baseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64
+enabled=1
+gpgcheck=1</code>Install it <code>sudo yum install google-chrome-stable</code>
+
+====== Fedora Lotus notes installation ======
+
+  * Install pre-requisits<code>sudo yum install tcsh libart_lgpl_2.so.2 libasound.so.2 libatk-1.0.so.0 libbonobo-2.so.0 \
+libbonobo-activation.so.4 libbonoboui-2.so.0 libcrypt.so.1 libc.so.6 libcups.so.2 libdl.so.2 \
+libfontconfig.so.1 libfreetype.so.6 libgcc_s.so.1 libgconf-2.so.4 libgdk_pixbuf-2.0.so.0 \
+libgdk-x11-2.0.so.0 libglib-2.0.so.0 libgmodule-2.0.so.0 libgnome-2.so.0 libgnomecanvas-2.so.0 \
+libgnomeprint-2-2.so.0 libgnomeprintui-2-2.so.0 libgnomeui-2.so.0 libgnomevfs-2.so.0 libgobject-2.0.so.0 \
+libgthread-2.0.so.0 libgtk-x11-2.0.so.0 libICE.so.6 libjpeg.so.62 libm.so.6 libnsl.so.1 libORBit-2.so.0 \
+libpam_misc.so.0 libpam.so.0 libpango-1.0.so.0 libpangoft2-1.0.so.0 libpangox-1.0.so.0 libpangoxft-1.0.so.0 \
+libpng12.so.0 libpopt.so.0 libpthread.so.0 libresolv.so.2 librt.so.1 libSM.so.6 libstdc++.so.6 libX11.so.6 \
+libXcursor.so.1 libXext.so.6 libXft.so.2 libXi.so.6 libxkbfile.so.1 libxml2.so.2 libXp.so.6 libXrender.so.1 \
+libXss.so.1 libXt.so.6 libXtst.so.6 libz.so.1 gnome-desktop -y</code>
+  * Install wget<code>sudo yum -y install wget</code>
+  * Get the lotus notes client<code>cd /var/tmp
+wget http://pgnmsv01/prod/images/applications/lotus-8.5.3.tar
+tar xvf lotus-8.5.3.tar</code>
+  * **This will probably break other apps** ( I did not install Java but used the one that came with Fedora)Install Java, Ignore if it says already installed<code>sudo rpm -Uvh /var/tmp/notes/jre-6u29-linux-amd64.rpm</code>
+  * **This will probably break other apps** ( I did not install Java but used the one that came with Fedora)Configure Java<code>sudo alternatives --install /usr/bin/java java /usr/java/jre1.6.0_29/bin/java 20000
+sudo alternatives --install /usr/bin/javaws javaws /usr/java/jre1.6.0_29/bin/javaws 20000
+sudo alternatives --install /usr/lib64/mozilla/plugins/libjavaplugin.so libjavaplugin.so.x86_64 /usr/java/jre1.6.0_29/lib/amd64/libnpjp2.so 20000
+sudo alternatives --config java</code>
+  * Install Lotus notes<code>sudo yum install /var/tmp/notes/ibm_lotus_notes-8.5.3.i586.rpm</code>
+  * Install Sametime<code>sudo yum install /var/tmp/notes/ibm_lotus_sametime-8.5.3.i586.rpm</code>
+  * Install notes libs<code>cd /opt/ibm/lotus/notes
+sudo tar xf /var/tmp/notes/notes_libs_karmic.tar
+sudo chmod +x *.so.0
+sudo chown root:root *.so.0
+sudo chmod 777 *.so.0</code>
+  * From applications in the GNOME, add Lotue notes to favorites and fire up Notes.

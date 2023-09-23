@@ -1,0 +1,9 @@
+====== AIX LVM Notes ======
+
+  * Create a volume group <code>mkvg -B -s 256 -y <vgname> disk1 .....</code>
+  * Create a logical volume <code>mklv -tjfs2 -y <lvname> <vgname> <no_of_pps></code>
+  * Create a filesystem <code>crfs -v jfs2 -A yes -t no -d <lvname> -m <mountpoint> </code>
+  * Import a Volume Group <code>importvg -n -y <vgname> disk ....</code>
+  * Export a Volume Group <code>vgexport <vgname></code>
+  * Migrate a PV <code>migatepv <sourcepv> <destinpv1> <destinpv2> .....</code>
+  * Migrate a LP <code>migratelp <sourcedisk>:<source_lpno> <destin_disk>:<destin_pp></code> 

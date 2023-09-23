@@ -1,0 +1,48 @@
+====== Applying VIOS 2.2.6.41 updates from a remotely mounted file system ======
+
+
+** Before installing the Service Release 2.2.6.41 **
+
+** Please ensure that your rootvg contains at least 30GB before you attempt to upgrade to VIOS service release 2.2.6.41.  Example: Run the lsvg rootvg command, and then ensure there is enough free space. **
+
+** If you are planning to update a version of VIOS lower than 2.1, you must first migrate your VIOS to VIOS version 2.1.0 using the Migration DVD. After the VIOS is at version 2.1.0, the Update/Fixpack 2.2.6.10 must be applied to bring the VIOS to the latest Fix Pack VIOS 2.2.6.10 level. The VIOS 2.2.6.41 service pack can then be applied to bring the VIOS to the latest level. **
+
+** Verirfy that the server is at VIOS Level 2.2.2.1 Level before you begin. Levels less than that will not "roll up" to the 2.2.6.41 release. Example .. a vios server at ioslevel 2.2.0.11-FP-24 SP-01 will need to be upgraded to 2.2.2.1 prior to applying 2.2.2.3 **
+
+** The update could fail if there is a loaded media repository. **
+
+** Checking for a loaded media repository **
+
+** To check for a loaded media repository, and then unload it, follow these steps. **
+To check for loaded images, run the following command:<code>lsvopt</code>
+The Media column lists any loaded media. 
+To unload media images, run the following commands on all Virtual Target Devices that have loaded images.<code>unloadopt -vtd <file-backed_virtual_optical_device ></code>
+To verify that all media are unloaded, run the following command again.<code>lsvopt</code> The command output should show No Media for all VTDs.
+
+** PRE-UPGRADE PROCESS STARTS HERE **
+  - Follow the standard UNIX Pre-Upgrade proces
+  - Create proper change controls and paper work, get approvals from business, get apps contacts to manage applications etc. As Chris say, **the
+ whole nine yards**
+  - [[http://itchome/cgi-bin/active_bo.cgi|Verify blackouts are in place for all the servers we plan to work on]]
+
+  - [[unix:backupconfig|Perform the configuration backup]]
+** UPGRADE PROCESS STARTS HERE **
+
+  - Log in to the VIOS as the user padmin.  If you use one or more File Backed Optical Media Repositories, you need to unload media images before you apply the Update Release. If you use Shared Storage Pools(**we do not use this**), then Shared Storage Pool Services must be stopped.<code>clstartstop -stop -n <cluster_name> -m <hostname></code>
+  - Exit thte restricted shell <code> oem_setup_env </code> <code> set -o vi </code>
+  - Get the SEA adapter <code> SEA=$(/usr/ios/cli/ioscli lsdev -virtual -field name description | awk '$2 == "Shared" && $3 == "Ethernet" && $4 == "Adapter" {print $1}' | tr '\012' '\040' | awk -F" " '{print $1}')</code><code> echo "SEA => $SEA"</code>
+  - Put the the SEA adapter into Standby mode  <code> chdev -l ${SEA} -a ha_mode=standby </code>>
+  - Verifty the SEA is in standby mode <code> lsattr -El ${SEA} | grep ha_mode </code> Output should be similiar to the following
+ <code> ha_mode       standby     High Availability Mode</code>
+  - Mount the remote directory onto the Virtual I/O Server.<code>mount remote_machine_name:directory /mnt </code>
+  - Commit previous updates, by running the updateios command. <code>updateios -commit </code>
+  - Verify the updates files that were copied, this step can only be performed if the link to openssl was created.  <code> cp /mnt/ck_sum.bff /home/padmin</code> <code> chmod 755 /home/padmin/ck_sum.bff</code> <code> ck_sum.bff /mnt </code>
+    If there are missing updates or incomplete downloads, an error message is displayed.
+  - Apply the update by running the updateios command.<code> updateios -accept -install -dev /mnt</code>
+  - Run the following command to set authorization for padmin.</code>swrole - PAdmin</code>
+  - To load all changes, reboot the VIOS as user padmin .<code> shutdown -force -restart</code>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.6.41.<code>ioslevel</code>
+  - Run the license acept command for all uprdrates <linense -accept>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.6.41.<code>ioslevel</code>
+  - Commit all the updates <code>updateios -commit</code>
+

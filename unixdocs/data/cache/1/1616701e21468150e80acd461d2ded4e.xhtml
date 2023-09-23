@@ -1,0 +1,23 @@
+
+<h1 class="sectionedit1" id="split_vg_on_aix">Split VG on AIX</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Add additional disks ( equal in size OR more )<pre class="code">sudo extendvg &lt;vgname&gt; &lt;new set of disks&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mirror the VG<pre class="code">sudo mirrorvg &lt;vgname&gt; &lt;new set of disks&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Split the VG<pre class="code">sudo splitvg -y &lt;newvgname&gt; -c2 -i &lt;vgname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make a note of pvids<pre class="code">lspv</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now you may export that split copy and import it elsewhere.<pre class="code">sudo varyoffvg &lt;newvgname&gt;
+sudo exportvg &lt;newvgname&gt;</pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,21 @@
+The configs for the VIO disappeared!
+
+I was able to consistently reproduce this error in Philadelphia.\\
+
+==== Cause ====
+I believe the cause of this has to do with the RMC connection between the HMC and the VIO servers.  The public port of the HMC needs to talk to the public port of the VIO server to pass configuration information back and forth.  This connection is what allows a bunch of useful features, like dynamically allocating new adapters.\\
+Without this connection, the behavior defaults back to what we were used to:\\
+New virtual adapters are manually added to the VIO server profile.  The VIO server needs to be shutdown and reactivated choosing the "new" default_profile (as opposed to starting with the "current configuration".  This brings the new configuration with the new adapters online and makes them available.  With the RMC connection, the running config and the saved profile are kept in sync by the HMC automagically.\\
+
+==== Steps to reproduce ====
+ *  Hop into Philly HMC
+ *  Configure a VIO manually to add additional virtual adapters.
+ *  Exit the profile.  An alert will warn you that the "sync_configuration" will be set to "Disabled until the next activation".  This is the old behavior we are familiar with.
+ *  Manually "Save Current Configuration" of the profile.
+ *  Go back in and view the default_profile.  Your changes will have been reverted to the previous settings.
+
+==== Workaround ====
+Don't use the "Save Current Configuration" button immediately after making changes which result in the alert.
+Allow the HMC to save the profile automatically, reboot the VIO and confirm the changes are maintained.//
+//
+For individual LPARs, in the "General" page, click the advanced button to display a bunch of new options for the client LPAR.  At the bottom, you will see a "Save configuration changes to profile" which defaults to "enabled".  Change it to "disabled until next activation", then save the changes.  Now your profile changes to the client LPAR will be saved as expected.

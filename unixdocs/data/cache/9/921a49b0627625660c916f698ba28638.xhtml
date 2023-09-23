@@ -1,0 +1,264 @@
+
+<h1 class="sectionedit1" id="for_netbackup_home_made_appliances">For Netbackup home made appliances</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "For Netbackup home made appliances" [1-50] -->
+<h2 class="sectionedit2" id="create_nbu_filesystems">Create NBU filesystems</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create Netbackup data volume group<pre class="code">sudo pvcreate /dev/sdb
+sudo vgcreate -s 512M datavg01 /dev/sdb</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> If pvcreate is successful then proceed to step no 2.</div>
+</li>
+<li class="level2"><div class="li"> If you face any error i.e.<pre class="code">sudo pvcreate /dev/sdb
+pvcreate device /dev/sdb not found (or ignored by filtering)</pre>
+</div>
+<ol>
+<li class="level3"><div class="li"> Install a GPT partition<pre class="code">sudo parted /dev/sdb mklabel gpt
+Output:- Warning: The existing disk label on /dev/sdb will be destroyed and all data on this disk will be lost. Do you want to continue?
+Yes/No? y</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Wipe any filesystem configs<pre class="code">sudo wipefs -a /dev/sdb</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Create LVM structure<pre class="code">sudo pvcreate /dev/sdb
+sudo vgcreate -s 512M datavg01 /dev/sdb</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create netbackup filesystems<pre class="code">sudo lvcreate -n inst              -L 50GB   datavg01
+sudo lvcreate -n log               -L 128GB  datavg01
+sudo lvcreate -n usr_openv         -L 128GB  datavg01
+sudo lvcreate -n config            -L 128GB  datavg01
+sudo lvcreate -n usr_openv_db      -L 128GB  datavg01
+sudo lvcreate -n msdp_advol        -L 900GB sysvg
+sudo lvcreate -n msdp_pdvol        -L 4096GB datavg01
+sudo lvcreate -n msdp_cat          -L 20GB   datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/inst
+sudo mkfs -t ext4 /dev/datavg01/log
+sudo mkfs -t ext4 /dev/datavg01/usr_openv
+sudo mkfs -t ext4 /dev/datavg01/config
+sudo mkfs -t ext4 /dev/datavg01/usr_openv_db
+sudo mkfs -t ext4 /dev/sysvg/msdp_advol
+sudo mkfs -t ext4 /dev/datavg01/msdp_pdvol
+sudo mkfs -t ext4 /dev/datavg01/msdp_cat
+
+echo &quot;# NBU home made appliance filesystems&quot;                                                     | sudo tee -a /etc/fstab
+echo &quot;&quot;                                                                                          | sudo tee -a /etc/fstab
+
+echo &quot;/dev/mapper/datavg01-inst           /inst                     ext4    defaults        1 2&quot;  | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_openv      /usr/openv                ext4    defaults        1 2&quot;  | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-log            /usr/openv/netbackup/logs ext4    defaults        1 2&quot;  | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-config         /config                   ext4    rw,nodev,_netdev 1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_openv_db   /usr/openv/netbackup/db   ext4    rw,nodev,_netdev 1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/sysvg-msdp_advol     /advanceddisk/dp1/advol   ext4    rw,nodev,_netdev 1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-msdp_pdvol     /msdp/data/dp1/pdvol      ext4    rw,nodev,_netdev 1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-msdp_cat       /msdp/cat                 ext4    rw,nodev,_netdev 1 2&quot; | sudo tee -a /etc/fstab
+
+sudo mkdir -p /inst
+sudo mount    /inst
+sudo mkdir -p /usr/openv
+sudo mount    /usr/openv
+sudo mkdir -p /usr/openv/netbackup/logs
+sudo mount    /usr/openv/netbackup/logs
+sudo mkdir -p /usr/openv/wmc
+sudo mkdir -p /config
+sudo mount    /config
+sudo mkdir -p /usr/openv/netbackup/db
+sudo mount    /usr/openv/netbackup/db
+sudo mkdir -p /advanceddisk/dp1/advol
+sudo mount    /advanceddisk/dp1/advol
+sudo mkdir -p /msdp/data/dp1/pdvol
+sudo mount    /msdp/data/dp1/pdvol
+sudo mkdir -p /msdp/cat
+sudo mount    /msdp/cat
+
+sudo chown nbwebsvc:nbwebgrp /usr/openv/wmc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Modify Host_Alias “BKPSRVR” in /etc/sudoers to include the new hostname follow the instruction as per the link. <a href="/doku.php?id=unix:managingsudo" class="wikilink1" title="unix:managingsudo">managingsudo</a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Create NBU filesystems" [51-3510] -->
+<h2 class="sectionedit3" id="configure_bond0_interface_and_move_the_ip_address">Configure bond0 interface and move the IP address</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Remove the configuration on eno1<pre class="code">sudo rm /etc/sysconfig/network-scripts/ifcfg-eno1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create configuration files<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+ONBOOT=yes
+BOOTPROTO=none
+USERCTL=no
+BONDING_OPTS=&quot;mode=802.3ad miimon=100&quot;
+EOF
+
+cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-eno2
+DEVICE=eno2
+NAME=eno2
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF
+
+cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-eno3
+DEVICE=eno3
+NAME=eno3
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF
+
+cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-eno4
+DEVICE=eno4
+NAME=eno4
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set the following parameters</div>
+<ol>
+<li class="level2"><div class="li"> VLAN<pre class="code">export VLAN=XXX</pre>
+
+<p>
+Ask the network team member for the VLAN id.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> IP &amp; MASK<pre class="code">IP=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | awk &#039;{print $2}&#039;)
+MASK=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | awk &#039;{print $4}&#039;)</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create the VLAN configuration<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0.${VLAN}
+DEVICE=bond0.${VLAN}
+BOOTPROTO=none
+IPADDR=${IP}
+NETMASK=${MASK}
+USERCTL=no
+VLAN=yes
+ONPARENT=yes
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove IP from eno1 and move to the VLAN interfaces. Do this step exactly as documented and it does take about 30 seconds<pre class="code">sudo ifconfig eno1 down ; sudo service network restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Alternatively, you can follow the steps <a href="/doku.php?id=unix:postinstallationsteps-redhat-hpcc#configure_active_standby_lan" class="wikilink1" title="unix:postinstallationsteps-redhat-hpcc">here</a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Configure bond0 interface and move the IP address" [3511-5156] -->
+<h2 class="sectionedit4" id="configure_iscsi_vlan_and_install_iscsi_client_only_where_iscsi_is_needed">Configure iSCSI VLAN and install iSCSI client ** Only where iSCSI is needed **</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Add iSCSI VLAN &amp; IP address<pre class="code">export VLAN=203
+export ISCSI_IP=192.168.0.101</pre>
+<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0.${VLAN}
+DEVICE=bond0.${VLAN}
+BOOTPROTO=none
+IPADDR=${ISCSI_IP}
+NETMASK=${MASK}
+USERCTL=no
+VLAN=yes
+ONPARENT=yes
+EOF</pre>
+<pre class="code">sudo ifup bond0.${VLAN}</pre>
+
+<p>
+Check it now
+</p>
+<pre class="code">ifconfig bond0.${VLAN}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> iSCSI configuration</div>
+<ol>
+<li class="level2"><div class="li"> check package if it is installed or not<pre class="code">rpm -qa | grep -i iscsi*</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the package if not installed<pre class="code">sudo yum install iscsi-initiator-utils</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> And if anyone asks for iscsi Initiator Node then do this<pre class="code">cat /etc/iscsi/initiatorname.iscsi</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Configure iSCSI VLAN and install iSCSI client ** Only where iSCSI is needed **" [5157-5926] -->
+<h2 class="sectionedit5" id="nbu_hot_catalog_backup_no_longer_needed">NBU hot catalog backup ~~no longer needed~~</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> In order to receive NBU hot catalog backup form giosdatapresalerts@driv.com follow below steps:<pre class="code">echo &quot;sender_canonical_maps = hash:/etc/postfix/sender_canonical_maps&quot; | sudo tee -a /etc/postfix/main.cf
+echo Netbackup.`hostname` giosdatapresalerts@driv.com | sudo tee -a /etc/postfix/sender_canonical_maps
+sudo postmap hash:/etc/postfix/sender_canonical_maps
+sudo postfix reload</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure <abbr title="Simple Mail Transfer Protocol">SMTP</abbr> relay to use smtp.driv.com</div>
+<ol>
+<li class="level2"><div class="li"> Make a copy of the mail.cf file<pre class="code">sudo cp /etc/postfix/main.cf /etc/postfix/main.cf.$(date +%Y%m%d)</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure <abbr title="Simple Mail Transfer Protocol">SMTP</abbr> relay<pre class="code">[ $(grep domain /etc/resolv.conf |awk &#039;{print $2}&#039;) == &#039;driv.com&#039; ] &amp;&amp; \
+echo &quot;relayhost = [smtp.driv.com]&quot; | sudo tee -a /etc/postfix/main.cf || \
+echo &quot;relayhost = [smtp.tenneco.com]&quot; | sudo tee -a /etc/postfix/main.cf</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart postfix<pre class="code">sudo /bin/systemctl restart postfix.service</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "NBU hot catalog backup ~~no longer needed~~" [5927-6877] -->
+<h2 class="sectionedit6" id="kernel_parameters_user_limits_and_service_accounts_no_longer_needed">Kernel parameters, user limits and service accounts ~~no longer needed~~</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Kernel parameters<pre class="code">cat &lt;&lt; EOF | sudo tee -a /etc/sysctl.conf
+kernel.sem = 300  307200  32  1024
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Re-read configuration<pre class="code">sudo sysctl -p</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> User limits<pre class="code">cat &lt;&lt; EOF | sudo tee -a /etc/security/limits.conf
+*               hard    nofile          10000
+*               soft    nofile          10000
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add netbackup service account<pre class="code">sudo groupadd -g 9091 nbwebgrp
+sudo useradd -g nbwebgrp -c &#039;NetBackup Web Services account&#039; -d /usr/openv/wmc -m -u 9091 nbwebsvc</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Kernel parameters, user limits and service accounts ~~no longer needed~~" [6878-] -->

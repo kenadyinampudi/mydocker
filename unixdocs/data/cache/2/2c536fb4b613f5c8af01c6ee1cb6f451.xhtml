@@ -1,0 +1,78 @@
+
+<h1 class="sectionedit1" id="fm-vios-fix">fm-vios-fix</h1>
+<div class="level1">
+<pre class="code">export targethost=&lt;host_name&gt; </pre>
+<pre class="code">export server_driv=&lt;hostname&gt; </pre>
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:installothersoftwaresaix" class="wikilink1" title="unix:installothersoftwaresaix">On AIX and VIOS, install additional softwares</a></div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:lpar2rrd-os-agent" class="wikilink1" title="unix:lpar2rrd-os-agent">Install Lpar2rrd agent</a></div>
+</li>
+</ol>
+<pre class="code">  mkgroup &quot;id=8086&quot; taunix </pre>
+<pre class="code">  mkuser &quot;id=4255&quot; &quot;pgrp=taunix&quot;  &quot;home=/home/x1cxs952&quot; &quot;gecos=Chris Stachowiak&quot;  x1cxs952</pre>
+<pre class="code"> exit</pre>
+<pre class="code"> sudo scp -r /home/x1cxs952/.ssh/  ${server_driv}:/home/x1cxs952/ </pre>
+<pre class="code"> sudo  ssh ${server_driv}  chown -R x1cxs952:taunix /home/x1cxs952/.ssh </pre>
+<pre class="code"> sudo rsync -avv /home/x1cxs952/.profile  ${server_driv}:/home/x1cxs952/.profile </pre>
+<ol>
+<li class="level1"><div class="li"> Backup /etc/services and /etc/inetd.conf</div>
+</li>
+</ol>
+<pre class="code"> sudo ssh ${targethost} cp -p /etc/services /etc/services-$(date +%Y%m%d-%H:%M:%S).cs</pre>
+<pre class="code"> sudo ssh ${targethost} cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y%m%d-%H:%M:%S).cs</pre>
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=chris:installsysinter" class="wikilink1" title="chris:installsysinter"> Install Sysinter</a></div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Copy the scripts<pre class="code">sudo ssh ${targethost} &quot;mkdir -p /usr/local/scripts&quot;
+sudo rsync -a /usr/local/scripts/ ${targethost}:/usr/local/scripts/</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=chris:usersandgroups" class="wikilink1" title="chris:usersandgroups">Create basic unix group and users</a></div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Enable centralized syslog</div>
+<ol>
+<li class="level2"><div class="li"> Add ODM<pre class="code">sudo scp /prod/images/etc/tensyslogadd ${targethost}:/var/tmp/tensyslogadd
+sudo ssh ${targethost} &quot;/usr/bin/odmadd /var/tmp/tensyslogadd&quot;
+sudo ssh ${targethost} &quot;rm /var/tmp/tensyslogadd&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add configurations to syslog <pre class="code">sudo ssh ${targethost} &quot;grep ^&#039;*.notice&#039; /etc/syslog.conf | grep -q pglgsv01&quot;
+[[ ${?} -ne 0 ]] &amp;&amp; config=yes || config=no
+[[ &quot;${config}&quot; = &quot;yes&quot; ]] &amp;&amp; sudo ssh ${targethost} &#039;echo *.notice           @unixlogs.driv.com &gt;&gt; /etc/syslog.conf&#039;
+[[ &quot;${config}&quot; = &quot;yes&quot; ]] &amp;&amp; sudo ssh ${targethost} &#039;refresh -s syslogd&#039;</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Schedule standard cron jobs</div>
+<ol>
+<li class="level2"><div class="li"> Grant  tauxrpt cron access&lt;/code&gt;<pre class="code">ssh ${targethost} &#039;echo &quot;tauxrpt&quot; | sudo tee -a /var/adm/cron/cron.allow&#039;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add the script to crontab <pre class="code"> ssh ${targethost}</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+<pre class="code">cat &lt;&lt; EOF | sudo tee /var/spool/cron/crontabs/tauxrpt
+30 23 * * 6 /usr/local/scripts/rpt_config_tauxrpt.sh 1&gt;/dev/null 2&gt;&amp;1
+EOF</pre>
+<ol>
+<li class="level1"><div class="li"> Restart Cron<pre class="code">ps -ef | grep cron | grep -v grep | awk &#039;{print $2}&#039; | xargs -n1 sudo kill</pre>
+</div>
+</li>
+</ol>
+
+</div>

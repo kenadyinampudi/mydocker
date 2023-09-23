@@ -1,0 +1,63 @@
+====== How to change a small VG to Big VG on a running system ======
+
+
+  - In AIX 7.1 and later we don't have to unmount the File systems to convert a small VG to Big.
+  - In the below example we are changing srmvg01 to a Big VG on tsqa1d01 server.
+  - lsvg srmvg01 output<code>
+VOLUME GROUP:       srmvg01                  VG IDENTIFIER:  0004ed6c0000d700000001110eb7e69c
+VG STATE:           active                   PP SIZE:        64 megabyte(s)
+VG PERMISSION:      read/write               TOTAL PPs:      22652 (1449728 megabytes)
+MAX LVs:            256                      FREE PPs:       2272 (145408 megabytes)
+LVs:                23                       USED PPs:       20380 (1304320 megabytes)
+OPEN LVs:           23                       QUORUM:         8 (Enabled)
+TOTAL PVs:          14                       VG DESCRIPTORS: 14
+STALE PVs:          0                        STALE PPs:      0
+ACTIVE PVs:         14                       AUTO ON:        yes
+MAX PPs per VG:     32512
+MAX PPs per PV:     2032                     ** MAX PVs:        16 **
+LTG size (Dynamic): 256 kilobyte(s)          AUTO SYNC:      no
+HOT SPARE:          no                       BB POLICY:      relocatable
+PV RESTRICTION:     none                     INFINITE RETRY: no
+DISK BLOCK SIZE:    512                      CRITICAL VG:    no
+FS SYNC OPTION:     no</code>
+  - lsvg -p srmvg01 output<code>
+x1kxk630 on tsqa1d01:/home/x1kxk630 $ lsvg -p srmvg01
+srmvg01:
+PV_NAME           PV STATE          TOTAL PPs   FREE PPs    FREE DISTRIBUTION
+hdisk4            active            1618        0           00..00..00..00..00
+hdisk6            active            1618        0           00..00..00..00..00
+hdisk7            active            1618        0           00..00..00..00..00
+hdisk13           active            1618        0           00..00..00..00..00
+hdisk11           active            1618        859         212..00..00..323..324
+hdisk9            active            1618        0           00..00..00..00..00
+hdisk10           active            1618        968         260..00..61..323..324
+hdisk8            active            1618        0           00..00..00..00..00
+hdisk12           active            1618        0           00..00..00..00..00
+hdisk0            active            1618        0           00..00..00..00..00
+hdisk1            active            1618        0           00..00..00..00..00
+hdisk2            active            1618        0           00..00..00..00..00
+hdisk5            active            1618        445         00..00..00..121..324
+hdisk3            active            1618        0           00..00..00..00..00</code>
+  - In order to change a small VG into a Big VG, there should be at least 1 pp free in each hdisk which belongs to that Volume group.
+  - As we can see in step 4 we don't have enough free pps in each hdisk, But we do have some space on hdisk11, So now we will migrate one lv from each hdisk to hdisk11.
+  - Generate the commands to migrate one lv from each hdisk to hdisk11.<code>
+for disk in $(lsvg -p srmvg01 | grep ^hdisk | awk '{print $1}'  ); do lspv -M ${disk} | head -1; done | awk '{print $NF}' | grep lv | sed "s;:;/;g" | awk '{print "sudo migratelp "$NF" hdisk11"}'</code><code>
+sudo migratelp qsrlv13/372 hdisk11
+sudo migratelp qsrlv10/1128 hdisk11
+sudo migratelp qsrlv10/2746 hdisk11
+sudo migratelp qsrlv13/2826 hdisk11
+sudo migratelp qsrlv12/3606 hdisk11
+sudo migratelp qsrlv11/3027 hdisk11
+sudo migratelp qsrlv10/4364 hdisk11
+sudo migratelp qsrlv13/1208 hdisk11
+sudo migratelp qsrlv11/1659 hdisk11
+sudo migratelp qsrlv15/65 hdisk11
+sudo migratelp qsrlv12/1403 hdisk11
+sudo migratelp fslv08/321 hdisk11
+sudo migratelp qsrlv12/454 hdisk11</code>
+  - Once the migration of lv is completed and we are sure that we have at least 1 pp free in each hdisk, Execute the below command to **change the small VG to a BIG VG**<code>
+sudo chvg -B srmvg01</code>
+  - Output of chvg -B command<code>
+x1kxk630 on tsqa1d01:/home/x1kxk630 $ sudo chvg -B srmvg01
+0516-1164 chvg: Volume group srmvg01 changed.  With given characteristics srmvg01
+        can include up to 64 physical volumes with 2032 physical partitions each.</code>

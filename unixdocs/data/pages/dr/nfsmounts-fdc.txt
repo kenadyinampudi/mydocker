@@ -1,0 +1,32 @@
+====== North America - Lincolnshire Disaster Recovery test - 2018 -- Mount NFS filesystems ======
+
+
+  - We recommend that NFS mounts to be completed before the delivery of systems to application teams.
+
+===== AIX systems =====
+
+  - Login to all NFS servers, Export all filesystems<code>sudo exportfs -av</code>
+  - Login to all NFS clients, mount the filesystems
+    - Umount the filesystems<code>lsnfsmnt | awk '{if ($(NF-1) == "yes") print $0}' | awk '{print $1}' | sort -r | xargs -n1 sudo umount</code>
+    - Mount all filesystems<code>lsnfsmnt | awk '{if ($(NF-1) == "yes") print $0}' | awk '{print $1}' | sort  | xargs -n1 sudo mount</code>
+
+===== Linux systems =====
+
+  - We do not have any NFS servers running on Linux ( ? ) probably.
+  - Login to all NFS clients, mount the filesystems
+    - Unmount the filesystems<code>grep nfs /etc/fstab | grep -v ^# | awk '{print $2}' | sort -r | xargs -n1 sudo umount</code>
+    - Add the NFS filesystems back. **Deferred until all systems have been recovered**
+      - Cleanup fstab<code>cat /etc/fstab | grep nfs | grep -v pgadap01 | sed -e "s;bck;;g" -e "s;TEPR2D01;tepr2d01;g" > nfs.fstab
+cat /etc/fstab | grep -v nfs > nonfs.fstab
+cat nonfs.fstab > fstab.Good
+cat nfs.fstab >> fstab.Good
+unalias cp
+cp /etc/fstab /etc/fstab.copyforDR
+cp -f fstab.Good /etc/fstab</code>
+      - Mount them<code>grep nfs /etc/fstab | grep -v ^# | awk '{print $2}' | sort | xargs -n1 sudo mount</code>
+
+** When in doubt, ask **
+
+{{:dr:whenindoubtask.jpg?400|}}
+
+** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremly careful ) **

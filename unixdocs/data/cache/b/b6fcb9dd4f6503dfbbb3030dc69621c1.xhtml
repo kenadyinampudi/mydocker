@@ -1,0 +1,95 @@
+
+<h2 class="sectionedit1" id="vios_pre_upgrade_steps">VIOS Pre_Upgrade Steps</h2>
+<div class="level2">
+
+<p>
+Steps for taprvio50 / taqprvio51
+</p>
+<ol>
+<li class="level1"><div class="li"> 1 Run vios_save_env.sh when complete cd to teh newely created directory.</div>
+</li>
+<li class="level1"><div class="li"> 2 Take a fresh mksysb and when it completed copy the latest taprvio50.viosbr.bak.nn.tar.gz fle to the directory created in step 1 above <pre class="code">ls -liat /home/padmin| grep taprvio50.viosbr | pg </pre>
+<pre class="code"> cp -p /home//padmin/{Latest taprvio50.viosbr file } . </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> 3 Run script-1<pre class="code"> hname=`hostname`
+OUTDIR=`ls | grep $hname`
+cat /dev/null &gt; $OUTDIR/C-ALL-DISK-BEFORE
+cat /dev/null &gt; $OUTDIR/clean-disk
+cat /dev/null &gt; $OUTDIR/unmap-disk
+/usr/local/scripts/lsdiskcfg &gt; $OUTDIR/C-ALL-DISK-BEFORE
+cat C-ALL-DISK-BEFORE | grep -v taprvio50 | grep -v none &gt; $OUTDIR/clean-disk
+LANG=POSIX  sort -t&quot;:&quot; +4 clean-disk  &gt; $OUTDIR/ordered-disk
+for disk in $(awk -F: &#039;{print $1}&#039; $OUTDIR/ordered-disk)
+do
+        echo &quot;rmvdev -vdev ${disk}&quot; &gt;&gt; $OUTDIR/unmap-disk
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> 4 Copy the direcory created in step 1 to to the repository on teh NIM server pgnmsvo1 <pre class="code"> scp -r {Directory from step 1} pgnmsv01:/preupgrade/reports </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:buildvioserver#create_lpar" class="wikilink1" title="unix:buildvioserver">nstall VIOS Server</a></div>
+</li>
+<li class="level1"><div class="li"> 5 copy preserved output from vios_save_env.sh to repository on pgnmsv01 to the back to teh vio server &lt;cpde&gt; scp -r /preupgrade/reports/{file to be copied} taprvio50:{location of choice} &lt;/code&gt;</div>
+</li>
+<li class="level1"><div class="li"> 6 cd to the directory you just copied</div>
+</li>
+<li class="level1"><div class="li"> 7 copy the  taprvio50.viosbr.bak file back to /home/padmin. <pre class="code"> cp {taprviovi.viosbr.bak file} /home/padmin/
+  - 8 su - padmin
+  - 9 run the viosbr comand to recover all the lpard on the server &lt;code&gt; viosbr -restore -file {taprviovi.viosbr.bakfile} -validate -inter </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> 10 remove all disks from teh vio server</div>
+</li>
+<li class="level1"><div class="li"> 11 run cfgmgr to bring inthe disks again </div>
+</li>
+<li class="level1"><div class="li"> 12 run script-2 <pre class="code">hname=`hostname`
+OUTDIR=`ls | grep igrep -v bak | grep $hname`
+rm -f $OUTDIR/remap-disks
+cat /dev/null &gt; $OUTDIR/remap-disks
+cat /dev/null &gt; $OUTDIR/process-disk
+lspv &gt; $OUTDIR/c-all-disk-after
+for disk in `lspv | awk &#039;{print $1}&#039;`
+do
+        echo &quot;sudo chdev -l $disk -a algorithm=round_robin -a reserve_policAy=no_reserve&quot; &gt;&gt;  $OUTDIR/process-disk
+done
+lspv | grep -v root &gt; $OUTDIR/all-vio-client-disks
+for pvid in `cat $OUTDIR/ordered-disk | awk -F: &#039;{print $6}&#039;`
+do
+        maptovhost=`grep $pvid $OUTDIR/ordered-disk | awk -F: &#039;{print $5}&#039;`
+        maptodisk=`grep $pvid $OUTDIR/all-vio-client-disks | awk &#039;{print $1}&#039;`
+        echo &quot;mkvdev -vadapter $maptovhost -vdev $maptodisk&quot; &gt;&gt; $OUTDIR/remap-disks
+done </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> 13 reset the reserver lock ot no_reserve and the algorithm to round_robin on all disks </div>
+</li>
+<li class="level1"><div class="li"> 14 Remap teh disks <pre class="code"> sh ./{taprvioxx savedenvronment directry}/rempa-disks
+
+===== Sample of remap disk file output - script-2 was run againas output on taprvio90  =====
+&lt;code&gt;
+mkvdev -vadapter vhost0 -vdev hdisk7
+mkvdev -vadapter vhost0 -vdev hdisk6
+mkvdev -vadapter vhost0 -vdev hdisk5
+mkvdev -vadapter vhost0 -vdev hdisk4
+mkvdev -vadapter vhost0 -vdev hdisk3
+mkvdev -vadapter vhost1 -vdev hdisk8
+mkvdev -vadapter vhost1 -vdev hdisk2
+mkvdev -vadapter vhost1 -vdev hdisk9
+mkvdev -vadapter vhost1 -vdev hdisk10
+mkvdev -vadapter vhost1 -vdev hdisk11
+mkvdev -vadapter vhost2 -vdev hdisk17
+mkvdev -vadapter vhost2 -vdev hdisk16
+mkvdev -vadapter vhost2 -vdev hdisk15
+mkvdev -vadapter vhost2 -vdev hdisk14
+mkvdev -vadapter vhost2 -vdev hdisk13
+mkvdev -vadapter vhost3 -vdev hdisk18
+mkvdev -vadapter vhost3 -vdev hdisk19
+mkvdev -vadapter vhost3 -vdev hdisk20</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "VIOS Pre_Upgrade Steps" [2-] -->

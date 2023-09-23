@@ -1,0 +1,24 @@
+====== PTA DB refresh documentation ======
+
+^Source System  ^Source DC ^Target System  ^Target DC|
+|pcdcptaaxdb99    |CDC/MPPS   |acdcptaaxdb01|CDC/MPPS|
+
+  - Get a latest copy of PVIDs from the source server and copy to the target system.
+    - Login to one of the jump servers ''pcdcunxaxap01''<code>ssh pcdcptaaxdb99 "lspv | grep -e binvg01 -e redovg01 -e datavg0" > PTA.pvids
+scp PTA.pvids acdcptaaxdb01:</code>
+  - Login to the target server and perform the rest of the work<code>ssh acdcptaaxdb01</code>
+    - Discover the new disks<code>sudo cfgmgr</code>
+    - Import VGs and mount filesystems<code>for vg in binvg01 redovg01 datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08
+do
+   echo "Working on ${vg} "
+   grep -w ${vg} PTA.pvids | awk '{print $2 }' > ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " ")
+   sudo recreatevg -Y/ -L/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} | sort )
+   do
+      echo "$(date) :: Working on ${vg} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>

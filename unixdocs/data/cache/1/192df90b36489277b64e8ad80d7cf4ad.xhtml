@@ -1,0 +1,1001 @@
+
+<h1 class="sectionedit1" id="building_a_virtual_machine_in_the_sap_vmware_cluster_for_cta">Building a Virtual Machine in the SAP VMWARE cluster for CTA</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to vSphere using fat client or web client and point to “taitc176”</div>
+</li>
+<li class="level1"><div class="li"> On the address space click and select “Hosts and Clusters”</div>
+</li>
+<li class="level1"><div class="li"> On the left hand pane, select “ITC-SAP Cluster”</div>
+</li>
+<li class="level1"><div class="li"> Right click on the “ITC-SAP Cluster” –&gt; Click on New Virtual Machine –&gt; </div>
+<ol>
+<li class="level2"><div class="li"> Select Custom and click next –&gt; Select “Linux Servers” and click Next –&gt; </div>
+<ol>
+<li class="level3"><div class="li"> Select one of the datastores that has space click next –&gt; Select Virtual Machine Version 11 –&gt; </div>
+<ol>
+<li class="level4"><div class="li"> Choose “Linux” and “Redhat Enterprise Linux 7 (64 bit) click next –&gt; Select the number of cores/sockets –&gt; </div>
+<ol>
+<li class="level5"><div class="li"> Select correct amount of memory –&gt; Select the correct VLAN –&gt; Select VMWARE Paravirtual <abbr title="Small Computer System Interface">SCSI</abbr> controller –&gt; </div>
+<ol>
+<li class="level6"><div class="li"> Create a New disk –&gt; Enter 70G size <strong>select Thin provision</strong> –&gt; Click next on the next screen –&gt; </div>
+<ol>
+<li class="level7"><div class="li"> Check edit settings and click Continue –&gt; At the edit screen Add an additional thin provisioned disk for paging space –&gt; </div>
+<ol>
+<li class="level8"><div class="li"> Add an additional disk for data storage “SAP app servers 34G ” –&gt; </div>
+<ol>
+<li class="level9"><div class="li"> On the Options window, enable “Memory/CPU Hotplug” –&gt; </div>
+<ol>
+<li class="level10"><div class="li"> Change the Boot options to “10000” –&gt; Click Finish</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<ul>
+<li class="level1"><div class="li"> Add the server to the console database <strong>/prod/images/etc/unix_sys_console</strong> on pgnmsv01.<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Sample entry would be
+</p>
+<pre class="code">daerap01h:std-vmware-vsphere:taitc176:ADACCOUNT</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=kapil:notesesx" class="wikilink1" title="kapil:notesesx">Login to the respective VSphere Server</a></div>
+</li>
+<li class="level1"><div class="li"> Document the MAC address for the VM</div>
+<ul>
+<li class="level3"><div class="li"> Find the VM –&gt; Right click –&gt; Edit Settings –&gt; Select Network adapter 1 (Hardware Tab) –&gt; You will see the MAC address to the right.</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Add the server to cobbler</div>
+<ul>
+<li class="level2"><div class="li"> Login to pablsv02</div>
+</li>
+<li class="level2"><div class="li"> Set some variables specific to the system</div>
+<ul>
+<li class="level3"><div class="li"> The server that is being built<pre class="code">export host2build=daerap01h</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> The server&#039;s IP Address<pre class="code">export ipaddr=10.0.48.19</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> The server&#039;s netmask<pre class="code">export netmask=255.255.255.0</pre>
+
+<p>
+If different, change it.
+</p>
+</div>
+</li>
+<li class="level3"><div class="li"> The server&#039;s default gateway<pre class="code">export gateway=10.0.48.1</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> The server&#039;s MAC address<pre class="code">export mac_addr=00:50:56:86:61:8f</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> RHEL 7.2 for SAP<pre class="code">export profile=sap_rhel-7.2-x86_64</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Define the system in cobbler. Sample intranet</div>
+</li>
+<li class="level2"><div class="li"> Command Line method<pre class="code">sudo cobbler system add \
+--name=${host2build} \
+--profile=${profile} \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=amer.int.tenneco.com \
+--gateway=${gateway} \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=${mac_addr} \
+--ip-address=${ipaddr} \
+--netmask=${netmask} \
+--server=pablsv02.amer.int.tenneco.com</pre>
+
+<p>
+Check the return code
+</p>
+<pre class="code">echo ${?}</pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Create the Boot <abbr title="International Organization for Standardization">ISO</abbr> on pablsv02<pre class="code">sudo cobbler buildiso --systems=&quot;${host2build}&quot; --iso=/var/www/html/servers/${host2build}.iso</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the iso file to <abbr title="International Organization for Standardization">ISO</abbr> datastore. Make a note of the hostname<pre class="code">echo ${host2build}</pre>
+</div>
+<ul>
+<li class="level2"><div class="li"> Login to pgnmsv01<pre class="code">sudo rsync -avv pablsv02:/var/www/html/servers/daerap01h.iso /prod/images/bootisos/</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "Building a Virtual Machine in the SAP VMWARE cluster for CTA" [1-3171] -->
+<h1 class="sectionedit2" id="vmware_guest_installation_process">VMWare Guest installation process</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Login to vSphere client and perform these configurations</div>
+<ul>
+<li class="level2"><div class="li"> Change boot options so that it gives us 10 seconds before boot.</div>
+<ul>
+<li class="level3"><div class="li"> Select the VM</div>
+<ul>
+<li class="level4"><div class="li"> Right click <code>Edit Settings</code></div>
+<ul>
+<li class="level5"><div class="li"> Click on <code>Options</code> Tab</div>
+<ul>
+<li class="level6"><div class="li"> Select Boot Options</div>
+<ul>
+<li class="level7"><div class="li"> Enter <code>10,000</code> as the Boot delay.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> Mount the <abbr title="International Organization for Standardization">ISO</abbr> file to Virtual CDROM</div>
+<ul>
+<li class="level3"><div class="li"> At the Hardware Tab Click on CDROM</div>
+<ul>
+<li class="level4"><div class="li"> Click and browse Datastore <abbr title="International Organization for Standardization">ISO</abbr> file</div>
+<ul>
+<li class="level5"><div class="li"> Select the iso file we copied.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Open the console from vSphere</div>
+</li>
+<li class="level1"><div class="li"> Power on the server</div>
+</li>
+<li class="level1"><div class="li"> If using Virtual CDROM to access an iso file on your desktop,</div>
+<ul>
+<li class="level2"><div class="li"> Open the console and map the cdrom drive to the downloaded iso file in your desktop.</div>
+</li>
+<li class="level2"><div class="li"> When the system boots from the <abbr title="International Organization for Standardization">ISO</abbr>, press down arrow and select the hostname in the menu and hit enter.</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> When the VM startup using <code>down arrow</code> key select the hostname and hit enter. This will start the installation.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "VMWare Guest installation process" [3172-4156] -->
+<h1 class="sectionedit3" id="redhat_server_post_installation_work">Redhat Server Post installation work</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT3 SECTION "Redhat Server Post installation work" [4157-4208] -->
+<h3 class="sectionedit4" id="steps_from_the_server_that_is_being_built">Steps from the server that is being built</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the server (as root) you just built<pre class="code">sudo ssh daerap01h</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Correct hostname. Cobbler sometimes reverse lookup the IP and set up the hostname. So a <abbr title="Domain Name System">DNS</abbr> error can change the hostname<pre class="code">echo $(uname -n | awk -F&quot;.&quot; &#039;{print $1}&#039; ) &gt; /etc/hostname</pre>
+
+<p>
+Also edit hosts file
+</p>
+<pre class="code">sudo vi /etc/hosts</pre>
+
+<p>
+Remove the ipv6 line
+</p>
+<pre class="code">::1         localhost localhost.localdomain localhost6 localhost6.localdomain6</pre>
+
+<p>
+And add a line for the host itself. Something like
+</p>
+<pre class="code">10.0.48.19      daerap01h</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change PS1 variable<pre class="code">sudo vi /etc/profile</pre>
+
+<p>
+Add this to last line of the profile
+</p>
+<pre class="code">PS1=&quot;$LOGNAME on &quot;`hostname`&quot;:&quot;&#039;$PWD $ &#039; 
+export PS1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the Redhat repository<pre class="code">sudo rm /etc/yum.repos.d/rhel-source.repo /etc/yum.repos.d/cobbler-config.repo</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupresolv.conf" class="wikilink1" title="unix:setupresolv.conf">Setup resolv.conf</a></div>
+</li>
+<li class="level1"><div class="li"> Setup the correct timezone. For e.g. North America / Chicago<pre class="code">sudo timedatectl set-timezone America/Chicago</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d time.amer.int.tenneco.com</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Need to install ntp in RHEL7<pre class="code">sudo yum install ntp -y</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Replace the config file with this. Make a backup<pre class="code">sudo cp /etc/ntp.conf /etc/ntp.conf.$(date +%Y%m%d)</pre>
+
+<p>
+Edit the file
+</p>
+<pre class="code">sudo vi /etc/ntp.conf</pre>
+
+<p>
+Remove all lines in this file and replace with the following.
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> North American servers Fill in these<pre class="code"># Customized for Tenneco
+fudge   127.127.1.0 stratum 10
+driftfile /var/lib/ntp/drift
+keys /etc/ntp/keys
+server time.amer.int.tenneco.com prefer
+server time.emea.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> European servers Fill in these<pre class="code"># Customized for Tenneco
+fudge   127.127.1.0 stratum 10
+driftfile /var/lib/ntp/drift
+keys /etc/ntp/keys
+server time.emea.int.tenneco.com prefer
+server time.amer.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon</div>
+<ol>
+<li class="level2"><div class="li"> For RHEL7</div>
+<ol>
+<li class="level3"><div class="li"> Stop and remove chronyd<pre class="code">sudo systemctl disable chronyd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> <pre class="code">sudo systemctl stop chronyd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> <pre class="code">sudo yum remove chrony</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> <pre class="code">sudo timedatectl set-ntp yes</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Enable NTPD<pre class="code">sudo systemctl enable ntpd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Check it<pre class="code">sudo systemctl status ntpd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Start it<pre class="code">sudo systemctl start ntpd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Make sure its running<pre class="code">sudo systemctl status ntpd</pre>
+
+<p>
+For e.g.
+</p>
+<pre class="code">● ntpd.service - Network Time Service
+   Loaded: loaded (/usr/lib/systemd/system/ntpd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Mon 2016-11-21 11:10:04 CST; 1s ago
+  Process: 10607 ExecStart=/usr/sbin/ntpd -u ntp:ntp $OPTIONS (code=exited, status=0/SUCCESS)
+ Main PID: 10608 (ntpd)
+   CGroup: /system.slice/ntpd.service
+           └─10608 /usr/sbin/ntpd -u ntp:ntp -g
+
+Nov 21 11:10:04 xaerap02 ntpd[10608]: ntp_io: estimated max descriptors: 1024, initial socket boundary: 16
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listen and drop on 0 v4wildcard 0.0.0.0 UDP 123
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listen and drop on 1 v6wildcard :: UDP 123
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listen normally on 2 lo 127.0.0.1 UDP 123
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listen normally on 3 eth0 10.32.6.202 UDP 123
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listening on routing socket on fd #20 for interface updates
+Nov 21 11:10:04 xaerap02 ntpd[10608]: 0.0.0.0 c016 06 restart
+Nov 21 11:10:04 xaerap02 ntpd[10608]: 0.0.0.0 c012 02 freq_set kernel 0.000 PPM
+Nov 21 11:10:04 xaerap02 ntpd[10608]: 0.0.0.0 c011 01 freq_not_set
+Nov 21 11:10:05 xaerap02 ntpd[10608]: 0.0.0.0 c614 04 freq_mode</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If there is an offset, correct it<pre class="code">sudo ntpdate -u time.amer.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ensure the timeserver is correct<pre class="code">sudo ntpdc -l
+client    taitc533.amer.int.tenneco.com
+client    10.56.1.53
+client    taitc535.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Steps from the server that is being built" [4209-8285] -->
+<h1 class="sectionedit5" id="create_var_adm_information_file">Create /var/adm/.information file</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create the file /var/adm/.information e.g.<pre class="code">sudo mkdir -p /var/adm ;sudo vi /var/adm/.information</pre>
+
+<p>
+Enter these details
+</p>
+</div>
+</li>
+</ol>
+<pre class="code">mksysbhost:
+drmksysbhost:
+location:Lincolnshire
+rack:
+virtual:
+virtualization:
+physhost:
+appname:SAP ERP CTA
+role:SAP CTA ERP App Server
+Contacts:Scott Ready, David Morris, Paul Burke,Thomas Jacob,Eric Van Asbroeck,Henk Kiewiet,David Lei,Sugar Tang,Claudio Baccaro,Eugenia de la Cruz,Edson Martos, Robin Kuhn, Inge Pinnoy, Hilde Gybels, Todd Davis
+function:D
+asset owner:GIOS UNIX Group
+asset owner email:ta-unix@tenneco.com
+asset owner phone:+1-847-482-6440
+application owner:GIOS SAP BASIS
+department:GIOS
+status:Active
+part number:
+vendor Service Tag:N/A
+express code:N/A
+company asset tag:N/A
+cage/room:LDC Datacenter
+rack position:
+private IP: N/A
+mac address:
+wwn:
+warrenty start date:
+warrenty end date:
+warrenty number:
+warrenty type:24x7x4
+maintenance start date:
+maintenance end date:
+maintenance number:
+maintenance type: 24x7x4
+vendor:Red Hat
+classification level:Medium
+business criticality:Medium</pre>
+<ol>
+<li class="level1"><div class="li"> Install AIDE <pre class="code">sudo yum -y install aide</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Schedule standard cron jobs<pre class="code">sudo crontab -e</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">03 03 * * 6 /usr/local/scripts/clean_var 1&gt;/dev/null 2&gt;&amp;1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1&gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On VMWare VMs, </div>
+<ol>
+<li class="level2"><div class="li"> <pre class="code">sudo yum install -y open-vm-tools</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install and configure SNMPD<pre class="code">sudo yum install net-snmp -y</pre>
+
+<p>
+Configure it
+</p>
+<pre class="code">sudo mv /etc/snmp/snmpd.conf /etc/snmp/snmpd.conf.Original
+sudo vi /etc/snmp/snmpd.conf</pre>
+
+<p>
+Add this config
+</p>
+<pre class="code">syslocation Server Room
+syscontact Sysadmin (root@localhost)
+
+rocommunity oicu812 10.32.8.187 
+trapsink   10.32.8.187   oicu812
+trap2sink  10.32.8.37   oicu812</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start snmpd</div>
+<ol>
+<li class="level3"><div class="li"> Enable it<pre class="code">sudo systemctl enable snmpd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Start it<pre class="code">sudo systemctl start snmpd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Check it<pre class="code">sudo systemctl status snmpd</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Create /var/adm/.information file" [8286-10279] -->
+<h3 class="sectionedit6" id="steps_from_the_master_server_pgnmsv01">Steps from the Master server (pgnmsv01)</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to pgnmsv01</div>
+</li>
+<li class="level1"><div class="li"> Set a variable for the server you are building<pre class="code">export server_tenneco=daerap01h</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> For some of our favorite team members, we also copy the ssh keys for them.<pre class="code">for user in sxp8856 x1jhz999 pawetkac tauxrpt x1kxk630 x1shukla x1vasuna x1rzb826 x1cxs952 x1nithsa
+do
+   sudo rsync -a /home/${user}/.profile ${server_tenneco}:/home/${user}/.profile
+   sudo rsync -a /home/${user}/.ssh/ ${server_tenneco}:/home/${user}/.ssh/
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On VMWare VMs, </div>
+<ol>
+<li class="level2"><div class="li"> Install SYMCquiesce, SYMCquiesce is a utility to quiesce the IO during a snapshopt backup.<pre class="code">sudo rsync -avv /prod/images/applications/netbackup-vm/SYMCquiesce-1.0.0-003.x86_64.rpm ${server_tenneco}:/var/tmp/
+sudo ssh ${server_tenneco} rpm -Uvh /var/tmp/SYMCquiesce-1.0.0-003.x86_64.rpm</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install xinetd<pre class="code">sudo ssh ${server_tenneco} yum -y install xinetd</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> For RHEL7</div>
+<ol>
+<li class="level3"><div class="li"> Enable it<pre class="code">sudo ssh ${server_tenneco} &quot;systemctl enable xinetd&quot;</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Start it<pre class="code">sudo ssh ${server_tenneco} &quot;systemctl start xinetd&quot;</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Check it<pre class="code">sudo ssh ${server_tenneco} &quot;systemctl status xinetd&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Steps from the Master server (pgnmsv01)" [10280-11468] -->
+<h1 class="sectionedit7" id="install_sysinter">Install sysinter</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Make this directory<pre class="code">sudo ssh ${server_tenneco} mkdir -p /usr/local/bin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter.redhat ${server_tenneco}:/usr/local/bin/sysinter.redhat</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">sudo ssh ${server_tenneco} &#039;echo &quot;sysinter                40035/tcp&quot; | tee -a /etc/services&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter-xinetd ${server_tenneco}:/etc/xinetd.d/sysinter-xinetd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now restart inetd</div>
+<ol>
+<li class="level2"><div class="li"> For RHEL7<pre class="code">sudo ssh ${server_tenneco} systemctl reload xinetd</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Install cfg2html<pre class="code">sudo ssh ${server_tenneco} yum -y install cfg2html-linux-2.66-2.noarch</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Korn shell<pre class="code">sudo ssh ${server_tenneco} yum -y install ksh
+sudo ssh ${server_tenneco} ln -s /bin/ksh /usr/bin/ksh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install these libraries for openview and Unix<pre class="code">sudo ssh ${server_tenneco} yum -y install libgcc.i686 libstdc++.i686 compat-libstdc++-33.i686 psmisc-22.20-9.el7.x86_64</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the scripts<pre class="code">sudo ssh ${server_tenneco} mkdir -p /usr/local/scripts
+sudo rsync -a /usr/local/scripts/ ${server_tenneco}:/usr/local/scripts/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the sudoers file from the NIM server pgnmsv01<pre class="code">sudo rsync -a /prod/images/etc/sudoers ${server_tenneco}:/etc/sudoers</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the ssh_allowed_commands file from NIM server pgnmsv01<pre class="code">sudo rsync -a /etc/ssh_allowed_commands.sh ${server_tenneco}:/etc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the system to UUMA<pre class="code">ssh taqa1a03 &quot;echo ${server_tenneco} | sudo tee -a /home/oracle/uuma/hosts.txt&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Install sysinter" [11469-13068] -->
+<h1 class="sectionedit8" id="for_sap_servers_-_additional_steps_are_needed">For SAP servers - additional steps are needed</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to the server you are building<pre class="code">ssh daerap01h</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Modify /etc/hosts to match SAP recommendation<pre class="code">sudo vi /etc/hosts</pre>
+
+<p>
+Change from
+</p>
+<pre class="code">10.0.48.19    daerap01h</pre>
+
+<p>
+To
+</p>
+<pre class="code">10.0.48.19    daerap01h.amer.int.tenneco.com daerap01h</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install uuid <pre class="code">sudo yum -y install uuidd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the uuid script to validate the change<pre class="code">scp pgnmsv01:/prod/images/scripts/check-libuuid.sh /var/tmp/</pre>
+
+<p>
+run it
+</p>
+<pre class="code">sudo /var/tmp/check-libuuid.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install sap local packages<pre class="code">sudo yum -y install compat-locales-sap compat-locales-sap-common</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install VNC server<pre class="code">sudo yum -y install tigervnc-server</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install xterm<pre class="code">sudo yum -y install xterm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install NFS utils<pre class="code">sudo yum -y install nfs-utils</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable &amp; start rpcbind<pre class="code">sudo systemctl start rpcbind
+sudo systemctl enable rpcbind</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create SAP user accounts as requested by Basis Team.</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Create unispool user<pre class="code">sudo groupadd -g 415 unispool
+sudo mkdir -p /users/unispool
+sudo useradd -g unispool -m -d /users/unispool -c &quot;Unispool project ID&quot; -u 315 unispool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Grant unispool user crontab access<pre class="code">echo &quot;unispool&quot; | sudo tee -a /etc/cron.allow</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create NA ERT development ( CTA ) user accounts<pre class="code"># Add standard
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba -d /home/ctaadm -c &quot;SAP NA System Admin&quot; -m -u 5201 ctaadm
+sudo useradd -s /usr/bin/csh -g dba -G sapinst,sapsys -d /home/orapta -c &quot;SAP NA Oracle Admin&quot; -m -u 3200 orapta
+sudo useradd -s /usr/bin/csh -g dba -G sapinst,sapsys -d /home/oracta -c &quot;SAP NA Oracle Admin&quot; -m -u 1200 oracta
+sudo useradd -s /usr/bin/csh -g dba -G sapinst,sapsys -d /home/sapadm -c &quot;SAP Local Administrator&quot; -m -u 205 sapadm
+sudo useradd -s /usr/bin/csh -g dba -G sapinst,sapsys -d /home/daaadm -c &quot;SAP System Administrator&quot; -m -u 206 daaadm</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Set the ulimits for all users associated with R/3<pre class="code">sudo vi /etc/security/limits.conf</pre>
+
+<p>
+ Add this config
+</p>
+<pre class="code">#for all  users
+*       soft    stack   -1
+*       hard    stack   -1
+*       soft    core    2000
+*       hard    core    8000
+*       soft    memlock         -1
+*       hard    memlock         -1
+*       soft    nproc           -1
+*       hard    nproc           -1
+*       soft    nofile          65536
+*       hard    nofile          65536
+</pre>
+<pre class="code">sudo rm /etc/security/limits.d/20-nproc.conf</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Create the paging VG<pre class="code">sudo pvcreate /dev/sdc</pre>
+
+<p>
+Then
+</p>
+<pre class="code">sudo vgcreate pagingvg /dev/sdc</pre>
+
+<p>
+then
+</p>
+<pre class="code">sudo lvcreate pagingvg -n swapvol1 -L 64G</pre>
+
+<p>
+Format it
+</p>
+<pre class="code">sudo mkswap /dev/pagingvg/swapvol1</pre>
+
+<p>
+Add entry to /etc/fstab
+</p>
+<pre class="code">echo &quot;/dev/pagingvg/swapvol1    swap    swap    defaults    0 0&quot; | sudo tee -a /etc/fstab</pre>
+
+<p>
+Enable the paging space
+</p>
+<pre class="code">sudo swapon -av</pre>
+
+<p>
+Check
+</p>
+<pre class="code">sudo cat /proc/swaps</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create /dev/shm of 75% (RAM + Swap)size.</div>
+</li>
+<li class="level2"><div class="li"> Find out the memory<pre class="code">grep ^MemTotal /proc/meminfo</pre>
+
+<p>
+Find out swap space
+</p>
+<pre class="code">sudo swapon -s</pre>
+
+<p>
+Figure out 75% and add to /etc/fstab
+</p>
+<pre class="code">sudo vi /etc/fstab
+none      /dev/shm        tmpfs   defaults,size=70G,nodev,nosuid,noexec        0 0</pre>
+
+<p>
+save and close the /etc/fstab file and mount the filesystem
+</p>
+<pre class="code">sudo mount -o remount /dev/shm</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Create standard SAP application filesystems as requested by Basis members.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT8 SECTION "For SAP servers - additional steps are needed" [13069-16472] -->
+<h1 class="sectionedit9" id="create_standard_sap_filesystems">Create standard SAP filesystems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Look for data disk<pre class="code">sudo fdisk -l | grep ^Disk | grep /dev/sd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Look for currently used pvs<pre class="code">sudo pvs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Identitfy the correct disk to be used for data. In this case, it is /dev/sdb</div>
+</li>
+<li class="level1"><div class="li"> Prepare disk for LVM<pre class="code">sudo pvcreate -f /dev/sdb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create datavg01<pre class="code">sudo vgcreate datavg01 /dev/sdb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create logical volumes<pre class="code">sudo lvcreate -n oracle -L 512MB datavg01
+sudo lvcreate -n oracle_client -L 1024MB datavg01
+sudo lvcreate -n oracle_CTA -L 1024MB datavg01
+sudo lvcreate -n usr_sap -L 1024MB datavg01
+sudo lvcreate -n usr_sap_CTA -L 8192MB datavg01
+sudo lvcreate -n usr_sap_CTA_SUM -L 10240MB datavg01
+sudo lvcreate -n usr_sap_DAA -L 3072MB datavg01
+sudo lvcreate -n usr_sap_hostctrl -L 1024MB datavg01
+sudo lvcreate -n home_ctaadm -L 512MB datavg01
+sudo lvcreate -n home_daaadm -L 512MB datavg01
+sudo lvcreate -n users_unispool -L 2048MB datavg01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">sudo mkfs -t ext4 /dev/datavg01/oracle
+sudo mkfs -t ext4 /dev/datavg01/oracle_client
+sudo mkfs -t ext4 /dev/datavg01/oracle_CTA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_CTA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_CTA_SUM
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_DAA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_hostctrl
+sudo mkfs -t ext4 /dev/datavg01/home_ctaadm
+sudo mkfs -t ext4 /dev/datavg01/home_daaadm
+sudo mkfs -t ext4 /dev/datavg01/users_unispool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add to /etc/fstab<pre class="code">echo &quot;/dev/mapper/datavg01-oracle   /oracle                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-oracle_client   /oracle/client                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-oracle_CTA   /oracle/CTA                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap   /usr/sap                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_CTA   /usr/sap/CTA                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_CTA_SUM   /usr/sap/CTA/SUM                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_DAA   /usr/sap/DAA                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_hostctrl   /usr/sap/hostctrl                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-home_ctaadm   /home/ctaadm                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-home_daaadm   /home/daaadm                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-users_unispool   /users/unispool                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the filesystems<pre class="code">sudo mkdir -p /oracle
+sudo mount /oracle
+sudo mkdir -p /oracle/client
+sudo mount /oracle/client
+sudo mkdir -p /oracle/CTA
+sudo mount /oracle/CTA
+sudo mkdir -p /usr/sap
+sudo mount /usr/sap
+sudo mkdir -p /usr/sap/CTA
+sudo mount /usr/sap/CTA
+sudo mkdir -p /usr/sap/CTA/SUM
+sudo mount /usr/sap/CTA/SUM
+sudo mkdir -p /usr/sap/DAA
+sudo mount /usr/sap/DAA
+sudo mkdir -p /usr/sap/hostctrl
+sudo mount /usr/sap/hostctrl
+sudo mkdir -p /home/ctaadm
+sudo mount /home/ctaadm
+sudo mkdir -p /home/daaadm
+sudo mount /home/daaadm
+sudo mkdir -p /users/unispool
+sudo mount /users/unispool
+sudo mkdir -p /comm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the ownership for filesystems as requested<pre class="code">sudo chown oracta:dba /oracle
+sudo chown oracta:dba /oracle/client
+sudo chown oracta:dba /oracle/CTA
+sudo chown ctaadm:sapsys /usr/sap
+sudo chown ctaadm:sapsys /usr/sap/CTA
+sudo chown ctaadm:sapsys /usr/sap/CTA/SUM
+sudo chown daaadm:sapsys /usr/sap/DAA
+sudo chown root:sapsys /usr/sap/hostctrl
+sudo chown ctaadm:sapsys /home/ctaadm
+sudo chown daaadm:sapsys /home/daaadm
+sudo chown unispool:unispool /users/unispool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create NFS mounts. Add these lines to /etc/fstab<pre class="code">sudo vi /etc/fstab</pre>
+
+<p>
+Add these to the end
+</p>
+<pre class="code">xaerdb03:/sapmnt/CTA/exe /sapmnt/CTA/exe nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daerdb01:/sapmnt/CTA/profile /sapmnt/CTA/profile nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daerdb01:/sapmnt/CTA/global /sapmnt/CTA/global nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daerdb01:/usr/sap/trans /usr/sap/trans nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daap3p01:/taedi61 /taedi61 nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daerdb01:/sapcomm /sapcomm nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daerdb01:/sapcomm/CTA/archive /sapcomm/CTA/archive nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pgadap01:/sapmedia /sapmedia nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daap3p01:/comm /comm nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Mount the NFS filesystems<pre class="code">sudo mkdir -p /sapmnt/CTA/exe
+sudo mount /sapmnt/CTA/exe
+sudo mkdir -p /sapmnt/CTA/profile
+sudo mount /sapmnt/CTA/profile
+sudo mkdir -p /sapmnt/CTA/global
+sudo mount /sapmnt/CTA/global
+sudo mkdir -p /usr/sap/trans
+sudo mount /usr/sap/trans
+sudo mkdir /taedi61
+sudo mount /taedi61
+sudo mkdir -p /sapcomm
+sudo mount /sapcomm
+sudo mkdir -p /sapcomm/CTA/archive
+sudo mount /sapcomm/CTA/archive
+sudo mkdir -p /sapmedia
+sudo mount /sapmedia</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT9 SECTION "Create standard SAP filesystems" [16473-22080] -->
+<h1 class="sectionedit10" id="configuring_unispool_to_systemd_rhel7">Configuring unispool to systemd/RHEL7</h1>
+<div class="level1">
+
+<p>
+<strong> For informational purposes only </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Objective is to enable unispool to be controlled by systemd. systemd replaced init in RHEL6 or 7.</div>
+</li>
+<li class="level1"><div class="li"> This is the correct way to implement a service in RHEL7 <a href="https://access.redhat.com/solutions/1163283" class="urlextern" title="https://access.redhat.com/solutions/1163283"  rel="nofollow">https://access.redhat.com/solutions/1163283</a></div>
+</li>
+</ul>
+
+<p>
+<img src="/lib/images/smileys/fixme.gif" class="icon" alt="FIXME" /> <strong>This is not tested yet, working with Danny Smeets</strong>
+</p>
+
+</div>
+<!-- EDIT10 SECTION "Configuring unispool to systemd/RHEL7" [22081-22444] -->
+<h2 class="sectionedit11" id="adding_unispool_to_systemd">Adding unispool to systemd</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create a generic start/stop script for unispool<pre class="code">sudo vi /usr/local/sbin/unispool.sh</pre>
+
+<p>
+paste this output it
+</p>
+<pre class="code">#!/bin/bash
+#
+# Custom script to startup unispool
+
+function start_unispool {
+/users/unispool/programs/unispool_start
+export MAINPID=$(ps -ef | grep /users/unispool/bin/main | grep -v grep | awk &#039;{print $2}&#039;)
+}
+
+function stop_unispool {
+/users/unispool/programs/unispool_stop
+}
+
+case ${1} in
+start)
+   start_unispool
+   ;;
+stop)
+   stop_unispool
+   ;;
+reload)
+   stop_unispool
+   start_unispool
+   ;;
+*)
+   echo &quot;Unknown &quot;
+   ;;
+esac</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make it executable<pre class="code">sudo chmod 755 /usr/local/sbin/unispool.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a config file for systemd/unispool<pre class="code">sudo vi /etc/systemd/system/unispool.service</pre>
+
+<p>
+Add this content to it
+</p>
+<pre class="code">[Unit]
+Description=Unispool management script
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/unispool.sh start
+ExecStop=/usr/local/sbin/unispool.sh stop
+ExecReload=/usr/local/sbin/unispool.sh reload
+User=unispool
+Group=unispool
+RemainAfterExit=yes
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At this time, we should be able to,</div>
+<ol>
+<li class="level2"><div class="li"> Start unispool<pre class="code">sudo systemctl start unispool</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Stop  unispool<pre class="code">sudo systemctl stop unispool</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Status of unispool<pre class="code">sudo systemctl status unispool</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart of unispool<pre class="code">sudo systemctl reload unispool</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Enable for automatic start/stop<pre class="code">sudo systemctl enable unispool</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT11 SECTION "Adding unispool to systemd" [22445-23972] -->
+<h1 class="sectionedit12" id="if_the_system_needs_unispool_-_installation">If the system needs unispool - installation</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create the unispool filesystem<pre class="code">sudo lvcreate -n users_unispool -L 2048MB datavg01
+sudo mkfs -t ext4 /dev/datavg01/users_unispool
+echo &quot;/dev/mapper/datavg01-users_unispool   /users/unispool                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+sudo mkdir -p /users/unispool
+sudo mount /users/unispool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Download and untar the unispool binaries<pre class="code">cd /var/tmp
+wget http://pablsv02/unispool/unispool.rhel.6.23.gz
+cd /users/unispool
+sudo gtar xzf /var/tmp/unispool.rhel.6.23.gz</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup<pre class="code">sudo rm /var/tmp/unispool.rhel.6.23.gz</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT12 SECTION "If the system needs unispool - installation" [23973-24615] -->
+<h1 class="sectionedit13" id="install_nbu_client_on_linux">Install NBU client on Linux</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create /usr/openv filesystem<pre class="code">sudo lvcreate -n openv -L 4G datavg01
+sudo mkfs -t ext4 /dev/datavg01/openv
+echo &quot;/dev/mapper/datavg01-openv   /usr/openv                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+sudo mkdir -p /usr/openv
+sudo mount /usr/openv</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Download answer file<pre class="code">cd /tmp
+wget http://pablsv02/config/NBInstallAnswer.conf
+echo &quot;CLIENT_NAME=`uname -n`.amer.int.tenneco.com&quot; &gt;&gt; NBInstallAnswer.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install NBU client<pre class="code">sudo yum -y install VRTSnbcfg VRTSnbclt VRTSnbjava VRTSnbjre VRTSnbpck VRTSpbx VRTSpddea</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot<pre class="code">sudo init 6</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT13 SECTION "Install NBU client on Linux" [24616-] -->

@@ -1,0 +1,39 @@
+
+<h2 class="sectionedit1" id="update_firmware_on_blades">Update Firmware on Blades</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> <a href="http://www-933.ibm.com/support/fixcentral/systemx/quickorder?parent=ibm~BladeCenterJS22&amp;product=ibm/systemx/7998&amp;&amp;platform=All&amp;function=all&amp;source=fc" class="urlextern" title="http://www-933.ibm.com/support/fixcentral/systemx/quickorder?parent=ibm~BladeCenterJS22&amp;product=ibm/systemx/7998&amp;&amp;platform=All&amp;function=all&amp;source=fc"  rel="nofollow">Blade Firmware Download URL</a></div>
+</li>
+</ol>
+<ul>
+<li class="level1"><div class="li"> Copy firmware from repository on taitc118 to the blade</div>
+<ul>
+<li class="level2"><div class="li"> JS22<pre class="code">sudo rsync -avv /prod/images/Microcode/Blade_Center/Blade_Bios/JS22/latest/ &lt;servername&gt;:/tmp/firmware/</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> PS700<pre class="code">sudo rsync -avv /prod/images/Microcode/Blade_Center/Blade_Bios/PS700/latest/ &lt;servername&gt;:/tmp/firmware/</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> On the server find out the firmware filename<pre class="code">sudo ls -ld /tmp/firmware/*.img</pre>
+
+<p>
+<strong>Make a note of the filename</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> To Upgrade Firmware on Blades running VIOS logon as padmin.<pre class="code">ldfware -file /tmp/firmware/&lt;filename&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> To upgrade firmware on non VIOS Blades<pre class="code">sudo /usr/lpp/diagnostics/bin/update_flash -f /tmp/firmware/&lt;filename&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Follow the system prompts to continue and complete the firmware installation </div>
+</li>
+<li class="level1"><div class="li"> Cleanup the temporary files<pre class="code">sudo rm -rf /tmp/firmware</pre>
+</div>
+</li>
+</ul>
+
+</div>

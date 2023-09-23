@@ -1,0 +1,178 @@
+<code> Restore instructions for FTA  backups from Pure Storage snapshots
+
+1):Login to pgunap01
+
+   ssh pgunap01
+
+2):Choose the correct protection group
+
+
+   For FTA / qaerdb01 snapshots
+
+   export PGRP=FTADAILYBKP
+
+   export TESTHOST=pocafasv01
+
+
+3):Set the correct array variable
+
+
+  export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"
+
+
+
+4)List the available snapshots
+
+  ${SSH2PURE} purepgroup list --snap ${PGRP}
+
+
+The output should be
+
+FTADAILYBKP.67  FTADAILYBKP  2018-01-22 23:00:00 CST
+FTADAILYBKP.66  FTADAILYBKP  2018-01-21 23:00:00 CST
+FTADAILYBKP.65  FTADAILYBKP  2018-01-20 23:00:00 CST
+FTADAILYBKP.64  FTADAILYBKP  2018-01-19 23:00:00 CST
+FTADAILYBKP.63  FTADAILYBKP  2018-01-18 23:00:00 CST
+FTADAILYBKP.62  FTADAILYBKP  2018-01-17 23:00:00 CST
+FTADAILYBKP.61  FTADAILYBKP  2018-01-16 23:00:00 CST
+FTADAILYBKP.60  FTADAILYBKP  2018-01-15 23:00:00 CST
+FTADAILYBKP.59  FTADAILYBKP  2018-01-14 23:00:00 CST
+FTADAILYBKP.58  FTADAILYBKP  2018-01-13 23:00:00 CST
+
+
+5):Select a snapshot to restore
+
+   export SNAP="FTADAILYBKP.67"
+
+6):List the snapshot volumes
+
+  ${SSH2PURE} purevol list --snap --pgrouplist ${SNAP}
+
+
+The output should be like
+
+Name                         Size  Source        Created                  Serial
+FTADAILYBKP.67.qaerdb01_001  138G  qaerdb01_001  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07DD
+FTADAILYBKP.67.qaerdb01_002  138G  qaerdb01_002  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07DE
+FTADAILYBKP.67.qaerdb01_003  102G  qaerdb01_003  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07DF
+FTADAILYBKP.67.qaerdb01_004  102G  qaerdb01_004  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E0
+FTADAILYBKP.67.qaerdb01_005  102G  qaerdb01_005  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E1
+FTADAILYBKP.67.qaerdb01_006  102G  qaerdb01_006  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E2
+FTADAILYBKP.67.qaerdb01_007  102G  qaerdb01_007  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E3
+FTADAILYBKP.67.qaerdb01_008  102G  qaerdb01_008  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E4
+FTADAILYBKP.67.qaerdb01_009  250G  qaerdb01_009  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E080C
+FTADAILYBKP.67.qaerdb01_010  250G  qaerdb01_010  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E5
+FTADAILYBKP.67.qaerdb01_011  250G  qaerdb01_011  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E6
+FTADAILYBKP.67.qaerdb01_012  250G  qaerdb01_012  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E7
+FTADAILYBKP.67.qaerdb01_013  250G  qaerdb01_013  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E8
+FTADAILYBKP.67.qaerdb01_014  250G  qaerdb01_014  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07E9
+FTADAILYBKP.67.qaerdb01_015  250G  qaerdb01_015  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07EA
+FTADAILYBKP.67.qaerdb01_016  250G  qaerdb01_016  2018-01-22 23:00:00 CST  BBABD90D93D542ED000E07EB
+
+
+
+7):The above snapshot volumes need to be copied to target volumes in order to map it to the host.
+
+
+8):Set a variable starting volume number.Verify the Volume number
+
+   export vol_no=400
+
+
+9):Store the snapshot volumes in a variable
+
+  
+   export snapshots=$(${SSH2PURE} purevol list --snap --pgrouplist ${SNAP} --notitle | grep -v 138G | awk '{print $1}' | tr "\n" " ")
+
+
+10):Copy the snapshots to volumes
+
+
+target_vols=""
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${TESTHOST}_${vol_no}
+   target_vols="${target_vols} ${TESTHOST}_${vol_no}"
+   vol_no=$((vol_no+1))
+done
+
+
+11)Copy the target volume to a file system(It will help to clean up volumes after DBA returns the system) 
+
+
+   echo ${target_vols} > FTA.poc.volumes
+
+
+
+12):Connect the target volumes to the target host
+
+
+   ${SSH2PURE} purevol connect --host ${TESTHOST} ${target_vols}
+
+
+13):Login to the target host
+
+    ssh ${TESTHOST}
+
+
+14):Take a snapshot of the volumes
+
+
+   sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1
+
+
+15):Discover new devices
+
+    sudo cfgmgr
+
+
+16):Take a snapshot of the volumes after discovery
+
+    sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2
+
+
+17)Recreate the VGs and change the PVIDs
+
+
+cat /usr/local/scripts/file_systems.txt \
+| sed -n '/Printing diskmap/,/Done Printing diskmap/'p \
+| grep hdisk | grep -v rootvg > diskmap
+for VG in $(awk -F: '{print $NF}' diskmap | sort -u )
+do
+   grep ":${VG}$" diskmap | awk -F: '{print $2}' > ${VG}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   sudo recreatevg -Y/ -L/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done
+
+
+18) Handover the system  to DBA for recovery.
+
+
+19) DBA to recover FTA DB on pocafasv01.
+
+
+20) DBA to shutdown the DB and hand it over to Unix/Storage team.
+
+
+21) Cleanup old volumes
+
+for VG in $(lsvg | grep -v rootvg | sort -r )
+do
+   disks=$(lspv | grep -wf ${VG} | awk '{print $1}' | tr "\n" " " )
+   for fs in $(lsvgfs ${vg} | sort -r )
+   do
+      sudo umount ${fs}
+   done      
+   sudo varyoffvg ${VG}
+   sudo exportvg ${VG}
+   echo ${disks} | xargs -n1 sudo rmdev -dl
+done
+
+${SSH2PURE} purevol disconnect --host pocafasv01 $(cat IT0.poc.volumes ) 
+${SSH2PURE} purevol destroy $(cat IT0.poc.volumes )</code> 

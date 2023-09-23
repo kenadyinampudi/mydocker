@@ -1,0 +1,141 @@
+====== Home page for Shukant ======
+
+[[shukant:lvm:start|Logical Volume Manager]]
+
+[[shukant:patching|AIX Patching]]
+
+==== Unix user management - most frequent tasks ====
+  - List user attributes:<code>sudo lsuser -f x1rzb826
+  x1rzb826:
+        id=4207
+        pgrp=staff
+        groups=staff
+        home=/home/x1rzb826
+        shell=/usr/bin/ksh
+        gecos=Robert Bieniek
+        login=true   ---- user can login via console or su
+        su=true
+        rlogin=true  ---- user can login rrmotely via telnet, ssh, ftp, rlogin etc.
+        daemon=true
+        admin=false
+        sugroups=ALL
+        admgroups=
+        tpath=nosak
+        ttys=ALL
+        expires=0
+        auth1=SYSTEM
+        auth2=NONE
+        umask=22
+        registry=files
+        SYSTEM=compat
+        logintimes=
+        loginretries=5        -- after this number the account will be locked due to exceeded number of failed login attempts
+        pwdwarntime=14
+        account_locked=false
+        minage=0
+        maxage=0   --- user password never expires
+        maxexpired=-1
+        minalpha=5
+        minother=1
+        mindiff=4
+        maxrepeats=2
+        minlen=8
+        histexpire=80
+        histsize=1
+        pwdchecks=
+        dictionlist=
+        fsize=-1
+        cpu=-1
+        data=-1
+        stack=-1
+        core=2048
+        data_hard=-1
+        stack_hard=-1
+        core_hard=-1
+        time_last_login=1366645544
+        time_last_unsuccessful_login=1366645538
+        tty_last_login=/dev/pts/1
+        tty_last_unsuccessful_login=ssh
+        host_last_login=paft3p01.tenneco.com
+        host_last_unsuccessful_login=paft3p01.tenneco.com
+        unsuccessful_login_count=0
+        roles=</code>
+  - Example of an locked out account<code>login: x1rzb826
+x1rzb826's Password:
+3004-303 There have been too many unsuccessful login attempts; please see
+        the system administrator.
+
+login: Connection closed.</code>Now the lsuser command shows the following:<code>paft3p01:/root>sudo lsuser -f x1rzb826
+x1rzb826:
+        id=4207
+        pgrp=staff
+        groups=staff
+        home=/home/x1rzb826
+        shell=/usr/bin/ksh
+        gecos=Robert Bieniek
+        login=true
+        su=true
+        rlogin=true
+        daemon=true
+        admin=false
+        sugroups=ALL
+        admgroups=
+        tpath=nosak
+        ttys=ALL
+        expires=0
+        auth1=SYSTEM
+        auth2=NONE
+        umask=22
+        registry=files
+        SYSTEM=compat
+        logintimes=
+        loginretries=5       -- we only allow that many unsuccessfull trie to login
+        pwdwarntime=14
+        account_locked=false
+        minage=0
+        maxage=8
+        maxexpired=-1
+        minalpha=5
+        minother=1
+        mindiff=4
+        maxrepeats=2
+        minlen=8
+        histexpire=80
+        histsize=1
+        pwdchecks=
+        dictionlist=
+        fsize=-1
+        cpu=-1
+        data=-1
+        stack=-1
+        core=2048
+        data_hard=-1
+        stack_hard=-1
+        core_hard=-1
+        time_last_login=1366645544
+        time_last_unsuccessful_login=1415576907
+        tty_last_login=/dev/pts/1
+        tty_last_unsuccessful_login=/dev/pts/2
+        host_last_login=paft3p01.tenneco.com
+        host_last_unsuccessful_login=loopback
+        unsuccessful_login_count=6              ----- unsuccessful_login_count greater than allowed value 5
+        roles=</code>
+  - In order to reset the unsuccessfull login count back to zero enter the following command:<code> sudo chsec -f /etc/security/lastlog -a "unsuccessful_login_count=0" -s  'x1rzb826'</code>
+  
+**Common user management tasks**
+
+  - Reset user password:<code>sudo passwd x1rzb826</code>
+  - Clear flag so the user does not need to pick another password after the reset:<code>sudo pwdadm -c <username></code>
+  - Make password never to expire:<code>chuser maxage=0 <username></code>
+  - Disable the ability to remotely login - useful when creating su - only accounts such as oracle etc:<code>sudo chuser rlogin=false $username</code>
+  - Add user to a group:
+    - Get a list of existing groups<code>x1kxk630 on unixsandbox1:/home/x1kxk630 $ lsuser -a groups x1rzb826
+x1rzb826 groups=staff</code>
+    - Add the new group ( taunix in this case ) to the user<code>sudo chuser "groups=staff,taunix" x1rzb826</code>
+    - Confirm the groups are added<code>x1kxk630 on unixsandbox1:/home/x1kxk630 $ lsuser -a groups x1rzb826
+x1rzb826 groups=staff,taunix</code>
+  - Change primary group of the user:<code>sudo chuser "pgrp=taunix" x1rzb826</code>
+  - List the startup shell<code>lsuser -a shell x1rzb826</code>
+  - Change the startup shell<code>sudo chuser "shell=/usr/bin/bash" x1rzb826</code>
+    - Making an account as a FTP only account<code>sudo usermod -s /bin/false <username></code>For regular ftp accounts (make sure that /bin/false is listed in the /etc/security/login.cfg file under shells):
+  - For secure FTP accounts (sftp):<code>sudo usermod -s /usr/sbin/sftp-server <username></code>

@@ -1,0 +1,41 @@
+====== AIX recovery instructions ======
+
+==== Perform the NIM installation ====
+
+  - {{:dr:areyousure.png?100|}}
+  - {{:dr:really-are-you-sure-about-that.jpg?200|}}
+  - Pick your server, update the DR database for the server's Restore base operating system task to ''In Progress''.
+  - Reboot the server to SMS - make sure you select DEFAULT PROFILE - NOT CURRENT CONFIGURATION
+{{:dr:2021-04-19-phlypahmc007-hardware-management-console-boot.png}}
+  - Select Boot Options
+    -  1st option **Select Install/Boot Device**
+    -  5th option **List all Devices** wait for all devices to be scanned, this will take some time, select the device number with the output similiar to the following <code>1      148 GB   FC Harddisk, part=2 (AIX 7.2.0)</code>
+  - Login as root on the console.
+  - Change PS1 variable. Make a backup copy<code>sudo cp /etc/profile /etc/profile.copyforDR</code>Then<code>sudo vi /etc/profile</code>Add this towards the end ( last line )<code>HOST=$(uname -n)
+PS1='DR test -- $HOST:$PWD>'
+readonly PS1</code>
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr to reset all network devices , the -v option is used so you can confirm that cfgmgr is running <code>sudo cfgmgr -v</code>
+    - In the /home/tauxrpt/rpt_config directory select the latest configure_my_ip_cmds file and execute the commands in it to restore all the Network configurations and IP addresses for the server. There are 24 entries. It was discoverd that cron would run before the network was reconfigured and wipe out a single entry. This allows for multiple copies to insure that there is a valid copy available. 
+  - Enable NTP. Stop daemon. <code>sudo stopsrc -s xntpd</code>Backup the config<code>sudo mv /etc/ntp.conf /etc/ntp.conf.DRtest</code>Put the new config<code>cat << EOF >> /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server EGDCILDC002.driv.com
+EOF</code>Start the daemons<code>sudo chrctcp -S -a xntpd</code>Set the correct time from NIM server<code>date ; sudo ntpdate -u EGDCILDC002.driv.com ; date</code>
+  - Change itocroot password<code>echo "itocroot:ka95aLbJ7WER6" | chpasswd -e
+pwdadm -c itocroot</code>Password will now be "abcd1234"
+  - Check the timezone from filesystems.txt and make sure it matches<code>grep TZ /etc/environment</code>Now compare it to the filesystems.txt<code>grep -i tz /home/tauxrpt/rpt_config/file_systems.txt</code>
+  - If your are recovering an Oracle database server, configure IOCP<code>sudo chdev -l iocp0 -a autoconfig=available</code>Make it available<code>sudo mkdev -l iocp0</code>
+  - Perform a reboot<code>sudo shutdown -Fr</code>
+  - **!!! After the reboot of the server check to make sure that all file systems are mounted. !!!** <code> grep -i mount /home/tauxrpt/rpt_config/file_systems.txt |grep -v true</code> ** !!! Check for NFS mounts !!!** <code>grep -p nfs /home/tauxrpt/rpt_config/file_systems.txt</code>
+  - **!!! If there are ANY LINUX application servers for this landscape, (example PTA, TA2) make sure you REBOOT ALL THE LINUX application servers and check that all file systems are mounted correctly on ALL the application servers. !!!**<code> cat /etc/fstab | awk '{print $2}'</code> 
+  - ** !!! Only after making sure that ALL Related Application Server File Systems are correctly mounted including all NFS Mounts then and only then turn over the server to the next group. !!!**
+  - ** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremly careful ) **

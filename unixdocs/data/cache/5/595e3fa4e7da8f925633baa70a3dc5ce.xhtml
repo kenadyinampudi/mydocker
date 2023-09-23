@@ -1,0 +1,47 @@
+
+<h1 class="sectionedit1" id="apw_db_refresh_documentation">APW DB refresh documentation</h1>
+<div class="level1">
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Source System  </th><th class="col1">Source DC </th><th class="col2 leftalign">Target System  </th><th class="col3">Target DC</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">cdcvilax025    </td><td class="col1 leftalign">CDC/MPPS   </td><td class="col2">acdcapwaxdb01 </td><td class="col3">CDC/MPPS</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [45-153] --><ol>
+<li class="level1"><div class="li"> Get a latest copy of PVIDs from the source server and copy to the target system.</div>
+<ol>
+<li class="level2"><div class="li"> Login to one of the jump servers <code>pcdcunxaxap01</code><pre class="code">ssh cdcvilax025 &quot;lspv | grep -e vg076data -e vg076APW -e vg076APWsapdat -e vg076APWmirr -e vg076APWorig -e vgpub&quot; &gt; APW.pvids
+scp APW.pvids acdcapwaxdb01:</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the target server and perform the rest of the work<pre class="code">ssh acdcapwaxdb01</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Discover the new disks<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Import VGs and mount filesystems<pre class="code">for vg in vg076data vg076APW vg076APWmirr vg076APWorig vgpub vg076APWsapdat
+do
+   echo &quot;Working on ${vg} &quot;
+   grep -w ${vg} APW.pvids | awk &#039;{print $2 }&#039; &gt; ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot;)
+   sudo recreatevg -Y/ -L/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} | sort )
+   do
+      echo &quot;$(date) :: Working on ${vg} -- ${fs} fsck and mount in progress&quot;
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

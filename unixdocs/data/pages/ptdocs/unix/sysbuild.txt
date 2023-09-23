@@ -1,0 +1,32 @@
+====== System Build Notes ======
+
+As we are only buying IBM these days, these notes are limited to the installation of IBM P Series systems OR blades.
+
+===== Racking the system =====
+
+Depending on the type of the system, either the Vendor or the Unix team is supposed to rack the system.
+
+In case of blades, insert the blade into an empty slot in the bladecentre.
+===== Cabling details =====
+
+  * IBM P series systems may be lpared. Please use the following details for networking cabling and VLANs
+      - Each frame need two Management network connections for the two HMCs in house tgprhmc2 and taitc051.
+      - A physical lpar that is scheduled to run European applications will need 10.32.50/24 (front end), 10.32.51/24(bck) and 10.32.60/24 (backup) VLANs. Each VLAN needs 2 connections to two different switch modules in the core network and a NIB-etherchannel will be configured on AIX between them.
+      - A physical lpar that is scheduled to run North American applications will need 10.0.48/24 (front end), 10.0.49/24(bck) and 10.32.60/24 (backup) VLANs. Each VLAN need 2 connections to two different switch modules in the core network and a NIB-etherchannel will be configured on AIX between them.
+      - Each physical lpar need two SAN connections. Both the SAN connections can not be taken out of a dual HBA as that will introduce a single point of failure. Each SAN cable must go through a different switch to the FA. Exception is for the DMX4 which is directly attached.
+
+  * Power on 
+       - With the HMC connections plugged in, turn on the frame. This will activate the Service Processor that controls the IBM hypervisor on each frame and try to register to the HMC. When the frame pops up in the HMC GUI, reset the default passwords to abcd1234 and add them to the HMC. Apply the same password and repeat the steps on the second HMC.
+       - The preferable system name is Server-type-model-SerNo i.e. Server-9117-MMA-1093F0. Some systems may be named with the applications if the whole frame is dedicated to a specific application.
+       - Create the lpars based on the documentation / plan.
+  * Install operating system
+        - Add the system to the console database <code>vi /prod/images/etc/unix_sys_console</code>
+        - Register the system to the NIM server <code> smitty nim </code>
+        - Open a session to the system console from pgnmsv01 <code>/usr/local/scripts/getconsole hostname</code>
+        - Allocate resources and kick off a network installation<code>smitty nim_bosinst</code>
+        - Boot the lpar to SMS <code>Using the HMC or HMC CLI, Activate the lpar and boot it to SMS </code>
+        - From the system console, Navigate to the network boot configuration 
+        - Disable spanning tree protocol from adapter configuration
+        - Configure NIM server and Client addresses.
+        - Initiate a network boot
+        - Continue OS installation

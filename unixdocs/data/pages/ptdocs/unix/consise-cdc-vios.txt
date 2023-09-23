@@ -1,0 +1,9 @@
+====== VIOS Post installation tasks for CDC / MP VIOS  systems ======
+
+  -  Based on a meeting at LDC with Kapil, Jeannine, Abdul, Mohmmmed, Chris of the current VIOS build at the CDC
+  - Configure Etherchannels with 802.3ad / LACP mode.<code>mkvdev -lnagg ent0,ent1,ent4,ent5 -attr mode='8023ad'</code>Replace the adapter names accordingly.
+  - Configure SEA load balancing mode to ''shared''<code>mkvdev -sea ent10 -vadapter ent8 -default ent8 -defaultid 1 -attr ha_mode=shared ctl_chan=ent10</code> Change the adapter names accordingly.
+  - Configure FC adapter's attributes<code>for FSCSI in $(lscfg | grep fscsi | awk '{print $2}' )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</code>

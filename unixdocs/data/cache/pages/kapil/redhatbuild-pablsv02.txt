@@ -1,0 +1,39 @@
+====== Redhat build notes [ This is a private doc - DO NOT FOLLOW ANYTHING THAT I write here ] ======
+
+  * Download the redhat DVD from rhn
+  * Copy it to this location on taitc118<code>/prod/images/cds/rhel-server-6.3-i386-dvd.iso</code>This location is served via an apache so that an iLO can mount it via virtual media commands.
+  * Mount the DVD image on the iLO
+    * Login to the iLO<code>ssh -i /prod/images/etc/iLO/hscroot hscroot@pablsv01rmb</code>
+    * Connect the CDROM virtual media via HTTP<code>cd /map1/oemhp_vm/cddr
+set oemhp_image="http://10.32.51.118/isos/rhel-server-6.3-i386-dvd.iso"
+set oemhp_boot=connect</code>
+  * Reboot the server to boot from the virtual media.
+  * During installation, 
+    * Select English
+    * Select the timezone (Chicago)
+    * Hostname
+  * On the boot disk, create these partitions<code>/boot          1GB
+LVM          Rest of the disk</code>
+  * Define sysvg on the PV and create these filesystems
+
+^Logical Volume^Filesystem^Size^
+|/dev/sysvg/root|/|2G|
+|/dev/sysvg/swap| |8G|
+|/dev/sysvg/usr|/usr|5G|
+|/dev/sysvg/var|/var|8G|
+|/dev/sysvg/opt|/opt|6G|
+|/dev/sysvg/home|/home|1G|
+|/dev/sysvg/tmp|/tmp|2G|
+
+  * Continue with the installation  [ De-select unwanted softwares like CIFS client etc. Do not select any desktop environment on servers. ]
+  * Create the basic unix groups<code>groupadd -g 8086 taunix
+groupadd -g 8089 ovteam
+groupadd -g 8090 sapteam
+groupadd -g 8091 dbateam
+groupadd -g 8092 stgteam</code>
+  * Create these users<code>useradd -g taunix -d /home/x1kxk630 -c "Kapilraj Koroth" -m -u 8086 x1kxk630
+useradd -g taunix -d /home/x1rzb826 -c "Robert Bieniek" -m -u 4207 x1rzb826
+useradd -g taunix -d /home/x1cxs952 -c "Chris Stachowiak" -m -u 4255 x1cxs952
+useradd -g ovteam -d /home/sxp8856 -c "Stephen Payne" -m -u 4247 sxp8856
+useradd -g ovteam -d /home/txb0389 -c "Todd Busniewski" -m -u 4246 txb0389</code>
+  * [[unix:postinstallationsteps-redhat|Perform the post install activities]]

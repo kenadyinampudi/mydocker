@@ -1,0 +1,54 @@
+
+<h1 class="sectionedit1" id="centos">CentOS</h1>
+<div class="level1">
+
+<p>
+CentOS may be our “free linux” standard moving forward.
+</p>
+
+</div>
+<!-- EDIT1 SECTION "CentOS" [1-79] -->
+<h3 class="sectionedit2" id="build_procedure_for_centos_-_build_server">Build procedure for CentOS - Build server</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> <a href="ftp://mirror.fdcservers.net/centos/6.3/isos/x86_64/" class="urlextern" title="ftp://mirror.fdcservers.net/centos/6.3/isos/x86_64/"  rel="nofollow">Download the ISOs from here or any of the CentOS mirrors</a></div>
+</li>
+<li class="level1"><div class="li"> ssh to the iLO as root<pre class="code">ssh -i /prod/images/etc/iLO/hscroot hscroot@pablsv01rmb</pre>
+
+<p>
+Passwordless from taitc118.And you get this prompt
+</p>
+<pre class="code">User:hscroot logged-in to ILOM0SJLGP433.(10.32.10.58)
+iLO  1.94 at 12:11:27 Mar 19 2009
+Server Name: TAITC056
+Server Power: On
+
+&lt;/&gt;hpiLO-&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> mount the <abbr title="International Organization for Standardization">ISO</abbr> image. I had to use IP as the iLO probably did not have name servers configured to resolve any hostnames.<pre class="code">cd /map1/oemhp_vm/cddr
+set oemhp_image=&quot;http://10.32.51.118/isos/RHEL6.0-20100414.0-AP-i386-DVD1.iso&quot;
+set oemhp_boot=connect</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check<pre class="code">&lt;/map1/oemhp_vm/cddr&gt;hpiLO-&gt; show
+status=0
+status_tag=COMMAND COMPLETED
+
+
+/map1/oemhp_vm/cddr
+  Targets
+  Properties
+    oemhp_image=http://10.32.51.118/isos/RHEL6.0-20100414.0-AP-i386-DVD1.iso
+    oemhp_connect=Yes
+    oemhp_boot=Always
+    oemhp_wp=Yes
+    oemhp_applet_connected=No
+  Verbs
+    cd version exit show</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Build procedure for CentOS - Build server" [80-] -->

@@ -1,0 +1,92 @@
+
+<h1 class="sectionedit1" id="redhat_build_notes_this_is_a_private_doc_-_do_not_follow_anything_that_i_write_here">Redhat build notes [ This is a private doc - DO NOT FOLLOW ANYTHING THAT I write here ]</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Download the redhat DVD from rhn</div>
+</li>
+<li class="level1"><div class="li"> Copy it to this location on taitc118<pre class="code">/prod/images/cds/rhel-server-6.3-i386-dvd.iso</pre>
+
+<p>
+This location is served via an apache so that an iLO can mount it via virtual media commands.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the DVD image on the iLO</div>
+<ul>
+<li class="level2"><div class="li"> Login to the iLO<pre class="code">ssh -i /prod/images/etc/iLO/hscroot hscroot@pablsv01rmb</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Connect the CDROM virtual media via <abbr title="Hyper Text Transfer Protocol">HTTP</abbr><pre class="code">cd /map1/oemhp_vm/cddr
+set oemhp_image=&quot;http://10.32.51.118/isos/rhel-server-6.3-i386-dvd.iso&quot;
+set oemhp_boot=connect</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Reboot the server to boot from the virtual media.</div>
+</li>
+<li class="level1"><div class="li"> During installation, </div>
+<ul>
+<li class="level2"><div class="li"> Select English</div>
+</li>
+<li class="level2"><div class="li"> Select the timezone (Chicago)</div>
+</li>
+<li class="level2"><div class="li"> Hostname</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> On the boot disk, create these partitions<pre class="code">/boot          1GB
+LVM          Rest of the disk</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define sysvg on the PV and create these filesystems</div>
+</li>
+</ul>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Logical Volume</th><th class="col1">Filesystem</th><th class="col2">Size</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">/dev/sysvg/root</td><td class="col1">/</td><td class="col2">2G</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">/dev/sysvg/swap</td><td class="col1"> </td><td class="col2">8G</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">/dev/sysvg/usr</td><td class="col1">/usr</td><td class="col2">5G</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">/dev/sysvg/var</td><td class="col1">/var</td><td class="col2">8G</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">/dev/sysvg/opt</td><td class="col1">/opt</td><td class="col2">6G</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">/dev/sysvg/home</td><td class="col1">/home</td><td class="col2">1G</td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">/dev/sysvg/tmp</td><td class="col1">/tmp</td><td class="col2">2G</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [952-1157] --><ul>
+<li class="level1"><div class="li"> Continue with the installation  [ De-select unwanted softwares like CIFS client etc. Do not select any desktop environment on servers. ]</div>
+</li>
+<li class="level1"><div class="li"> Create the basic unix groups<pre class="code">groupadd -g 8086 taunix
+groupadd -g 8089 ovteam
+groupadd -g 8090 sapteam
+groupadd -g 8091 dbateam
+groupadd -g 8092 stgteam</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create these users<pre class="code">useradd -g taunix -d /home/x1kxk630 -c &quot;Kapilraj Koroth&quot; -m -u 8086 x1kxk630
+useradd -g taunix -d /home/x1rzb826 -c &quot;Robert Bieniek&quot; -m -u 4207 x1rzb826
+useradd -g taunix -d /home/x1cxs952 -c &quot;Chris Stachowiak&quot; -m -u 4255 x1cxs952
+useradd -g ovteam -d /home/sxp8856 -c &quot;Stephen Payne&quot; -m -u 4247 sxp8856
+useradd -g ovteam -d /home/txb0389 -c &quot;Todd Busniewski&quot; -m -u 4246 txb0389</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat" class="wikilink1" title="unix:postinstallationsteps-redhat">Perform the post install activities</a></div>
+</li>
+</ul>
+
+</div>

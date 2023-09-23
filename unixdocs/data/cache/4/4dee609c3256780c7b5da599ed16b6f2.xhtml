@@ -1,0 +1,39 @@
+
+<h1 class="sectionedit1" id="aix_mksysb_recovery_notes">AIX mksysb recovery notes</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> If recovering to a new architecture/hardware locations using mksysb, do not recover devices during NIM recovery.</div>
+</li>
+<li class="level2"><div class="li"> Check timezone, date and time after the build process and set them as it used to be. <pre class="code"> date </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure etherchannel<pre class="code"> smitty etherchannel </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure TCP/IP <pre class="code"> smitty tcpip </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check the hostname and set it as what it used to be. <pre class="code"> hostname </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure AIO and set parameters as what it used to be (refer sysdoc) Check ioo for aix Version 6. <pre class="code"> lsattr -El aio0 </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure powerpath devices ( if any ) <pre class="code"> powermt config </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Import non data Volume groups <pre class="code"> importvg -y &lt;vg_name&gt; &lt;diskname&gt; or &lt;pvid&gt; </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Enable Powerpath for rootvg <pre class="code"> pprootdev on </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check and make sure the boot list is valid <pre class="code"> bootlist -m normal -o </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart the system <pre class="code">shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>

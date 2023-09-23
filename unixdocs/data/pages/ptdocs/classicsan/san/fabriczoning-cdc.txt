@@ -1,0 +1,134 @@
+====== CDC SAN zoning guidelines / instructions ======
+
+  * CDC / MP or in future will be known as DR1VE has SAN fabric constructed by using Cisco MDS switches.
+
+^SwitchName                      ^Description        ^
+|uscdcxswisan001.federalmogul.com|Switch1 or Fabric A|
+|uscdcxswisan002.federalmogul.com|Switch2 or Fabric B|
+
+  * This documentation covers CDC zoning to Pure storage arrays.
+
+
+===== Zoning Procedure =====
+
+==== Switch 1 ====
+
+  - Login to ''uscdcxswisan001.federalmogul.com''<code>ssh youraccount@uscdcxswisan001.federalmogul.com</code>
+  - Check if mentioned WWN are logged in to switch<code> show flogi database | grep XX:XX:XX:XX:XX:XX:XX:XX</code>
+  - Check if no one else is doing anything on this switch<code>sh users</code>If there is anyone else, ping that person that you are willing to work on zoning on this given switch.
+  - Backup the running configuration<code>copy running-config scp://sanmontr@10.32.6.150/prod/storageteam/sanmontr/cisco_fabric_backups/cdc/uscdcxswisan001-MMDDYYYY</code>
+  - Create device alias
+    - Move to configuration terminal<code>config t</code>
+    - Change the context to device alias database<code>device-alias database</code>
+    - Create device aliases
+      - Device alias naming standard is as follows<code>hostname_1      The first HBA of a given host.
+hostname_2      The second HBA of a given host.
+and so on for 3rd and 4th if applicable.
+hostname_1A     On NPIV & LPM enabled AIX lpars, each HBA has a hidden WWN that is only used when an lpar migrates from one frame to another 1A, 2A stands for those.</code>
+      - Define device alias<code>device-alias name hostname_1   pwwn XX:XX:XX:XX:XX:XX:XX:XX</code>OR<code>device-alias name hostname_1A  pwwn XX:XX:XX:XX:XX:XX:XX:XX</code>
+      - Once all device aliases have been entered, commit them<code>device-alias commit</code>
+  - At CDC, the current standard is to zone even and odd systems for load balancing ( in the order you get them ) to different pairs of Pure targets
+    - PURE50
+       - Odd<code>PUREM50R2_bc92_CDCVILNS013-CT0-FC1
+PUREM50R2_bc92_CDCVILNS013-CT1-FC1</code>
+       - Odd zoning would look like this<code>zone name hostname_1_1A_PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC1 vsan 101
+member device-alias hostname_1 
+member device-alias hostname_1A
+member device-alias PUREM50R2_bc92_CDCVILNS013-CT0-FC1
+member device-alias PUREM50R2_bc92_CDCVILNS013-CT1-FC1</code>
+       - Even<code>PUREM50R2_bc92_CDCVILNS013-CT0-FC3
+PUREM50R2_bc92_CDCVILNS013-CT1-FC3</code>
+       - Even zoning would look like this<code>zone name hostname_1_1A_PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC3 vsan 101
+member device-alias hostname_1 
+member device-alias hostname_1A
+member device-alias PUREM50R2_bc92_CDCVILNS013-CT0-FC3
+member device-alias PUREM50R2_bc92_CDCVILNS013-CT1-FC3</code>
+    - PURE70
+        - Odd<code>PUREM70R2_9160_CDCVILNS015-CT0-FC0
+PUREM70R2_9160_CDCVILNS015-CT1-FC0</code>
+        - Odd zoning would look like this<code>zone name hostname_1_1A_PUREM70R2_9160_CDCVILNS015-CT0-CT1-FC0 vsan 101
+member device-alias hostname_1 
+member device-alias hostname_1A
+member device-alias PUREM70R2_9160_CDCVILNS015-CT0-FC0
+member device-alias PUREM70R2_9160_CDCVILNS015-CT1-FC0</code>
+        - Even<code>PUREM70R2_9160_CDCVILNS015-CT0-FC2
+PUREM70R2_9160_CDCVILNS015-CT1-FC2</code>
+        - Even zoning would look like this<code>zone name hostname_1_1A_PUREM70R2_9160_CDCVILNS015-CT0-CT1-FC2 vsan 101
+member device-alias hostname_1
+member device-alias hostname_1A
+member device-alias PUREM70R2_9160_CDCVILNS015-CT0-FC2
+member device-alias PUREM70R2_9160_CDCVILNS015-CT1-FC2</code> 
+  - Once the zones have been defined, please add them to the zoneset for the correct VSAN
+    - Change context to the zoneset (Add only the zone that you want to bring to active zoneset)
+      -  PURE50 <code>zoneset name ZS_VSAN_101 vsan 101
+member hostname_1_1A_PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC3
+member hostname_1_1A_PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC1</code>
+      - PURE70 <code>zoneset name ZS_VSAN_101 vsan 101
+member hostname_1_1A_PUREM70R2_9160_CDCVILNS015-CT0-CT1-FC0
+member hostname_1_1A_PUREM70R2_9160_CDCVILNS015-CT0-CT1-FC2</code>
+  - Once done, activate the zoneset<code>zoneset activate name ZS_VSAN_101 vsan 101</code>
+  - Copy the running configuration to startup and commit the zone<code>zone commit vsan 101
+copy running-config startup-config</code>
+  - Exit from terminal<code>exit</code>
+
+
+==== Switch 2 ====
+
+  - Login to ''uscdcxswisan002.federalmogul.com''<code>ssh youraccount@uscdcxswisan002.federalmogul.com</code>
+  - Check if mentioned WWN are logged in to switch '' <code> flogi database | grep XX:XX:XX:XX:XX:XX:XX:XX </code>
+  - Check if no one else is doing anything on this switch<code>sh users</code>If there is anyone else, ping that person that you are willing to work on zoning on this given switch.
+  - Backup the running configuration<code>copy running-config scp://sanmontr@10.32.6.150/prod/storageteam/sanmontr/cisco_fabric_backups/cdc/uscdcxswisan002-MMDDYYYY</code>
+  - Create device alias
+    - Move to configuration terminal<code>config t</code>
+    - Change the context to device alias database<code>device-alias database</code>
+    - Create device aliases
+      - Device alias naming standard is as follows<code>hostname_1     The first HBA of a given host.
+hostname_2      The second HBA of a given host.
+and so on for 3rd and 4th if applicable.
+hostname_2A     On NPIV & LPM enabled AIX lpars, each HBA has a hidden WWN that is only used when an lpar migrates from one frame to another 1A, 2A stands for those.</code>
+      - Define device alias<code>device-alias name hostname_2   pwwn XX:XX:XX:XX:XX:XX:XX:XX</code>OR<code>device-alias name hostname_2A  pwwn XX:XX:XX:XX:XX:XX:XX:XX</code>
+      - Once all device aliases have been entered, commit them<code>device-alias commit</code>
+  - At CDC, the current standard is to zone even and odd systems for load balancing ( in the order you get them ) to different pairs of Pure targets
+    - PURE50 
+       - Odd<code>PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC0
+PUREM50R2_bc92_CDCVILNS013-CT1-FC0</code>
+       - Odd zoning would look like this<code>zone name hostname_2_2A_PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC0 vsan 102
+member device-alias hostname_2 
+member device-alias hostname_2A
+member device-alias PUREM50R2_bc92_CDCVILNS013-CT0-FC0
+member device-alias PUREM50R2_bc92_CDCVILNS013-CT1-FC0</code>
+      - Even<code>PUREM50R2_bc92_CDCVILNS013-CT0-FC4
+PUREM50R2_bc92_CDCVILNS013-CT1-FC4</code>
+      - Even zoning would look like this<code>zone name hostname_2_2A_PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC4 vsan 102
+member device-alias hostname_2
+member device-alias hostname_2A
+member device-alias PUREM50R2_bc92_CDCVILNS013-CT0-FC2
+member device-alias PUREM50R2_bc92_CDCVILNS013-CT1-FC2</code>
+    - PURE70
+        - Odd<code>PUREM70R2_9160_CDCVILNS015-CT0-FC1
+PUREM70R2_9160_CDCVILNS015-CT1-FC1</code>
+        - Odd zoning would look like this<code>zone name hostname_2_2A_PUREM70R2_9160_CDCVILNS015-CT0-CT1-FC1 vsan 102
+member device-alias hostname_2 
+member device-alias hostname_2A
+member device-alias PUREM70R2_9160_CDCVILNS015-CT0-FC1
+member device-alias PUREM70R2_9160_CDCVILNS015-CT1-FC1</code>
+        - Even<code>PUREM70R2_9160_CDCVILNS015-CT0-FC3
+PUREM70R2_9160_CDCVILNS015-CT1-FC3</code>
+        - Even zoning would look like this<code>zone name hostname_2_2A_PUREM70R2_9160_CDCVILNS015-CT0-CT1-FC3 vsan 102
+member device-alias hostname_2
+member device-alias hostname_2A
+member device-alias PUREM70R2_9160_CDCVILNS015-CT0-FC3
+member device-alias PUREM70R2_9160_CDCVILNS015-CT1-FC3</code>
+  - Once the zones have been defined, please add them to the zoneset for the correct VSAN
+    - Change context to the zoneset (Add only the zone that you want to bring to active zoneset)
+      - PURE50 <code>zoneset name ZS_VSAN_102 vsan 102
+member hostname_2_2A_PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC0
+member hostname_2_2A_PUREM50R2_bc92_CDCVILNS013-CT0-CT1-FC2</code> 
+      - PURE70 <code>zoneset name ZS_VSAN_102 vsan 102
+member hostname_2_2A_PUREM70R2_9160_CDCVILNS015-CT0-CT1-FC3
+member hostname_2_2A_PUREM70R2_9160_CDCVILNS015-CT0-CT1-FC1</code>
+  - Once done, activate the zoneset<code>zoneset activate name ZS_VSAN_102 vsan 102</code>
+  - Copy the running configuration to startup and commit the zone<code>zone commit vsan 102
+copy running-config startup-config</code>
+  - Exit from terminal<code>exit</code>
+

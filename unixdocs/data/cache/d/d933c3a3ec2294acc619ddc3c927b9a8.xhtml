@@ -1,0 +1,65 @@
+
+<h1 class="sectionedit1" id="what_to_do_when_you_are_dealing_with_a_hung_or_corrupted_redhat_system">What to do when you are dealing with a hung or corrupted Redhat system</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Document the data if you are able to login to the server. I would say, copy the logs to NIM server, because, the filesystems may not remount.</div>
+<ol>
+<li class="level2"><div class="li"> Login to NIM server and execute these commands<pre class="code">export failed_server=&quot;&lt;hostname_of_the_server&gt;&quot;
+mkdir logs.${failed_server}
+cd logs.${failed_server}
+
+ssh ${failed_server} &quot;df -k    &quot; &gt; dfk.out
+ssh ${failed_server} &quot;mount    &quot; &gt; mount.out
+ssh ${failed_server} &quot;sudo pvs &quot; &gt; pvs.out
+ssh ${failed_server} &quot;sudo vgs &quot; &gt; vgs.out
+ssh ${failed_server} &quot;sudo lvs &quot; &gt; lvs.out
+
+sudo scp ${failed_server}:/var/log/messages messages.${failed_server}</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Run “sosreport”</div>
+<ol>
+<li class="level2"><div class="li"> If /var/tmp is writable, run sosreport with <code>–batch</code> option<pre class="code">ssh ${failed_server} &quot;sudo /usr/sbin/sosreport --batch&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If /var/tmp is not writable, run sosreport with <code>–tmpdir</code> pointing to a writable directory. e.g.<pre class="code">ssh ${failed_server} &quot;sudo /usr/sbin/sosreport --batch --tmp-dir /home/x1kxk630&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Copy the sosreport to NIM server<pre class="code">sudo scp ${failed_server}:/var/tmp/sosreport-*.tar.xz .</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Collect core-dump</div>
+<ol>
+<li class="level2"><div class="li"> If the server responds to “ssh”</div>
+<ol>
+<li class="level3"><div class="li"> Enable dump<pre class="code">ssh ${failed_server} &quot;echo 1 | sudo tee /proc/sys/kernel/sysrq&quot;</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Start dump and reboot<pre class="code">ssh ${failed_server} &quot;echo c | sudo tee /proc/sysrq-trigger&quot;</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> If the system reboots well, collect the coredump from <code>/var/crash</code> directory.</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> If the server does not respond to “ssh”</div>
+<ol>
+<li class="level3"><div class="li"> Use VMWARE to take a snapshot of the VM. Select <code>snapshot virtual machines memory</code></div>
+</li>
+<li class="level3"><div class="li"> Work with Wintel team to take the snapshot file ”.vmsn”, download it to a place that has space.</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Once we have all the files, open a case with Vendor and give them all the logs and crash dump we created / collected.</div>
+</li>
+<li class="level1"><div class="li"> Ask the operating system or hypervisor Vendor on what to do with the snapshot. There is a tool that can be used to extract some information from the snapshot<code><a href="https://labs.vmware.com/flings/vmss2core" class="urlextern" title="https://labs.vmware.com/flings/vmss2core"  rel="nofollow">https://labs.vmware.com/flings/vmss2core</a></code></div>
+</li>
+</ol>
+
+</div>

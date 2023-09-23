@@ -1,0 +1,15 @@
+=====  Update Firmware on Blades =====
+
+  - [[http://www-933.ibm.com/support/fixcentral/systemx/quickorder?parent=ibm~BladeCenterJS22&product=ibm/systemx/7998&&platform=All&function=all&source=fc |Blade Firmware Download URL]]
+
+  * Copy firmware from repository on pgnmsv01 to the blade
+    * JS22<code>sudo rsync -avv /prod/images/Microcode/Blade_Center/Blade_Bios/JS22/latest/ <servername>:/tmp/firmware/</code>
+    * PS700<code>sudo rsync -avv /prod/images/Microcode/Blade_Center/Blade_Bios/PS700/latest/ <servername>:/tmp/firmware/</code>
+  * On the server find out the firmware filename<code>sudo ls -ld /tmp/firmware/*.img</code>**Make a note of the filename**
+  * To Upgrade Firmware on Blades running VIOS logon as padmin.<code>ldfware -file /tmp/firmware/<filename></code>
+  * To upgrade firmware on non VIOS Blades<code>sudo /usr/lpp/diagnostics/bin/update_flash -f /tmp/firmware/<filename></code>
+  * Follow the system prompts to continue and complete the firmware installation 
+  * Cleanup the temporary files<code>sudo rm -rf /tmp/firmware</code>
+  
+
+

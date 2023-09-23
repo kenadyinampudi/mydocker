@@ -1,0 +1,43 @@
+====== Install AIX ======
+
+  - Setup NIM resources using one of the following ways
+    - [[unix:freshinstallation|A new installation using rte]]
+    - [[unix:cloninginstall|Build the system using a mksysb of an existing server]]
+    - [[unix:upgrademksysb|Upgrade a mksysb of an existing system on to a new server]]
+  - Add the server to the console database **/prod/images/etc/unix_sys_console**<code>sudo vi /prod/images/etc/unix_sys_console</code>
+    - A regular lpar on a P Series frame<code>pgnmsv01:lpar-ibm:taitc051:pgnmsv01-9111-520-SN10B4F8D:pgnmsv01:2:hscroot</code>
+    - A lpar on a blade IVM VIO Server<code>dagi3p01:blade-ibm-vio:taprvio9:4:padmin</code>
+  - Open up a console session to the new server. On pgnmsv01 as root<code>getconsole peerap09</code>
+  - If cloning an existing server, please enter a blackout for the server whose mksysb is being used.
+    - [[http://taitc212/cgi-bin/blackout/login.cgi|Use this URL to enter a new one]]
+    - [[http://taitc212/cgi-bin/active_bo.cgi|Use this URL to verify the blackout]]
+  - Power on the server to SMS. 
+    * HMC ----> Regular lpars
+      * This code will get the command if we have made proper entries in the console database<code>grep ^xagi3p02: /prod/images/etc/unix_sys_console | awk -F: '{print "ssh "$7"@"$3"\n""chsysstate -r lpar -o on -b sms -m "$4,"-n",$1,"-f",$1}'</code>
+    * IVM ----> IVM guests
+      * This code will get the command if we have made proper entries in the console database<code>grep ^panmsv02: /prod/images/etc/unix_sys_console | awk -F: '{print "ssh "$5"@"$3"\n""chsysstate -r lpar -o on -b sms -n",$1}'</code>
+    * Bladecentre ----> Physical blades
+      * This code will help you with CLI<code>grep ^taprvio4: /prod/images/etc/unix_sys_console | awk -F: '{print "ssh "$5"@"$3"\n""power -on -T blade["$4"]"}'</code>
+  - At the console, setup Remote IPL as normal and perform a network boot.
+  - Wait for the installation to complete
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>cfgmgr</code>
+  - Configure etherchannels if necessary.
+    - LPARs on Blade VIO/IVM servers [ The public network is configured on an etherchannel over the HEAs, The backup network is from the virtualized ethernet - VIOS ]
+      - Create an ether-channel using the HEA adapters<code>mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names='ent0'  -a backup_adapter='ent1'  -a netaddr='10.32.50.1'  -a num_retries='2' -a retry_time='2'
+
+ent3 Available</code>Make a note of the 'ent' number. Run cfgmgr<code>cfgmgr</code>Also make a note of the ent that is virtualized, the following steps will use these names.
+    - LPARs on a frame that has virtualized Ethernet. [ Both the public and the backup networks are virtualized - in most cases - Use your judgement if an exception was made ]. Make a note of the ent number that has the correct VLAN ids ( Use HMC GUI or CLI ),the following steps will use these names.
+  - Configure IP address.
+    - Configure the front end IP address on the correct interface<code>/usr/sbin/mktcpip -h <hostname> -a a.b.c.d -m 255.255.255.0 -i enX -g a.b.c.1 -A no -s</code>
+    - Configure the backend(bck) IP address<code>chdev -l enY -a netaddr=e.f.g.h -a netmask=255.255.255.0 -a state=up</code>
+  - [[unix:setupsshkeysfornim|Setup SSH keys for NIM server]] 
+  - [[unix:postinstallationsteps|Proceed to post install steps]]

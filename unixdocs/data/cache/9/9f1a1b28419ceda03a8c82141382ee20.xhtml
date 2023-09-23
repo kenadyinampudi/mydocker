@@ -1,0 +1,35 @@
+
+<h1 class="sectionedit1" id="steps_to_create_mirrored_filesystems_on_hardned_ci_environment">Steps to create mirrored filesystems on hardned CI environment</h1>
+<div class="level1">
+
+<p>
+Mission critical SAP systems like PTA, TA2 and H1P, The Central instance system is mirrored between two storage arrays when possible. The procedure outlines steps to create a new filesystem on such systems.
+</p>
+<ol>
+<li class="level1"><div class="li"> Find out we have two disks from two distinct storage arrays<code> Use lsvpcfg.sh </code> and <code>lsvg -p </code> commands to figure out the details.</div>
+</li>
+<li class="level1"><div class="li"> In this document , we assume the following<pre class="code">hdisk46 -- Free disk from VMAX
+hdisk50 -- Free disk on V9000</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a logical volume on any one of the disk<pre class="code">sudo mklv -t jfs2 nfsvg01 400 hdisk46</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a filesystems on it<pre class="code">sudo crfs -vjfs2 -d lvXX -A yes -t no -m /abc/def/ghi</pre>
+
+<p>
+Where lvXX is the logical volume that was created in the previous script
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount it and change permissions as necessary<pre class="code"></pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the filesystems to <code>/root/cluster</code> mount99.sh and umount99.sh on both “ap99” and “ap98” systems</div>
+</li>
+<li class="level1"><div class="li"> Mirror the logical volume<pre class="code">sudo mklvcopy -k lvXX 2 hdisk50</pre>
+</div>
+</li>
+</ol>
+
+</div>

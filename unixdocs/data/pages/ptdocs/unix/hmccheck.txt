@@ -1,0 +1,24 @@
+=====To check the HMC IP address for an IBM chassis =====
+
+
+Do this: 
+  - Ensure all cables are plugged correctly. 
+  - Find the server's FSP IPs: 
+  Cycle the operator panel to #2 - where you see 3 characters A/B/C/D and M/N and T/P 
+  Leave A/B/C/D where it is. 
+  Select M 
+  Select T 
+  Now you can cycle to 30 
+  when you press enter you get 3xxx 
+  cycle and get 3000 and press enter 
+  your IP will be shown. Maybe it is 192.168.3.147 
+
+  - Open HMC terminal console 
+  - ping the IP you have for the FSP. 
+  - Cycle the operator panel to 3001 to get FSP2's IP address (HMC2 port on the back of the server). 
+  - ping this IP 
+  - IF you get a ping, then make a connection:\\
+<code>mksysconn -r sys --ip 192.168.3.147 --passwd abc123 </code>
+  - IF you do not get a ping, then get NETWORKS team to help you establish communication. Their router probably is not configured correctly. 
+  - You can also confirm your network ports configuration on the HMC with ""netstat -rn"" 
+

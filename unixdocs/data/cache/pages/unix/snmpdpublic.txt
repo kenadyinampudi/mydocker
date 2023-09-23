@@ -1,0 +1,25 @@
+====== Turn off SNMPD public and private ======
+
+  - How to test this. 
+  - Login to pablsv02 which has the snmpwalk executable
+    - Version 1<code>[x1kxk630@pablsv02 ~]$ snmpwalk -v1 -c public panmsv02
+End of MIB</code>This would mean the public string on ON.
+    - Version 2<code>[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+End of MIB</code>This would mean the public string on ON.
+
+=== Turning off public and private ===
+
+== AIX ==
+
+  - Turning off the Version 2 public string<code>sudo vi /etc/snmpdv3.conf</code>And comment out this line<code>COMMUNITY public    public     noAuthNoPriv 0.0.0.0    0.0.0.0         -</code>
+    - Or simply copy the file from pgnmsv01<code>sudo scp pgnmsv01:/prod/images/etc/snmpdv3.conf /etc/</code>
+    - And restart snmpd ( refresh is not enough )<code>stopsrc -s snmpd ; sleep 1 ; startsrc -s snmpd</code>
+  - Try the snmpwalk command from pablsv02 once more and you will see it does not respond anymore.<code>[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+Timeout: No Response from panmsv02</code>
+
+== Solaris 8 ==
+
+  - Turning off the Version 2 public string<code>sudo vi /etc/snmpdv3.conf</code>And comment out this line<code>COMMUNITY public    public     noAuthNoPriv 0.0.0.0    0.0.0.0         -</code>And restart snmpd ( refresh is not enough )<code>stopsrc -s snmpd ; sleep 1 ; startsrc -s snmpd</code>
+  - Try the snmpwalk command from pablsv02 once more and you will see it does not respond anymore.<code>[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+Timeout: No Response from panmsv02</code>
+

@@ -1,0 +1,237 @@
+
+<h1 class="sectionedit1" id="install_asm_on_redhat">Install ASM on Redhat</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Install ASM on Redhat" [1-37] -->
+<h2 class="sectionedit2" id="storage_filesystems">Storage / Filesystems</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create ORACLE_HOME for grid software<pre class="code">sudo lvcreate -n oracleasmapp -L20G vg_kapiltest1
+sudo mkfs -t ext4 /dev/vg_kapiltest1/oracleasmapp
+echo &quot;/dev/vg_kapiltest1/oracleasmapp     /oracle/ASM/app    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+sudo mkdir -p /oracle/ASM/app
+sudo mount /oracle/ASM/app</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Storage / Filesystems" [38-398] -->
+<h2 class="sectionedit3" id="users_groups">Users / Groups</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create user oracle<pre class="code">sudo groupadd dba</pre>
+<pre class="code">sudo useradd -G dba oracle</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a .profile for grid<pre class="code">sudo vi /home/oracle/.grid_env</pre>
+
+<p>
+Put this
+</p>
+<pre class="code">unalias cp &gt; /dev/null 2&gt;&amp;1
+unset DISPLAY
+TMP=&quot;/var/tmp&quot;
+TMPDIR=&quot;/var/tmp&quot;
+TEMP=&quot;/var/tmp&quot;
+ORACLE_HOSTNAME=&quot;$(uname -n)&quot;
+ORACLE_BASE=&quot;/oracle/ASM/app/base&quot;
+ORACLE_HOME=&quot;/oracle/ASM/app/1120&quot;
+ORACLE_SID=&quot;+ASM&quot;
+PATH=/bin:/usr/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/sbin:${ORACLE_HOME}:/bin
+export PATH TMP TMPDIR ORACLE_HOSTNAME ORACLE_HOME ORACLE_BASE ORACLE_SID TEMP</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change permissions / ownerships<pre class="code">sudo chown oracle:dba /oracle/ASM/app</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Users / Groups" [399-1073] -->
+<h2 class="sectionedit4" id="pre-requisits">Pre-requisits</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Install Oracle Virtual Box drivers<pre class="code">sudo yum install kernel-devel binutils compat-libcap1 compat-libstdc++ compat-libstdc++ gcc \
+gcc-c++ glibc glibc.i686 glibc-devel glibc-devel.i686 ksh libgcc libgcc.i686 libstdc++ libstdc++.i686 libstdc++-devel \
+libstdc++-devel.i686 libaio libaio.i686 libaio-devel libaio-devel.i686 libXext libXext.i686 libXtst libXtst.i686 libX11 \
+libX11.i686 libXau libXau.i686 libxcb libxcb.i686 libXi libXi.i686 make sysstat unixODBC unixODBC-devel tigervnc-server \
+xterm compat-libstdc++-33.i686 compat-libstdc++-33.x86_64 elfutils-libelf-devel unixODBC.i686 unixODBC-devel.i686 \
+ksh mksh -y</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount Virtual Box media from Devices → Once done <pre class="code">sudo mkdir /cdrom
+sudo mount /dev/cdrom /cdrom
+cd /cdrom
+sudo ./VBoxLinuxAdditions.run --nox11</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot to take effect<pre class="code">sudo init 6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now mount the media folder that contains isos<pre class="code">sudo mkdir -p /mnt/media
+sudo mount -t boxfs media /mnt/media</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unzip the grid installation to /oracle/stage/grid<pre class="code">sudo mkdir -p /oracle/stage
+sudo chown -R oracle:dba /oracle/stage
+sudo su - oracle
+cd /oracle/stage
+unzip /mnt/media/linux.x64_11gR2_grid.zip</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure kernel parameters<pre class="code">sudo vi /etc/sysctl.conf</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">#Customized for Oracle installation
+fs.file-max = 6815744
+kernel.sem = 250 32000 100 128
+kernel.shmmni = 4096
+kernel.shmall = 1073741824
+kernel.shmmax = 4398046511104
+net.core.rmem_default = 262144
+net.core.rmem_max = 4194304
+net.core.wmem_default = 262144
+net.core.wmem_max = 1048576
+fs.aio-max-nr = 1048576
+net.ipv4.ip_local_port_range = 9000 65500</pre>
+<pre class="code">sudo sysctl -p</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure limits<pre class="code">sudo vi /etc/security/limits.conf</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">#Customized for Oracle installation
+oracle   soft   nofile    2048
+oracle   hard   nofile    65536
+oracle   soft   nproc    2047
+oracle   hard   nproc    16384
+oracle   soft   stack    10240
+oracle   hard   stack    32768</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change SELINUX to permissive<pre class="code">sudo vi /etc/selinux/config</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">SELINUX=permissive</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable iptables<pre class="code">sudo service iptables stop
+sudo chkconfig iptables off</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create udev rules to set permissions for ASM disks<pre class="code">sudo vi /etc/udev/rules.d/99-oracle-asmdevices.rules</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">KERNEL==&quot;sdc&quot;, BUS==&quot;scsi&quot;, NAME=&quot;asm-disk1&quot;, OWNER=&quot;oracle&quot;, GROUP=&quot;dba&quot;, MODE=&quot;0660&quot;
+KERNEL==&quot;sdd&quot;, BUS==&quot;scsi&quot;, NAME=&quot;asm-disk2&quot;, OWNER=&quot;oracle&quot;, GROUP=&quot;dba&quot;, MODE=&quot;0660&quot;
+KERNEL==&quot;sde&quot;, BUS==&quot;scsi&quot;, NAME=&quot;asm-disk3&quot;, OWNER=&quot;oracle&quot;, GROUP=&quot;dba&quot;, MODE=&quot;0660&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot<pre class="code">sudo init 6</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Pre-requisits" [1074-3696] -->
+<h2 class="sectionedit5" id="run_the_installer">Run the installer</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login as oracle<pre class="code">sudo su - oracle
+. ./.grid_env
+cd /oracle/stage/grid</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run vncserver<pre class="code">vncserver :1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Open xterm on VNC client and run installer<pre class="code">./runInstaller</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the root.sh when prompted.</div>
+</li>
+<li class="level1"><div class="li"> Create the sqlnet.ora file for ASM<pre class="code">vi $ORACLE_HOME/network/admin/sqlnet.ora</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">NAMES.DIRECTORY_PATH= (TNSNAMES)
+NAMES.DEFAULT_DOMAIN = WORLD
+NAMES.DEFAULT_ZONE = WORLD
+ADR_BASE = /oracle/ASM/app/base</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the listener.ora file for ASM<pre class="code">vi $ORACLE_HOME/network/admin/listener.ora</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">LISTENER_ASM =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC_ASM))
+      (ADDRESS = (PROTOCOL = TCP)(HOST = kapiltest1)(PORT = 1526))
+    )
+  )
+
+SID_LIST_LISTENER_ASM =
+  (SID_LIST =
+    (SID_DESC =
+      (GLOBAL_DBNAME = +ASM.WORLD)
+      (ORACLE_HOME = /oracle/ASM/app/1120)
+      (SID_NAME = +ASM)
+    )
+  )
+
+ADMIN_RESTRICTIONS_LISTENER_ASM = ON
+ADR_BASE_LISTENER_ASM = /oracle/ASM/app/base
+ENABLE_GLOBAL_DYNAMIC_ENDPOINT_LISTENER_ASM=ON</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the tnsnames.ora file for ASM<pre class="code">vi $ORACLE_HOME/network/admin/tnsnames.ora</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">+ASM.WORLD =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = kapiltest1)(PORT = 1526))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SID = +ASM)
+    )
+  )</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the init.ora file for ASM<pre class="code">vi $ORACLE_HOME/dbs/init+ASM.ora</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">*.asm_diskstring=&#039;/dev/asm*&#039;
+*.asm_power_limit=1
+*.diagnostic_dest=&#039;/oracle/ASM/app&#039;
+*.instance_type=&#039;asm&#039;
+*.large_pool_size=150M
+*.memory_target=0
+*.processes=300
+*.remote_login_passwordfile=&#039;EXCLUSIVE&#039;
+*.sga_max_size=400M
+*.sga_target=400M
+*.trace_enabled=FALSE</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Run the installer" [3697-] -->

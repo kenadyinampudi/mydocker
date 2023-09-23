@@ -1,0 +1,187 @@
+====== Convert 1Gig links to 10Gig - Power8 VIOS - taprvio100-101-110-111-130-131 ======
+
+===== taprvio100/101 =====
+
+==== taprvio100 ====
+
+  - Check the current status<code>sudo entstat -d ent6 | grep ^"Physical Port Speed"</code>
+  - Put the SEA on standby<code>sudo chdev -l ent6 -a ha_mode=standby</code>
+  - Check pings to hosts from pgnmsv01<code>for host in pgsnap01 qgsnap01 saerdb01 pgscdb01 pocafasv03
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   fi
+done</code>
+  - Ask network team to make changes<code>FEX109 - Port 3 
+FEX109 - Port 4</code>
+  - Check the current Speed and aggregation status<code>sudo entstat -d ent6 | grep -e^"Physical Port Speed" -e ^"Aggregation status:"</code>
+  - Change SEA mode back to shared<code>sudo chdev -l ent6 -a ha_mode=sharing</code>
+  - Check pings to hosts from pgnmsv01<code>for host in pgsnap01 qgsnap01 saerdb01 pgscdb01 pocafasv03
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+  - ** Take a 30 minutes break **
+
+==== taprvio101 ====
+
+  - Check the current status<code>sudo entstat -d ent6 | grep ^"Physical Port Speed"</code>
+  - Put the SEA on standby<code>sudo chdev -l ent6 -a ha_mode=standby</code>
+  - Check pings to hosts from pgnmsv01<code>for host in pgsnap01 qgsnap01 saerdb01 pgscdb01 pocafasv03
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   fi
+done</code>
+  - Ask network team to make changes<code>FEX110 - Port 3 
+FEX110 - Port 4</code>
+  - Check the current Speed and aggregation status<code>sudo entstat -d ent6 | grep -e^"Physical Port Speed" -e ^"Aggregation status:"</code>
+  - Change SEA mode back to shared<code>sudo chdev -l ent6 -a ha_mode=sharing</code>
+  - Check pings to hosts from pgnmsv01<code>for host in pgsnap01 qgsnap01 saerdb01 pgscdb01 pocafasv03
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+
+
+
+===== taprvio110/111 =====
+
+==== taprvio110 ====
+
+  - Check the current status<code>sudo entstat -d ent6 | grep ^"Physical Port Speed"</code>
+  - Put the SEA on standby<code>sudo chdev -l ent6 -a ha_mode=standby</code>
+  - Check pings to hosts from pgnmsv01<code>for host in peerap98 tnqa3d01 pgdmr055 pgsnap02 qaap3p01 tgdvetl1 dgbcdb01 qgbcdb01
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+  - Ask network team to make changes<code>FEX109 - Port 5 
+FEX109 - Port 6</code>
+  - Check the current Speed and aggregation status<code>sudo entstat -d ent6 | grep -e^"Physical Port Speed" -e ^"Aggregation status:"</code>
+  - Change SEA mode back to shared<code>sudo chdev -l ent6 -a ha_mode=sharing</code>
+  - Check pings to hosts from pgnmsv01<code>for host in peerap98 tnqa3d01 pgdmr055 pgsnap02 qaap3p01 tgdvetl1 dgbcdb01 qgbcdb01
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+
+  - ** Take a 30 minutes break **
+
+==== taprvio111 ====
+
+  - Check the current status<code>sudo entstat -d ent6 | grep ^"Physical Port Speed"</code>
+  - Put the SEA on standby<code>sudo chdev -l ent6 -a ha_mode=standby</code>
+  - Check pings to hosts from pgnmsv01<code>for host in peerap98 tnqa3d01 pgdmr055 pgsnap02 qaap3p01 tgdvetl1 dgbcdb01 qgbcdb01
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+  - Ask network team to make changes<code>FEX110 - Port 5 
+FEX110 - Port 6</code>
+  - Check the current Speed and aggregation status<code>sudo entstat -d ent6 | grep -e^"Physical Port Speed" -e ^"Aggregation status:"</code>
+  - Change SEA mode back to shared<code>sudo chdev -l ent6 -a ha_mode=sharing</code>
+  - Check pings to hosts from pgnmsv01<code>for host in peerap98 tnqa3d01 pgdmr055 pgsnap02 qaap3p01 tgdvetl1 dgbcdb01 qgbcdb01
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+
+
+===== taprvio130/131 =====
+
+==== taprvio130 ====
+
+  - Check the current status<code>sudo entstat -d ent6 | grep ^"Physical Port Speed"</code>
+  - Put the SEA on standby<code>sudo chdev -l ent6 -a ha_mode=standby</code>
+  - Check pings to hosts from pgnmsv01<code>for host in taitc103 xsggwdb1 pgasdb01 pgjbdb01 tgpretl1 tedv2d03 pocafasv04 pafoap01 pgbcdb99
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+  - Ask network team to make changes<code>FEX109 - Port 25 
+FEX109 - Port 26</code>
+  - Check the current Speed and aggregation status<code>sudo entstat -d ent6 | grep -e^"Physical Port Speed" -e ^"Aggregation status:"</code>
+  - Change SEA mode back to shared<code>sudo chdev -l ent6 -a ha_mode=sharing</code>
+  - Check pings to hosts from pgnmsv01<code>for host in taitc103 xsggwdb1 pgasdb01 pgjbdb01 tgpretl1 tedv2d03 pocafasv04 pafoap01 pgbcdb99
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+
+  - ** Take a 30 minutes break **
+
+==== taprvio131 ====
+
+  - Check the current status<code>sudo entstat -d ent6 | grep ^"Physical Port Speed"</code>
+  - Put the SEA on standby<code>sudo chdev -l ent6 -a ha_mode=standby</code>
+  - Check pings to hosts from pgnmsv01<code>for host in taitc103 xsggwdb1 pgasdb01 pgjbdb01 tgpretl1 tedv2d03 pocafasv04 pafoap01 pgbcdb99
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>
+  - Ask network team to make changes<code>FEX110 - Port 25 
+FEX110 - Port 26</code>
+  - Check the current Speed and aggregation status<code>sudo entstat -d ent6 | grep -e^"Physical Port Speed" -e ^"Aggregation status:"</code>
+  - Change SEA mode back to shared<code>sudo chdev -l ent6 -a ha_mode=sharing</code>
+  - Check pings to hosts from pgnmsv01<code>for host in taitc103 xsggwdb1 pgasdb01 pgjbdb01 tgpretl1 tedv2d03 pocafasv04 pafoap01 pgbcdb99
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   else
+      ssh ${host} ls -ld /tmp      
+   fi
+done</code>

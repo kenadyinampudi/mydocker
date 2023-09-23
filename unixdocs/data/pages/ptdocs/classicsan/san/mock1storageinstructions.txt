@@ -1,0 +1,107 @@
+====== Mock 1 storage tasks ======
+
+  - If time permits take a snapshot of Static and new install systems as well<code>qgsnap01
+qehrap01
+qgjbdb01
+tnqa3d01
+tsqa1d01
+qgrmdb01
+qaap3p01
+dgasdb01</code>
+  - Take another snapshot on the source of live systems just incase. Take two snapshots, one stays local and the other replicated.
+
+===== Mock 1 - Scope Live systems =====
+
+** AIX **
+
+^Legacy Tenneco^Location^Leg Tenneco Storage Array^DRiV         ^DRiV Storage Array^Notes                                                        ^
+|qaerdb01      |CDC     |taprpur001               |qcdcftaaxdb01|cdcvilns015       |                                                             |
+|tedv2d01      |CDC     |taprpur001               |qcdcit0axdb01|cdcvilns015       |                                                             |
+|qggtdb01      |CDC     |taprpur001               |qcdcqgtaxdb01|cdcvilns015       |                                                             |
+|qgimdb01      |CDC     |taprpur001               |qcdcqimaxdb01|cdcvilns015       |                                                             |
+|qgsndb01      |CDC     |taprpur001               |qcdcqsnaxdb01|cdcvilns015       |                                                             |
+|tsqa1d01      |CDC     |taprpur001               |qcdcqsraxdb01|cdcvilns015       |In New install mode now but will be changed to live next time|
+|qgaidb01      |CDC     |taprpur001               |qcdcqaiaxdb01|cdcvilns015       |                                                             |
+|qggpdb01      |CDC     |taprpur001               |qcdcpltaxdb01|cdcvilns013       |                                                             |
+|pgdmr057      |CDC     |taprpur001               |qcdcccsaxdb01|cdcvilns013       |                                                             |
+|qehrdb01      |INX     |inxpm20v1                |qcdch1taxdb01|cdcvilns015       |                                                             |
+
+
+** Wintel **
+
+^Tenneco Server^Tenneco Location^Tenneco Storage Array^Tenneco ESX Cluster^Tenneco Datastore ^Tenneco LUN       ^DRiV server       ^DRiV Storage Array^DRiV ESX Cluster^DRiV Datastore^Notes             ^
+|taitc298      |INX             |INXPM20V1            |Interxion          |vmwares_009_mock1 |vmwares_009_mock1 |                  |                  |                |              |Removed from scope|
+|taitc299      |CDC             |taprpur001           |NON-PROD-MS1       |non_prod_ms1_mock1|non_prod_ms1_mock1|                  |                  |                |              |Removed from scope|
+|taitc269      |CDC             |taprpur001           |NON-PROD-MS1       |non_prod_ms1_mock1|non_prod_ms1_mock1|Cdcusms074        |cdcvilns015       |Non-Prod-MS2    |              |                  |
+
+
+  - The plan is to have a dummy host definition and connect them to respective protection groups. These are small, and the scope is changing on a daily basis. Need further follow up
+
+
+===== Mock 1 - T(-) activity =====
+
+  - Login to pgunap01, Connect to the target array
+    - CDC/MP-cdcvilns013<code>export SSH2PURE="ssh kapil.koroth@cdcvilns013.fmmotorparts.com"</code>
+    - CDC/MP-cdcvilns015<code>export SSH2PURE="ssh kapil.koroth@cdcvilns015.fmmotorparts.com"</code> 
+  - Export a variable to list the DRiV server's volumes<code>export drivsrv="hostname"</code>
+  - Disconnect the volumes
+    - Get a list<code>${SSH2PURE} purevol list | grep "^${drivsrv}_" > ${drivsrv}.luns</code>
+    - Disconnect the volumes except boot disks<code>vollist=$(grep -v 138G ${drivsrv}.luns | awk '{print $1}' | tr "\n" " ")
+${SSH2PURE} purevol disconnect --host ${drivsrv} ${vollist}</code>
+    - Rename and destroy the volumes except boot disks<code>for volume in $(grep -v 138G ${drivsrv}.luns | awk '{print $1}' )
+do
+   newname=$(echo ${volume} | sed "s;$;_deleted;g")
+   ${SSH2PURE} purevol rename  ${volume} ${newname}
+   ${SSH2PURE} purevol destroy ${newname}
+done</code>
+
+===== Mock 1 - T(0) activity =====
+
+==== Snapshots ====
+
+  - Wait for all Live servers in bundles are stopped at source
+  - Connect to the respective array and take a local snapshot and replicate
+    - Store hosts in a variable **Remember to include mock1-vmwares** to the host list. It contains the VMWARE LUNs in scope.
+      - CDC<code>export cdc_hosts="qaerdb01,tedv2d01,qggtdb01,qgimdb01,qgsndb01,tsqa1d01,qgaidb01,qggpdb01,pgdmr057,mock1-vmware"</code>
+      - INX<code>export inx_hosts="qehrdb01,mock1-vmware"</code>
+    - Snapshots at Interxion
+      - Connect to INX array<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@inxpm20v1"</code>
+      - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist ${inx_hosts} --targetlist cdcvilns015 mock1-may2-inx-aix</code>
+      - Allow snapshots on cdcvilns015<code>export SSH2PURE="ssh kapil.koroth@cdcvilns015.fmmotorparts.com"</code>Then<code>${SSH2PURE} purepgroup allow INXPM20V1:mock1-may2-inx-aix</code>
+      - Take a snapshot and replicate<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@inxpm20v1"</code>Then<code>${SSH2PURE} purepgroup snap --replicate --suffix Mock1DoNotDelete mock1-may2-inx-aix</code>
+    - Snapshots at CDC/PTT
+      - Connect to CDC array<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+      - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist ${cdc_hosts} --targetlist cdcvilns015 mock1-may2-cdc-aix</code>
+      - Allow snapshots on cdcvilns015<code>export SSH2PURE="ssh kapil.koroth@cdcvilns015.fmmotorparts.com"</code>Then<code>${SSH2PURE} purepgroup allow taprpur001:mock1-may2-cdc-aix</code>
+      - Take a snapshot and replicate<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>Then<code>${SSH2PURE} purepgroup snap --replicate --suffix Mock1DoNotDelete mock1-may2-cdc-aix</code>
+
+==== Provision ====
+
+  - Connect to the respective array and provision storage
+    - Login to pgunap01 and define this function<code>function copy_and_provision_snapshot {
+export source_host=${1}
+export target_host=${2}
+
+ser_no=200
+
+volumes=""
+
+for snapshot in $(grep "${source_host}_" snapshots.mp | grep -v 138G | awk '{print $1}' )
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${target_host}_${ser_no}
+   volumes="${volumes} ${target_host}_${ser_no}"
+   ser_no=$(echo "${ser_no} + 1 " | bc )
+done
+
+${SSH2PURE} purevol connect --host ${target_host} ${volumes}
+}</code>
+    - Interxion systems
+      - Connect to cdcvilns015<code>export SSH2PURE="ssh kapil.koroth@cdcvilns015.fmmotorparts.com"</code>
+      - Store all snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist INXPM20V1:mock1-may2-inx-aix.Mock1DoNotDelete > snapshots.mp</code>
+      - Provision storage<code>copy_and_provision_snapshot host1 host2 ....</code>
+    - CDC systems
+      - Connect to cdcvilns015<code>export SSH2PURE="ssh kapil.koroth@cdcvilns015.fmmotorparts.com"</code>
+      - Store all snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist taprpur001:mock1-may2-cdc-aix.Mock1DoNotDelete > snapshots.mp</code>
+      - Provision storage<code>copy_and_provision_snapshot host1 host2 ....</code>
+    - Wintel systems
+      - Need further follow up

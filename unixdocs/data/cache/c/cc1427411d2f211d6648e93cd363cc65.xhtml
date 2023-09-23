@@ -1,0 +1,387 @@
+
+<h1 class="sectionedit1" id="taprvio20_21">taprvio20/21</h1>
+<div class="level1">
+
+<p>
+<strong> Monitor the guests </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Open a ping monitoring from taitc118<pre class="code">while true
+do
+   echo &quot;Testing ping at $(date) &quot;
+   for host in paap3p01 paarap01 peerap99 tepr2e01
+   do
+      ping -c1 ${host} &gt; /dev/null 2&gt;&amp;1
+      [[ ${?} -eq 0 ]] &amp;&amp; echo &quot;Good  ::  ${host} pings &quot; || echo &quot;Bad   ::  ${host} does not ping&quot;
+   done
+   sleep 20
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Monitor the syslog on pglgsv01<pre class="code">sudo tail -f &quot;/prod/unixlog/errpt/errptreadable.log&quot; | grep -v taryb</pre>
+
+<p>
+ # Rybnik servers constantly produce error messages.
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> Upgrade activities </strong>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "taprvio20/21" [2-574] -->
+<h3 class="sectionedit2" id="taprvio20">taprvio20</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Take a snapshot of disk allocation<pre class="code">sudo lsdiskcfg &gt; lsdiskcfg.out.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmirror rootvg and run alt_disk_copy<pre class="code">sudo unmirrorvg rootvg hdisk1
+sudo bosboot -ad /dev/hdisk0
+sudo alt_disk_copy -B -d hdisk1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmap all devices from taprvio20<pre class="code">grep vhost lsdiskcfg.out.1 | awk -F: &#039;{print &quot;rmvdev -vdev &quot;$1}&#039;</pre>
+
+<p>
+Execute the resulting command as &#039;padmin&#039; user.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check all the guest&#039;s for disk access.<pre class="code">for host in paap3p01 paarap01 peerap99 tepr2e01
+do
+   ssh ${host} /usr/local/scripts/chkdsk
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove device files from taprvio20<pre class="code">for dev in $(lspv | grep hdiskpower | awk &#039;{print $1}&#039; )
+do
+   sudo powermt remove dev=${dev}
+   sudo rmdev -dl ${dev}
+done</pre>
+
+<p>
+Remove devices from ODM
+</p>
+<pre class="code">for dev in $( lsdev -Ccdisk | grep EMC | awk &#039;{print $1}&#039; )
+do
+   sudo rmdev -dl ${dev}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove Powerpath and ODM filesets<pre class="code">sudo installp -u EMC.Symmetrix.aix.rte EMC.Symmetrix.fcp.rte EMC.Symmetrix.iscsi.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMCpower.base EMCpower.encryption EMCpower.mpx</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot taprvio20<pre class="code">shutdown -restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install ODM on taprvio20<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc
+sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMC.Symmetrix.fcp.rte</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove MPIO generic device files and run cfgmgr<pre class="code">lsdev -Ccdisk | grep MPIO | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+
+<p>
+Now run cfgmgr
+</p>
+<pre class="code">sudo cfgmgr -v</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Powerpath<pre class="code">sudo installp -acX -d /mnt/emc/PowerPath/5.5-P04 EMCpower.base EMCpower.encryption EMCpower.migration_enabler EMCpower.mpx</pre>
+
+<p>
+Configure powerpath
+</p>
+<pre class="code">sudo powermt config</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot taprvio20</div>
+</li>
+<li class="level1"><div class="li"> Implement the ODM fix on taprvio20. </div>
+<ol>
+<li class="level2"><div class="li"> Reserve_lock<pre class="code">for dev in $(sudo odmget -q &quot;attribute = reserve_lock&quot; PdAt | grep uniquetype | sort -u | egrep -v &quot;rwoptical|iscsi|cdrom&quot; | awk &#039;{print $NF}&#039; | sed &quot;s;\&quot;;;g&quot;)
+do
+echo &quot;Changing ${dev} &quot;
+sudo odmchange -o PdAt -q &quot;attribute = reserve_lock and uniquetype like ${dev}&quot; &lt;&lt;EOF
+PdAt:
+        deflt = &quot;no&quot;
+EOF
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Reserve_policy<pre class="code">for dev in $(sudo odmget -q &quot;attribute = reserve_policy&quot; PdAt | grep -p &quot;/fcp&quot;| grep uniquetype | sort -u | egrep -v &quot;rwoptical|iscsi|cdrom&quot; | awk &#039;{print $NF}&#039; | sed &quot;s;\&quot;;;g&quot;)
+do
+echo &quot;Changing ${dev} &quot;
+sudo odmchange -o PdAt -q &quot;attribute = reserve_policy and uniquetype like ${dev}&quot; &lt;&lt;EOF
+PdAt:
+        deflt = &quot;no_reserve&quot;
+EOF
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove all EMC device files from taprvio20</div>
+<ol>
+<li class="level2"><div class="li"> hdiskpower devices<pre class="code">for dev in $(lspv | grep hdiskpower | awk &#039;{print $1}&#039; )
+do
+   sudo powermt remove dev=${dev}
+   sudo rmdev -dl ${dev}
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> hdisks<pre class="code">for dev in $( lsdev -Ccdisk | grep EMC | awk &#039;{print $1}&#039; )
+do
+   sudo rmdev -dl ${dev}
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Run cfgmgr<pre class="code">sudo cfgmgr -v</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check reserve_lock / reserve_policy attribute on all devices<pre class="code">for dev in $(lsdev -Ccdisk | egrep &quot;EMC|Power&quot; | awk &#039;{print $1}&#039; )
+do
+   lsattr -El ${dev} -a reserve_lock
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Map the devices back to vhosts.<pre class="code">for vhost in $(grep vhost lsdiskcfg.out.1 | awk -F: &#039;{print $5}&#039; | sort -u)
+do
+   &gt; ${vhost}.map.cmds
+   grep -w ${vhost} lsdiskcfg.out.1 | awk -F: &#039;{print 6}&#039; &gt; ${vhost}.pvids
+   for disk in $(lspv | grep -wf ${vhost}.pvids | awk &#039;{print $1}&#039; )
+   do
+      echo &quot;mkvdev -vdev ${disk} -vadapter ${vhost}&quot; &gt;&gt; ${vhost}.map.cmds
+   done
+done</pre>
+
+<p>
+Execute the commands prepared in &#039;vhost*.map.cmds&#039; as padmin user.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable paths on all guests<pre class="code">for host in paap3p01 paarap01 peerap99 tepr2e01
+do
+   ssh ${host} /usr/local/scripts/enablempiopaths
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check all paths on guests<pre class="code">for host in paap3p01 paarap01 peerap99 tepr2e01
+do
+   ssh ${host} lspath
+done</pre>
+
+<p>
+If you see failed paths, Login to each host, and follow this fix
+</p>
+<pre class="code">sudo rmdev -dl vscsiX -R</pre>
+
+<p>
+Run cfgmgr
+</p>
+<pre class="code">sudo cfgmgr</pre>
+
+<p>
+Repeat the test
+</p>
+<pre class="code">for host in paap3p01 paarap01 peerap99 tepr2e01
+do
+   ssh ${host} lspath
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Look at the ping monitor and path monitor and make sure all look good.</div>
+</li>
+<li class="level1"><div class="li"> Remirror rootvg<pre class="code">sudo alt_disk_install -X alt_rootvg
+sudo extendvg rootvg hdisk1
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdisk0
+sudo bosboot -ad /dev/hdisk1
+sudo bootlist -m normal hdisk0 hdisk1</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "taprvio20" [575-4936] -->
+<h3 class="sectionedit3" id="taprvio21">taprvio21</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Take a snapshot of disk allocation<pre class="code">sudo lsdiskcfg &gt; lsdiskcfg.out.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmirror rootvg and run alt_disk_copy<pre class="code">sudo unmirrorvg rootvg hdisk1
+sudo bosboot -ad /dev/hdisk0
+sudo alt_disk_copy -B -d hdisk1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmap all devices from taprvio21<pre class="code">grep vhost lsdiskcfg.out.1 | awk -F: &#039;{print &quot;rmvdev -vdev &quot;$1}&#039;</pre>
+
+<p>
+Execute the resulting command as &#039;padmin&#039; user.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check all the guest&#039;s for disk access.<pre class="code">for host in paap3p01 paarap01 peerap99 tepr2e01
+do
+   ssh ${host} /usr/local/scripts/chkdsk
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove device files from taprvio21<pre class="code">for dev in $(lspv | grep hdiskpower | awk &#039;{print $1}&#039; )
+do
+   sudo powermt remove dev=${dev}
+   sudo rmdev -dl ${dev}
+done</pre>
+
+<p>
+Remove devices from ODM
+</p>
+<pre class="code">for dev in $( lsdev -Ccdisk | grep EMC | awk &#039;{print $1}&#039; )
+do
+   sudo rmdev -dl ${dev}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove Powerpath and ODM filesets<pre class="code">sudo installp -u EMC.Symmetrix.aix.rte EMC.Symmetrix.fcp.rte EMC.Symmetrix.iscsi.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMCpower.base EMCpower.encryption EMCpower.mpx</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot taprvio21<pre class="code">shutdown -restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install ODM on taprvio21<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc
+sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMC.Symmetrix.fcp.rte</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove MPIO generic device files and run cfgmgr<pre class="code">lsdev -Ccdisk | grep MPIO | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+
+<p>
+Now run cfgmgr
+</p>
+<pre class="code">sudo cfgmgr -v</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Powerpath<pre class="code">sudo installp -acX -d /mnt/emc/PowerPath/5.5-P04 EMCpower.base EMCpower.encryption EMCpower.migration_enabler EMCpower.mpx</pre>
+
+<p>
+Configure powerpath
+</p>
+<pre class="code">sudo powermt config</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot taprvio21</div>
+</li>
+<li class="level1"><div class="li"> Implement the ODM fix on taprvio21</div>
+<ol>
+<li class="level2"><div class="li"> Reserve_lock<pre class="code">for dev in $(sudo odmget -q &quot;attribute = reserve_lock&quot; PdAt | grep uniquetype | sort -u | egrep -v &quot;rwoptical|iscsi|cdrom&quot; | awk &#039;{print $NF}&#039; | sed &quot;s;\&quot;;;g&quot;)
+do
+echo &quot;Changing ${dev} &quot;
+sudo odmchange -o PdAt -q &quot;attribute = reserve_lock and uniquetype like ${dev}&quot; &lt;&lt;EOF
+PdAt:
+        deflt = &quot;no&quot;
+EOF
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Reserve_policy<pre class="code">for dev in $(sudo odmget -q &quot;attribute = reserve_policy&quot; PdAt | grep -p &quot;/fcp&quot;| grep uniquetype | sort -u | egrep -v &quot;rwoptical|iscsi|cdrom&quot; | awk &#039;{print $NF}&#039; | sed &quot;s;\&quot;;;g&quot;)
+do
+echo &quot;Changing ${dev} &quot;
+sudo odmchange -o PdAt -q &quot;attribute = reserve_policy and uniquetype like ${dev}&quot; &lt;&lt;EOF
+PdAt:
+        deflt = &quot;no_reserve&quot;
+EOF
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove all EMC device files from taprvio21</div>
+<ol>
+<li class="level2"><div class="li"> hdiskpower devices<pre class="code">for dev in $(lspv | grep hdiskpower | awk &#039;{print $1}&#039; )
+do
+   sudo powermt remove dev=${dev}
+   sudo rmdev -dl ${dev}
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> hdisks<pre class="code">for dev in $( lsdev -Ccdisk | grep EMC | awk &#039;{print $1}&#039; )
+do
+   sudo rmdev -dl ${dev}
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Run cfgmgr<pre class="code">sudo cfgmgr -v</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check reserve_lock / reserve_policy attribute on all devices<pre class="code">for dev in $(lsdev -Ccdisk | egrep &quot;EMC|Power&quot; | awk &#039;{print $1}&#039; )
+do
+   lsattr -El ${dev} -a reserve_lock
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Map the devices back to vhosts.<pre class="code">for vhost in $(grep vhost lsdiskcfg.out.1 | awk -F: &#039;{print $5}&#039; | sort -u)
+do
+   &gt; ${vhost}.map.cmds
+   grep -w ${vhost} lsdiskcfg.out.1 | awk -F: &#039;{print 6}&#039; &gt; ${vhost}.pvids
+   for disk in $(lspv | grep -wf ${vhost}.pvids | awk &#039;{print $1}&#039; )
+   do
+      echo &quot;mkvdev -vdev ${disk} -vadapter ${vhost}&quot; &gt;&gt; ${vhost}.map.cmds
+   done
+done</pre>
+
+<p>
+Execute the commands prepared in &#039;vhost*.map.cmds&#039; as padmin user.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable paths on all guests<pre class="code">for host in paap3p01 paarap01 peerap99 tepr2e01
+do
+   ssh ${host} /usr/local/scripts/enablempiopaths
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check all paths on guests<pre class="code">for host in paap3p01 paarap01 peerap99 tepr2e01
+do
+   ssh ${host} lspath
+done</pre>
+
+<p>
+If you see failed paths, Login to each host, and follow this fix
+</p>
+<pre class="code">sudo rmdev -dl vscsiX -R</pre>
+
+<p>
+Run cfgmgr
+</p>
+<pre class="code">sudo cfgmgr</pre>
+
+<p>
+Repeat the test
+</p>
+<pre class="code">for host in paap3p01 paarap01 peerap99 tepr2e01
+do
+   ssh ${host} lspath
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Look at the ping monitor and path monitor and make sure all look good.</div>
+</li>
+<li class="level1"><div class="li"> Remirror rootvg<pre class="code">sudo alt_disk_install -X alt_rootvg
+sudo extendvg rootvg hdisk1
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdisk0
+sudo bosboot -ad /dev/hdisk1
+sudo bootlist -m normal hdisk0 hdisk1</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "taprvio21" [4937-] -->

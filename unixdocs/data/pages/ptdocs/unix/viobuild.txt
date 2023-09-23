@@ -1,0 +1,35 @@
+====== Building a new VIO server ======
+For storage, make sure the server is wired to the SAN.\\ 
+For the initial build, only zone one path to one controller.\\
+Wire the server to the switches.\\ 
+Make sure each networking card is dual pathed.\\  
+Configure the switch ports to be trunked but not port-channelled yet.\\  
+Go to the VIO console window.\\  
+ - Option 2. Setup Remote IPL (Initial Program Load)
+ - Choose the port
+ - 1. IPv4 - Address Format 123.231.111.222
+ - 1. BOOTP
+ - 1. IP Parameters
+	- 1. Client IP Address (This LPAR IP)
+	- 2. Server IP Address (The NIM server)
+	- 3. Gateway IP Address (Gateway for the LPAR)
+	- 4. Subnet Mask (Mask for the LPAR)
+ - 2. Adapter Configuration
+	- 3. Protocol
+		- 2. IEE802.3 - Select this for VLAN tagging
+ - 4. Advanced Setup: BOOTP
+	- 5. VLAN ID - Enter the VLAN ID which matches the Client IP Address.  Make sure the VLAN is allowed on the trunk
+ - 3. Ping Test	
+  - 1. Run the test!
+  
+At this stage, if you don't have a good ping, doublecheck your settings first.
+	Typos are the most common issue
+Next, try the other ports
+	There may be a miswire where the incorrect port is wired
+Finally, have the networking team check their settings
+	This is the least likely these days, as all the ports are now configured the same.
+\\
+After the VIO code is installed, install the proper multipathing software in the oem_setup_env.\\
+Doublecheck that <code>bosboot -v</code> completes successfully.\\
+Add the rest of the zones.  Multipath the fiber channel adapters to the multiple controllers\\
+Once everything is all zoned, reboot the VIO, make sure it's back up to running, then check multipathing to make sure the disks are all resolved into one disk.\\

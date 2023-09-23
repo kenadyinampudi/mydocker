@@ -1,0 +1,47 @@
+
+<h1 class="sectionedit1" id="cleanup_usr_sap_filesystem">Cleanup &quot;/usr/sap&quot; filesystem</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to the server to be patched, check if ”/usr/sap” is a seperate filesystem or not.</div>
+<ol>
+<li class="level2"><div class="li"> This is not<pre class="code">df -k /usr/sap
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/hd2          4194304    968940   77%    60829    20% /usr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> This is<pre class="code">df -k /usr/sap
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/fslv24       2097152   1945868    8%      360     1% /usr/sap</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <strong>If it is not a separate filesystem, continue. If not - go back - we are done.</strong></div>
+</li>
+<li class="level1"><div class="li"> Unmount all filesystems mounted on ”/usr/sap”<pre class="code">df -k | grep &quot;/usr/sap&quot; | awk &#039;{print $NF}&#039; | sort -r | xargs -n1 echo sudo umount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename ”/usr/sap” to ”/usr/sap.OLD”<pre class="code">sudo mv /usr/sap /usr/sap.OLD</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Pick a volume group for /usr/sap.</div>
+<ol>
+<li class="level2"><div class="li"> If binvg01, binvg or appvg exists, pick that. If not, pick datavg01. In any case, <strong>do share this information with the Unix team and obtain an ok from all</strong></div>
+</li>
+<li class="level2"><div class="li"> Create a ”/usr/sap” filesystem and mount it<pre class="code">sudo crfs -vjfs2 -g VGNAME -m /usr/sap -A yes -t no -a size=1G</pre>
+<pre class="code">sudo mount /usr/sap</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Restore data to ”/usr/sap”<pre class="code">sudo rsync -avv /usr/sap.OLD/ /usr/sap/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount all the filesystems<pre class="code">grep -p &quot;/usr/sap&quot; /etc/filesystems | grep : | sed &quot;s;:;;g&quot; | sort | xargs -n1 sudo mount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Modify /etc/filesystems and change the order of /usr/sap filesystem. /usr/sap needs to be right after all rootvg filesystems are mounted.</div>
+</li>
+</ol>
+
+</div>

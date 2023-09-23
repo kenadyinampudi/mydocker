@@ -1,0 +1,51 @@
+====== Linux(RedHat) infrastructure at Tenneco ======
+
+Tenneco at this time has some Linux systems. Some are Redhat, some CentOS, some are Ubuntu and SuSE.
+
+==== Directions from upper management ====
+
+** REDHAT IS THE TENNECO STANDARD FOR LINUX **
+
+==== Considerations while deploying Linux ====
+
+  * Only supported on Virtualized hardware. No new physical Linux deployement at this time.
+    * Exceptions are the build servers itself.
+  * No I/O intensive workloads to be deployed ( VMWare )
+  * Typically the application can be on Linux while the databases will run on AIX.
+
+==== Warning ====
+
+  * Never ever install locally compiled / internet downloaded RPMs w/o consulting Unix team. We have a local redhat repository which has all RPMs that Redhat provides, if you need anything out of ordinary, please consult Unix team.
+====== Redhat Infrastructure ======
+
+    * Redhat installations are performed using kickstart.
+    * We do not use PXE booting for obvious reasons (DMZ, the need for boot helpers in every subnet, complexity).
+    * The redhat server gets defined on the Build server.
+    * The build server creates a ISO , the client boots from it, pulls the configuration from build server.
+  
+=== Implementation ===
+
+{{:unix:linux:redhat_build_infrastructure.png?768|}}
+
+
+
+
+
+
+=== Backup ===
+
+  - OS backups ( Today OS backups are performed by VMWare snapshots - There is a inhouse project to make a mksysb equivalent undergoing)
+  - Data backups (Netbackup agent/agentless)
+
+=== Recovery ===
+
+  - OS recovery (VMWare snapshots backed up on netbackup)
+  - Data recovery ( Netbackup )
+
+=== Patching ===
+
+  * Will be done via the Local repository that serves patches.
+
+=== Support ===
+
+  * Redhat Support is paid for.

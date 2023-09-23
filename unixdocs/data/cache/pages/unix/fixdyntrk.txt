@@ -1,0 +1,45 @@
+====== Fix dynamic tracking and failover policy on AIX (MPIO and Powerpath) ======
+
+**MPIO**
+
+  - Check the flags<code>lspath | awk '{print $NF}' | sort -u |grep fscsi| xargs -n1 lsattr -a dyntrk -a fc_err_recov -El</code>
+  - Fix them<code>for adapter in $(lspath | awk '{print $NF}' | sort -u |grep fscsi)
+do
+   ADAPTER=$(echo ${adapter} | sed "s;fscsi;fcs;g")
+   for pv in $(lsdev -Ccdisk | egrep -v "sas|scsi" | awk '{print $1}')
+   do
+      sudo rmpath -l ${pv} -p ${adapter}
+   done
+   hwloc=$(lscfg | grep -w ${adapter} | awk '{print $3}')
+   sfwdev=$(lscfg | grep ${hwloc} | grep sfw |  awk '{print $2}')
+   if [ "hello${sfwdev}" != "hello" ]
+   then
+      sudo rmdev -dl ${sfwdev}
+   fi
+   sudo chdev -l ${adapter} -a fc_err_recov=fast_fail -a dyntrk=yes
+   sudo cfgmgr -l ${ADAPTER}
+   lspath
+   echo "Done fixing ${adapter} - press a key to continue"
+   read
+done</code>
+  - Check the flags<code>lspath | awk '{print $NF}' | sort -u |grep fscsi| xargs -n1 lsattr -a dyntrk -a fc_err_recov -El</code>
+  - Check the flags again<code>lspath | awk '{print $NF}' | sort -u |grep fscsi| xargs -n1 lsattr -a dyntrk -a fc_err_recov -El</code>
+
+**Powerpath based systems**
+
+  - Check the parameters<code>lscfg | grep fscsi | awk '{print $2}' | xargs -n1 lsattr -a dyntrk -a fc_err_recov -El</code>
+  - Check the powerpath adapters<code>sudo powermt display</code>
+  - On each fiber HBA, do the following 
+    - Take one path offline<code>sudo powermt remove hba=0</code>
+    - Find the hardware path<code>lscfg | grep fscsi0</code>
+    - List all devices (minus hdiskpower) to a file<code>lscfg | grep U7311.D20.10078AB-P1-C07-T1| grep -v power| egrep "hdisk|sfw|fcnet" | sort | awk '{print $2}' > devices</code>
+    - Change their status to "Defined"<code>for dev in $(cat devices)
+do
+   sudo rmdev -l ${dev}
+done</code>
+    - Change the parameter<code>sudo chdev -l fscsi0 -a fc_err_recov=fast_fail -a dyntrk=yes</code>
+    - Change the devices status to "Available"<code>for dev in $(cat devices | sort -r)
+do
+   sudo mkdev -l ${dev}
+done</code>
+    - Reconfigure powerpath<code>sudo powermt config</code>

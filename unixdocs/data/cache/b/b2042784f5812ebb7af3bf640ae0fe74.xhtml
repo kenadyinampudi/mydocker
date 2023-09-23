@@ -1,0 +1,218 @@
+
+<h1 class="sectionedit1" id="migration_with_nimadmnetwork_install_manager_alternate_disk_migration">Migration with NIMADM: Network Install Manager Alternate Disk Migration</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Migration with NIMADM: Network Install Manager Alternate Disk Migration" [1-87] -->
+<h2 class="sectionedit2" id="i_prerequisites_on_nim_master">I. Prerequisites on NIM master</h2>
+<div class="level2">
+
+<p>
+<strong>NIM master level</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> NIM master must be at the same or higher level than the level being migrated to.</div>
+</li>
+<li class="level2"><div class="li"> To check the <abbr title="Operating System">OS</abbr> level of the NIM master: `oslevel -s`</div>
+<ul>
+<li class="level3"><div class="li"> <em>Example NIM servers: sfldmiax241, cdcvilax118</em></div>
+</li>
+</ul>
+</li>
+</ol>
+
+<p>
+<strong>lpp_source and SPOT level</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> The selected lpp_source and SPOT must match the AIX level to which you are migrating.</div>
+</li>
+<li class="level2"><div class="li"> To check existing lpp_source and SPOT: `lsnim|grep 7200`</div>
+<ul>
+<li class="level3"><div class="li"> <em>Example lpp_source: 7200-05-00-2037, Example SPOT: 7200-05-00-2037_spot</em></div>
+</li>
+</ul>
+</li>
+</ol>
+
+<p>
+<strong>bos.alt_disk_install.rte</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> The same level of bos.alt_disk_install.rte must be installed in the rootvg (on NIM master) and in the SPOT which will be used.</div>
+</li>
+<li class="level2"><div class="li"> Check on NIM master: `lslpp -l bos.alt_disk_install.rte`</div>
+</li>
+<li class="level2"><div class="li"> Check in SPOT: `nim -o lslpp -a filesets=&#039;bos.alt_disk_install.rte&#039; &lt;spot_name&gt;`</div>
+<ul>
+<li class="level4"><div class="li"> <em>Example output on NIM master</em></div>
+</li>
+</ul>
+</li>
+</ol>
+<pre class="code">    Fileset                      Level  State      Description
+    ----------------------------------------------------------------------------
+    Path: /usr/lib/objrepos
+    bos.alt_disk_install.rte   7.2.5.0  APPLIED    Alternate Disk Installation Runtime
+    Path: /etc/objrepos
+    bos.alt_disk_install.rte   7.2.5.0  APPLIED    Alternate Disk Installation Runtime</pre>
+
+<p>
+<strong>Free space in vg</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> In the VG, which will be used for migration, there must be enough free space (about the size of the client&#039;s rootvg). </div>
+<ul>
+<li class="level4"><div class="li"> Example: VG name: nimadmvg, Free PPs: 1598 (204544 megabytes)</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> To check free space in the VG: `lsvg nimadmvg | grep -i free`</div>
+</li>
+</ol>
+
+<p>
+<strong>rsh</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Check if the client can be reached via RSH from NIM master: `rsh &lt;client_name&gt; date`</div>
+</li>
+<li class="level2"><div class="li"> Ensure the necessary entries in ~/.rhosts file in both client and NIM.</div>
+</li>
+<li class="level2"><div class="li"> Format of ~/.rhosts:</div>
+</li>
+</ol>
+<pre class="code">      sap2212 root      </pre>
+
+</div>
+<!-- EDIT2 SECTION "I. Prerequisites on NIM master" [88-1910] -->
+<h2 class="sectionedit3" id="ii_prerequisites_on_nim_client">II. Prerequisites on NIM client</h2>
+<div class="level2">
+
+<p>
+<strong>Hardware and firmware levels</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> The client&#039;s hardware and software must be at the required level to support the level that is being migrated to.</div>
+</li>
+</ul>
+
+<p>
+<strong>Free disk</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> The client must have a free disk, large enough to clone rootvg.</div>
+</li>
+</ul>
+
+<p>
+<strong>NFS mount</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> NIM client must be able to perform NFS mounts and read/write operations.</div>
+</li>
+</ul>
+
+<p>
+<strong>multibos</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> The nimadm command is not supported with the multibos command when there is a bos_hd5 logical volume.</div>
+</li>
+</ul>
+
+<p>
+<strong>LV names</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> LV names must not be longer than 11 characters (because they will get an alt_ prefix during migration, and AIX limitation is 15 characters for an LV).</div>
+</li>
+</ul>
+
+<p>
+<strong>TCB (Trusted Computing Base)</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> If you use disk caching option (-j flag), it does not matter if TCB is turned on or off (usually it is not turned on).</div>
+</li>
+<li class="level2"><div class="li"> However, if you omit ”-j” flag (NFS read/write), TCB should be turned off. (TCB needs to access file metadata which is not visible over NFS).</div>
+</li>
+<li class="level2"><div class="li"> Command to check if TCB is enabled/disabled: `odmget -q attribute=TCB_STATE PdAt`</div>
+</li>
+</ul>
+
+<p>
+<strong>ncargs (Specifies the maximum allowable size of the ARG/ENV list when running exec() subroutines)</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Ensure ncargs value is at least 256: `lsattr -El sys0 -a ncargs` (chdev -l sys0 -a ncargs=&#039;256&#039;)</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "II. Prerequisites on NIM client" [1911-3183] -->
+<h2 class="sectionedit4" id="iii_preparation_on_nim_client">III. Preparation on NIM client</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li">   Create mksysb.</div>
+</li>
+<li class="level1"><div class="li">   Check filesets, commit: `lppchk -v`, `installp -s` (use `smitty commit` if needed).</div>
+</li>
+<li class="level1"><div class="li">   Run pre_migration script: `/usr/lpp/bos/pre_migration` (it will show you if anything must be corrected, output is in `/home/pre_migration…`).</div>
+</li>
+<li class="level1"><div class="li">   Save actual config (mounts, routes, filesystems, interfaces, `lsattr -El sys0`, `vmo -a`, `no -a`, `ioo -a`, …).</div>
+</li>
+<li class="level1"><div class="li">   Save some config files (/etc/motd, /etc/sendmail.cf, /etc/ssh…) to `/home` (these won&#039;t be overwritten and can be restored later).</div>
+<ul>
+<li class="level4"><div class="li"> <em>Example for <abbr title="Secure Shell">SSH</abbr> config: </em><pre class="code"># ssh -v dummyhost 2&gt;&amp;1 | grep &quot;Reading configuration&quot; (it will show the location of ssh_config: debug1: Reading configuration data /etc/ssh/ssh_config)
+# cp -pr &lt;path_to_ssh_dir&gt; /home/pre_migration.&lt;timestamp&gt;/ssh</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li">   Free up disk: unmirrorvg, reducevg, bosboot, bootlist.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "III. Preparation on NIM client" [3184-4083] -->
+<h2 class="sectionedit5" id="iv_migration_on_nim_master">IV. Migration (on NIM master)</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Run the following nimadm command<pre class="code">nimadm -j nimadmvg -c &quot;aix_client&quot; -s &quot;spot&quot; -l &quot;lpp_source&quot; -d &quot;hdisk*&quot; -Y
+
+`-j`: specifies VG on master which will be used for migration (filesystems will be created here and client&#039;s data is cached here via rsh).
+`-c`: client name
+`-s`: SPOT name
+`-l`: lpp_source name
+`-d`: hdisk name for the alternate root volume group (altinst_rootvg)
+`-Y`: agrees to the software license agreements for software that will be installed during the migration.
+
+Example:
+nimadm -j nimadmvg -l 7200-05-00-2037 -c sap2212 -s 7200-05-00-2037_spot -d hdisk2 -Y</pre>
+</div>
+</li>
+</ol>
+
+<p>
+- Migration logs can be found in `/var/adm/ras/alt_mig` directory. There will be 12 phases after that, and you will get back the prompt.
+Check if `alt_inst_rootvg` exists on the client and bootlist is set correctly.
+</p>
+
+</div>
+<!-- EDIT5 SECTION "IV. Migration (on NIM master)" [4084-4939] -->
+<h2 class="sectionedit6" id="v_post_migration_checks_on_the_client">V. Post migration checks on the client</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check filesets: `oslevel -s`, `lppchk -v`, `instfix -i | grep ML` (update/correct/commit other software/filesets if needed).</div>
+</li>
+<li class="level1"><div class="li"> Check config, config files: (`sys0`, `vmo`, tunables: `tuncheck -p -f /etc/tunables/nextboot`) (`maxuproc`: `lsattr -El sys0`, `chdev -l sys0 -a maxuproc=&lt;value&gt;`).</div>
+</li>
+<li class="level1"><div class="li"> Run post_migration script: `/usr/lpp/bos/post_migration` (it can run for a long time, 5-10 minutes).</div>
+</li>
+<li class="level1"><div class="li"> Others: mksysb, smtctl, rsh, rootvg mirror.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "V. Post migration checks on the client" [4940-] -->

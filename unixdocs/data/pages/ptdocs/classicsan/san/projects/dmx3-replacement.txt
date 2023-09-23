@@ -1,0 +1,47 @@
+====== DMX3 replacement ======
+
+  * The Symmetrix DMX3 storage array is going out of support. 
+  * This storage array will be replaced with two storage arrays, a VMAX (Tier 1) and a VNX (Tier 2)
+
+==== Plan as of today ====
+
+** VMAX **
+
+  * VMAX 10K with two engines.
+
+^No^Size^Type^RPM^RAID^Usable^
+|16|100G|EFD|N/A|RAID5(3+1)|1.2 T|
+|176|300G|FC|15 K|RAID1|26.4 T|
+|32|2T|SATA|7.2 K|RAID6 (6+2)|24 T|
+
+
+** VNX **
+
+  * VNX 5300
+  * 71.3 TB usable.
+
+^No^Size^Type^RPM^RAID^Usable^
+|42|600G|SAS|15 K|RAID5(4+1)|19.2 T|
+|50|2T|SAS| |RAID6 (6+2)|60T|
+
+
+** FAST Policies - VMAX **
+
+We may need to define the following FAST policies on the VMAX.
+
+^Workload^Policy^
+|Production Data|FAST Policy A |
+|Non-production Data|FAST Policy B |
+|BCV|FAST Policy C |
+|SAN Boot disks|FAST Policy C |
+|Paging spaces|FAST Policy C |
+
+** FAST Policies - VNX **
+
+We may need to define the following FAST policies on the VNX.
+
+^Workload^Policy^
+|Production Data|FAST Policy A |
+|Non-production Data|FAST Policy B |
+|SAN Boot disks|FAST Policy C |
+|Paging spaces|FAST Policy C |

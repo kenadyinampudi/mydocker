@@ -1,0 +1,344 @@
+
+<h2 class="sectionedit1" id="fta_refresh">FTA Refresh</h2>
+<div class="level2">
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">System ID  </th><th class="col1">Host</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">PTA    </td><td class="col1 leftalign">paerdb99   </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign">FTA    </td><td class="col1 leftalign">QAERDB01   </td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [25-87] -->
+<p>
+  - Shutdown FTA SAP and DB FTA on QAERDB01
+</p>
+<ol>
+<li class="level1"><div class="li"> Capture the current state</div>
+<ol>
+<li class="level2"><div class="li"> Disk map<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh</pre>
+
+<p>
+Output
+</p>
+<pre class="code">hdisk14:00fbaaea0b55768f: : :30872::None
+hdisk15:00fbaaea2798ad4e: : :20480::None
+hdisk132:00fbaaea8d34d234: : :18468::None
+hdisk135:00fbaaea8d34b5a5: : :2496::None
+hdisk136:00fbaaea8d34a003: : :2496::None
+hdisk137:00fbaaea8d34865a: : :2496::None
+hdisk138:00fbaaea8d3472cd: : :2496::None
+hdisk139:00fbaaea8d345e6a: : :2496::None
+hdisk140:00fbaaea8d344abc: : :2496::None
+hdisk141:00fbaaea8d3323cd: : :45312::None
+hdisk142:00fbaaea8d33e85f: : :7524::None
+hdisk144:00fbaaea8d33bb04: : :1380::None
+hdisk145:00fbaaea8d328d7c: : :2608::None
+hdisk146:00fbaaea8d33879b: : :30872::None
+hdisk147:00fbaaea8d337384: : :2608::None
+hdisk148:00fbaaea8d3360b8: : :2608::None
+hdisk149:00fbaaea8d334d89: : :3840::None
+hdisk151:00fbaaea8d32d527: : :197220::None
+hdisk153:00fbaaea8d32a666: : :3840::None
+hdisk156:00fbaaea8d32616f: : :768::None
+hdisk157:00fbaaea8d324c4a: : :1380::None
+hdisk158:00fbaaea8d323182: : :2608::None
+hdisk159:00fbaaea8d321c53: : :3840::None
+hdisk160:00fbaaea8d320548: : :7524::None
+hdisk161:00fbaaea8d31eda9: : :6296::None
+hdisk164:00fbaaea8d31ad07: : :1380::None
+hdisk165:00fbaaea920012e7: : :1048580::None
+hdisk166:00fbaaea9200126a: : :1048580::None
+hdisk167:00fbaaea920011f1: : :1048580::None
+hdisk168:00fbaaea92001175: : :1048580::None
+hdisk169:00fbaaea920010f9: : :1048580::None
+hdisk170:00fbaaea9200107d: : :1048580::None
+hdisk171:00fbaaea92001002: : :1048580::None
+hdisk172:00fbaaea92000f89: : :1048580::None
+hdisk173:00fbaaea92000ed1: : :1048580::None
+hdisk174:00fbaaea92000e55: : :1048580::None
+hdisk175:00fbaaea92000dda: : :1048580::None
+hdisk176:00fbaaea92000d5d: : :1048580::None
+hdisk177:00fbaaea92000ce3: : :1048580::None
+hdisk178:00fbaaea92000c67: : :1048580::None
+hdisk179:00fbaaea92000bec: : :1048580::None
+hdisk180:00fbaaea92000b6d: : :1048580::None
+hdisk181:00fbaaea92000af2: : :1048580::None
+hdisk194:00fbaaea92000a76: : :1048580::None
+hdisk195:00fbaaea920009fb: : :1048580::None
+hdisk196:00fbaaea9200097f: : :1048580::None
+hdisk197:00fbaaea92000906: : :1048580::None
+hdisk198:00fbaaea9200088a: : :1048580::None
+hdisk199:00fbaaea92000810: : :1048580::None
+hdisk200:00fbaaea92000795: : :1048580::None
+hdisk201:00fbaaea9200071a: : :1048580::None
+hdisk202:00fbaaea9200069c: : :1048580::None
+hdisk203:00fbaaea92000620: : :1048580::None
+hdisk204:00fbaaea920005a5: : :1048580::None
+hdisk205:00fbaaea9200052a: : :1048580::None
+hdisk206:00fbaaea920004b1: : :1048580::None
+hdisk207:00fbaaea92000435: : :1048456::None
+hdisk0:00ce6b85798e3efe:PURE-FLASH-A6EBA101800B4893:00283727:104448::binvg01
+hdisk1:00ce6b85798e3fad:PURE-FLASH-A6EBA101800B4893:00283728:104448::binvg01
+hdisk2:00ce6b85798e4052:PURE-FLASH-A6EBA101800B4893:00283729:104448::binvg01
+hdisk3:00ce6b85798e4104:PURE-FLASH-A6EBA101800B4893:0028372A:104448::binvg01
+hdisk4:00ce6b85798e41bb:PURE-FLASH-A6EBA101800B4893:0028372B:104448::binvg01
+hdisk5:00ce6b85798e427f:PURE-FLASH-A6EBA101800B4893:0028372C:104448::binvg01
+hdisk6:00fbaaeac236c87a:PURE-FLASH-A6EBA101800B4893:0028372D:104448::ftabinvg01
+hdisk7:00fbaaeac236c8f9:PURE-FLASH-A6EBA101800B4893:0028372E:104448::ftabinvg01
+hdisk8:00fbaaeac236c973:PURE-FLASH-A6EBA101800B4893:0028372F:104448::ftabinvg01
+hdisk9:00fbaaeac236c9f2:PURE-FLASH-A6EBA101800B4893:00283730:104448::ftabinvg01
+hdisk10:00fbaaeac236ca75:PURE-FLASH-A6EBA101800B4893:00283731:104448::ftabinvg01
+hdisk11:00fbaaeac236caef:PURE-FLASH-A6EBA101800B4893:00283732:104448::ftabinvg01
+hdisk12:00fbaaeac236cb6e:PURE-FLASH-A6EBA101800B4893:00283733:104448::ftabinvg01
+hdisk13:00fbaaeac236cbe8:PURE-FLASH-A6EBA101800B4893:00283734:104448::ftabinvg01
+hdisk20:00fbaaeac236cc62:PURE-FLASH-A6EBA101800B4893:00283735:104448::ftabinvg01
+hdisk21:00fbaaeac236ccdf:PURE-FLASH-A6EBA101800B4893:00283736:104448::ftabinvg01
+hdisk43:00ce6b85794be1bd:PURE-FLASH-A6EBA101800B4893:0008B3F1:141312::rootvg
+hdisk45:00fbaaeac236cd5c:PURE-FLASH-A6EBA101800B4893:00283737:104448::ftabinvg01
+hdisk46:00fbaaeac236cdd9:PURE-FLASH-A6EBA101800B4893:00283738:104448::ftabinvg01
+hdisk88:00cc49c7421d8c8b:PURE-FLASH-A6EBA101800B4893:00B8E478:34816::redovg01
+hdisk89:00cc49c7421d9148:PURE-FLASH-A6EBA101800B4893:00B8E479:34816::redovg01
+hdisk90:00cc49c73c29a6ac:PURE-FLASH-A6EBA101800B4893:00B8E47A:256000::datavg01
+hdisk91:00cc49c73c29a8b1:PURE-FLASH-A6EBA101800B4893:00B8E47B:256000::datavg01
+hdisk92:00cc49c73c29aa49:PURE-FLASH-A6EBA101800B4893:00B8E47C:256000::datavg01
+hdisk93:00cc49c73c29ac02:PURE-FLASH-A6EBA101800B4893:00B8E47D:256000::datavg01
+hdisk94:00cc49c73c29adda:PURE-FLASH-A6EBA101800B4893:00B8E47E:256000::datavg01
+hdisk95:00cc49c73c29af79:PURE-FLASH-A6EBA101800B4893:00B8E47F:256000::datavg01
+hdisk96:00cc49c73c29b116:PURE-FLASH-A6EBA101800B4893:00B8E480:256000::datavg01
+hdisk97:00cc49c73c29b2e7:PURE-FLASH-A6EBA101800B4893:00B8E481:256000::datavg01
+hdisk98:00cc49c73d64d9cc:PURE-FLASH-A6EBA101800B4893:00B8E482:256000::datavg02
+hdisk99:00cc49c73d64db44:PURE-FLASH-A6EBA101800B4893:00B8E483:256000::datavg02
+hdisk100:00cc49c73d64dcd4:PURE-FLASH-A6EBA101800B4893:00B8E484:256000::datavg02
+hdisk101:00cc49c73d64dec5:PURE-FLASH-A6EBA101800B4893:00B8E485:256000::datavg02
+hdisk102:00cc49c73d64e032:PURE-FLASH-A6EBA101800B4893:00B8E486:256000::datavg02
+hdisk103:00cc49c73d64e19e:PURE-FLASH-A6EBA101800B4893:00B8E487:256000::datavg02
+hdisk104:00cc49c73d64e322:PURE-FLASH-A6EBA101800B4893:00B8E488:256000::datavg02
+hdisk105:00cc49c73d64e4e0:PURE-FLASH-A6EBA101800B4893:00B8E489:256000::datavg02
+hdisk106:00cc49c73eab8b6e:PURE-FLASH-A6EBA101800B4893:00B8E48A:256000::datavg03
+hdisk107:00cc49c73eab8d5e:PURE-FLASH-A6EBA101800B4893:00B8E48B:256000::datavg03
+hdisk108:00cc49c73eab904f:PURE-FLASH-A6EBA101800B4893:00B8E48C:256000::datavg03
+hdisk109:00cc49c73eab9228:PURE-FLASH-A6EBA101800B4893:00B8E48D:256000::datavg03
+hdisk110:00cc49c73eab9416:PURE-FLASH-A6EBA101800B4893:00B8E48E:256000::datavg03
+hdisk111:00cc49c73eab960c:PURE-FLASH-A6EBA101800B4893:00B8E48F:256000::datavg03
+hdisk112:00cc49c73eab97f7:PURE-FLASH-A6EBA101800B4893:00B8E490:256000::datavg03
+hdisk113:00cc49c73eab99bc:PURE-FLASH-A6EBA101800B4893:00B8E491:256000::datavg03
+hdisk114:00cc49c73f09f0c9:PURE-FLASH-A6EBA101800B4893:00B8E492:256000::datavg04
+hdisk115:00cc49c73f09f267:PURE-FLASH-A6EBA101800B4893:00B8E493:256000::datavg04
+hdisk116:00cc49c73f09f4d5:PURE-FLASH-A6EBA101800B4893:00B8E494:256000::datavg04
+hdisk117:00cc49c73f09f671:PURE-FLASH-A6EBA101800B4893:00B8E495:256000::datavg04
+hdisk118:00cc49c73f09f807:PURE-FLASH-A6EBA101800B4893:00B8E496:256000::datavg04
+hdisk119:00cc49c73f09f9a8:PURE-FLASH-A6EBA101800B4893:00B8E497:256000::datavg04
+hdisk120:00cc49c73f09fb2e:PURE-FLASH-A6EBA101800B4893:00B8E498:256000::datavg04
+hdisk121:00cc49c73f09fd07:PURE-FLASH-A6EBA101800B4893:00B8E499:256000::datavg04
+hdisk122:00cc49c73fc6e3f7:PURE-FLASH-A6EBA101800B4893:00B8E49A:256000::datavg05
+hdisk123:00cc49c73fc6e5dd:PURE-FLASH-A6EBA101800B4893:00B8E49B:256000::datavg05
+hdisk124:00cc49c73fc6e766:PURE-FLASH-A6EBA101800B4893:00B8E49C:256000::datavg05
+hdisk125:00cc49c73fc6e8ff:PURE-FLASH-A6EBA101800B4893:00B8E49D:256000::datavg05
+hdisk126:00cc49c73fc6eaaf:PURE-FLASH-A6EBA101800B4893:00B8E49E:256000::datavg05
+hdisk127:00cc49c73fc6ed83:PURE-FLASH-A6EBA101800B4893:00B8E49F:256000::datavg05
+hdisk128:00cc49c73fc6efe9:PURE-FLASH-A6EBA101800B4893:00B8E4A0:256000::datavg05
+hdisk129:00cc49c73d6762fe:PURE-FLASH-A6EBA101800B4893:00B8E4A1:256000::datavg06
+hdisk130:00cc49c73d676518:PURE-FLASH-A6EBA101800B4893:00B8E4A2:256000::datavg06
+hdisk133:00cc49c73d676730:PURE-FLASH-A6EBA101800B4893:00B8E4A3:256000::datavg06
+hdisk134:00cc49c73c2ae33d:PURE-FLASH-A6EBA101800B4893:00B8E4A4:256000::datavg01
+hdisk182:00cc49c783e5cf7f:PURE-FLASH-A6EBA101800B4893:00B8E4A5:256000::datavg06
+hdisk183:00cc49c783e5d100:PURE-FLASH-A6EBA101800B4893:00B8E4A6:256000::datavg06
+hdisk184:00fbaaea267f70e0:PURE-FLASH-A6EBA101800B4893:00B8E4A7:256000::datavg06
+hdisk185:00fbaaea267f87a3:PURE-FLASH-A6EBA101800B4893:00B8E4A8:256000::datavg06
+hdisk186:00fbaaea0b6076fc:PURE-FLASH-A6EBA101800B4893:00B8E4A9:256000::datavg06
+hdisk187:00fbaaea1a89bc11:PURE-FLASH-A6EBA101800B4893:00B8E4AA:256000::datavg06
+hdisk188:00fbaaea7740865e:PURE-FLASH-A6EBA101800B4893:00B8E4AB:204800::datavg01
+hdisk189:00fbaaea774218e5:PURE-FLASH-A6EBA101800B4893:00B8E4AC:204800::datavg02
+hdisk190:00fbaaea7742566a:PURE-FLASH-A6EBA101800B4893:00B8E4AD:204800::datavg03
+hdisk191:00fbaaea77429431:PURE-FLASH-A6EBA101800B4893:00B8E4AE:204800::datavg04
+hdisk192:00fbaaea7746c360:PURE-FLASH-A6EBA101800B4893:00B8E4AF:102400::datavg06
+hdisk193:00fbaaea77468f63:PURE-FLASH-A6EBA101800B4893:00B8E4B0:204800::datavg05</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Filesystems<pre class="code">for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06
+do
+   echo &quot;Printing filesystems on ${vg} &quot;
+   lsvgfs ${vg} | xargs -n1 df -k | grep -v ^File
+done</pre>
+
+<p>
+Output
+</p>
+<pre class="code">Printing filesystems on datavg01
+/dev/fslv06     592445440  63207016   90%       76     1% /oracle/FTA/sapdata9
+/dev/fslv07     626524160  64908380   90%       58     1% /oracle/FTA/sapdata8
+/dev/fslv08     584581120  61989464   90%       54     1% /oracle/FTA/sapdata7
+/dev/fslv09     577372160  76097420   87%       52     1% /oracle/FTA/sapdata6
+Printing filesystems on datavg02
+/dev/fslv35     577110016  77800756   87%       52     1% /oracle/FTA/sapdata5
+/dev/fslv36     566231040  86990948   85%       54     1% /oracle/FTA/sapdata4
+/dev/fslv37     579862528  76244912   87%       55     1% /oracle/FTA/sapdata3
+/dev/fslv38     577634304  74017536   88%       55     1% /oracle/FTA/sapdata2
+Printing filesystems on datavg03
+/dev/fslv39     573571072  77589872   87%       52     1% /oracle/FTA/sapdata13
+/dev/fslv40     576716800  73308984   88%       52     1% /oracle/FTA/sapdata12
+/dev/fslv41     576716800  83794148   86%       52     1% /oracle/FTA/sapdata11
+/dev/fslv42     576716800  83793640   86%       52     1% /oracle/FTA/sapdata10
+Printing filesystems on datavg04
+/dev/fslv43     511442944  70821720   87%       62     1% /oracle/FTA/sapdata1
+/dev/fslv44     592445440  76086836   88%       54     1% /oracle/FTA/sapdata14
+/dev/fslv45     583139328  73049588   88%       52     1% /oracle/FTA/sapdata15
+/dev/fslv46     596639744  76550860   88%       70     1% /oracle/FTA/sapdata16
+Printing filesystems on datavg05
+/dev/fslv12     576716800  73304896   88%       52     1% /oracle/FTA/sapdata17
+/dev/fslv49     576716800  67723404   89%       87     1% /oracle/FTA/sapdata18
+/dev/fslv52     597688320  68920020   89%       58     1% /oracle/FTA/sapdata19
+Printing filesystems on datavg06
+/dev/fslv55     566231040  62821104   89%       54     1% /oracle/FTA/sapdata20
+/dev/fslv20     629145600 136212332   79%       52     1% /oracle/FTA/sapdata21
+/dev/fslv10     629145600 152993580   76%       48     1% /oracle/FTA/sapdata22
+/dev/fslv11     629145600 219238584   66%       36     1% /oracle/FTA/sapdata23</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Dismount all filesystems - FTA<pre class="code">for fs in $(echo &quot; datavg01 datavg02 datavg03 datavg04 datavg05 datavg06&quot; | xargs -n1 lsvgfs | sort -r )
+do
+   echo &quot;Dismounting ${fs} &quot;
+   sudo umount ${fs}
+done</pre>
+
+<p>
+If any errors - do them manually. Output
+</p>
+<pre class="code">Dismounting /oracle/FTA/sapdata9
+Dismounting /oracle/FTA/sapdata8
+Dismounting /oracle/FTA/sapdata7
+Dismounting /oracle/FTA/sapdata6
+Dismounting /oracle/FTA/sapdata5
+Dismounting /oracle/FTA/sapdata4
+Dismounting /oracle/FTA/sapdata3
+Dismounting /oracle/FTA/sapdata23
+Dismounting /oracle/FTA/sapdata22
+Dismounting /oracle/FTA/sapdata21
+Dismounting /oracle/FTA/sapdata20
+Dismounting /oracle/FTA/sapdata2
+Dismounting /oracle/FTA/sapdata19
+Dismounting /oracle/FTA/sapdata18
+Dismounting /oracle/FTA/sapdata17
+Dismounting /oracle/FTA/sapdata16
+Dismounting /oracle/FTA/sapdata15
+Dismounting /oracle/FTA/sapdata14
+Dismounting /oracle/FTA/sapdata13
+Dismounting /oracle/FTA/sapdata12
+Dismounting /oracle/FTA/sapdata11
+Dismounting /oracle/FTA/sapdata10
+Dismounting /oracle/FTA/sapdata1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename all FTA Original filesystems with a unique prefix<pre class="code">for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      echo &quot;Renaming ${fs} to /FTAORIG${fs}&quot;
+      sudo chfs -m /FTAORIG${fs} ${fs}
+   done
+done</pre>
+
+<p>
+Output
+</p>
+<pre class="code">Renaming /oracle/FTA/sapdata9 to /FTAORIG/oracle/FTA/sapdata9
+Renaming /oracle/FTA/sapdata8 to /FTAORIG/oracle/FTA/sapdata8
+Renaming /oracle/FTA/sapdata7 to /FTAORIG/oracle/FTA/sapdata7
+Renaming /oracle/FTA/sapdata6 to /FTAORIG/oracle/FTA/sapdata6
+Renaming /oracle/FTA/sapdata5 to /FTAORIG/oracle/FTA/sapdata5
+Renaming /oracle/FTA/sapdata4 to /FTAORIG/oracle/FTA/sapdata4
+Renaming /oracle/FTA/sapdata3 to /FTAORIG/oracle/FTA/sapdata3
+Renaming /oracle/FTA/sapdata2 to /FTAORIG/oracle/FTA/sapdata2
+Renaming /oracle/FTA/sapdata13 to /FTAORIG/oracle/FTA/sapdata13
+Renaming /oracle/FTA/sapdata12 to /FTAORIG/oracle/FTA/sapdata12
+Renaming /oracle/FTA/sapdata11 to /FTAORIG/oracle/FTA/sapdata11
+Renaming /oracle/FTA/sapdata10 to /FTAORIG/oracle/FTA/sapdata10
+Renaming /oracle/FTA/sapdata1 to /FTAORIG/oracle/FTA/sapdata1
+Renaming /oracle/FTA/sapdata14 to /FTAORIG/oracle/FTA/sapdata14
+Renaming /oracle/FTA/sapdata15 to /FTAORIG/oracle/FTA/sapdata15
+Renaming /oracle/FTA/sapdata16 to /FTAORIG/oracle/FTA/sapdata16
+Renaming /oracle/FTA/sapdata17 to /FTAORIG/oracle/FTA/sapdata17
+Renaming /oracle/FTA/sapdata18 to /FTAORIG/oracle/FTA/sapdata18
+Renaming /oracle/FTA/sapdata19 to /FTAORIG/oracle/FTA/sapdata19
+Renaming /oracle/FTA/sapdata20 to /FTAORIG/oracle/FTA/sapdata20
+Renaming /oracle/FTA/sapdata21 to /FTAORIG/oracle/FTA/sapdata21
+Renaming /oracle/FTA/sapdata22 to /FTAORIG/oracle/FTA/sapdata22
+Renaming /oracle/FTA/sapdata23 to /FTAORIG/oracle/FTA/sapdata23</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "FTA Refresh" [1-13749] -->
+<h2 class="sectionedit3" id="storage_team_presents_copy_of_pta_data_file_systems_to_fta">Storage team presents copy of PTA data file systems to FTA</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT3 SECTION "Storage team presents copy of PTA data file systems to FTA" [13750-13820] -->
+<h2 class="sectionedit4" id="recreate_vg_s_mount_file_systems_of_pta_on_qaerdb01">Recreate vg&#039;s mount file systems of PTA on QAERDB01</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Take a current device map<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.out.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Discover devices<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a current device map<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.out.2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the new devices and Store the new devices to a file<pre class="code">diff lsvpcfg.out.1 lsvpcfg.out.2 | grep hdisk | sed &quot;s;&gt; ;;g&quot; &gt; newdevices</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a LVM map from production<pre class="code">ssh paerdb99 &quot;lspv -u&quot; &gt; paerdb99.lspv-u</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> CLear PVIDs on the devices we just copied just in case<pre class="code">cat newdevices | grep vg |  awk -F: &#039;{print $1}&#039; | xargs -n1 sudo chdev -a pv=clear -l</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Execute recreatevg on all the copied volume groups<pre class="code">for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06
+do
+   echo &quot;Re-creating ${vg} as fta${vg} &quot;
+   grep -w ${vg} paerdb99.lspv-u | awk &#039;{print $2}&#039; &gt; ${vg}.pvids
+   disks=$(grep -f ${vg}.pvids newdevices | awk -F: &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot; )
+   sudo recreatevg -O -y fta${vg} -Yfta  ${disks}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename filesystems from PTA to FTA<pre class="code">for fs in $(echo &quot;ftadatavg01 ftadatavg02 ftadatavg03 ftadatavg04 ftadatavg05 ftadatavg06&quot; | xargs -n1 lsvgfs | sort )
+do
+  newfs=$(echo ${fs} | sed &quot;s/PTA/FTA/g&quot;)
+  sudo chfs -m ${newfs} ${fs}
+done</pre>
+<pre class="code">for fs in $(echo &quot;ftadatavg01 ftadatavg02 ftadatavg03 ftadatavg04 ftadatavg05 ftadatavg06&quot; | xargs -n1 lsvgfs | sort )
+do
+  newfs=$(echo ${fs} | sed &quot;s;/fs;;g&quot;)
+  sudo chfs -m ${newfs} ${fs}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Repairing and Mount Filesystems<pre class="code">for fs in $(echo &quot;ftadatavg01 ftadatavg02 ftadatavg03 ftadatavg04 ftadatavg05 ftadatavg06&quot; | xargs -n1 lsvgfs | sort )
+do
+   echo &quot;Repairing and mounting filesystem - ${fs}&quot;
+   sudo fsck -y ${fs}
+   sudo mkdir -p ${fs}
+   sudo mount ${fs}
+   echo &quot;&quot;
+   echo &quot;&quot;
+done</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Hand over the system to <abbr title="Database Administrator">DBA</abbr> team</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Recreate vg's mount file systems of PTA on QAERDB01" [13821-] -->

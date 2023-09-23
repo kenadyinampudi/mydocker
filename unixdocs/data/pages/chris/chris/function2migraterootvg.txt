@@ -1,0 +1,33 @@
+  - Define the function<code>function mirror_migrate_rootvg {
+export LVM_HOTSWAP_BOOTDISK=1
+rootvgdisk=$(lsvg -p rootvg | grep ^hdisk | awk '{print $1}')
+export disk=${1}
+echo "$(date)  :  Migrating rootvg to ${disk} "
+echo "$(date)  :  Adding ${disk} to rootvg "
+sudo extendvg rootvg ${disk}
+[[ ${?} -ne 0 ]] && return 2
+echo "$(date)  :  Mirroring rootvg to ${disk}"
+sudo mirrorvg rootvg ${disk}
+[[ ${?} -ne 0 ]] && return 2
+echo "$(date)  :  Mirroring completed, Running bosboot on rootvg disks"
+sudo bosboot -ad /dev/${rootvgdisk}
+[[ ${?} -ne 0 ]] && return 2
+sudo bosboot -ad /dev/${disk}
+[[ ${?} -ne 0 ]] && return 2
+echo "$(date)  :  Setting bootlist ${disk} "
+sudo bootlist -m normal ${disk}
+[[ ${?} -ne 0 ]] && return 2
+echo "$(date)  :  Unmirroring rootvg from ${rootvgdisk} "
+sudo unmirrorvg rootvg ${rootvgdisk}
+[[ ${?} -ne 0 ]] && return 2
+echo "$(date)  :  Migrating any leftover PPs to from ${rootvgdisk}"
+sudo migratepv ${rootvgdisk}
+[[ ${?} -ne 0 ]] && return 2
+echo "$(date)  :  Removing ${rootvgdisk} from rootvg"
+sudo reducevg rootvg ${rootvgdisk}
+[[ ${?} -ne 0 ]] && return 2
+echo "$(date)  :  Mirroring completed, Running bosboot on rootvg disk"
+sudo bosboot -ad /dev/${disk}
+[[ ${?} -ne 0 ]] && return 2
+}</code>
+  - Execute the function to migrate the rootvg<code>mirror_migrate_rootvg hdiskX</code>

@@ -1,0 +1,65 @@
+
+<h1 class="sectionedit1" id="installing_ssl_certificates_for_internal_websites">Installing SSL certificates for internal websites</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Generate a private key<pre class="code">openssl genrsa -out unixdocs.key 2048</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a config file for alternate names<pre class="code">vi unixdocs.conf</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+
+[req_distinguished_name]
+countryName = Country Name (2 letter code)
+countryName_default = US
+stateOrProvinceName = State or Province Name (full name)
+stateOrProvinceName_default = IL
+localityName = Locality Name (eg, city)
+localityName_default = Chicago
+organizationalUnitName  = Organizational Unit Name (eg, section)
+organizationalUnitName_default  = Driv, INC.
+commonName = unixdocs
+commonName_max  = 64
+
+[ v3_req ]
+# Extensions to add to a certificate request
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = unixdocs
+DNS.2 = unixdocs.driv.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Generate a “CSR” using the key<pre class="code">openssl req -new -out unixdocs.csr -key unixdocs.key -config unixdocs_openssl.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send the CSR (unixdocs.csr) to Wintel team</div>
+</li>
+<li class="level1"><div class="li"> Wintel team will send a certificate. Save it as unixdocs.crt</div>
+</li>
+<li class="level1"><div class="li"> Make a copy of existing key and certificate.<pre class="code">sudo mkdir -p /etc/httpd/conf.d/backups
+sudo cp /etc/httpd/conf.d/unixdocs.key /etc/httpd/conf.d/backups/unixdocs.key.$(date +%m%d%Y)
+sudo cp /etc/httpd/conf.d/unixdocs.crt /etc/httpd/conf.d/backups/unixdocs.crt.$(date +%m%d%Y)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the new key and certificate to <code>/etc/httpd/conf.d</code><pre class="code">sudo cp unixdocs.key /etc/httpd/conf.d/unixdocs.key
+sudo cp unixdocs.crt /etc/httpd/conf.d/unixdocs.crt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The virtual host definition already has these entries that points to these files<pre class="code">SSLCertificateFile /etc/httpd/conf.d/unixdocs.crt
+SSLCertificateKeyFile /etc/httpd/conf.d/unixdocs.key</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart httpd<pre class="code">sudo systemctl restart httpd</pre>
+</div>
+</li>
+</ol>
+
+</div>

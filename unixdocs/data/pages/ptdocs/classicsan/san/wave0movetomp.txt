@@ -1,0 +1,40 @@
+====== Wave 0 LPARs move to MP -- Technical Steps ======
+
+===== Pre-requisites =====
+
+  - Arrange downtime
+  - Define lpars at MP
+  - Perform zoning MP Wave0 LPARs to MP Pure.
+  - Perform host definitions MP Wave0 LPARs to MP Pure
+
+===== Cut over plan =====
+
+  - Shutdown Wave 0 applications in the worksheet
+  - Shutdown Wave 0 databases (if any )
+  - [[san:wave0movetomp-disablenfsshutdown|Disable NFS and shutdown Wave 0 servers.]]
+  - [[san:wave0movetomp-finalsync|Perform a final sync of the protection group and replicate.]]
+  - [[san:wave0movetomp-copysnapshotsandprovision|Copy snapshots and provision storage at MP]]
+  - [[san:wave0movetomp-bootlparsatmp|Boot LPARs at MP]]
+  - [[san:wave0movetomp-reipclones|Re-IP cloned systems at MP]]
+  - [[san:wave0movetomp-deploynewhostsfilemp|Deploy new hosts file on cloned systems]]
+  - [[san:wave0movetomp-enablenfsandreboot|Enable NFS and reboot cloned servers at MP]]
+  - [[san:wave0movetomp-setupdnsaliases|Setup CNAMEs from AMER to fmmotorparts.com]]
+  - Start databases on MP systems
+  - Start applications on cloned systems at MP
+
+===== Functional tests =====
+
+  - Validate the cloned applications work as expected.
+
+===== Backout plan =====
+
+  - Shutdown Wave 0 applications in the worksheet
+  - Shutdown Wave 0 databases (if any )
+  - Shutdown Wave 0 servers at MP
+  - Boot LPARs at LDC
+  - Undo DNS changes
+
+===== Cleanup / Post migration steps =====
+
+  - [[san:wave0movetomp-cleanuplparsatldc|Cleanup LPARs and storage at LDC]]
+

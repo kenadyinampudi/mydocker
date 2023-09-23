@@ -1,0 +1,131 @@
+
+<h1 class="sectionedit1" id="linux_tricks_and_tips">Linux tricks and tips</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Linux tricks and tips" [1-37] -->
+<h1 class="sectionedit2" id="redhat_linux">Redhat Linux</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Configuring hostname and default gateway<pre class="code">sudo vi /etc/sysconfig/network</pre>
+
+<p>
+Add this following
+</p>
+<pre class="code">NETWORKING=yes
+HOSTNAME=pablsv01
+GATEWAY=10.32.50.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure eth0 interface<pre class="code">sudo vi /etc/sysconfig/network-scripts/ifcfg-eth0</pre>
+
+<p>
+And add these values
+</p>
+<pre class="code">DEVICE=eth0
+BOOTPROTO=static
+IPADDR=10.32.50.59
+NETMASK=255.255.255.0
+ONBOOT=yes</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart the network services<pre class="code">sudo service network restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mounting AIX NFS on Redhat<pre class="code">sudo mount -o ro,vers=2 pgnmsv01:/prod/images/cds/redhat /mnt/images</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupresolv.conf" class="wikilink1" title="unix:setupresolv.conf">Setup DNS client as other Unix servers</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupntp#redhat_5" class="wikilink1" title="unix:setupntp">Setup NTP client as other Unix servers</a></div>
+</li>
+<li class="level1"><div class="li"> Loopback mounting an iso<pre class="code">sudo mount -r -t iso9660 -o loop -v /mnt/images/rhel-server-6.3-i386-dvd.iso /mnt/cdrom</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Redhat Linux" [38-895] -->
+<h1 class="sectionedit3" id="suse_linux">SuSE Linux</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Install an RPM</div>
+<ol>
+<li class="level2"><div class="li"> The SuSE DVDs SP3 are available here<pre class="code">root on pgnmsv01:/root&gt;sudo ls -l /prod/images/cds/SLES/*
+-rwxr-xr-x    1 root     system   2147484648 May 20 2008  /prod/images/cds/SLES/SLES-10-SP1-x86_64-DVD1.iso
+-rw-r-----    1 root     system   3030702080 Oct 18 21:14 /prod/images/cds/SLES/SLES-10-SP3-DVD-x86_64-GM-DVD1.iso
+-rw-r-----    1 root     system   3238070272 Oct 18 21:15 /prod/images/cds/SLES/SLES-10-SP3-DVD-x86_64-GM-DVD2.iso
+-rw-r--r--    1 root     system   6268772352 Oct 18 21:20 /prod/images/cds/SLES/SLES-10-SP3-DVD-x86_64.iso</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Mount the DVD as a filesystem on pgnmsv01<pre class="code">loopmount -i /prod/images/cds/SLES/SLES-10-SP1-x86_64.iso -l loop0 -o &quot;-V cdrfs -o ro&quot; -m /cdrom</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Export the filesystem<pre class="code">exportfs -i -o sec=sys:none,ro /cdrom</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Mount the filesystem on the target server<pre class="code">mount -o ro pgnmsv01:/cdrom /cdrom</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the RPM from here<pre class="code">rmp -Uvh /cdrom/suse/x86_64/glibc-2.4-31.74.1.x86_64.rpm</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Cleanup on the target<pre class="code">umount /cdrom</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Cleanup on pgnmsv01<pre class="code">exportfs -u /cdrom
+loopumount -l loop0 -m /cdrom</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure network<pre class="code">/etc/sysconfig/network/ifcfg-ethX</pre>
+
+<p>
+Restart the network stack
+</p>
+<pre class="code">service network restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change hostname<pre class="code">vi /etc/HOSTNAME</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Discover a newly added LUN - VMWare<pre class="code">echo &quot;- - -&quot; &gt; /sys/class/scsi_host/host0/scan</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> LVM Info</div>
+<ol>
+<li class="level2"><div class="li"> Create a PV<pre class="code">pvcreate /dev/sdX</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a VG<pre class="code">vgcreate datavg /dev/sdX</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create an LV<pre class="code">lvcreate -n &lt;lvname&gt; &lt;vgname&gt; -L &lt;size&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a filesystem<pre class="code">mkfs -t reiserfs /dev/&lt;vgname&gt;/&lt;lvname&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Mount a filesystem.</div>
+<ol>
+<li class="level3"><div class="li"> Add it to fstab<pre class="code">/dev/&lt;vgname&gt;/&lt;lvname&gt;   &lt;mountpoint&gt;          reiserfs   acl,user_xattr        1 2</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Create mountpoint<pre class="code">mkdir &lt;mountpoint&gt;</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Mount it<pre class="code">mount &lt;mountpoint&gt;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> entstat for Linux<pre class="code">ethtool ethX</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "SuSE Linux" [896-] -->

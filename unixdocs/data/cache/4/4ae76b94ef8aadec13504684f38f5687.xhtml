@@ -1,0 +1,54 @@
+
+<p>
+I did some research and here is the process to disable the Transparent Huge Pages. All links are to Red Hat documentation on the subject and all steps are from those documents. 
+Red Hat documents referenced
+</p>
+<pre class="code">https://access.redhat.com/solutions/46111</pre>
+<pre class="code">https://access.redhat.com/solutions/422283</pre>
+
+<p>
+Issue  Disable Transparent Huge Pages on below servers 
+</p>
+
+<p>
+TAITC490     RHEL6.6  
+TAITC491     RHEL6.6    
+TAROS492   RHEL6.6
+TASHA493   RHEL6.6
+</p>
+
+<p>
+First step  take a snapshot of the servers before making any changes . backout if needed
+</p>
+
+<p>
+Steps to remediate issue from <a href="https://access.redhat.com/solutions/46111" class="urlextern" title="https://access.redhat.com/solutions/46111"  rel="nofollow">https://access.redhat.com/solutions/46111</a>
+To disable THP at boot time
+Append the following to the kernel command line in grub.conf:
+transparent_hugepage=never  
+</p>
+<pre class="code">sudo cp -p /boot/grub/grub.conf  </pre>
+<pre class="code">echo &quot;transparent_hugepage=never&quot;  | sudo tee -a  /boot/grub/grub.conf </pre>
+
+<p>
+To disable THP at run time
+echo never &gt; /sys/kernel/mm/redhat_transparent_hugepage/enabled ⇐ command from web page
+</p>
+<pre class="code">echo &quot;never&quot; | sudo tee /sys/kernel/mm/redhat_transparent_hugepage/enabled </pre>
+
+<p>
+echo never &gt; /sys/kernel/mm/redhat_transparent_hugepage/defrag ⇐ command from web page
+</p>
+<pre class="code">echo &quot;never&quot; | sudo tee /sys/kernel/mm/redhat_transparent_hugepage/defrag</pre>
+
+<p>
+The following link is referenced if the above solution does not resolve the issue. 
+<a href="https://access.redhat.com/solutions/422283" class="urlextern" title="https://access.redhat.com/solutions/422283"  rel="nofollow">https://access.redhat.com/solutions/422283</a>
+</p>
+
+<p>
+Create a customized tuned profile with disabled THP
+The tuned-adm   command is not present on the servers
+tuned-adm  active   following the documentation on the link I looked for the /etc/tune-profiles directory. 
+No servers have the  /etc/tune-profiles/ directory → no need to follow this process.
+</p>

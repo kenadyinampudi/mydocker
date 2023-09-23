@@ -1,0 +1,102 @@
+====== TA2 storage allocation ( Old -- when it used to be on DMX4 ) ======
+
+** We need to complete these steps for TA2 allocation. **
+
+  * Find usable LUNs on DMX4
+  * Allocate storage to peerdb99 from DMX4
+  * Allocate same number of LUNs to teprbk01 for BCV
+  * Run a full sync on the new volumes using a mapfile.
+  * Allocate same capacity on peerdb98 ( note - LUN sizes are different here )
+
+===== Find usable LUNs on DMX4 =====
+
+We need to find free meta LUNs ( R1 for TA2 and R5+BCV for teprbk01 )
+
+    * Login to taitc118<code>sudo symdev -sid 39 list -meta -noport</code>
+    * Document source and target LUNs. Source should be a 2 way mirror, target should be a R5 BCV device.
+      * If we do not have R5 devices in the BCV status, use the following procedure to convert a regular R5 volume to BCV.
+        * Create a text file with commands<code>convert dev <meta> to BCV+R-5;</code>Preview the configuration change<code>sudo symconfigure -sid 39 -f file1.txt preview</code>Commit the configuration change<code>sudo symconfigure -sid 39 -f file1.txt commit</code>
+===== Allocate storage to peerdb99 from DMX4 =====
+
+^HBA^WWN^DMX4 FA^Port^
+|fcs2|10000090FA563C0A|8B|1|
+|fcs0|10000090FA563DCE|9B|1|
+|fcs4|10000090FA726C38|7C|0|
+|fcs6|10000090FA72A7A0|10C|0|
+
+Allocating storage to TA2 would mean mapping the LUNs to the above FA ports.
+
+  * Login to taitc118
+  * Find out the next available LUN number on the above FA ports.<code>sudo symcfg list -sid 39 -FA 8B -P 1 -addr -avail | grep "AVAILABLE" \
+| tail -1 | awk '{print "0x"$(NF-1) }' | awk '{printf "%d", $1"\n"}'</code><code>sudo symcfg list -sid 39 -FA 9B -P 1 -addr -avail | grep "AVAILABLE" \
+| tail -1 | awk '{print "0x"$(NF-1) }' | awk '{printf "%d", $1"\n"}'</code><code>sudo symcfg list -sid 39 -FA 7C -P 0 -addr -avail | grep "AVAILABLE" \
+| tail -1 | awk '{print "0x"$(NF-1) }' | awk '{printf "%d", $1"\n"}'</code><code>sudo symcfg list -sid 39 -FA 10C -P 0 -addr -avail | grep "AVAILABLE" \
+| tail -1 | awk '{print "0x"$(NF-1) }' | awk '{printf "%d", $1"\n"}'</code>
+  * Create a mapfile in this syntax **(assumption - meta head ser no is ABCD, next available lun number is "600")**<code>map dev ABCD to dir 8B:1 target=0 lun=600;
+map dev ABCD to dir 9B:1 target=0 lun=600;
+map dev ABCD to dir 7C:0 target=0 lun=600;
+map dev ABCD to dir 10C:0 target=0 lun=600;</code>
+  * Preview the configuration<code>sudo symconfigure -sid 39 -f <mapfile> preview</code>
+  * Commit the configuration<code>sudo symconfigure -sid <sid> -f <mapfile> commit</code>
+  * Mask the LUNs to these WWPN<code>sudo symmask -sid 39 -wwn 10000090fa563c0a -dir 8B -p 1 add devs <added LUNs>
+sudo symmask -sid 39 -wwn 10000090fa563dce -dir 9B -p 1 add devs <added LUNs>
+sudo symmask -sid 39 -wwn 10000090fa726c38 -dir 7C -p 0 add devs <added LUNs>
+sudo symmask -sid 39 -wwn 10000090fa72a7a0 -dir 10C -p 0 add devs <added LUNs>
+sudo symmask -sid 39 refresh</code>
+
+===== Allocate storage to teprbk01 from DMX4 =====
+
+^WWN^DMX4 FA^Port^
+|10000000c97912e3|8D|0|
+|10000000c978177b|9D|0|
+
+  * Login to taitc118
+  * Find out the next available LUN number on the above FA ports.<code>sudo symcfg list -sid 39 -FA 8D -P 0 -addr -avail | grep "AVAILABLE"
+sudo symcfg list -sid 39 -FA 9D -P 0 -addr -avail | grep "AVAILABLE"</code>Make a note of the last lun number.
+  * Create a mapfile in this syntax(assumption - metahead ser no is EFGH, next available lun number is "700")<code>map dev EFGH to dir 7C:0 target=0 lun=700;
+map dev EFGH to dir 10C:0 target=0 lun=700;</code>I use this quick script<code>lun=256
+for dev in $(awk '{print $1}' bcv.txt )
+do
+   for fa in 8D:0 9D:0
+   do
+      echo "map dev ${dev} to dir ${fa} target=0 lun=${lun};"
+   done
+   lun=$(echo "obase=ibase=16;${lun}+1" |bc)
+done</code>
+  * Preview the configuration<code>sudo symconfigure -sid 39 -f <mapfile> preview</code>
+  * Commit the configuration<code>sudo symconfigure -sid <sid> -f <mapfile> commit</code>
+  * Mask the devices<code>sudo symmask -sid 39 -wwn 10000000c97912e3 -dir 8d -p 0 add devs a,b,c,d.....
+sudo symmask -sid 39 -wwn 10000000c978177b -dir 9d -p 0 add devs a,b,c,d.....</code>
+  * Refresh the masking DB<code>sudo symmask -sid 39 refresh</code>
+
+
+===== Add the LUNs to BCV Device Group for TA2 =====
+
+** TA2 regular backups kick off at 9:00 AM Chicago time - don't perform this step during this time **
+
+Add the STD and BCV devices to device group "TA2_BKUP_DMX4" on teprbk01.
+
+  * Add STD devices to the group<code>sudo symld -g TA2_BKUP_DMX4 add dev ABCD</code>
+  * Add BCV devices to the group<code>sudo symbcv -g TA2_BKUP_DMX4 associate dev EFGH</code>
+  * Run a full establish on the newly added devices.
+    * Create a textfile<code>ABCD EFGH</code>
+    * Run a full establish<code>sudo symmir -sid 39 -f <bcvmapfile> establish -full</code>
+    * If you will see such exit notice from above commnad<code>To specify how to serialize access for control operations, please set SYMCLI_CTL_ACCESS to a valid value.</code>
+    * Run this <code>export SYMCLI_CTL_ACCESS=PARALLEL</code> and rerun the command
+    * Check the status and wait until it completes<code>sudo symmir -sid 39 -f <bcvmapfile> query</code>
+    * Once complete, split the BCV pair.<code>sudo symmir -sid 39 -f <bcvmapfile> split</code>
+    * For BCV LUNs we need to run these commands on teprbk01<code>sudo powermt display | grep fscsi | awk '{print $2}' | xargs -n1 sudo cfgmgr -l</code>Then<code>sudo /usr/lpp/EMC/Symmetrix/bin/mkbcv -a</code> Followed by a <code>sudo powermt config</code>
+  * If the new LUNs are being used to create a new VG on peerdb99, please update the following file on teprbk01<code>sudo vi /admin/backups/scripts/include_vg.TA2</code>Add a new line as per the format<code># This is including list for VG of production.
+# Format will be the following.
+#
+#     VG:VG2                    include VG2 volume group
+#
+VG:datavg01
+VG:datavg02
+VG:datavg03
+VG:datavg04
+VG:datavg05
+VG:datavg06</code>
+===== Add the LUNs to TA2 standby from VMAX10K =====
+
+Please note that VMAX uses masking, please login to the VMAX Unisphere or use CLIs to allocate same storage to peerdb98. Now this can get tricky as the VMAX LUN sizes are different. Please use common sense.

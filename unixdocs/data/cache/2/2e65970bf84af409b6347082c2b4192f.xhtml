@@ -1,0 +1,32 @@
+
+<h1 class="sectionedit1" id="new_installation_using_an_rte">New installation using an RTE</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Define the target server <strong>xagi3p01</strong> on NIM<pre class="code">nim -o define -t standalone -a platform=chrp \
+-a netboot_kernel=mp -a if1=&quot;find_net xagi3p01 0&quot; \
+-a net_settings1=&quot;auto auto&quot; -a cable_type1=tp \
+xagi3p01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform an rte install</div>
+<ol>
+<li class="level2"><div class="li"> AIX 6<pre class="code">nim -o bos_inst -a source=rte -a spot=610TL07-05_spot -a lpp_source=610TL07-05_lppsrc -a no_client_boot=yes -a accept_licenses=yes xagi3p01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> AIX 7<pre class="code">nim -o bos_inst -a source=rte -a spot=710TL02-02_spot -a lpp_source=710TL02-02_lppsrc -a no_client_boot=yes -a accept_licenses=yes penmsv01</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install <abbr title="Secure Shell">SSH</abbr> after the base installation is completed. Login as root<pre class="code">mkdir -p /mnt/aixupdates
+mount &lt;nimserver&gt;:/path/to/lppsrc /mnt/aixupdates</pre>
+
+<p>
+Install it
+</p>
+<pre class="code">installp -acX -d /mnt/aixupdates openssh.base.client openssh.base.server openssh.license openssh.man.en_US openssh.msg.en_US</pre>
+</div>
+</li>
+</ol>
+
+</div>

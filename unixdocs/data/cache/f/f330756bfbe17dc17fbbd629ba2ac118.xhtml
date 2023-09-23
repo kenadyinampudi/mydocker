@@ -1,0 +1,75 @@
+<pre class="code">Cleanup 
+
+Unix Steps
+
+  -  Unmount filesystems
+  -  Restore fstab
+  -  Deactivate the VGs
+  -  Delete the disks
+  -  Detach VMDKs
+  -  Collect NAA numbers of the datastores
+  -  Delete datastores
+  -  Send the NAA numbers to storage team for reclaimation
+
+Storage Steps
+
+  -  Disconnect the volumes
+  -  Destroy the volumes
+
+
+EP1 : -
+
+Unix Steps
+
+  -  Unmount filesystems
+	diff /etc/fstab /etc/fstab.rootvgonly | grep ext3 | grep -v sapbkpvg | awk &#039;{print $3}&#039; | sort -r | xargs -n1 sudo umount	
+  - Add the below entry in /etc/fstab.rootvgonly
+        echo &quot;/dev/sapbkpvg/sapbkplv   /sapbasisbackup                  ext3    defaults        1 2&quot; | sudo tee -a /etc/fstab.rootvgonly
+  -  Restore fstab
+	sudo cp /etc/fstab.rootvgonly /etc/fstab
+  -  Deactivate the VGs
+	echo &quot;oravg saplgvg2 saplogvg sapvg sapvg1&quot; | xargs -n1 sudo vgchange -a n
+  -  Delete the disks
+
+for disk in $(sudo pvs | egrep &quot;oravg|saplgvg2|saplogvg|sapvg|sapvg1&quot; | awk &#039;{print $1}&#039; | sed &quot;s;/dev/;;g&quot;)
+do
+   echo &quot;Deleting ${disk} &quot;
+   echo &quot;1&quot; | sudo tee -a /sys/block/${disk}/device/delete
+done
+
+  -  Detach VMDKs
+	Use GUI - leave the first two Hard Disks and delete the rest.
+  -  Collect NAA numbers of the datastores
+  - Connect to the vSphere host
+
+Connect-VIServer -server cdcvilms156.driv.com
+
+
+$AllDS = Get-Datastore
+$results = @()
+foreach ($ds in $AllDS) {
+$dsview = $ds | Get-View
+$resultsarray = &quot;&quot; | Select &quot;DatastoreName&quot;,&quot;CanonicalName&quot;,&quot;CapacityGB&quot;,&quot;FreeSpaceGB&quot;
+$resultsarray.&quot;DatastoreName&quot; = $ds.Name
+$resultsarray.&quot;CanonicalName&quot; = $dsview.info.vmfs.extent
+$resultsarray.&quot;CapacityGB&quot; = $ds.CapacityGB
+$resultsarray.&quot;FreeSpaceGB&quot; = $ds.FreeSpaceGB
+$results += $resultsarray
+}
+
+$results | Sort-Object DatastoreName | grep &quot;EP1DATA&quot;
+
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565921}                                            4095.75  2428.619140625
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565922}                                            4095.75 3070.7705078125
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565923}                                            4095.75     2469.765625
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565924}                                            4095.75    3744.7734375
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565925}                                            4095.75  1495.958984375
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565926}                                            4095.75 2456.3720703125
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565927}                                            4095.75  986.3603515625
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565928}                                            4095.75 1806.3662109375
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e480802565929}                                            4095.75  1646.365234375
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e48080256592a}                                            4095.75 2456.3720703125
+CDC-PURE-APOLLO-EP1DATA… {naa.624a9370451ceeaa321e48080256592b}                                            4095.75 2456.3720703125
+	
+  -  Delete datastores
+  -  Send the NAA numbers to storage team for reclaimation</pre>

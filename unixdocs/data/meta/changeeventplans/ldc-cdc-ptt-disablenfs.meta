@@ -1,0 +1,14 @@
+a:2:{s:7:"current";a:9:{s:4:"date";a:2:{s:7:"created";i:1551810304;s:8:"modified";i:1555417199;}s:7:"creator";s:4:"Root";s:4:"user";s:4:"root";s:11:"last_change";a:7:{s:4:"date";i:1555417199;s:2:"ip";s:11:"10.32.8.170";s:4:"type";s:1:"E";s:2:"id";s:39:"changeeventplans:ldc-cdc-ptt-disablenfs";s:4:"user";s:4:"root";s:3:"sum";s:0:"";s:5:"extra";s:0:"";}s:5:"title";s:89:"30 mins prior to the outage -- Capture the state and disable NFS and create alt disk copy";s:11:"description";a:2:{s:15:"tableofcontents";a:1:{i:0;a:4:{s:3:"hid";s:86:"mins_prior_to_the_outage_--_capture_the_state_and_disable_nfs_and_create_alt_disk_copy";s:5:"title";s:89:"30 mins prior to the outage -- Capture the state and disable NFS and create alt disk copy";s:4:"type";s:2:"ul";s:5:"level";i:1;}}s:8:"abstract";s:503:"*  Login to the NIM server, and collect the information
+		*  Set a variable for the server or servers
+export servers="host1 host2 ......"
+
+		*  Create a temp work directory
+mkdir -p pttmigration
+
+		*  Collect details and copy the Actifio package to the server
+for host in ${servers}
+do
+   ssh ${host} "ifconfig -a" > pttmigration/${host}.ifconfiga
+   ssh ${host} "df -k"       > pttmigration/${host}.dfk
+   ssh ${host} "mount"       > pttmigration/${host}.mount
+   sudo scp /prod/images/Actifio/conne…";}s:8:"internal";a:2:{s:5:"cache";b:1;s:3:"toc";b:1;}s:8:"relation";a:1:{s:10:"firstimage";s:0:"";}s:11:"contributor";a:1:{s:4:"root";s:4:"Root";}}s:10:"persistent";a:5:{s:4:"date";a:2:{s:7:"created";i:1551810304;s:8:"modified";i:1555417199;}s:7:"creator";s:4:"Root";s:4:"user";s:4:"root";s:11:"last_change";a:7:{s:4:"date";i:1555417199;s:2:"ip";s:11:"10.32.8.170";s:4:"type";s:1:"E";s:2:"id";s:39:"changeeventplans:ldc-cdc-ptt-disablenfs";s:4:"user";s:4:"root";s:3:"sum";s:0:"";s:5:"extra";s:0:"";}s:11:"contributor";a:1:{s:4:"root";s:4:"Root";}}}

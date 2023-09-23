@@ -1,0 +1,79 @@
+
+<h1 class="sectionedit1" id="instructions_for_failing_over_the_sap_personas_web_dispatcher_interface_on_peerap01_peerap04">Instructions for Failing Over the SAP Personas / Web Dispatcher Interface on Peerap01 / Peerap04</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Instructions for Failing Over the SAP Personas / Web Dispatcher Interface on Peerap01 / Peerap04" [1-111] -->
+<h1 class="sectionedit2" id="note_it_is_extreemly_important_to_that_you_understand_which_server_has_failed_and_which_it_to_be_primary">NOTE IT IS EXTREEMLY IMPORTANT TO THAT YOU UNDERSTAND  WHICH SERVER HAS FAILED AND WHICH IT TO BE PRIMARY</h1>
+<div class="level1">
+
+<p>
+<strong> PEERAP01 is Primary Server   </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> If there is an issue with the Production SAP Personas Application Interface, you will get a call from etiter the Service Desk of the Basis Person on call. Makse sure that you either  speak directly with the Basis  Person by phone or by Lotus Notes Same Time Chat to confirm that there is an issue and which server is currently acting as the Primary server. Peerap01 should be the Primary server that has failed.  Do the following steps</div>
+</li>
+<li class="level1"><div class="li"> Logon to peerap01.  Su to root as that is where the file containing the scripts to the fasilure is located <pre class="code"> sudo su - </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change Directory to the “clustter” directory <pre class="code"> cd cluster</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the following script to remove the Floating IP Address from peerap01 <pre class="code"> unalias-sapwebdspch01.sh </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The script will run an ifconfig -a. you can check to see that the IP Addres  10.32.50.26 has been removed from en0</div>
+</li>
+<li class="level1"><div class="li"> Logon to peerap04 be sure to confirm with Basis Person eithe via phone od Lotus Notes Same Time Chat  that peerap04 is to be activated as the SAP Persomas Primary server.</div>
+</li>
+<li class="level1"><div class="li"> su to root <pre class="code"> sudu su - </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change Directory to the “clustter” directory <pre class="code"> cd cluster</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the following command to add the Floating IP Addres to the server <pre class="code"> alias-sapwebdspch04.sh </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The script will run an ifconfig -a command, you can check to see that the second IP Address  10.32.50.26 has been added to  en0</div>
+</li>
+<li class="level1"><div class="li"> At this time inform the Bssis person that the switch has been made. They will do all necessary testing for the application. </div>
+</li>
+</ul>
+
+<p>
+ <strong> PEERAP04 is Primary Server </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> If there is an issue with the Production SAP Personas Application Interface, you will get a call from etiter the Service Desk of the Basis Person on call. Makse sure that you either  speak directly with the Basis  Person by phone or by Lotus Notes Same Time Chat to confirm that there is an issue and which server is currently acting as the Primary server. Peerap04 should be the Primary server that has failed.  Do the following steps</div>
+</li>
+<li class="level1"><div class="li"> Logon to peerap04.  Su to root as that is where the file containing ththe scripts to the fasilure is located <pre class="code"> sudo su - </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change Directory to the “clustter” directory <pre class="code"> cd cluster</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the following script to remove the Floating IP Address from peerap04 <pre class="code"> unalias-sapwebdspch04.sh </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The script will run an ifconfig -a. you can check to see that the IP Addres  10.32.50.26 has been removed from ent</div>
+</li>
+<li class="level1"><div class="li"> Logon to peerap01 besure to confirm with Basis Person eithe via phone od Lotus Notes Same Time Chat  that peerap01 is to be activated as the SAP Persomas Primary server.</div>
+</li>
+<li class="level1"><div class="li"> su to root <pre class="code"> sudu su - </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change Directory to the “clustter” directory <pre class="code"> cd cluster</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the following command to add the Floating IP Addres to the server <pre class="code"> alias-sapwebdspch01.sh </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The script will run an ifconfig -a command, you can check to see that the second IP Address  10.32.50.26 has been added to  en0</div>
+</li>
+<li class="level1"><div class="li"> At this time inform the Bssis person that the switch has been made. They will to all necessary tesing for the application. </div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "NOTE IT IS EXTREEMLY IMPORTANT TO THAT YOU UNDERSTAND  WHICH SERVER HAS FAILED AND WHICH IT TO BE PRIMARY" [112-] -->

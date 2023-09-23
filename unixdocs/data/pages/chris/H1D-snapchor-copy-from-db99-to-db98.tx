@@ -1,0 +1,41 @@
+tep 1. Unmount all sapdata filesystems on db98
+STep 2. Change Mount point on all existing sapdata filesystems - change to /OLD/oracle/H1D/sapdata ..... 
+something like that
+Step 3 . Re-create the VG from the snapshot LUNs presented
+Step 4 . fsck - mount them and hand over to DBA
+Step 5 . Once DBA's recover the database - cleanup the old filesystems, VGs and disks
+
+sudo lsvpcfg.sh > lsvpcfg.out.1
+
+lsvgfs datavg01 | xargs -n1 sudo umount
+
+sudo chfs -m /OLD/oracle/H1D/sapdata1 /oracle/H1D/sapdata1
+sudo chfs -m /OLD/oracle/H1D/sapdata2 /oracle/H1D/sapdata2
+sudo chfs -m /OLD/oracle/H1D/sapdata3 /oracle/H1D/sapdata3
+sudo chfs -m /OLD/oracle/H1D/sapdata4 /oracle/H1D/sapdata4
+sudo chfs -m /OLD/oracle/H1D/sapdata5 /oracle/H1D/sapdata5
+sudo chfs -m /OLD/oracle/H1D/sapdata6 /oracle/H1D/sapdata6
+sudo chfs -m /OLD/oracle/H1D/sapdata7 /oracle/H1D/sapdata7
+sudo chfs -m /OLD/oracle/H1D/sapdata8 /oracle/H1D/sapdata8
+sudo chfs -m /OLD/oracle/H1D/sapdata9 /oracle/H1D/sapdata9
+sudo chfs -m /OLD/oracle/H1D/sapdata10 /oracle/H1D/sapdata10
+
+sudo cfgmgr
+sudo lsvpcfg.sh > lsvpcfg.out.2
+lspv | grep datavg01 | awk '{print $2}' > dcdch1daxdb98.datavg01.pvids
+sudo lspv | grep -i none | awk '{print $1}' | tr "\n" " "
+sudo recreatevg -L/ -Y/ -y datavg02 <list of disks from above comand>
+
+for fs in $(lsvgfs datavg02)
+do
+   sudo fsck -y ${fs}
+   if [ ${?} -eq 0 ]
+   then
+      sudo mount ${fs}
+   else
+      echo "Error mounting ${fs} ..."
+   fi      
+done
+
+Handover to DBA team
+

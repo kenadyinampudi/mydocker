@@ -1,0 +1,6 @@
+====== Clariion / VNX Storage migration ======
+
+  - Get a list of source LUNs<code>naviseccli -h <spa hostname> storagegroup -list -gname <STG_GRP_NAME></code>
+  - Create equal size target LUNs<code>naviseccli -h <spa hostname> lun -create -type Thin -capacity <capacity> -sq mb -poolName "PROD-POOL" -aa 1 -l <lun_number> -name <friendlyname></code>
+  - Start the migration with medium rate<code>naviseccli -h ldcvnx53001spa migrate -start -source <source_lun_number> -dest <destn_lun_number> -rate medium</code>
+  - View the progress<code>naviseccli -h ldcvnx53001spa migrate -list</code>

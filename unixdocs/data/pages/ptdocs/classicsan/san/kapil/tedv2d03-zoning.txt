@@ -1,0 +1,50 @@
+====== TEDV2D03 Zoning work ======
+
+<code>
+tedv2d03
+
+1. c0507607fdbb002e	ldcds6510a1	12
+2. c0507607fdbb002f 	ldcds6510a1	12
+3. c0507607fdbb0030	ldcds6510b1	13
+4. c0507607fdbb0031	ldcds6510b1	13
+
+Fabric A
+
+alicreate "tedv2d03_bb002e","c0:50:76:07:fd:bb:00:2e"
+alicreate "tedv2d03_bb002f","c0:50:76:07:fd:bb:00:2f"
+
+zonecreate "tedv2d03_bb002e__vnx53001_spa0_spb0","tedv2d03_bb002e;vnx53001_spa0;vnx53001_spb0"
+zonecreate "tedv2d03_bb002f__vnx53001_spa0_spb0","tedv2d03_bb002f;vnx53001_spa0;vnx53001_spb0"
+
+cfgadd "fab_a_act_config","tedv2d03_bb002e__vnx53001_spa0_spb0;tedv2d03_bb002f__vnx53001_spa0_spb0"
+
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+naviseccli -h ldcvnx53001spa storagegroup -create -gname TEDV2D03
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TEDV2D03 -hbauid c0:50:76:07:fd:bb:00:2e:c0:50:76:07:fd:bb:00:2e -sp a -spport 4 -type 3 -ip 10.32.50.163 -host TEDV2D03 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TEDV2D03 -hbauid c0:50:76:07:fd:bb:00:2e:c0:50:76:07:fd:bb:00:2e -sp b -spport 4 -type 3 -ip 10.32.50.163 -host TEDV2D03 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TEDV2D03 -hbauid c0:50:76:07:fd:bb:00:2f:c0:50:76:07:fd:bb:00:2f -sp a -spport 4 -type 3 -ip 10.32.50.163 -host TEDV2D03 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TEDV2D03 -hbauid c0:50:76:07:fd:bb:00:2f:c0:50:76:07:fd:bb:00:2f -sp b -spport 4 -type 3 -ip 10.32.50.163 -host TEDV2D03 -failovermode 4 -arraycommpath 1
+
+
+Fabric B
+
+alicreate "tedv2d03_bb0030","c0:50:76:07:fd:bb:00:30"
+alicreate "tedv2d03_bb0030","c0:50:76:07:fd:bb:00:31"
+
+zonecreate "tedv2d03_bb0030__vnx53001_spa1_spb1","tedv2d03_bb0030;vnx53001_spa1;vnx53001_spb1"
+zonecreate "tedv2d03_bb0031__vnx53001_spa1_spb1","tedv2d03_bb0031;vnx53001_spa1;vnx53001_spb1"
+
+cfgadd "fab_b_act_config","tedv2d03_bb0030__vnx53001_spa1_spb1;tedv2d03_bb0031__vnx53001_spa1_spb1"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TEDV2D03 -hbauid c0:50:76:07:fd:bb:00:30:c0:50:76:07:fd:bb:00:30 -sp a -spport 5 -type 3 -ip 10.32.50.163 -host TEDV2D03 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TEDV2D03 -hbauid c0:50:76:07:fd:bb:00:30:c0:50:76:07:fd:bb:00:30 -sp b -spport 5 -type 3 -ip 10.32.50.163 -host TEDV2D03 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TEDV2D03 -hbauid c0:50:76:07:fd:bb:00:31:c0:50:76:07:fd:bb:00:31 -sp a -spport 5 -type 3 -ip 10.32.50.163 -host TEDV2D03 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TEDV2D03 -hbauid c0:50:76:07:fd:bb:00:31:c0:50:76:07:fd:bb:00:31 -sp b -spport 5 -type 3 -ip 10.32.50.163 -host TEDV2D03 -failovermode 4 -arraycommpath 1</code>

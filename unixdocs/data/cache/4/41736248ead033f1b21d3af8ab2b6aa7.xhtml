@@ -1,0 +1,163 @@
+
+<h1 class="sectionedit1" id="updating_multipath_and_udev_rules_for_pure">Updating Multipath and udev Rules for PURE</h1>
+<div class="level1">
+
+<p>
+These steps were executed during a storage migration from Hitachi to PURE.  Multipath configuration file has been customized on the Manhattan RAC cluster servers for unknown reasons and the wwids have been hard coded.  Inorder to detect the new LUNs and have a generic configuration, we have to update the multipath and lvm configuration files.  Finally, we also have to implement the PURE recommended configuration for Linux to make sure that the system runs with optimal performance.
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Updating Multipath and udev Rules for PURE" [1-544] -->
+<h2 class="sectionedit2" id="update_multipath_configuration">Update Multipath configuration</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Backup the multipath configuration file<pre class="code">RED=&#039;\033[0;31m&#039; &amp;&amp; NC=&#039;\033[0m&#039; &amp;&amp; \
+[ ! -f /etc/multipath_`date +&#039;%Y-%m-%d&#039;`.conf ] \
+&amp;&amp; sudo cp -pr /etc/multipath.conf /etc/multipath_`date +&#039;%Y-%m-%d&#039;`.conf || \
+echo  -e &quot;${RED}File already exist. Please backup to another file${NC}&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit /etc/multipath.conf file &amp; modify the <strong>defaults</strong> and <strong>devices</strong> sections to look like below<pre class="code">defaults {
+   polling_interval      10
+   find_multipaths       yes
+   user_friendly_names yes
+}
+devices {
+   device {
+       vendor                &quot;PURE&quot;
+       product               &quot;FlashArray&quot;
+       path_selector         &quot;queue-length 0&quot;
+       path_grouping_policy  group_by_prio
+       path_checker          tur
+       fast_io_fail_tmo      10
+       dev_loss_tmo          600
+       no_path_retry         0
+       hardware_handler      &quot;1 alua&quot;
+       prio                  alua
+       failback              immediate
+   }
+}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit /etc/multipath.conf file and make sure the wwids are commented<pre class="code">vi /etc/multipath.conf 
+#       wwid &quot;*&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the <strong>blacklist_exceptions</strong> &amp; <strong>multipaths</strong> sections entirely from /etc/multipath.conf.  The following are lines/sections that needs to be removed <pre class="code">blacklist_exceptions {
+        wwid &quot;360060e80221283005041128300000006&quot;
+        wwid &quot;360060e8022128300504112830000000e&quot;
+        wwid &quot;360060e80221283005041128300000012&quot;
+        wwid &quot;360060e80221283005041128300000016&quot;
+        wwid &quot;360060e8022128300504112830000001d&quot;
+        wwid &quot;360060e8022128300504112830000001e&quot;
+        wwid &quot;360060e8022128300504112830000001f&quot;
+        wwid &quot;360060e8022128300504112830000003d&quot;
+}
+multipaths {
+        multipath {
+                uid 0
+                gid 0
+                wwid &quot;360060e80221283005041128300000006&quot;
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid &quot;360060e8022128300504112830000000e&quot;
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid &quot;360060e80221283005041128300000012&quot;
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid &quot;360060e80221283005041128300000016&quot;
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid &quot;360060e8022128300504112830000001d&quot;
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid &quot;360060e8022128300504112830000001e&quot;
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid &quot;360060e8022128300504112830000001f&quot;
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid &quot;360060e8022128300504112830000003d&quot;
+                mode 0600
+
+}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Regenerate the initramfs <pre class="code">sudo dracut --force --add multipath --include /etc/multipath /etc/multipath</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Update Multipath configuration" [545-3626] -->
+<h2 class="sectionedit3" id="update_lvmconf">Update lvm.conf</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Lets take a backup before we do anything <pre class="code">RED=&#039;\033[0;31m&#039; &amp;&amp; NC=&#039;\033[0m&#039; &amp;&amp; \
+[ ! -f /etc/lvm/lvm_`date +&#039;%Y-%m-%d&#039;`.conf ] \
+&amp;&amp; sudo cp -pr /etc/lvm/lvm.conf /etc/lvm/lvm_`date +&#039;%Y-%m-%d&#039;`.conf || \
+echo  -e &quot;${RED}File already exist. Please backup to another file${NC}&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update the <strong>filter</strong> line in the /etc/lvm/lvm.conf</div>
+</li>
+</ol>
+
+<p>
+<strong>from</strong>
+</p>
+<pre class="code"> filter = [ &quot;a/.*/&quot; ]</pre>
+
+<p>
+<strong>to</strong>
+</p>
+<pre class="code"> filter = [ &quot;a/.*/&quot;, &quot;r/sd.*/&quot; ]</pre>
+
+</div>
+<!-- EDIT3 SECTION "Update lvm.conf" [3627-4095] -->
+<h2 class="sectionedit4" id="update_udev_rules">Update udev rules</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create a new file /etc/udev/rules.d/99-pure-storage.rules with the following contents <pre class="code"># Recommended settings for Pure Storage FlashArray.
+
+# Use none scheduler for high-performance solid-state storage
+ACTION==&quot;add|change&quot;, KERNEL==&quot;sd*[!0-9]&quot;, SUBSYSTEM==&quot;block&quot;, ENV{ID_VENDOR}==&quot;PURE&quot;, ATTR{queue/scheduler}=&quot;noop&quot;
+
+# Reduce CPU overhead due to entropy collection
+ACTION==&quot;add|change&quot;, KERNEL==&quot;sd*[!0-9]&quot;, SUBSYSTEM==&quot;block&quot;, ENV{ID_VENDOR}==&quot;PURE&quot;, ATTR{queue/add_random}=&quot;0&quot;
+
+# Spread CPU load by redirecting completions to originating CPU
+ACTION==&quot;add|change&quot;, KERNEL==&quot;sd*[!0-9]&quot;, SUBSYSTEM==&quot;block&quot;, ENV{ID_VENDOR}==&quot;PURE&quot;, ATTR{queue/rq_affinity}=&quot;2&quot;
+
+# Set the HBA timeout to 60 seconds
+ACTION==&quot;add&quot;, SUBSYSTEMS==&quot;scsi&quot;, ATTRS{model}==&quot;FlashArray      &quot;, RUN+=&quot;/bin/sh -c &#039;echo 60 &gt; /sys/$DEVPATH/device/timeout&#039;&quot;
+
+ACTION==&quot;add|change&quot;, KERNEL==&quot;sd*[!0-9]&quot;, SUBSYSTEM==&quot;block&quot;, ENV{ID_VENDOR}==&quot;PURE&quot;, ATTR{queue/max_sectors_kb}=&quot;4096&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Update udev rules" [4096-] -->

@@ -1,0 +1,110 @@
+====== Deprecated - Dell EMC Server Update Utility ======
+
+Check out [[unix:dellfirmwareupdate|New Dell Firmware Update]]
+
+\\ 
+\\ 
+This was downloaded from Dell.\\ 
+[[https://www.dell.com/support/article/en-us/sln285500/dell-emc-server-update-utility-suu-guide-and-download?lang=en]]
+\\ 
+I downloaded the current version for Dell R720s and above (this includes R630) \\
+It's saved in cdcpilns013.federalmogul.com:/linux/iso/drivers/SUU-LIN64_20.07.200.436.iso
+\\ 
+If you are working on a remote site's computer, I recommend copying this to a site system first with plenty of space (+10G free) \\
+\\ 
+=== ALWAYS REBOOT THE DRAC BEFORE BEGINNING ===
+A number of strange, unexplainable and vague errors can occur because of "dirty" drac.  I found that you almost always should reboot the DRAC before beginning these updates. \\ 
+\\ 
+Mount the iso read only somewhere. \\  
+\\ 
+''mount -o ro,loop /tmp/SUU-LIN64_20.07.200.436.iso /mnt'' \\ 
+\\ 
+Then you can cd into that directory.  Run the check first to see what updates will be applied. \\ 
+''./suu -comparison %%>>%% ~/firmwarecheck.txt''  \\ 
+\\
+\\ Reboot the DRAC from the command line first.  It takes about 10 minutes to come back.\\ ''racadm racreset'' \\ 
+\\ 
+When you have a CC in place and ready to go, run the "upgrade only" command.  \\ (There is another command which will also work to downgrade any components as necessary.  Don't use it.) \\ 
+''./suu -upgradeonly -stoponfail'' \\ 
+\\
+\\ Log into DRAC and establish a console, then reboot the machine to have rest of updates applied.\\
+This will take about 20 minutes or more for all the updates.\\  
+\\ 
+==== Example of Comparison run ====
+<cli prompt="#">
+cdcpillx022:/tmp/stuff # ./suu -comparison
+
+------------------------------------------------
+Welcome to the DELL EMC OpenManageServer Update Utility.
+Copyright (c) 2003 Dell Inc. All Rights Reserved.
+SUU Version: 20.07.00.436
+                    
+======= Comparison Results ========
+component: BIOS
+component type: BIOS
+current version: 2.2.2 < repository version: 2.9.0
+Package name: BIOS_8P8WX_LN_2.9.0.BIN
+Applicability: Package can be applied
+-----------------------------
+component: NetXtreme BCM5720 Gigabit Ethernet PCIe (em4)
+component type: Firmware
+current version: 7.8.16 < repository version: 21.60.8
+Package name: Network_Firmware_NDT09_LN_21.60.8.BIN
+Applicability: Package can be applied
+-----------------------------
+component: NetXtreme BCM5720 Gigabit Ethernet PCIe (em1)
+component type: Firmware
+current version: 7.8.16 < repository version: 21.60.8
+Package name: Network_Firmware_NDT09_LN_21.60.8.BIN
+Applicability: Package can be applied
+-----------------------------
+component: NetXtreme BCM5720 Gigabit Ethernet PCIe (em2)
+component type: Firmware
+current version: 7.8.16 < repository version: 21.60.8
+Package name: Network_Firmware_NDT09_LN_21.60.8.BIN
+Applicability: Package can be applied
+-----------------------------
+component: NetXtreme BCM5720 Gigabit Ethernet PCIe (em3)
+component type: Firmware
+current version: 7.8.16 < repository version: 21.60.8
+Package name: Network_Firmware_NDT09_LN_21.60.8.BIN
+Applicability: Package can be applied
+-----------------------------
+component: Firmware for  - Disk 3 in Backplane 1 of PERC H310 Mini Controller 0  
+component type: Firmware
+current version: GA0D < repository version: GA10
+Package name: Serial-ATA_Firmware_HPG73_LN_GA10_A00.BIN
+Applicability: Package can be applied
+-----------------------------
+component: PERC H310 Mini Controller 0 Firmware
+component type: Firmware
+current version: 20.12.1-0002 < repository version: 20.13.3-0001
+Package name: SAS-RAID_Firmware_YP0NF_LN_20.13.3-0001_A11.BIN
+Applicability: Package can be applied
+-----------------------------
+component: Integrated Dell Remote Access Controller
+component type: Firmware
+current version: 1.57.57.00 < repository version: 2.65.65.65
+Package name: iDRAC-with-Lifecycle-Controller_Firmware_0GHF4_LN_2.65.65.65_A00.BIN
+Applicability: Package can be applied
+-----------------------------
+component: Enterprise UEFI Diagnostics, 4233A0, 4233.1
+component type: Application
+current version: 4233A0 < repository version: 4247A1
+Package name: Diagnostics_Application_D5TM2_LN_4247A1_4247.2.BIN
+Applicability: Package can be applied
+-----------------------------
+component: Integrated Dell Remote Access Controller
+component type: Firmware
+current version: 1.57.57 < repository version: 2.65.65.65
+Package name: iDRAC-with-Lifecycle-Controller_Firmware_0GHF4_LN_2.65.65.65_A00.BIN
+Applicability: Package can be applied
+-----------------------------
+
+
+
+Note that the package(s) bearing Applicability tag as
+"Package can be applied" can be applied on the system
+</cli>
+
+Try to use FTP locations 143.166.147.76 or 143.166.135.76

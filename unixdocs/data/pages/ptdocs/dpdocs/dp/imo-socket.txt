@@ -1,0 +1,37 @@
+If by any chance you will have to sort out issues with a client on CDC NBU domain - that the user initiated backups aren't successful, please check the following:
+  * What is the client name for certificate in pane: Security Management/Certificate Management - if its not having bck suffix follow this procedure, on master run <code>sudo nbcertcmd -revokecertificate -host client_name_fqdn
+sudo nbcertcmd -createToken -reissue  -host client_name_fqdn -name client_name_short_BCK</code> From this second command copy the token which was generated. Login to the client itself via SSH and run this<code>sudo /usr/openv/netbackup/bin/nbcertcmd -getcertificate -token token_from_prev_command</code>Below is example execution<code>pawetkac on pcdcbkplxms01:/home/pawetkac/script $ sudo nbcertcmd -revokecertificate -host qcdcqsnaxdb01.driv.com
+
+Certificate revoke request processed successfully.
+pawetkac on pcdcbkplxms01:/home/pawetkac/script $ sudo nbcertcmd -createToken -reissue  -host qcdcqsnaxdb01.driv.com -name qcdcqsnaxdb01_bck
+Token BLZBCBFOCZSQEADA created successfully.
+pawetkac on pcdcbkplxms01:/home/pawetkac/script $ sudo ssh root@qcdcqsnaxdb01.driv.com
+Last unsuccessful login: Thu May  2 12:25:55 UTC 2019 on ssh from 10.128.73.37
+Last login: Fri Aug  9 06:42:56 UTC 2019 on ssh from 10.128.41.10
+
+Tenneco's internal systems must be used only for conducting Tenneco's business,
+or for purposes authorised by Tenneco.
+It may be a criminal offence to secure unauthorised access to any program or data in,
+or make any unauthorised modification to the contents of, this computer system.
+Offenders are liable to criminal prosecution. Use is subject to audit at any time by Tenneco.
+If you are not an authorised user, LOGOUT immediately.
+
+
+qcdcqsnaxdb01:/root>sudo /usr/openv/netbackup/bin/nbcertcmd -getcertificate -token BLZBCBFOCZSQEADA 
+Host certificate and certificate revocation list received successfully from server pcdcbkplxms01bck.
+qcdcqsnaxdb01:/root>exit
+</code>
+
+If you will see this after first command run this **Request to revoke certificate has failed.
+A web login is required, run the 'bpnbat -login -loginType WEB' command to login.**<code>pawetkac on pcdcbkplxms01:/home/pawetkac $ sudo nbcertcmd -revokecertificate -host dcdcdsmlxdb01.driv.com
+Request to revoke certificate has failed.
+A web login is required, run the 'bpnbat -login -loginType WEB' command to login.
+EXIT STATUS 5930: The request could not be authorized.
+pawetkac on pcdcbkplxms01:/home/pawetkac $ sudo bpnbat -login -loginType WEB
+Authentication Broker: pcdcbkplxms01
+Authentication port [0 is default]:
+Authentication type (NIS, NISPLUS, WINDOWS, vx, unixpwd, ldap): unixpwd
+Domain:  pcdcbkplxms01
+Login Name: root
+Password:
+Operation completed successfully.</code>Password for root user is our well know password on this box. **__Use it only to perform this logon type - nothing more.__**

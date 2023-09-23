@@ -1,0 +1,92 @@
+
+<h1 class="sectionedit1" id="aix_vios">AIX / VIOS</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Create these users<pre class="code">sudo mkgroup &quot;id=8086&quot; taunix
+sudo mkgroup &quot;id=8089&quot; ovteam
+sudo mkgroup &quot;id=8090&quot; sapteam
+sudo mkgroup &quot;id=8091&quot; dbateam
+sudo mkgroup &quot;id=8092&quot; stgteam
+sudo mkgroup &quot;id=8093&quot; secteam
+sudo mkgroup &quot;id=8094&quot; 3rdteam
+sudo mkgroup &quot;id=8095&quot; sudogrp
+sudo mkgroup &quot;id=8096&quot; mdlteam
+sudo mkgroup &quot;id=8097&quot; lnteam
+
+sudo mkuser &quot;id=212&quot; &quot;pgrp=staff&quot; &quot;home=/home/x1shukla&quot; &quot;gecos=Shukant Lagwankar&quot; x1shukla
+sudo mkuser &quot;id=4592&quot; &quot;pgrp=staff&quot; &quot;home=/home/x1vasuna&quot; &quot;gecos=Vasudevan Nadar&quot; x1vasuna
+sudo mkuser &quot;id=4207&quot; &quot;pgrp=taunix&quot; &quot;home=/home/x1rzb826&quot; &quot;gecos=Robert Bieniek&quot; x1rzb826
+sudo mkuser &quot;id=4255&quot; &quot;pgrp=taunix&quot; &quot;home=/home/x1cxs952&quot; &quot;gecos=Chris Stachowiak&quot; x1cxs952
+sudo mkuser &quot;id=8088&quot; &quot;pgrp=taunix&quot; &quot;home=/home/x1kxk630&quot; &quot;gecos=Kapilraj Koroth&quot; x1kxk630
+sudo mkuser &quot;id=4247&quot; &quot;pgrp=ovteam&quot; &quot;home=/home/sxp8856&quot; &quot;gecos=Stephen Payne&quot; sxp8856
+sudo mkuser &quot;id=4246&quot; &quot;pgrp=ovteam&quot; &quot;home=/home/txb0389&quot; &quot;gecos=Todd Busniewski&quot; txb0389
+sudo mkuser &quot;id=4244&quot; &quot;pgrp=stgteam&quot; &quot;home=/home/pawetkac&quot; &quot;gecos=Pawel Tkaczyk&quot; pawetkac
+sudo mkuser &quot;id=2425&quot; &quot;pgrp=stgteam&quot; &quot;home=/home/mkd7375&quot; &quot;gecos=Moon Do&quot; mkd7375
+sudo mkuser &quot;id=2014&quot; &quot;pgrp=staff&quot; &quot;home=/home/tauxrpt&quot; &quot;gecos=GIOS Unix team - monitoring account&quot; tauxrpt
+
+sudo pwdadm -c x1vasuna
+sudo pwdadm -c x1shukla
+sudo pwdadm -c pawetkac
+sudo pwdadm -c mkd7375
+sudo pwdadm -c x1rzb826
+sudo pwdadm -c x1kxk630
+sudo pwdadm -c x1cxs952
+sudo pwdadm -c sxp8856
+sudo pwdadm -c txb0389</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> For some of our favorite team members, we also copy the ssh keys for them.</div>
+<ul>
+<li class="level2"><div class="li"> Login to taitc118<pre class="code">for user in sxp8856 txb0389 pawetkac tauxrpt x1kxk630 x1shukla x1vasuna
+do
+   sudo rsync -avv /home/${user}/ ${targethost}:/home/${user}/
+done</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "AIX / VIOS" [1-1754] -->
+<h1 class="sectionedit2" id="linux">Linux</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Create these users<pre class="code">sudo groupadd -g 8086 taunix
+sudo groupadd -g 8089 ovteam
+sudo groupadd -g 8090 sapteam
+sudo groupadd -g 8091 dbateam
+sudo groupadd -g 8092 stgteam
+sudo groupadd -g 8093 secteam
+sudo groupadd -g 8094 3rdteam
+sudo groupadd -g 8095 sudogrp
+sudo groupadd -g 8096 mdlteam
+sudo groupadd -g 8097 lnteam
+
+
+sudo useradd -g stgteam -d /home/pawetkac -c &quot;Pawel Tkaczyk&quot; -m -u 4244 pawetkac
+sudo useradd -g stgteam -d /home/jhf1625 -c &quot;James Fort&quot; -m -u 4064 jhf1625
+sudo useradd -g taunix -d /home/x1kxk630 -c &quot;Kapilraj Koroth&quot; -m -u 8088 x1kxk630
+sudo useradd -g taunix -d /home/x1shukla -c &quot;Shukant Lagwankar&quot; -m -u 202 x1shukla
+sudo useradd -g taunix -d /home/x1vasuna -c &quot;Vasudevan Nadar&quot; -m -u 4592 x1vasuna
+sudo useradd -g taunix -d /home/x1rzb826 -c &quot;Robert Bieniek&quot; -m -u 4207 x1rzb826
+sudo useradd -g taunix -d /home/x1cxs952 -c &quot;Chris Stachowiak&quot; -m -u 4255 x1cxs952
+sudo useradd -g ovteam -d /home/sxp8856 -c &quot;Stephen Payne&quot; -m -u 4247 sxp8856
+sudo useradd -g ovteam -d /home/txb0389 -c &quot;Todd Busniewski&quot; -m -u 4246 txb0389
+sudo useradd -g users -d /home/tauxrpt -c &quot;GIOS Unix team - monitoring account&quot; -m -u 2014 tauxrpt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> For some of our favorite team members, we also copy the ssh keys for them.</div>
+<ul>
+<li class="level2"><div class="li"> Login to taitc118<pre class="code">for user in sxp8856 txb0389 pawetkac x1kxk630 tauxrpt x1shukla x1vasuna
+do
+   sudo rsync -avv /home/${user}/ &lt;host&gt;:/home/${user}/
+done</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Linux" [1755-] -->

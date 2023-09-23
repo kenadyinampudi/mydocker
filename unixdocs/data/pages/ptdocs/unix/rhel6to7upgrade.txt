@@ -1,0 +1,132 @@
+====== Redhat upgrade document -- Redhat Enterprise Linux version 6 to 7 ( RHEL6 to RHEL7 ) ======
+
+FIXME
+
+
+Do not do this until this message goes away
+
+
+
+From this redhat documentation ''https://access.redhat.com/solutions/637583''
+
+===== Stop applications and prepare for backout =====
+
+  - Shutdown applications.
+  - Plan with VMWARE team and perform a VMWARE snapshot
+    - Shutdown the OS
+    - Take a cold snapshot -- Wintel / Unix.
+    - Power the system back on
+  - Login to the server.
+
+===== Upgrade to RHEL 6.8 if not done already =====
+
+  - Remove all the existing repositories except local.repo<code>sudo rm /etc/yum.repos.d/cobbler-config.repo
+sudo rm /etc/yum.repos.d/redhat.repo</code>
+  - Install RHEL 6.8's local.repo<code>sudo vi /etc/yum.repos.d/local.repo</code>Add this <code>[local-rhel-6.8-x86_64]
+name=local-rhel-6.8-x86_64
+baseurl=http://pablsv02/sources/rhel-6.8-x86_64/
+enabled=1
+gpgcheck=0
+proxy=_none_</code>
+  - Clean and perform the update<code>sudo yum clean all
+sudo yum update -y</code>
+  - Reboot<code>sudo init 6</code>
+
+===== Upgrade from RHEL6 to RHEL7 ======
+
+==== Move /usr filesystem to "/" filesystem ====
+
+  - Move /usr filesystem to a directory
+    - Enlarge the "/" filesystem to accommodate contents of ''/usr'' filesystem<code>sudo lvextend -L 7G /dev/sysvg/root
+sudo resize2fs /dev/sysvg/root</code>Shutdown the server<code>sudo init 0</code>
+    - Once the system is down, Login to vSphere.<code>Select the VM 
+  --> Edit Settings
+    --> Select the CD/DVD drive
+      --> Select Datastore ISO file
+        --> Click on Browse
+          --> Double click on "ISO" datastore
+            --> Select "rhel-server-6.8-x86_64-boot.iso"
+              --> Check "Connect at power on" under "Device Status"
+                --> Click "OK"
+                  --> Open a console and then power on the VM
+                    --> At the console, when the system starts, hit "ESC" key once
+                      --> At the boot menu, choose "CDROM"</code>
+    - Boot through the DVD<code>Select 'Rescue Installed System' --> 
+  --> Mount the root read & write under /mnt/sysimage
+    --> Open a Shell 
+      --> Get to the prompt</code>
+    - Copy /usr filesystem to "/" filesystem<code>rsync -avv /mnt/sysimage/usr/ /mnt/sysimage/usrnew/</code>
+    - Unmount and rename /usr filesystem<code>cp /mnt/sysimage/etc/fstab /mnt/sysimage/etc/fstab.backup</code>Edit fstab<code>vi /mnt/sysimage/etc/fstab</code>Remove the line that starts with ''/dev/mapper/sysvg-usr''
+    - Unmount /usr filesystem<code>umount /mnt/sysimage/usr</code>
+    - Remove the directory<code>rmdir /mnt/sysimage/usr</code>
+    - Rename "usrnew" directory to "usr"<code>mv -f /mnt/sysimage/usrnew /mnt/sysimage/usr</code>
+    - Reboot<code>reboot</code>
+
+==== Install and run pre-upgrade scripts ====
+
+  - Remove all existing repositories<code>sudo rm /etc/yum.repos.d/*.repo</code>
+  - Enable the RHEL6, extras and optional repositories to perform pre-upgrade tasks<code>sudo vi /etc/yum.repos.d/rhel-6-7-upgrade.repo</code>Add these<code>
+[local-rhel-6.8-x86_64]
+name=local-rhel-6.8-x86_64
+baseurl=http://pablsv02/sources/rhel-6.8-x86_64/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-rhel-6-server-extras-rpms]
+name=local-rhel-6-server-extras-rpms
+baseurl=http://pablsv02/sources/rhel-6-server-extras-rpms/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-rhel-6-server-optional-rpms]
+name=local-rhel-6-server-optional-rpms
+baseurl=http://pablsv02/sources/rhel-6-server-optional-rpms/
+enabled=1
+gpgcheck=0
+proxy=_none_</code>
+  - Re-create yum local cache and cleanup<code>sudo yum clean all</code>
+  - Install the pre-upgrade packages.<code>sudo yum -y install preupgrade-assistant preupgrade-assistant-ui preupgrade-assistant-el6toel7</code>
+  - Run preupg command<code>sudo preupg</code>Answer "y" to this question<code>Preupg tool doesn't do the actual upgrade.
+Please ensure you have backed up your system and/or data in the event of a failed upgrade
+ that would require a full re-install of the system from installation media.
+Do you want to continue? y/n</code>
+  - Copy ''/root/preupgrade/result.html '' file to a PC and review the results. Take actions on reported errors.
+  - Install the upgrade tool<code>sudo yum install redhat-upgrade-tool</code>
+  - Import the Redhat GPG key<code>sudo rpm --import http://<buildserver>/sources/rhel-6.8-x86_64/RPM-GPG-KEY-redhat-release</code>
+
+==== Perform the upgrade ====
+
+  - Run the upgrade tool<code>sudo redhat-upgrade-tool --network <the-latest-rhel-7-version> --instrepo ftp://ftp.example.com/pub/rhel7/</code>E.g.<code>sudo redhat-upgrade-tool --network 7.2 --instrepo http://pablsv02/sources/rhel-7.2-x86_64</code>
+  - Wait until this screen comes<code>Finished. Reboot to start upgrade.</code>Then reboot<code>sudo init 6</code>
+  - Watch the upgrade process on the VM's console.
+
+==== Perform the post-upgrade tasks ====
+
+  - Once the server is up remove the repository<code>sudo rm /etc/yum.repos.d*.repo</code>
+  - Enable the RHEL7 Repository<code>sudo vi local.repo</code><code>[local-rhel-7.2-x86_64]
+name=local-rhel-7.2-x86_64
+baseurl=http://pablsv02/sources/rhel-7.2-x86_64/
+enabled = 1
+gpgcheck=0
+proxy=_none_</code> 
+  - [[unix:setupresolv.conf|Setup resolv.conf]]
+  - On RHEL7<code>sudo yum install -y open-vm-tools</code>
+  - Disable iptables<code>sudo systemctl disable iptables</code>
+  - If the server has HTTPD, enable HTTPD service in systemd<code>sudo systemctl enable httpd</code>
+  - [[unix:setupntp&#redhat|Setup NTP]]
+  - Start snmpd
+    - Enable it<code>sudo systemctl enable snmpd</code>
+  - Start xinetd
+    - Enable it<code>sudo systemctl enable xinetd</code>
+  - Perform a reboot<code>sudo init 6</code>
+
+===== Handover the system to application team =====
+
+  - Have the application team perform functional testing.
+
+
+===== Cleanup the snapshots =====
+
+  - Create a calendar reminder to cleanup the snapshots after 7 days.

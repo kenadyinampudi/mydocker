@@ -1,0 +1,28 @@
+
+====== Installing / renewing Flexnet Cadverter License on pggpdb01 for Frank Sessler  ======
+
+** Contact Frank Sessler /DE/TA.EU and schedule the installation.  Be sure to work with Frank while doing this.  Also make sure you can use Skype Meeting to share screen  so Frank can check work as it progresses if required.  Confirm each step with Frank use Skype Chat to work step by step with Frank.
+
+  * Frank will email you the new license as an attachment. Save the attachment to a local file on your PC
+  * Use FileZilla to transfer file from local pc to pggpdb01. Transfer to your home  directory .  !!! NOTE MAKE SURE TRANSFER TYPE IS SET TO ASCII !!!!  Thsi removes all special characters like ^M from file. Newer versions of FileZilla do automatic sensing and transfer as required. 
+  * You will need to coment out a line in /etc/inittab so make a copy of it now where yyyymmdd is current date <code> cd /etc </code><code> sudo cp -p inittab inittab-$(date +%Y%m%d-%H:%M:%S)</code>
+  * Edit the the inittab file <code>sudo vi inittab </code>
+  * Comment out the following line <and save the file. Note in the inittab a ":" is the comment character of choice, but a "#" will also work.  <code>flexlmtheorem:2:respawn:/opt/FLEXnet/cadverter/daemon_theorem start >/dev/null 2>&1 </code> 
+  * Now tell the init command to re-examine the /etc/inittab file Note in AIX the telint and init commands are identical in purpose. See https://www.ibm.com/support/knowledgecenter/en/ssw_aix_61/com.ibm.aix.cmds5/telinit.htm <code> telinit q</code>
+  * Change to the cadverter directory <code>cd /opt/FLEXnet/cadverter </code>
+  * Save the current license as backup where yyyymmdd is current date <code>sudo cp -p license.lic license.lic-$(date +%Y%m%d-%H:%M:%S)</code>  
+  * Copy the new licene <code>sudo cp -p {new license location} ./license.lic</code>
+  * Copy the license.lic file to theorem.lic.<code> sudo cp -p license.lic theorem.lic</code>
+  * Owner & group of theorem.lic should be root:system If they are not correct fix them now <code> chown root:system theorem.lic </code>
+  * Change the permissions on the therom.lic file <code>sudo chmod 666 theorem.lic</code>
+  * Invoke the new license <code>sudo ./lmutil lmreread -c ./license.lic</code>
+  * 
+  * Frank will check the file and run tests to insure the new license is activated. 
+  
+  Extra commands that Frank may ask you to do if there are isues.
+  * <code> sudo ./daemon_theorem start</code>
+  * Once everything is working correctoy go back and undo the comment in the inittab file
+ i* Edit the the inittan file <code>sudo vi initab </code>
+  * Uncomment out the following line (you commented this out earlier) and save the file.  <code>flexlmtheorem:2:respawn:/opt/FLEXnet/cadverter/daemon_theorem start >/dev/null 2>&1 </code>
+  * Now tell the init command to re-examine the /etc/inittab file Note in AIX the telint and init commands are identical in purpose. See https://www.ibm.com/support/knowledgecenter/en/ssw_aix_61/com.ibm.aix.cmds5/telinit.htm <code> telinit q</code>
+

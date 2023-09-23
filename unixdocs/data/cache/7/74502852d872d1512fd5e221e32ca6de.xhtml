@@ -1,0 +1,126 @@
+
+<h1 class="sectionedit1" id="aix_-_create_a_new_filesystem">AIX - Create a new filesystem</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "AIX - Create a new filesystem" [1-45] -->
+<h2 class="sectionedit2" id="standards">Standards (?)</h2>
+<div class="level2">
+
+<p>
+As you might see, there are multiple standards here for creating filesystems. ( read, standards are not enforced all the time / standards are compromized when SAN cloning like things are performed)
+</p>
+
+<p>
+If you are the lucky one who got the chance to create a filesystem from scratch, like a new project requesting an oracle database, here are some pointers.
+</p>
+<ul>
+<li class="level1"><div class="li"> Try to keep smaller databases in one volume group. Bigger databases may have a different VG for binaries, redos, archives and data files.</div>
+</li>
+<li class="level1"><div class="li"> Try to name the logical volumes with a prefix of the application name for e.g. <strong>tsbilv001</strong> for the first logical volume of TSBI database. This helps when SAN clonings are performed or the database is moved to a different host. If you use the default <strong>fslv</strong> name, you may not be able to import the VG successfully on another host. Another acceptable standard is to name is according to the mountpoint e.g. <strong>/oracle/TSBI/data1</strong> filesystem may be created on a logical volume <strong>oraTSBIdata1</strong>. I removed some characters to limit the length of the lvname.</div>
+</li>
+<li class="level1"><div class="li"> Try to name the VG unique in the environment e.g. <strong>tsbidatavg01</strong>, <strong>tsbisoftvg01</strong>, <strong>tsbiredovg01</strong> etc.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Standards (?)" [46-1243] -->
+<h2 class="sectionedit3" id="create_database_filesystem_s">Create database filesystem(s)</h2>
+<div class="level2">
+
+<p>
+This document was written as I created filesystems for TSBI database for a GIS upgrade project.
+</p>
+
+</div>
+<!-- EDIT3 SECTION "Create database filesystem(s)" [1244-1383] -->
+<h3 class="sectionedit4" id="create_a_volume_group">Create a volume group</h3>
+<div class="level3">
+
+<p>
+As TGIS is going to be a small test database, I decided to keep everything in one single VG. The VG name will be <strong>tsbivg01</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Create tsbivg01<pre class="code">sudo mkvg -B -s 512 -y tsbivg01 hdisk26 hdisk27 hdisk28 hdisk29 hdisk30</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Create a volume group" [1384-1648] -->
+<h3 class="sectionedit5" id="create_logical_volumes_and_filesystems">Create logical volumes and filesystems</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> The storage request looked like this<pre class="code">/oracle/TSBI           10g
+/oracle/TSBI/data1     50g
+...lines removed...
+/oracle/TSBI/112_64    10g</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare commands to create logicalvolumes<pre class="code">cat /var/tmp/tsbiinfo | sed -e &quot;s;/oracle;ora;g&quot; -e &quot;s;/;;g&quot; \
+|sed &quot;s;g$;;g&quot; |  awk &#039;{print $1,$2*1024/512}&#039; | awk &#039;{print &quot;mklv -tjfs2 -y &quot;$1,&quot;tsbivg01&quot;,$NF}&#039; &gt; /var/tmp/cr_lv_cmds</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the script<pre class="code">mklv -tjfs2 -y oraTSBI tsbivg01 80
+...lines removed...
+mklv -tjfs2 -y oraTSBIarchive tsbivg01 80
+mklv -tjfs2 -y oraTSBI112_64 tsbivg01 80</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the logical volumes<pre class="code">sudo ksh -x /var/tmp/cr_lv_cmds
++ mklv -tjfs2 -y oraTSBI tsbivg01 80
+oraTSBI
+...lines removed...
++ mklv -tjfs2 -y oraTSBI112_64 tsbivg01 80
+oraTSBI112_64</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Increase the Maximum allocation for LV where seems needed<pre class="code">for lv in lv1 lv2 .......
+do
+   sudo chlv -x 10240 ${lv}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">cat /var/tmp/tsbiinfo | awk &#039;{print $1}&#039; &gt; /var/tmp/fsnames
+cat /var/tmp/cr_lv_cmds | awk &#039;{print $4}&#039; &gt; /var/tmp/lvnames</pre>
+
+<p>
+Get the commands
+</p>
+<pre class="code">paste /var/tmp/lvnames /var/tmp/fsnames \
+| awk &#039;{print &quot;crfs -vjfs2 -d &quot;$1,&quot;-A yes -t no -m &quot;$NF}&#039; &gt; /var/tmp/cr_fs.tsbi</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">root on taitc102:/root&gt;sudo ksh -x /var/tmp/cr_fs.tsbi
++ crfs -vjfs2 -d oraTSBI -A yes -t no -m /oracle/TSBI
+File system created successfully.
+10485236 kilobytes total disk space.
+New File System size is 20971520
+...lines removed...
++ crfs -vjfs2 -d oraTSBI112_64 -A yes -t no -m /oracle/TSBI/112_64
+File system created successfully.
+10485236 kilobytes total disk space.
+New File System size is 20971520</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the filesystems<pre class="code">for fs in $(lsvgfs tsbivg01 | sort )
+do
+  sudo mkdir $fs
+  sudo chmod 111 $fs
+  sudo mount $fs
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set permissions for filesystems<pre class="code">for fs in $(lsvgfs tsbivg01 | sort )
+do
+  sudo chown oratsbi:dba ${fs}
+  sudo chmod 755 ${fs}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send an email to the <abbr title="Database Administrator">DBA</abbr> team and let them decide when to turn on the “cio” mount option.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Create logical volumes and filesystems" [1649-] -->

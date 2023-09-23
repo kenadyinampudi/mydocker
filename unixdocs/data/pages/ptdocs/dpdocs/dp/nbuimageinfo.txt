@@ -1,0 +1,18 @@
+In case you need to provide the backup expiration date as well the elapsed time it taken for this backup to be created you can use this on UNIX based OS. Scirpt is available on taqa1d01 in /usr/openv/netbackup/bin/backup_info_timeelapsed<code>
+#!/bin/sh
+#This script needs one parameter - policy name
+ARG="${1}"
+if [ -z "${ARG}" ] ; then
+        echo You need to paas policy name to this script
+        exit 1
+fi
+
+bpimagelist -policy ${ARG} -hoursago 24 -U > image_info ;
+echo "Elapsed Time" > timing;
+echo "-------"  >> timing ;
+bpimagelist -policy ${ARG} -hoursago 24 -A |grep ^Elapse |awk '{print $NF}' >> timing ;
+echo "Client Name" > client_name;
+echo "-------"  >> client_name ;
+bpimagelist -policy ${ARG} -hoursago 24 -A|grep ^Client: |awk '{print $NF}' >> client_name
+paste image_info timing client_name;
+rm image_info timing client_name</code>

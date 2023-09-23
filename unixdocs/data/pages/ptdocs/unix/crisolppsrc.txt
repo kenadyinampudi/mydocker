@@ -1,0 +1,10 @@
+====== Create LPPSRC using AIX DVD isos ======
+
+  - Download the DVDs from IBM entitled software website
+  - Mount them<code>sudo mkdir -p /mnt/dvd1 /mnt/dvd2
+sudo loopmount -i aix7.1-dvd1.iso -o "-V cdrfs -o ro" -m /mnt/dvd1
+sudo loopmount -i aix7.1-dvd2.iso -o "-V cdrfs -o ro" -m /mnt/dvd2</code>
+  - Define a lppsrouce<code>sudo nim -o define -t lpp_source -a server=master -a source=/mnt/dvd1 -a location=/prod/images/lppsrc/710TL03-03 710TL03-03_lppsrc</code>
+  - Update/Add packages from the second DVD.<code>sudo nim -o update -a packages=all -a source=/mnt/dvd2 710TL03-03_lppsrc</code>
+  - Update NIM server to the level on lppsrc, reboot.
+  - Define a Spot<code>sudo nim -o define -t spot -a server=master -a source=710TL03-03_lppsrc -a location=/prod/images/spot/710TL03-03_spot 710TL03-03_spot</code>

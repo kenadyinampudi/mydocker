@@ -1,0 +1,24 @@
+====== TA2 DB refresh documentation ======
+
+^Source System  ^Source DC ^Target System  ^Target DC|
+|pcdcta2axdb99   |CDC/MPPS   |acdcta2axdb01 |CDC/MPPS|
+
+  - Get a latest copy of PVIDs from the source server and copy to the target system.
+    - Login to one of the jump servers ''pcdcunxaxap01''<code>ssh pcdcta2axdb99 "lspv | grep -e binvg01 -e mirrredovg -e origredovg -e datavg0" > TA2.pvids
+scp TA2.pvids acdcta2axdb01:</code>
+  - Login to the target server and perform the rest of the work<code>ssh acdcta2axdb01</code>
+    - Discover the new disks<code>sudo cfgmgr</code>
+    - Import VGs and mount filesystems<code>for vg in binvg01 mirrredovg origredovg datavg01 datavg02 datavg03 datavg04 datavg05 datavg06
+do
+   echo "Working on ${vg} "
+   grep -w ${vg} TA2.pvids | awk '{print $2 }' > ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " ")
+   sudo recreatevg -Y/ -L/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} | sort )
+   do
+      echo "$(date) :: Working on ${vg} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>

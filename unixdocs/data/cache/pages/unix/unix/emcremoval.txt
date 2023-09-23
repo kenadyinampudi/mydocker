@@ -1,0 +1,19 @@
+====== Removing the un-removable hdiskpower device ======
+
+  * This happens when the symcli daemons decide to pick a LUN because there are nmot gatekeepers available.
+    * This is how the problem looks like<code>sudo powermt remove dev=hdiskpower100
+Cannot remove device that is in use: hdiskpower100</code>
+    * Check for the ''storapid'' process and stop it<code>ps -ef | grep storapid</code>
+    * Stop storapid<code>sudo /opt/emc/SYMCLI/V7.1.1/bin/stordaemon shutdown storapid
+ storapid                      Told to shutdown
+  Waiting for daemon(s) to shutdown.  This may take several seconds.</code>
+    * Stop the storwatchd<code>sudo /opt/emc/SYMCLI/V7.1.1/daemons/storwatchd shutdown storwatchd
+      =============================================
+      storwatchd Starting, Version: V7.1-1026 (1.0)
+Warn  Another instance of this daemon is already running - exiting
+      storwatchd Exiting
+      =============================================</code>If it gives this error kill it <code>sudo kill <pid></code>
+    * Now remove the device<code>sudo powermt remove dev=hdiskpower100
+sudo rmdev -dl hdiskpower100
+sudo rmdev -dl hdisk228
+sudo rmdev -dl hdisk381</code>

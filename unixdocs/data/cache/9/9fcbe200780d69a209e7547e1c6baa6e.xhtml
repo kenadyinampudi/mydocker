@@ -1,0 +1,301 @@
+<ol>
+<li class="level1"><div class="li"> IBM will recover these systems</div>
+<ul>
+<li class="level2"><div class="li"> peerdb99</div>
+</li>
+<li class="level2"><div class="li"> tapr1d01</div>
+</li>
+<li class="level2"><div class="li"> teprbk01</div>
+</li>
+<li class="level2"><div class="li"> taqa1d01 </div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Define this post install script in NIM<pre class="code">#!/usr/bin/ksh
+for file in /etc/filesystems /etc/exports /etc/hosts /etc/resolv.conf
+do
+  cp ${file} ${file}.copyforDR
+done
+
+cat /dev/null &gt; /var/tmp/filesystems.modified
+for fs in $(lsvgfs rootvg)
+do
+   grep -p ${fs}: /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified
+done
+
+grep -p proc /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified
+
+#grep -p nfs /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified
+
+cp /var/tmp/filesystems.modified /etc/filesystems
+
+mv /etc/resolv.conf /etc/resolv.conf.OLD
+
+cat /etc/exports | sed &quot;s;bck;;g&quot; &gt; /var/tmp/exports.modified
+[[ ${?} -eq 0 ]] &amp;&amp; cp /var/tmp/exports.modified /etc/exports
+
+rmitab cron</pre>
+
+<p>
+Define it as a resource
+</p>
+<pre class="code"></pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the mksysbs , define them<pre class="code">for mksysb in $(cat list)
+do
+   cp &lt;datadomain&gt;/${file} /prod/nim/resources/mksysb/${file}
+done</pre>
+
+<p>
+ — Kapil will copy at 7:00 AM. Define them as resources.
+</p>
+<pre class="code">for file in $(ls /prod/nim/resources/mksysb/* )
+do
+   host=$(echo ${file} | sed &quot;s;bos.obj.;;g&quot;)
+   nim -o define -t mksysb -a server=master -a location=${file}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Stop cron by editing inittab<pre class="code">rmitab cron</pre>
+
+<p>
+.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Save files<pre class="code">for file in /etc/filesystems /etc/exports /etc/hosts /etc/resolv.conf
+do
+  cp ${file} ${file}.copyforDR
+  [[ ${?} -eq 0 ]] &amp;&amp; echo &quot;Backed up ${file} as ${file}.copyforDR&quot; || echo &quot;Something went wrong backing up ${file}&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change root and itocroot password<pre class="code">passwd itocroot
+passwd root</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable telnet for root<pre class="code"></pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove all non rootvg filesystems from /etc/filesystems except NFS<pre class="code">cat /dev/null &gt; /var/tmp/filesystems.modified
+for fs in $(lsvgfs rootvg)
+do
+   grep -p ${fs}: /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified
+done
+
+grep -p proc /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified
+
+grep -p nfs /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified
+
+cp /var/tmp/filesystems.modified /etc/filesystems</pre>
+
+<p>
+Worst case, you have a backup file in /etc
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Comment out all entries from /etc/resolv.conf (If we haven&#039;t automated this with NIM post install scripts)<pre class="code">mv /etc/resolv.conf /etc/resolv.conf.OLD</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Fix /etc/exports<pre class="code">cat /etc/exports | sed &quot;s;bck;;g&quot; &gt; /var/tmp/exports.modified
+[[ ${?} -eq 0 ]] &amp;&amp; cp /var/tmp/exports.modified /etc/exports</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy /etc/hosts(Another candidate for NIM post install)<pre class="code">copycopy</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure and start AIO(Another candidate for NIM post install)<pre class="code">do and do</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> How do you resolve EMC serial numbers to hdiskpowers ?. Use this script<pre class="code">root on taitc118:/root&gt; /usr/local/scripts/lsvpcfg.sh
+hdiskpower0:nimvg:000190103339:10D2:34526:hdisk30:hdisk3:00cb4f8d4593d1cf
+hdiskpower1:nimvg:000190103339:10D6:34526:hdisk31:hdisk5:00cb4f8d6a5e6df6
+hdiskpower2:nimvg:000190103339:10DA:34526:hdisk32:hdisk6:00cb4f8d6a57ef07
+hdiskpower3:nimvg:000190103339:10DE:34526:hdisk33:hdisk7:00cb4f8d6a507404
+hdiskpower4:nimvg:000190103339:10E2:34526:hdisk34:hdisk8:00cb4f8d6a584368
+hdiskpower5:nimvg:000190103339:10E6:34526:hdisk35:hdisk9:00cb4f8d6a50f5f6</pre>
+</div>
+</li>
+</ol>
+
+<h1 class="sectionedit1" id="create_ntp_server_on_tepr2e01">Create NTP server on tepr2e01</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Edit config file<pre class="code">sudo vi /etc/ntp.conf</pre>
+
+<p>
+Add these lines - replacing everything else
+</p>
+<pre class="code">server 127.127.1.0
+fudge 127.127.1.0 stratum 9
+driftfile /etc/ntp.drift
+tracefile /etc/ntp.trace</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start NTP daemons<pre class="code">chrctcp -S -a xntpd</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Create NTP server on tepr2e01" [3162-3467] -->
+<h1 class="sectionedit2" id="do_this_after_the_mksysb_restore">Do this after the mksysb restore</h1>
+<div class="level1">
+
+<p>
+<strong> Make sure you are on the DR host </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Change PS1 variabl<pre class="code">sudo vi /etc/profile</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">PS1=&#039;DR test -- $hname:$PWD&gt;&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get a copy of /etc/hosts from NIM server<pre class="code">sudo cp /etc/hosts /etc/hosts.Old
+sudo scp 10.39.11.37:/etc/hosts.dr.systems /etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable NTP. Stop daemon<pre class="code">sudo stopsrc -s xntpd</pre>
+
+<p>
+Backup the config
+</p>
+<pre class="code">sudo mv /etc/ntp.conf /etc/ntp.conf.DRtest</pre>
+
+<p>
+Put the new config
+</p>
+<pre class="code">echo &quot;driftfile /etc/ntp.drift&quot; | sudo tee /etc/ntp.conf
+echo &quot;tracefile /tmp/xntpd.trace&quot; | sudo tee -a /etc/ntp.conf
+echo &quot;server nim&quot;  | sudo tee -a /etc/ntp.conf</pre>
+
+<p>
+Start the daemons
+</p>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+
+<p>
+Set the correct time from tepr2e01
+</p>
+<pre class="code">date ; sudo ntpdate -u nim ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check cron<pre class="code">ps -ef | grep cron</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the NFS filesystems back<pre class="code">echo &quot;&quot; &gt;&gt; /etc/filesystems
+grep -p nfs /etc/filesystems.copyforDR | sed &quot;s;bck;;g&quot; &gt;&gt; /etc/filesystems</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add /proc filesystem<pre class="code">sudo crfs -v procfs -d /proc -A yes -m /proc -a check=false -a free=false -a vol=&quot;/proc&quot;</pre>
+
+<p>
+Mount it
+</p>
+<pre class="code">mount /proc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the timezone from filesystems.txt and make sure it matches<pre class="code">grep -i tz /usr/local/scripts/file_systems.txt
+date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the second interface<pre class="code">sudo chdev -l en1 -a netaddr=10.39.1.XX -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change itocroot password to abc123<pre class="code">sudo passwd itocroot
+sudo pwdadm -c itocroot</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">egrep &quot;^mkdir|^mount|^crfs|^chown|^chmod&quot; /usr/local/scripts/file_systems.txt &gt; /var/tmp/crfs.sh</pre>
+
+<p>
+Now execute the script
+</p>
+<pre class="code">sudo ksh -x /var/tmp/crfs.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On database servers and SAP servers, enable AIO<pre class="code">paap3p01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=4096 -a maxservers=10 -a minservers=1
+pahrdb01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=4096 -a maxservers=10 -a minservers=1
+peerdb99 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=16384 -a maxservers=512 -a minservers=64
+taitc103 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=16384 -a maxservers=150 -a minservers=20
+tapr1d01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=8192 -a maxservers=512 -a minservers=64
+tepr2e01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=4096 -a maxservers=10 -a minservers=1
+tspr1d01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=8192 -a maxservers=256 -a minservers=64
+tspr1d03 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=8192 -a maxservers=256 -a minservers=64</pre>
+
+<p>
+Enable AIO
+</p>
+<pre class="code">mkdev -l aio0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mirror rootvg when required</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Do this after the mksysb restore" [3468-6174] -->
+<h1 class="sectionedit3" id="nfs_mounts_on_each_pta_app_servers">NFS mounts on each PTA app servers</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Remove stale / unwanted mounts<pre class="code">rmnfsmnt -f /expdump
+rmnfsmnt -f /commDir
+rmnfsmnt -f /oracle/stage
+rmnfsmnt -f /sapmedia
+rmnfsmnt -f /taedi53</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the ones from tapr1d01<pre class="code">echo &quot;/sapmnt/PTA/exe /sapmnt/PTA/global /sapmnt/PTA/profile /usr/sap/trans /ADK &quot; | xargs -n1 mount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> When paap3p01 comes up do these as well<pre class="code">echo &quot;/taedi61 /comm&quot; | xargs -n1 mount</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "NFS mounts on each PTA app servers" [6175-6626] -->
+<h1 class="sectionedit4" id="lessons_learned_from_aug_2012_dr_test">Lessons learned from Aug 2012 DR test</h1>
+<div class="level1">
+<div class="table sectionedit5"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Ser. No</th><th class="col1">Item</th><th class="col2">Status</th><th class="col3">Notes</th>
+	</tr>
+	<tr class="row1">
+		<th class="col0">1</th><th class="col1">/proc filesystem missing</th><th class="col2">Fixed the procedure</th><th class="col3">N/A</th>
+	</tr>
+	<tr class="row2">
+		<th class="col0">2</th><th class="col1">bcks to be changed in /etc/filesystems</th><th class="col2">Fixed procedure</th><th class="col3">Need to document the procedure</th>
+	</tr>
+	<tr class="row3">
+		<th class="col0">3</th><th class="col1">Time Synchronization</th><th class="col2">We may need to configure one of the servers (NIM?) as a time source</th><th class="col3">Need to document the steps</th>
+	</tr>
+	<tr class="row4">
+		<th class="col0">4</th><th class="col1">AIO parameters</th><th class="col2">Add lsattr -El aio0 to file_systems.txt</th><th class="col3">Need to update script</th>
+	</tr>
+	<tr class="row5">
+		<th class="col0">5</th><th class="col1">Many non-existant NFS filesystems in /etc/filesystems</th><th class="col2">Need to fix production</th><th class="col3"> </th>
+	</tr>
+	<tr class="row6">
+		<th class="col0">6</th><th class="col1">AIO needs to be configure on SAP app servers</th><th class="col2">Add to file_systems.txt </th><th class="col3"> </th>
+	</tr>
+	<tr class="row7">
+		<th class="col0">7</th><th class="col1">Firewall on SuSE </th><th class="col2">/sbin/SuSEfirewall2 off </th><th class="col3"> </th>
+	</tr>
+	<tr class="row8">
+		<th class="col0">8</th><th class="col1"> </th><th class="col2"> </th><th class="col3"> </th>
+	</tr>
+	<tr class="row9">
+		<th class="col0">9</th><th class="col1"> </th><th class="col2"> </th><th class="col3"> </th>
+	</tr>
+</table></div>
+<!-- EDIT5 TABLE [6680-7279] -->
+</div>
+<!-- EDIT4 SECTION "Lessons learned from Aug 2012 DR test" [6627-] -->

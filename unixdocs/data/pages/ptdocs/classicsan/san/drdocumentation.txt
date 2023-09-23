@@ -1,0 +1,43 @@
+====== Disaster recovery documentation ======
+
+
+** IBM provides storage at the DR site, storage team does not have any role except for planning **
+
+====== DR procedures for TA2 recovery ======
+
+
+  - Logon to pgunap02 ( Interxion Jump server - Storage )<code>ssh pgunap02</code>
+  - export the following variables<code>
+export STGARRAY=ibmpm20v1
+export SSH2PURE="sudo -u sanmontr ssh pureuser@${STGARRAY}"
+export PGRP="LDCPM70V1:TA2STBYDR"
+export TESTHOST="peerdb99"</code>
+  - Collect the WWNs of peerdb99(DR) from IBM or Unix team<code>export WWNS="xxx yyy"</code>
+  - Define the host on DR array<code>${SSH2PURE} purehost create --wwnlist ${WWNS} ${TESTHOST}</code>
+  - List all snapshots<code>${SSH2PURE} purepgroup list --snap ${PGRP} --notitle</code>Sample output<code>LDCPM70V1:TA2STBYDR.18408  LDCPM70V1:TA2STBYDR  2018-10-03 08:46:00 EDT
+LDCPM70V1:TA2STBYDR.18407  LDCPM70V1:TA2STBYDR  2018-10-03 08:16:30 EDT
+LDCPM70V1:TA2STBYDR.18406  LDCPM70V1:TA2STBYDR  2018-10-03 07:46:30 EDT
+LDCPM70V1:TA2STBYDR.18405  LDCPM70V1:TA2STBYDR  2018-10-03 07:16:30 EDT
+LDCPM70V1:TA2STBYDR.18404  LDCPM70V1:TA2STBYDR  2018-10-03 06:46:30 EDT
+LDCPM70V1:TA2STBYDR.18403  LDCPM70V1:TA2STBYDR  2018-10-03 06:16:30 EDT
+LDCPM70V1:TA2STBYDR.18402  LDCPM70V1:TA2STBYDR  2018-10-03 05:46:30 EDT
+LDCPM70V1:TA2STBYDR.18401  LDCPM70V1:TA2STBYDR  2018-10-03 05:16:30 EDT
+LDCPM70V1:TA2STBYDR.18400  LDCPM70V1:TA2STBYDR  2018-10-03 04:46:30 EDT
+LDCPM70V1:TA2STBYDR.18399  LDCPM70V1:TA2STBYDR  2018-10-03 04:16:30 EDT
+LDCPM70V1:TA2STBYDR.18398  LDCPM70V1:TA2STBYDR  2018-10-03 03:46:30 EDT
+LDCPM70V1:TA2STBYDR.18397  LDCPM70V1:TA2STBYDR  2018-10-03 03:16:30 EDT
+LDCPM70V1:TA2STBYDR.18368  LDCPM70V1:TA2STBYDR  2018-10-02 12:46:30 EDT
+LDCPM70V1:TA2STBYDR.18321  LDCPM70V1:TA2STBYDR  2018-10-01 13:16:30 EDT</code>
+  - Select the latest snapshot and list volumes on the snapshots ( Pick the latest one )<code>export SNAP="LDCPM70V1:TA2STBYDR.18408"</code>
+  - Copy snapshots to volumes<code>export vol_no=500
+export snapshots=$(${SSH2PURE} purevol list --snap --pgrouplist ${SNAP} --notitle | grep -v 138G | awk '{print $1}' | tr "\n" " ")
+target_vols=""
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${TESTHOST}_${vol_no}
+   target_vols="${target_vols} ${TESTHOST}_${vol_no}"
+   vol_no=$((vol_no+1))
+done</code>
+  - Connect the volume to the DR Host<code>echo ${target_vols} > ${INSTANCE}.poc.volumes
+${SSH2PURE} purevol connect --host ${TESTHOST} ${target_vols}</code>
+  - Handover the system to Unix Team

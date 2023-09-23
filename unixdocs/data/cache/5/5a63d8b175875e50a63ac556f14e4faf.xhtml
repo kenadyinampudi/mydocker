@@ -1,0 +1,70 @@
+
+<h1 class="sectionedit1" id="north_america_-_lincolnshire_disaster_recovery_test_-_2017_--_mount_nfs_filesystems">North America - Lincolnshire Disaster Recovery test - 2017 -- Mount NFS filesystems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> We recommend that NFS mounts to be completed as a step between Datapreservation completing the restore and the delivery of systems to application teams.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "North America - Lincolnshire Disaster Recovery test - 2017 -- Mount NFS filesystems" [1-258] -->
+<h2 class="sectionedit2" id="aix_systems">AIX systems</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to all NFS servers, enable NFS exports<pre class="code">sudo cp /etc/exports.OLDD /etc/exports</pre>
+
+<p>
+Export all filesystems
+</p>
+<pre class="code">sudo exportfs -av</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to all NFS clients, mount the filesystems</div>
+<ol>
+<li class="level2"><div class="li"> Add the NFS filesystems back. <strong>Deferred until all systems have been recovered </strong><pre class="code">echo &quot;&quot; &gt;&gt; /etc/filesystems
+grep -p nfs /etc/filesystems.copyforDR | sed &quot;s;bck;;g&quot; &gt;&gt; /etc/filesystems</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Umount the filesystems<pre class="code">lsnfsmnt | awk &#039;{if ($(NF-1) == &quot;yes&quot;) print $0}&#039; | awk &#039;{print $1}&#039; | sort -r | xargs -n1 sudo umount</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Mount all filesystems<pre class="code">lsnfsmnt | awk &#039;{if ($(NF-1) == &quot;yes&quot;) print $0}&#039; | awk &#039;{print $1}&#039; | sort  | xargs -n1 sudo mount</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "AIX systems" [259-976] -->
+<h2 class="sectionedit3" id="linux_systems">Linux systems</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> We don not have any NFS servers running on Linux ( ? ) probably.</div>
+</li>
+<li class="level1"><div class="li"> Login to all NFS clients, mount the filesystems</div>
+<ol>
+<li class="level2"><div class="li"> Unmount the filesystems<pre class="code">grep nfs /etc/fstab | grep -v ^# | awk &#039;{print $2}&#039; | sort -r | xargs -n1 sudo umount</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add the NFS filesystems back. <strong>Deferred until all systems have been recovered </strong><pre class="code">grep nfs /etc/fstab | grep -v ^# | awk &#039;{print $2}&#039; | sort | xargs -n1 sudo mount</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+<p>
+<strong> When in doubt, ask </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=dr%3Anfsmounts-2017&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+</p>
+
+<p>
+<strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremly careful ) </strong>
+</p>
+
+</div>
+<!-- EDIT3 SECTION "Linux systems" [977-] -->

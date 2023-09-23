@@ -1,0 +1,38 @@
+# lsdev -Cc adapter
+
+<code>ent0    Available 03-00 PCIe2 2-Port 10GbE Base-T Adapter (e4148e1614109204)
+ent1    Available 03-01 PCIe2 2-Port 10GbE Base-T Adapter (e4148e1614109204)
+ent2    Available       Virtual I/O Ethernet Adapter (l-lan) <=== used as main vadapter 
+ent3    Available       Virtual I/O Ethernet Adapter (l-lan) <=== used as control channel
+ent4    Available       Virtual I/O Ethernet Adapter (l-lan) <=== used to IP the VIO</code>
+
+As root:
+
+<code>lsdev -C | grep -i defi | grep -E "^en|^et" | awk '{print $1}' | xargs -n1 rmdev -dl</code>
+
+As padmin run:
+
+<code>mkvdev -lnagg ent0 ent1 -attr mode=8023ad
+ent5 Available
+en5
+et5</code>
+
+As padmin reate SEA:
+
+<code>mkvdev -sea ent5 -vadapter ent2 -default ent2 -defaultid 1 -attr ha_mode=auto ctl_chan=ent3
+ent6 Available
+en6
+et6</code>
+
+
+Assign IP address to en4 (smitty or cammnad line):
+
+
+<code>mkdir -p /root/.ssh
+usermod -d /root root
+passwd root</code>
+
+copy public key to /root/.ssh/authorized_keys
+
+<code>ssh-dss AAAAB3NzaC1kc3MAAACBAK/AwZ2S6xglJdR1ruEwFo8kGI+r3QqHCCnPrU+Ew1B0ThXvO9X84ZLDYFg4MjcWFjMCCs2LqJpdQDc06aKvwoHCt3a0C4fdxqoa5PMb72gDYLFz9f3myOYqy/+SxTUJWUd/pINwIYDXVMqUlj2eEcWVMas/kBC+o/ztLr+C5dv/AAAAFQDtcjEfL5n//uOE9p6Avc3ZPpL29QAAAIBxWf3haxAh8/YeYa1QtG7NpjlS19BJd9ZvcxPSykX/3qHQ/Q0QLnRmHNlCDh4vTsuzLtnLmhf3pcSV9bW2CDYk2zxCF0dzFHHfAWmNQRdmKfQo+qXHcIDH79STz/Zl+PQzxWK+24eVdYxOW+FkQ0i/Dfa54+Q8ruAvaewX1J3T+QAAAH9Z8bwFXbqxrRqA3pxWo8r+zOxSCv00QQx9Ktjz5Jgt6aLtzhQRvl2DOUJoCSHnZ0Hsuhv+n71YBP2wZhi1EXVEA/Dy/hTydLxot8cYvHy3v/HG7XbUaqkIGhP4shFu9B1kt0md7MentWVuRVJJVao35hOSAgtdfbUMOrMFDDVo root@taitc118</code>
+

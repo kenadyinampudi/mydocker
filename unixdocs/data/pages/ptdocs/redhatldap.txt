@@ -1,0 +1,63 @@
+====== Configure winbind for Redhat ======
+Using REALM 
+Join a REDHAT server to PT.
+
+==== Goal ====
+
+Get a server authenticating via AD.
+Have the same user IDs as those currently in AD.
+Use the same format (username@servername) to log in.
+
+==== Prerequisites ====
+
+Make sure DNS is configured with a domain controller as the primary resolver.
+Make sure NTP client is configured, ideally with a domain controller as a primary time source.
+Make sure the realm package is installed \\ ''yum install -y realmd oddjob oddjob-mkhomedir sssd samba-common-tools''
+This assumes a clean install with no prior authentication.
+
+==== Steps ====
+  -	Use ‘realm join’ to join the server to AD.  Replace "leedsn16a-admin" with your AD admin account.\\ Note!  Admin accounts need to be used.\\ <code>realm join -U leedsn16a-admin pt.int.tenneco.com</code>
+  -	Edit the /etc/sssd/sssd.conf file\\ Under the [sssd] section, add the following:<code>
+default_domain_suffix = pt.int.tenneco.com
+full_name_format = %1$s</code>
+  -	Continue editing the /etc/sssd/sssd.conf\\ Under the [domain/pt.int.tenneco.com] section, change the following:<code>
+fallback_homedir = /home/%u
+ldap_id_mapping = True
+ignore_group_members=True
+ldap_purge_cache_timeout = 0</code>
+  -	Stop the sssd service and clear out the sssd cache to get rid of FM entries and restart. \\ ''systemctl stop sssd ; rm -f /var/lib/sss/db/* /var/log/sssd/* ; systemctl start sssd''
+  - 	Permit the users to access the system with realm.\\ Note!  This should really be AD group based, not onesie-twosie. <code>
+realm permit leedsn16@pt
+realm permit --groups 'pt linux admins@pt'
+</code> \\ Alternatively, you can directly edit the /etc/sssd/sssd.conf file (or copy from a working system.)
+  - PAM in RHEL is configured by default to not allow users under 1000 from logging in.  If you choose to NOT use id mapping (in other words, you choose to use the uid and gid AD attributes instead of the new calculated IDs), you will need to change /etc/passwd-auth and /etc/system-auth
+  - Check for a logrotate file at ''/etc/logrotate.d/sssd'' to clean up the sssd logs.\\ <code>
+/var/log/sssd/*.log {
+    weekly
+    missingok
+    notifempty
+    sharedscripts
+    rotate 2
+    compress
+    delaycompress
+    postrotate
+        /bin/kill -HUP `cat /var/run/sssd.pid  2>/dev/null`  2> /dev/null || true
+    endscript
+}
+</code>
+  -	Put a ticket in with the ISD_MICROSOFT group to move the computer account for this server to the “Member Servers/Non-Microsoft” section
+
+=== Sample script to help with changes. ===
+
+This is not comprehensive.<code>
+  cp /etc/pam.d/password-auth /etc/pam.d/password-auth-old
+  cp /etc/pam.d/password-auth-ac /etc/pam.d/password-auth
+  cp /etc/pam.d/system-auth /etc/pam.d/system-auth-old
+  cp /etc/pam.d/system-auth-ac /etc/pam.d/system-auth
+  sed -i.bak 's/>= 1000/>= 500/g' /etc/pam.d/password-auth
+  sed -i.bak 's/< 1000/< 500/g' /etc/pam.d/password-auth
+  sed -i.bak 's/ldap_id_mapping = True/ldap_id_mapping = False/g' /etc/sssd/sssd.conf    
+  systemctl stop sssd
+  rm -f /var/lib/sss/db/*
+  systemctl start sssd
+</code>

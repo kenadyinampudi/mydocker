@@ -1,0 +1,37 @@
+====== Register a system with Red Hat Satellite ======
+
+===== Background =====
+Red Hat uses Satellite to register systems remotely.  The alternative is to directly register the system with Red Hat.\\ 
+
+
+Licenses need to be explicitly transferred from the Red Hat main servers over to the Satellite server.  This means that any client wishing to register MUST connect to the proper location for the appropriate license.  If the server's license is attached to Satellite, then the client must register to Satellite.\\ 
+
+
+In this case, licenses were purchased for the VM servers themselves with unlimited virtual guests able to register underneath of them.\\ 
+Make sure to put Red Hat servers into the correct cluster BEFORE registering.\\ 
+
+
+If a client is in the wrong cluster and then is attempted to register, Satellite will refuse to authorize the subscription and registration won't complete, reporting an error.\\
+
+===== Process =====
+
+  - Grab the Satellite agent code.  This allows simple registration.\\ <code>curl --insecure --output katello-ca-consumer-latest.noarch.rpm https://cdcpillx205.pt.int.tenneco.com/pub/katello-ca-consumer-latest.noarch.rpm</code>
+  - Install it via yum.\\ <code>yum localinstall -y katello-ca-consumer-latest.noarch.rpm</code>
+  - Register it to Satellite using a generic key\\ <code>
+subscription-manager register --org="tenneco" --activationkey="eerbody"</code>\\ or for Physicals ... \\ <code>
+subscription-manager register --org="tenneco" --activationkey="hpcc_node_physical"</code>
+  - Go into the GUI and make sure the Release and Content view are set with this server.
+    - You will need to run "Subscriptions" "Run Auto-attach" twice
+  - From the server commandline, make sure the satellite toolset repo is enabled.\\ <code>
+subscription-manager repos --enable=rhel-7-server-satellite-tools-6.7-rpms</code>
+  - Install the rest of the Satellite toolset to allow package installation, monitoring and other things.\\ <code>yum -y install katello-host-tools
+yum -y install katello-host-tools-tracer
+yum -y install katello-agent</code>
+
+==== Troubleshooting ====
+  * Received [[https://access.redhat.com/solutions/1263583 | TLSV1_ALERT_UNKNOWN_CA ]]
+    * Easiest answer is to "subscription-manager clean", then try to register again.
+
+===== Next Steps =====
+
+[[unix:redhatlifecycle | Modify a registered Red Hat server's lifecycle policy]]

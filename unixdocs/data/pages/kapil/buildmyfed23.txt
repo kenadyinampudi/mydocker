@@ -1,0 +1,30 @@
+====== Build my Fedora 23 Desktop ======
+
+Complete this after your PC is re-installed / rebuilt / recovered.
+
+  - Configure sudo. Switch to root<code>echo '%x1kxk630     ALL=(ALL)     NOPASSWD: ALL' >> /etc/sudoers</code>
+  - Configure proxy for yum<code>sudo vi /etc/dnf/dnf.conf</code>Add these with the correct password<code>proxy=http://170.64.0.72:8080
+proxy_username=x1kxk630
+proxy_password=<password></code>
+  - Install updates<code>sudo yum update</code>
+  - Install correct resolv.conf<code>sudo scp taitc118:/etc/resolv.conf /etc/resolv.conf</code>
+  - [[http://www.if-not-true-then-false.com/2015/fedora-nvidia-guide/|Follow these directions to install NVIDIA drivers]]
+  - Install Virtual Box
+    - Install the repository<code>cd /etc/yum.repos.d/</code>then<code>sudo wget http://download.virtualbox.org/virtualbox/rpm/fedora/virtualbox.repo</code>
+    - Install VirtualBox<code>sudo yum install VirtualBox-4.2</code>
+    - Configure Virtual Box<code>sudo /etc/init.d/vboxdrv setup</code>
+    - Add VirtualBox users<code>sudo usermod -a -G vboxusers x1kxk630</code>
+  - Install Chrome
+    - Install repository<code>sudo vi /etc/yum.repos.d/google-chrome.repo</code>Add these<code>[google-chrome]
+name=google-chrome - 64-bit
+baseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64
+enabled=1
+gpgcheck=1
+gpgkey=https://dl-ssl.google.com/linux/linux_signing_key.pub</code>
+    - Install Chrome<code>sudo yum install google-chrome-stable</code>
+  - Enable VirtualBox forward RDP connections to a specific VM
+    - Modify the firewalld config to allow RDP.<code>sudo  firewall-cmd --zone=public --add-port=3389/tcp</code>
+    - Add port forwarding rules<code>vboxmanage setextradata kaps-win7-64-dt01 "VBoxInternal/Devices/e1000/0/LUN#0/Config/rdp/HostPort" 3389
+vboxmanage setextradata kaps-win7-64-dt01 "VBoxInternal/Devices/e1000/0/LUN#0/Config/rdp/GuestPort" 3389
+vboxmanage setextradata kaps-win7-64-dt01 "VBoxInternal/Devices/e1000/0/LUN#0/Config/rdp/Protocol" TCP</code>
+    - Shutdown and start the VM

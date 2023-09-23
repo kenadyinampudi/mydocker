@@ -1,0 +1,176 @@
+
+<h1 class="sectionedit1" id="mpps_aix_recovery_procedure_2022">MPPS AIX Recovery Procedure 2022</h1>
+<div class="level1">
+
+<p>
+ <strong>CASE 1</strong>: Booting the system from SAN (snapshot)
+</p>
+<ol>
+<li class="level1"><div class="li"> Await for confirmation from Storage Team that disks were presented to AIX LPARs/servers</div>
+</li>
+<li class="level2"><div class="li"> If confirmed, start LPAR</div>
+<ol>
+<li class="level3"><div class="li"> Login in HMC - (HMC server is not in the Frozen network -  not dependent on Active Directory)</div>
+</li>
+<li class="level3"><div class="li"> Select All Partitions from left menu</div>
+</li>
+<li class="level3"><div class="li"> Select LPAR to activate</div>
+</li>
+<li class="level3"><div class="li"> From menu listed above, select Actions → Activate</div>
+</li>
+<li class="level3"><div class="li"> Select profile name to activate <strong>(Partition Configuration = Current Configuration)</strong></div>
+</li>
+<li class="level3"><div class="li"> Select Advanced Settings</div>
+</li>
+<li class="level3"><div class="li"> Select Boot Mode Normal</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Ensure system starts.</div>
+</li>
+<li class="level2"><div class="li"> If system does not start with Normal boot Go back to Advanced settings and select System Management Services (SMS)</div>
+<ol>
+<li class="level3"><div class="li"> Select menu item 5 (Select Boot Options)</div>
+</li>
+<li class="level3"><div class="li"> Select Install/Boot Device</div>
+</li>
+<li class="level3"><div class="li"> List all Devices (may take up to 45 min depending on system, example: sfldmiax153)</div>
+</li>
+<li class="level3"><div class="li"> Select Disk from the menu that displays &lt;select one of bootable disks, boot from this disk, if it is alternate disk, reset both list to primary and reboot)</div>
+</li>
+<li class="level3"><div class="li"> Boot system into Normal Mode Boot</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> If server is <strong>RP server</strong> after server boots  remove all network devices<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;) 
+do 
+  rmdev -dl en${dev} 
+  rmdev -dl et${dev} 
+  rmdev -dl ent${dev} 
+  echo &quot;${dev} removed&quot; 
+done
+
+sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> command is in this path on every server <strong>/home/tauxrpt/rpt_config/configure_my_ip_cmds</strong> to recreate ip connections</div>
+</li>
+<li class="level2"><div class="li"> NFS mounts:</div>
+<ol>
+<li class="level3"><div class="li"> Ensure that NFS months are mounted correctly</div>
+<ol>
+<li class="level4"><div class="li"> command to check what should be mounted (i.e. what servers should be up in order to provide NFS shares)</div>
+</li>
+<li class="level4"><div class="li"> Run df -g to check what filesystems are mounted</div>
+</li>
+<li class="level4"><div class="li"> Run mount -a to make sure all filesystems that are configured are mounted</div>
+</li>
+<li class="level4"><div class="li"> If you receive any errors regarding NFS mounts, Confirm that the server that is providing NFS mounts is available and running</div>
+</li>
+<li class="level4"><div class="li"> If NFS server is not available, (check to see why it is not running, confirm that the filesystem has been exported to the server that you are currently working with for the nfs mounts) </div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> If system is part of a POWERHA/HACMP cluster, start the cluster services on both nodes (smit cl_start)</div>
+</li>
+<li class="level2"><div class="li"> In case of DR Exercise: add a logon welcome message that user is on DR system</div>
+</li>
+</ol>
+
+<p>
+ <strong>CASE 2</strong> Recovering <abbr title="Operating System">OS</abbr> from backup
+</p>
+<ol>
+<li class="level1"><div class="li"> Build OS from mksysb through NIM server</div>
+</li>
+<li class="level2"><div class="li"> Backup team restores filesystems from NetBackup</div>
+</li>
+<li class="level2"><div class="li"> In case NIM server should be built, build it from ISO image and restore from NetBackup</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "MPPS AIX Recovery Procedure 2022" [1-2679] -->
+<h1 class="sectionedit2" id="ptca_aix_recovery_procedure_2022">PTCA AIX Recovery Procedure 2022</h1>
+<div class="level1">
+
+<p>
+<strong>CASE 1</strong>: Booting the system from SAN (snapshot)
+</p>
+<ol>
+<li class="level1"><div class="li"> Await for confirmation from Storage Team that disks were presented to AIX LPARs/servers</div>
+</li>
+<li class="level2"><div class="li"> If confirmed, start LPAR</div>
+<ol>
+<li class="level3"><div class="li"> Login in HMC - (HMC server is not in the Frozen network -  not dependent on Active Directory)</div>
+</li>
+<li class="level3"><div class="li"> Select All Partitions from left menu</div>
+</li>
+<li class="level3"><div class="li"> Select LPAR to activate</div>
+</li>
+<li class="level3"><div class="li"> From menu listed above, select Actions → Activate</div>
+</li>
+<li class="level3"><div class="li"> Select profile name to activate <strong>(Partition Configuration = DR_Profile)</strong></div>
+</li>
+<li class="level3"><div class="li"> Select Advanced Settings</div>
+</li>
+<li class="level3"><div class="li"> Select Boot Mode Normal</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Ensure system starts.</div>
+</li>
+<li class="level2"><div class="li"> If system does not start with Normal boot Go back to Advanced settings and select System Management Services (SMS)</div>
+<ol>
+<li class="level3"><div class="li"> Select menu item 5 (Select Boot Options)</div>
+</li>
+<li class="level3"><div class="li"> Select Install/Boot Device</div>
+</li>
+<li class="level3"><div class="li"> List all Devices (may take up to 45 min depending on system, example: sfldmiax153)</div>
+</li>
+<li class="level3"><div class="li"> Select Disk from the menu that displays &lt;select one of bootable disks, boot from this disk, if it is alternate disk, reset both list to primary and reboot)</div>
+</li>
+<li class="level3"><div class="li"> Boot system into Normal Mode Boot</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> NFS mounts:</div>
+<ol>
+<li class="level3"><div class="li"> Ensure that NFS months are mounted correctly</div>
+<ol>
+<li class="level4"><div class="li"> command to check what should be mounted (i.e. what servers should be up in order to provide NFS shares)</div>
+</li>
+<li class="level4"><div class="li"> Run df -g to check what filesystems are mounted</div>
+</li>
+<li class="level4"><div class="li"> Run mount -a to make sure all filesystems that are configured are mounted</div>
+</li>
+<li class="level4"><div class="li"> If you receive any errors regarding NFS mounts, Confirm that the server that is providing NFS mounts is available and running</div>
+</li>
+<li class="level4"><div class="li"> If NFS server is not available, (check to see why it is not running, confirm that the filesystem has been exported to the server that you are currently working with for the nfs mounts) </div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> If system is part of a POWERHA/HACMP cluster, start the cluster services on both nodes (smit cl_start)</div>
+</li>
+<li class="level2"><div class="li"> In case of DR Exercise: add a logon welcome message that user is on DR system</div>
+</li>
+</ol>
+
+<p>
+ <strong>CASE 2</strong> Recovering <abbr title="Operating System">OS</abbr> from backup
+</p>
+<ol>
+<li class="level1"><div class="li"> Build OS from mksysb through NIM server</div>
+</li>
+<li class="level2"><div class="li"> Backup team restores filesystems from NetBackup</div>
+</li>
+<li class="level2"><div class="li"> In case NIM server should be built, build it from ISO image and restore from NetBackup</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "PTCA AIX Recovery Procedure 2022" [2680-] -->

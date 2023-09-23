@@ -1,0 +1,12 @@
+====== Rolling SUSE back ======
+SUSE 12 using BTRFS uses "snapper" utility to maintain a list of snapshots of interesting points in time.\\
+Usually whenever zypper makes changes or yast does something, a snapshot is taken.  \\
+[[https://doc.opensuse.org/documentation/leap/reference/html/book.opensuse.reference/cha.snapper.html#sec.snapper.snapshot-boot|Official Process]]
+\\
+==== ROLLING BACK CHANGES ====
+To roll back changes, get console access to the affected machine.  \\
+Restart the machine with the console open and catch GRUB when it verifies the bootable image.\\
+Usually snapshots with stars are major snaps the system thinks are important.  Those are a good choice if you do not have a good time in mind.\\
+Boot to a command prompt.  The system should be usable and even remotely accessible at this point, though the root vol will be read-only.\\
+If the system looks to be OK, make the rollback permanent by issuing ``snapper rollback``.  \\
+If you do not want to keep the changes, just reboot and select something else.\\

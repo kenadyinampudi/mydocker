@@ -1,0 +1,115 @@
+
+<h1 class="sectionedit1" id="mock_2_dress_rehearsal_instructions">Mock 2 Dress Rehearsal Instructions</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Mock 2 Dress Rehearsal Instructions" [1-51] -->
+<h2 class="sectionedit2" id="reset_tenneco_systems_back_to_mock1">Reset Tenneco systems back to Mock1</h2>
+<div class="level2">
+
+<p>
+<strong> Disconnect volumes from current host </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Perform this step only on the clones <strong>not on the Tenneco Legacy systems </strong></div>
+</li>
+<li class="level1"><div class="li"> Login to the host</div>
+</li>
+<li class="level1"><div class="li"> Terminate any SAP or Oracle processes<pre class="code">ps -ef | egrep &quot;sap|ora|sdb&quot; | grep -v grep | awk &#039;{print $2}&#039; | xargs -n1 sudo kill -9</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of disks<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount all NFS filesystems<pre class="code">df -k | grep : | awk &#039;{print $NF}&#039; | sort -r | xargs -n1 sudo umount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unexport all NFS filesystems<pre class="code">sudo exportfs -ua</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Stop Openview<pre class="code">sudo /usr/lpp/OV/bin/ovc -stop</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount datavg filesystems<pre class="code">for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   for fs in $(lsvgfs ${vg} | sort -r )
+   do
+      echo &quot;Working on ${vg} - ${fs} &quot;
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -uk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] &amp;&amp; echo &quot;We have a problem unmounting ${fs} &quot;
+      fi
+   done
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check for any open logical volumes and take action to close them<pre class="code">lsvg | grep -v rootvg | xargs -n1 lsvg -l | grep -i open</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export VGs and delete disks<pre class="code">for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+   grep ${vg} lsvpcfg.out.1 | awk -F: &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send the output of this command to Storage team with the hostname, ask them to reclaim<pre class="code">grep -v rootvg lsvpcfg.out.1 | grep &quot;PURE-FLASH&quot;</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> Connect volumes from mock1, import and mount filesystems </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Login to the host</div>
+</li>
+<li class="level1"><div class="li"> Validate the LUNs<pre class="code">sudo lsvpcfg.sh | grep &quot;PURE-FLASH&quot;</pre>
+
+<p>
+You should only see rootvg and alt_rootvg
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Discover new disks<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List new disks<pre class="code">sudo lsvpcfg.sh | grep &quot;PURE-FLASH&quot;</pre>
+
+<p>
+You should see more than rootvg and alt_rootvg
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Import VGs and mount filesystems<pre class="code">for VG in $(grep -v rootvg lsvpcfg.out.1 | grep &quot;PURE-FLASH&quot; | awk -F: &#039;{print $NF}&#039; | sort -u )
+do
+   echo &quot;Working on ${VG} .. &quot;
+   grep ${VG}$ lsvpcfg.out.1 | awk -F: &#039;{print $2}&#039; &gt; ${VG}.pvids
+   disktoimport=$(lspv | grep -wf ${VG}.pvids | head -1 | awk &#039;{print $1}&#039; )
+   sudo importvg -y ${VG} ${disktoimport}
+   for fs in $(lsvgfs ${VG} | sort )
+   do
+      sudo fsck -y $fs
+      sudo mkdir -p $fs
+      sudo mount $fs
+   done      
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount all NFS filesystems<pre class="code">grep -p nfs /etc/filesystems | grep :  | sort  | sed &quot;s;:;;g&quot; | xargs -n1 sudo mount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export all NFS filesystems<pre class="code">sudo exportfs -a</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start Openview<pre class="code">sudo /usr/lpp/OV/bin/ovc -start</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Reset Tenneco systems back to Mock1" [52-] -->

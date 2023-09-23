@@ -1,0 +1,136 @@
+
+<h1 class="sectionedit1" id="rhel7_installation_on_dl380_g5">RHEL7 installation on DL380 G5</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> The issue with RHEL7 and DL380 G5 is that the <strong>Internal Raid controller is not supported on RHEL7</strong>. To make this work, we have to do the following things.</div>
+<ol>
+<li class="level2"><div class="li"> Add the following kernel parameter while installing at the grub menu<pre class="code">hpsa.hpsa_allow_any=1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Once the <abbr title="Operating System">OS</abbr> is installed, we have to boot through a recovery DVD, mount root and then chroot to it and then execute the following.<pre class="code">echo &#039;hpsa.hpsa_allow_any=1&#039; &gt;&gt; /etc/default/grub
+grub2-mkconfig -o /boot/grub2/grub.cfg</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Look at the profile that has been modified for this<pre class="code">[x1kxk630@pablsv02 snippets]$ sudo cobbler profile report --name=rhel-7.2-x86_64-dl380g5
+Name                           : rhel-7.2-x86_64-dl380g5
+TFTP Boot Files                : {}
+Comment                        :
+DHCP Tag                       : default
+Distribution                   : rhel-7.2-x86_64
+Enable gPXE?                   : 0
+Enable PXE Menu?               : 1
+Fetchable Files                : {}
+Kernel Options                 : {&#039;hpsa.hpsa_allow_any&#039;: &#039;1&#039;}
+Kernel Options (Post Install)  : {}
+Kickstart                      : /var/lib/cobbler/kickstarts/tenneco.rhel-7-dl380g5.ks
+Kickstart Metadata             : {}
+Management Classes             : []
+Management Parameters          : &lt;&lt;inherit&gt;&gt;
+Name Servers                   : []
+Name Servers Search Path       : []
+Owners                         : [&#039;admin&#039;]
+Parent Profile                 :
+Internal proxy                 :
+Red Hat Management Key         : &lt;&lt;inherit&gt;&gt;
+Red Hat Management Server      : &lt;&lt;inherit&gt;&gt;
+Repos                          : []
+Server Override                : &lt;&lt;inherit&gt;&gt;
+Template Files                 : {}
+Virt Auto Boot                 : 1
+Virt Bridge                    : xenbr0
+Virt CPUs                      : 1
+Virt Disk Driver Type          : raw
+Virt File Size(GB)             : 5
+Virt Path                      :
+Virt RAM (MB)                  : 512
+Virt Type                      : kvm</pre>
+
+<p>
+The kernel option was inserted using this command
+</p>
+<pre class="code">sudo cobbler profile edit --name=rhel-7.2-x86_64-dl380g5 --kopts=&quot;hpsa.hpsa_allow_any=1&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> An additional bootloader parameter has been added to kickstart<pre class="code">cat /var/lib/cobbler/kickstarts/tenneco.rhel-7-dl380g5.ks
+auth  --useshadow  --enablemd5
+bootloader --location=mbr --append=hpsa.hpsa_allow_any=1
+clearpart --all --initlabel
+text
+firewall --disabled
+firstboot --disable
+keyboard us
+lang en_US
+url --url=$tree
+reboot --eject
+rootpw --iscrypted saN60hLURCadk
+selinux --permissive
+skipx
+timezone --utc America/Chicago
+install
+zerombr
+part /boot --fstype ext3 --size=1024 --ondisk=sda
+part pv.01 --size=1 --grow --ondisk=sda
+volgroup sysvg --pesize=65536 pv.01
+logvol swap --fstype swap --name=swap --vgname=sysvg --size=8192
+logvol /opt --fstype ext4 --name=opt --vgname=sysvg --size=6144
+logvol / --fstype ext4 --name=root --vgname=sysvg --size=20480
+logvol /home --fstype ext4 --name=home --vgname=sysvg --size=1024 --fsoptions=&quot;defaults,nodev&quot;
+logvol /tmp --fstype ext4 --name=tmp --vgname=sysvg --size=2048
+
+$yum_repo_stanza
+
+$SNIPPET(&#039;network_config&#039;)
+
+%pre
+$SNIPPET(&#039;log_ks_pre&#039;)
+$SNIPPET(&#039;kickstart_start&#039;)
+$SNIPPET(&#039;pre_install_network_config&#039;)
+$SNIPPET(&#039;pre_anamon&#039;)
+%end
+#
+%packages
+@core
+@base
+$SNIPPET(&#039;func_install_if_enabled&#039;)
+$SNIPPET(&#039;puppet_install_if_enabled&#039;)
+%end
+#
+%post
+$SNIPPET(&#039;log_ks_post&#039;)
+$yum_config_stanza
+$SNIPPET(&#039;post_install_kernel_options&#039;)
+$SNIPPET(&#039;post_install_network_config&#039;)
+$SNIPPET(&#039;func_register_if_enabled&#039;)
+$SNIPPET(&#039;puppet_register_if_enabled&#039;)
+$SNIPPET(&#039;download_config_files&#039;)
+$SNIPPET(&#039;koan_environment&#039;)
+$SNIPPET(&#039;redhat_register&#039;)
+$SNIPPET(&#039;cobbler_register&#039;)
+# Enable post-install boot notification
+$SNIPPET(&#039;post_anamon&#039;)
+# Start final steps
+$SNIPPET(&#039;kickstart_done&#039;)
+# End final steps
+# Tenneco customizations
+$SNIPPET(&#039;tenneco_shm_options&#039;)
+$SNIPPET(&#039;tenneco_disable_fstypes&#039;)
+$SNIPPET(&#039;tenneco_disable_services&#039;)
+$SNIPPET(&#039;tenneco_grub_ownership&#039;)
+$SNIPPET(&#039;tenneco_cron_ownership&#039;)
+$SNIPPET(&#039;tenneco_cron.allow_ownership&#039;)
+$SNIPPET(&#039;tenneco_audit.cfg_immutable&#039;)
+$SNIPPET(&#039;tenneco_daemon_umask&#039;)
+$SNIPPET(&#039;tenneco_disable_ipv6&#039;)
+$SNIPPET(&#039;tenneco_modify_sshd_config&#039;)
+$SNIPPET(&#039;tenneco_rhel7_additional_repos&#039;)
+$SNIPPET(&#039;tenneco_security_needs&#039;)
+$SNIPPET(&#039;tenneco_post_install&#039;)
+#
+%end</pre>
+</div>
+</li>
+</ul>
+
+</div>

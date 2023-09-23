@@ -1,0 +1,340 @@
+
+<h1 class="sectionedit1" id="build_documentation_for_munich_nbu_appliance">Build documentation for Munich NBU appliance</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Build documentation for Munich NBU appliance" [1-60] -->
+<h2 class="sectionedit2" id="th_again">9th again</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Simple option<pre class="code">export host2build=munnbuhmams
+export mac_addr=d0:67:26:ce:97:ce
+export ipaddr=$(nslookup ${host2build} | sed -n /^Name/,/^$/p | grep ^Address | awk &#039;{print $NF}&#039;)
+export domain=$(nslookup ${host2build} | grep ^Name | awk &#039;{print $NF}&#039; | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$1=&quot;&quot;; print $0}&#039; | sed &quot;s;^.;;g&quot;)
+export netmask=255.255.255.0
+export gateway=$(echo $ipaddr | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$NF=&quot;&quot;;print $0&quot;1&quot;}&#039;)
+export profile=rhel-7.2-x86_64-dl380g10
+
+sudo cobbler system add \
+--name=${host2build} \
+--profile=${profile} \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=${domain} \
+--gateway=${gateway} \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=${mac_addr} \
+--ip-address=${ipaddr} \
+--netmask=${netmask} \
+--server=pablsv02.amer.int.tenneco.com
+
+sudo cobbler buildiso --systems=&quot;${host2build}&quot; --iso=/var/www/html/servers/${host2build}.iso
+
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/images/ /var/cache/cobbler/buildiso/images/
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/EFI/ /var/cache/cobbler/buildiso/EFI/
+
+echo &quot;menuentry ${host2build} --class fedora --class gnu-linux --class gnu --class os {&quot; | sudo tee /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo linuxefi /images/pxeboot/vmlinuz $(sudo grep append /var/cache/cobbler/buildiso/isolinux/isolinux.cfg  | sed &quot;s;append initrd=1.img ;;g&quot;) | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;initrdefi /images/pxeboot/initrd.img&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;}&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+
+cd /var/cache/cobbler/buildiso
+
+sudo mkisofs -o /var/www/html/servers/${host2build}.iso -R -J -A &quot;CobblerBuild&quot; -hide-rr-moved -v -d -N -no-emul-boot -boot-load-size 4 -boot-info-table \
+-b isolinux/isolinux.bin -c isolinux/isolinux.boot -eltorito-alt-boot -no-emul-boot -eltorito-boot images/efiboot.img -x /var/cache/cobbler/buildiso/isolinux \
+-x /var/cache/cobbler/buildiso/images -x /var/cache/cobbler/buildiso/EFI .</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "9th again" [61-2131] -->
+<h2 class="sectionedit3" id="th_may_2018">9th May 2018</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Latest build process<pre class="code">export host2build=munnbuhmams
+export ipaddr=$(nslookup ${host2build} | sed -n /^Name/,/^$/p | grep ^Address | awk &#039;{print $NF}&#039;)
+export domain=$(nslookup ${host2build} | grep ^Name | awk &#039;{print $NF}&#039; | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$1=&quot;&quot;; print $0}&#039; | sed &quot;s;^.;;g&quot;)
+export netmask=255.255.255.0
+export gateway=$(echo $ipaddr | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$NF=&quot;&quot;;print $0&quot;1&quot;}&#039;)
+export profile=rhel-7.2-x86_64-dl380g10
+
+sudo cobbler system add \
+--name=${host2build} \
+--profile=${profile} \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=${domain} \
+--gateway=${gateway} \
+--server=pablsv02.amer.int.tenneco.com
+
+sudo cobbler system edit --name=munnbuhmams --interface=eth0 --mac=d0:67:26:ce:97:ce
+sudo cobbler system edit --name=munnbuhmams --interface=eth1 --mac=d0:67:26:ce:97:cf --management=True --interface-type=bond_slave --interface-master=bond0
+sudo cobbler system edit --name=munnbuhmams --interface=eth2 --mac=d0:67:26:ce:97:d0 --management=True --interface-type=bond_slave --interface-master=bond0
+sudo cobbler system edit --name=munnbuhmams --interface=eth3 --mac=d0:67:26:ce:97:d1 --management=True --interface-type=bond_slave --interface-master=bond0
+sudo cobbler system edit --name=munnbuhmams --interface=bond0 --static=1 --management=True --ip-address=${ipaddr} --subnet=255.255.255.0 --interface-type=bond --bonding-opts=&quot;miimon=100 mode=802.3ad&quot;
+
+
+sudo cobbler buildiso --systems=&quot;${host2build}&quot; --iso=/var/www/html/servers/${host2build}.iso
+
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/images/ /var/cache/cobbler/buildiso/images/
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/EFI/ /var/cache/cobbler/buildiso/EFI/
+
+echo &quot;menuentry ${host2build} --class fedora --class gnu-linux --class gnu --class os {&quot; | sudo tee /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo linuxefi /images/pxeboot/vmlinuz $(sudo grep append /var/cache/cobbler/buildiso/isolinux/isolinux.cfg  | sed &quot;s;append initrd=1.img ;;g&quot;) | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;initrdefi /images/pxeboot/initrd.img&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;}&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+
+cd /var/cache/cobbler/buildiso
+
+sudo mkisofs -o /var/www/html/servers/${host2build}.iso -R -J -A &quot;CobblerBuild&quot; -hide-rr-moved -v -d -N -no-emul-boot -boot-load-size 4 -boot-info-table \
+-b isolinux/isolinux.bin -c isolinux/isolinux.boot -eltorito-alt-boot -no-emul-boot -eltorito-boot images/efiboot.img -x /var/cache/cobbler/buildiso/isolinux \
+-x /var/cache/cobbler/buildiso/images -x /var/cache/cobbler/buildiso/EFI .</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "9th May 2018" [2132-4810] -->
+<h2 class="sectionedit4" id="before_9th_may_2018">Before 9th May 2018</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Old build process<pre class="code">export host2build=munnbuhmams
+export mac_addr=d0:67:26:ce:97:ce
+export ipaddr=$(nslookup ${host2build} | sed -n /^Name/,/^$/p | grep ^Address | awk &#039;{print $NF}&#039;)
+export domain=$(nslookup ${host2build} | grep ^Name | awk &#039;{print $NF}&#039; | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$1=&quot;&quot;; print $0}&#039; | sed &quot;s;^.;;g&quot;)
+export netmask=255.255.255.0
+export gateway=$(echo $ipaddr | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$NF=&quot;&quot;;print $0&quot;1&quot;}&#039;)
+export profile=rhel-7.2-x86_64-dl380g10
+
+sudo cobbler system add \
+--name=${host2build} \
+--profile=${profile} \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=${domain} \
+--gateway=${gateway} \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=${mac_addr} \
+--ip-address=${ipaddr} \
+--netmask=${netmask} \
+--server=pablsv02.amer.int.tenneco.com
+
+
+sudo cobbler buildiso --systems=&quot;${host2build}&quot; --iso=/var/www/html/servers/${host2build}.iso
+
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/images/ /var/cache/cobbler/buildiso/images/
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/EFI/ /var/cache/cobbler/buildiso/EFI/
+
+echo &quot;menuentry ${host2build} --class fedora --class gnu-linux --class gnu --class os {&quot; | sudo tee /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo linuxefi /images/pxeboot/vmlinuz $(sudo grep append /var/cache/cobbler/buildiso/isolinux/isolinux.cfg  | sed &quot;s;append initrd=1.img ;;g&quot;) | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;initrdefi /images/pxeboot/initrd.img&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;}&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+
+cd /var/cache/cobbler/buildiso
+
+sudo mkisofs -o /var/www/html/servers/${host2build}.iso \
+-R \
+-J \
+-A &quot;CobblerBuild&quot; \
+-hide-rr-moved \
+-v \
+-d \
+-N \
+-no-emul-boot \
+-boot-load-size 4 \
+-boot-info-table \
+-b isolinux/isolinux.bin \
+-c isolinux/isolinux.boot \
+-eltorito-alt-boot \
+-no-emul-boot \
+-eltorito-boot images/efiboot.img \
+-x /var/cache/cobbler/buildiso/isolinux \
+-x /var/cache/cobbler/buildiso/images \
+-x /var/cache/cobbler/buildiso/EFI .
+
+sudo mkisofs -o /var/www/html/servers/${host2build}.iso \
+-R \
+-J \
+-A &quot;CobblerBuild&quot; \
+-hide-rr-moved \
+-v \
+-d \
+-N \
+-no-emul-boot \
+-boot-load-size 4 \
+-boot-info-table \
+-eltorito-boot images/efiboot.img \
+-x /var/cache/cobbler/buildiso/isolinux \
+-x /var/cache/cobbler/buildiso/images \
+-x /var/cache/cobbler/buildiso/EFI .</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Configuration<pre class="code">mun-ss1-mdf#sh run int gi 2/0/9
+Building configuration...
+
+Current configuration : 96 bytes
+!
+interface GigabitEthernet2/0/9
+switchport trunk allowed vlan 200
+switchport mode trunk
+end 
+
+
+
+I see 
+
+Gi 2/0/9
+Gi 2/0/10
+Gi 1/0/9
+Gi 1/0/10
+
+
+
+are configured for VLAN200
+if we don&#039;t specify Native VLAN, it takes VLAN1.
+
+
+https://munnbuhmamsrmb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Build on pablsv02<pre class="code">export host2build=munnbuhmams
+export mac_addr=d0:67:26:ce:97:ce
+export ipaddr=$(nslookup ${host2build} | sed -n /^Name/,/^$/p | grep ^Address | awk &#039;{print $NF}&#039;)
+export domain=$(nslookup ${host2build} | grep ^Name | awk &#039;{print $NF}&#039; | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$1=&quot;&quot;; print $0}&#039; | sed &quot;s;^.;;g&quot;)
+export netmask=255.255.255.0
+export gateway=$(echo $ipaddr | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$NF=&quot;&quot;;print $0&quot;1&quot;}&#039;)
+export profile=rhel-7.2-x86_64-dl380g10
+
+sudo cobbler system add \
+--name=${host2build} \
+--profile=${profile} \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=${domain} \
+--gateway=${gateway} \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=${mac_addr} \
+--ip-address=${ipaddr} \
+--netmask=${netmask} \
+--server=pablsv02.amer.int.tenneco.com
+
+sudo cobbler buildiso --systems=&quot;${host2build}&quot; --iso=/var/www/html/servers/${host2build}.iso</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make UEFI work<pre class="code">1.krn initrd=1.img ks=http://pablsv02.amer.int.tenneco.com:80/cblr/svc/op/ks/system/munnbuhmams ksdevice=d0:67:26:ce:97:ce ip=10.60.81.40 netmask=255.255.255.0 gateway=10.60.81.1 dns=10.32.8.53 lang=  kssendmac text
+
+
+
+
+UEFI menu
+
+
+getparams	&#039;Install Redhat&#039;
+
+	linuxefi /images/pxeboot/vmlinuz inst.stage2=hd:LABEL=RHEL-7.2\x20Server.x86_64 quiet
+	initrdefi /images/pxeboot/initrd.img
+
+
+
+
+bios - isolinux
+
+label vesa
+  menu indent count 5
+  menu label Install Red Hat Enterprise Linux 7.2 in ^basic graphics mode
+  text help
+        Try this option out if you&#039;re having trouble installing
+        Red Hat Enterprise Linux 7.2.
+  endtext
+  kernel vmlinuz
+  append initrd=initrd.img inst.stage2=hd:LABEL=RHEL-7.2\x20Server.x86_64 xdriver=vesa nomodeset quiet
+
+
+
+EFI
+
+
+menuentry &#039;Install Red Hat Enterprise Linux 7.2&#039; --class fedora --class gnu-linux --class gnu --class os {
+        linuxefi /images/pxeboot/vmlinuz inst.stage2=hd:LABEL=RHEL-7.2\x20Server.x86_64 quiet
+        initrdefi /images/pxeboot/initrd.img
+
+
+
+
+-R -J -A &quot;MyDualISO&quot; -hide-rr-moved -v -d -N -no-emul-boot -boot-load-size 4 -boot-info-table -b isolinux/isolinux.bin -c isolinux/isolinux.boot -eltorito-alt-boot -no-emul-boot -eltorito-boot images/efiboot.img -x ${mountDIR}/isolinux -x ${mountDIR}/images -x ${mountDIR}/EFI .
+
+
+
+sudo mkisofs -o /var/www/html/servers/salnxsv03.iso -R -J -A &quot;MyDualISO&quot; -hide-rr-moved -v -d -N -no-emul-boot -boot-load-size 4 -boot-info-table -b isolinux/isolinux.bin -c isolinux/isolinux.boot -eltorito-alt-boot -no-emul-boot -eltorito-boot images/efiboot.img -x /var/cache/cobbler/buildiso/isolinux -x /var/cache/cobbler/buildiso/images -x /var/cache/cobbler/buildiso/EFI .
+
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/images/ ./images/
+
+x1kxk630 on pablsv02:/var/cache/cobbler/buildiso $ sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/EFI/ ./EFI/
+
+Edit EFI/BOOT/grub.cfg
+
+### BEGIN /etc/grub.d/10_linux ###
+menuentry &#039;Install Red Hat Enterprise Linux 7.2&#039; --class fedora --class gnu-linux --class gnu --class os {
+        linuxefi /images/pxeboot/vmlinuz ks=http://pablsv02.amer.int.tenneco.com:80/cblr/svc/op/ks/system/salnxsv03 ksdevice=00:0c:29:43:39:f2 ip=10.32.6.87 netmask=255.255.255.0 gateway=10.32.6.1 dns=10.32.8.53 lang=  kssendmac text
+        initrdefi /images/pxeboot/initrd.img
+
+
+</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Further build on 04252018<pre class="code">export host2build=munnbuhmams
+export mac_addr=d0:67:26:ce:97:ce
+export ipaddr=$(nslookup ${host2build} | sed -n /^Name/,/^$/p | grep ^Address | awk &#039;{print $NF}&#039;)
+export domain=$(nslookup ${host2build} | grep ^Name | awk &#039;{print $NF}&#039; | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$1=&quot;&quot;; print $0}&#039; | sed &quot;s;^.;;g&quot;)
+export netmask=255.255.255.0
+export gateway=$(echo $ipaddr | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$NF=&quot;&quot;;print $0&quot;1&quot;}&#039;)
+export profile=rhel-7.2-x86_64-dl380g10
+export vlan=&quot;200&quot;
+
+sudo cobbler system add \
+--name=${host2build} \
+--profile=${profile} \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=${domain} \
+--gateway=${gateway} \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=${mac_addr} \
+--server=pablsv02.amer.int.tenneco.com
+
+
+sudo cobbler system edit --name=${host2build} --interface=eth0.${vlan} --management=True --static=1 --ip-address=${ipaddr} --subnet=${netmask}
+
+
+sudo cobbler buildiso --systems=&quot;${host2build}&quot; --iso=/var/www/html/servers/${host2build}.iso
+
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/images/ /var/cache/cobbler/buildiso/images/
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/EFI/ /var/cache/cobbler/buildiso/EFI/
+
+echo &quot;menuentry ${host2build} --class fedora --class gnu-linux --class gnu --class os {&quot; | sudo tee /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo linuxefi /images/pxeboot/vmlinuz $(sudo grep append /var/cache/cobbler/buildiso/isolinux/isolinux.cfg  | sed &quot;s;append initrd=1.img ;;g&quot;) | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;initrdefi /images/pxeboot/initrd.img&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;}&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+
+cd /var/cache/cobbler/buildiso
+
+sudo mkisofs -o /var/www/html/servers/${host2build}.iso -R -J -A &quot;CobblerBuild&quot; -hide-rr-moved -v -d -N -no-emul-boot -boot-load-size 4 -boot-info-table -b isolinux/isolinux.bin -c isolinux/isolinux.boot -eltorito-alt-boot -no-emul-boot -eltorito-boot images/efiboot.img -x /var/cache/cobbler/buildiso/isolinux -x /var/cache/cobbler/buildiso/images -x /var/cache/cobbler/buildiso/EFI .</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Before 9th May 2018" [4811-] -->

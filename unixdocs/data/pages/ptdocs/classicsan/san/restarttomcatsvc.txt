@@ -1,0 +1,34 @@
+====== How to fix V9000 GUI when it is broke ======
+
+===== Brief Introduction on V9000 architecture =====
+
+  - **Most importantly -- ALWAYS OPEN A PMR with IBM before you proceed with this step**
+  - The V9000 consists of the following components
+    - SVC Node 1
+    - SVC Node 2
+    - Pair of fibre channel switches
+    - A Flash 900 array
+  - SVC nodes are connected to the Flash 900 storage through the dedicated pair of SAN switches.
+  - The SVC nodes are then connected and zoned to our Core Fabric A & B.
+  - SVC nodes also run the management software as a cluster. Node 1 is primary and Node 2 is failover.
+    - In our setup,
+      * Node1 is ldcv9ac2n1
+      * Node2 is ldcv9ac2n2
+      * The cluster IP address is ldcv9ac2vip1
+  - Ideally a tomcat server runs and deliver the V9000 GUI on Node1 through the Virtual IP address ( ldcv9ac2vip1 )
+
+===== How to fix it =====
+
+==== The GUI way ====
+
+  - Login to the node directly i.e. Try logging into Node2 as Node1 is probably failed it's tomcat.
+  - Once logged in as superuser, 
+    - Select the Node1
+      - Select Restart service on the left hand side panel.
+        - Select tomcat -- restart
+
+==== The CLI way ====
+
+  - Login to the VIP<code>ssh superuser@ldcv9ac2vip1</code>
+  - Restart tomcat<code>satask restartservice -service tomcat</code>
+  - It takes about 5-10 minutes...

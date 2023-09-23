@@ -1,0 +1,217 @@
+====== Sanbox4 zoning vnx,vmax,newv9000 ======
+
+  -zoning<code> unixsandbox4 
+
+wwns:-
+
+host1 10000000c975701c - ldcds6510a1
+
+host5 10000000c97867d8 - ldcds6510b1
+
+
+Zoning V9000-2 ( ldcv9ac3vip1 ) to hosts connected to ldcds6510a1 and ldcds6510b1
+
+
+        Fabric A
+       ==========
+
+
+ssh admin@ldcds5300a1
+
+
+1):Create an alias for the host
+
+   alicreate "unixsandbox4_75701c","10:00:00:00:c9:75:70:1c"
+
+  
+
+2):Create zones
+
+
+   zonecreate "unixsandbox4_75701c__ldcv9ac3n1_52843c","unixsandbox4_75701c;ldcv9ac3n1_52843c"
+
+   zonecreate "unixsandbox4_75701c__ldcv9ac3n2_52847e","unixsandbox4_75701c;ldcv9ac3n2_52847e"
+
+   
+
+
+cfgadd "fab_a_act_config","unixsandbox4_75701c__ldcv9ac3n1_52843c;unixsandbox4_75701c__ldcv9ac3n2_52847e"
+
+cfgsave
+
+cfgenable "fab_a_act_config" 
+
+
+            Fabric B
+           ==========
+
+
+1):Create an alias for the host
+
+   alicreate "unixsandbox4_7867d8","10:00:00:00:c9:78:67:d8"
+
+2):Create zones
+
+  zonecreate "unixsandbox4_7867d8__ldcv9ac3n1_51843c","unixsandbox4_7867d8;ldcv9ac3n1_51843c"
+
+  zonecreate "unixsandbox4_7867d8__ldcv9ac3n2_51847e","unixsandbox4_7867d8;ldcv9ac3n2_51847e"
+
+
+
+cfgadd "fab_b_act_config","unixsandbox4_7867d8__ldcv9ac3n1_51843c;unixsandbox4_7867d8__ldcv9ac3n2_51847e"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+Add Host to NEW ldcv9000
+
+SSH2V9="/usr/bin/ssh ldcv9ac3vip1"
+
+
+${SSH2V9} mkhost -fcwwpn 10000000c975701c:10000000c97867d8 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name unixsandbox4 -type generic
+
+====================================================================================================================================================================================
+
+                  zoning to VNX-5300
+
+Fabric A zoning
+
+1):Login to Fabric A principal switch
+
+   ssh admin@ldcds5300a1
+
+
+2):Create WWN aliases if not already created
+
+   alicreate "unixsandbox4_75701c","10:00:00:00:c9:75:70:1c"
+
+3):Create zoning to SPA2 and SPB2
+
+   zonecreate "unixsandbox4_75701c__vnx53001_spa2","unixsandbox4_75701c;vnx53001_spa2"
+
+   zonecreate "unixsandbox4_75701c__vnx53001_spb2","unixsandbox4_75701c;vnx53001_spb2"
+
+4):Add the zone to config
+
+   cfgadd "fab_a_act_config","unixsandbox4_75701c__vnx53001_spa2;unixsandbox4_75701c__vnx53001_spb2"
+
+5):Save and enable the config
+
+  cfgsave
+
+  cfgenable "fab_a_act_config" 
+
+
+Fabric B zoning
+
+
+1):Login to Fabric B principal switch
+
+   ssh admin@ldcds5300b1 
+
+2):Create WWN aliases if not already created
+
+
+  alicreate "unixsandbox4_7867d8","10:00:00:00:c9:78:67:d8"
+
+3):Create zoning to SPA3 and SPB3
+
+  zonecreate "unixsandbox4_7867d8__vnx53001_spa3","unixsandbox4_7867d8;vnx53001_spa3"
+
+  zonecreate "unixsandbox4_7867d8__vnx53001_spb3","unixsandbox4_7867d8;vnx53001_spb3"
+
+4):Add the zone to config
+
+  cfgadd "fab_b_act_config","unixsandbox4_7867d8__vnx53001_spa3;unixsandbox4_7867d8__vnx53001_spb3"
+
+5):Save and enable the config
+
+   cfgsave
+
+   cfgenable "fab_b_act_config"
+
+
+========================================================================================================================================================================================
+
+                      Fabric zoning servers to VMAX
+                     ===============================
+
+Fabric A zoning - unixsandbox4_75701c 1G1 (1G1_4G1_PG)
+
+1):Login to Fabric A principal switch
+
+   ssh admin@ldcds5300a1
+
+2):Create zones
+
+  zonecreate "unixsandbox4_75701c__vmax_0301_1G1","unixsandbox4_75701c;vmax_0301_1G1"
+
+3):Add the zone to config
+
+  cfgadd "fab_a_act_config","unixsandbox4_75701c__vmax_0301_1G1"
+
+4):Save and enable the config
+
+   cfgsave
+
+   cfgenable "fab_a_act_config"
+
+
+
+Fabric B zoning - unixsanbox4 to 4G1
+
+
+1):Login to Fabric B principal switch
+
+   ssh admin@ldcds5300b1
+
+2):Create zones
+
+  zonecreate "unixsandbox4_7867d8__vmax_0301_4G1","unixsandbox4_7867d8;vmax_0301_4G1"
+
+3):Add the zone to config
+
+  cfgadd "fab_b_act_config","unixsandbox4_7867d8__vmax_0301_4G1"
+
+4):Save and enable the config
+
+  cfgsave
+
+  cfgenable "fab_b_act_config"
+
+
+Host defenition in VMAx
+=======================
+
+sudo symaccess -sid 0301 -name unixsandbox4_IG -type initiator create
+sudo symaccess -sid 0301 -name unixsandbox4_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name unixsandbox4_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name unixsandbox4_IG -type initiator -wwn 10000000c975701c add
+sudo symaccess -sid 0301 -name unixsandbox4_IG -type initiator -wwn 10000000c97867d8 add
+
+
+
+
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 3989;" prepare -nop   040F7,040FB
+
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 3989;" commit -nop
+
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 399D;" prepare -nop
+
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 399D;" commit -nop   040FF,0410B,04117,04123
+
+sudo symaccess -sid 0301 -name unixsandbox4_SG -type storage create
+
+sudo symaccess -sid 0301 -type storage -name unixsandbox4_SG add devs 040FF,0410B,04117,04123,040F7,040FB
+
+sudo symfast -sid 0301 -fp_name Gold associate -sg unixsandbox4_SG -priority 2
+
+sudo symaccess -sid 0301 create view -name unixsandbox4_MV -sg unixsandbox4_SG -pg 2G1_3G1_PG -ig unixsandbox4_IG</code>
+
+
+
+
+
+   
+

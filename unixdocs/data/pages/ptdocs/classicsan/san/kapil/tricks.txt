@@ -1,0 +1,424 @@
+  - Seward steps for adding the new hosts<code>TASEW304
+--------------
+51:40:2e:c0:01:c9:be:d9 51:40:2e:c0:01:c9:be:d8		sewds300a	12
+51:40:2e:c0:01:c9:be:db 51:40:2e:c0:01:c9:be:da		sewds300b	12
+
+TASEW305
+--------------
+51:40:2e:c0:01:c9:bb:ad 51:40:2e:c0:01:c9:bb:ac		sewds300a	13
+51:40:2e:c0:01:c9:bb:af 51:40:2e:c0:01:c9:bb:ae		sewds300b	13
+
+TASEW306
+--------------
+51:40:2e:c0:01:cb:36:17 51:40:2e:c0:01:cb:36:16		sewds300a	14
+51:40:2e:c0:01:cb:33:c1 51:40:2e:c0:01:cb:33:c0		sewds300b	14
+
+
+alicreate "tasew304_c9beda","51:40:2e:c0:01:c9:be:da"
+alicreate "tasew305_c9bbae","51:40:2e:c0:01:c9:bb:ae"
+alicreate "tasew306_cb33c0","51:40:2e:c0:01:cb:33:c0"
+
+zonecreate "tasew304_c9beda__sewpm20v1_ct0_ct1_fc1","tasew304_c9beda;sewpm20v1_ct0_fc1;sewpm20v1_ct1_fc1"
+zonecreate "tasew305_c9bbae__sewpm20v1_ct0_ct1_fc1","tasew305_c9bbae;sewpm20v1_ct0_fc1;sewpm20v1_ct1_fc1"
+zonecreate "tasew306_cb33c0__sewpm20v1_ct0_ct1_fc1","tasew306_cb33c0;sewpm20v1_ct0_fc1;sewpm20v1_ct1_fc1"
+
+cfgadd "fab_b_act_config","tasew304_c9beda__sewpm20v1_ct0_ct1_fc1;tasew305_c9bbae__sewpm20v1_ct0_ct1_fc1;tasew306_cb33c0__sewpm20v1_ct0_ct1_fc1"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+
+${SSH2PURE} purehost create --wwnlist 51402ec001c9beda,51402ec001c9bed8 tasew304
+${SSH2PURE} purehost create --wwnlist 51402ec001c9bbae,51402ec001c9bbac tasew305
+${SSH2PURE} purehost create --wwnlist 51402ec001cb33c0,51402ec001cb3616 tasew306
+
+
+${SSH2PURE} purehgroup setattr --addhostlist tasew304,tasew305,tasew306 vmwares
+
+
+
+
+alicreate "tasew304_c9bed8","51:40:2e:c0:01:c9:be:d8"
+alicreate "tasew305_c9bbac","51:40:2e:c0:01:c9:bb:ac"
+alicreate "tasew306_cb3616","51:40:2e:c0:01:cb:36:16"
+
+
+zonecreate "tasew304_c9bed8__sewpm20v1_ct0_ct1_fc2","tasew304_c9bed8;sewpm20v1_ct0_fc2;sewpm20v1_ct1_fc2"
+zonecreate "tasew305_c9bbac__sewpm20v1_ct0_ct1_fc2","tasew305_c9bbac;sewpm20v1_ct0_fc2;sewpm20v1_ct1_fc2"
+zonecreate "tasew306_cb3616__sewpm20v1_ct0_ct1_fc2","tasew306_cb3616;sewpm20v1_ct0_fc2;sewpm20v1_ct1_fc2"
+
+cfgadd "fab_a_act_config","tasew304_c9bed8__sewpm20v1_ct0_ct1_fc2;tasew305_c9bbac__sewpm20v1_ct0_ct1_fc2;tasew306_cb3616__sewpm20v1_ct0_ct1_fc2"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+  - zoning and VMAX allocation in CLI<code>
+Fabric A
+
+c0507606cf0c0076	ldcds5300a1		14	vmax_0301_2g0
+c0507606cf0c007c	ldcds5300a1		71	vmax_0301_2g0
+
+alicreate "pahydb01_0c0076","c0:50:76:06:cf:0c:00:76"
+alicreate "pahydb01_0c007c","c0:50:76:06:cf:0c:00:7c"
+zonecreate "pahydb01_0c0076__vmax_0301_2g0","pahydb01_0c0076;vmax_0301_2g0"
+zonecreate "pahydb01_0c007c__vmax_0301_2g0","pahydb01_0c007c;vmax_0301_2g0"
+cfgadd "fab_a_act_config","pahydb01_0c0076__vmax_0301_2g0;pahydb01_0c007c__vmax_0301_2g0"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+Fabric B
+
+c0507606cf0c0078	ldcds5300b1		14	vmax_0301_3g0
+c0507606cf0c007a	ldcds5300b1		71	vmax_0301_3g0
+
+alicreate "pahydb01_0c0078","c0:50:76:06:cf:0c:00:78"
+alicreate "pahydb01_0c007a","c0:50:76:06:cf:0c:00:7a"
+zonecreate "pahydb01_0c0078__vmax_0301_3g0","pahydb01_0c0078;vmax_0301_3g0"
+zonecreate "pahydb01_0c007a__vmax_0301_3g0","pahydb01_0c007a;vmax_0301_3g0"
+cfgadd "fab_b_act_config","pahydb01_0c0078__vmax_0301_3g0;pahydb01_0c007a__vmax_0301_3g0"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+sudo useradd -g taunix -d /home/x1shukla -c "Shukant Lagwankar" -m -u 202 x1shukla
+
+
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator create
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator -wwn c0507606cf0c0076 add
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator -wwn c0507606cf0c007c add
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator -wwn c0507606cf0c0078 add
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator -wwn c0507606cf0c007a add
+
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 081F;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 0F29;" prepare -nop
+
+sudo symaccess -sid 0301 -name pahydb01_SG -type storage create
+
+sudo symaccess -sid 0301 -type storage -name pahydb01_SG add devs 0CF9,0CFD,2B33,2B3F
+
+sudo symfast -sid 0301 -fp_name Gold associate -sg pahydb01_SG -priority 2
+
+sudo symaccess -sid 0301 create view -name pahydb01_MV -sg pahydb01_SG -pg 2G0_3G0_PG -ig pahydb01_IG</code>
+  - Hexadecimal increment<code>snum=5
+for lun in $(egrep "34526|138105" lsvpcfg.out.teprbk01.1 | awk -F: '{print $4}' )
+do
+   for fa in 8d:0 9d:0
+   do
+      echo "map dev ${lun} to dir ${fa} target=0 lun=${snum};" >> teprbk01.fabric.map.txt
+   done
+   snum=$(echo "obase=ibase=16;${snum}+1 " | bc )
+done</code>
+  - VNX registration production<code>naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC121 -hbauid c0:50:76:06:cf:0c:00:5c:c0:50:76:06:cf:0c:00:5c -sp a -spport 4 -type 3 -ip 10.32.6.121 -host TAITC121 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC121 -hbauid c0:50:76:06:cf:0c:00:5c:c0:50:76:06:cf:0c:00:5c -sp b -spport 4 -type 3 -ip 10.32.6.121 -host TAITC121 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC121 -hbauid c0:50:76:06:cf:0c:00:62:c0:50:76:06:cf:0c:00:62 -sp a -spport 4 -type 3 -ip 10.32.6.121 -host TAITC121 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC121 -hbauid c0:50:76:06:cf:0c:00:62:c0:50:76:06:cf:0c:00:62 -sp b -spport 4 -type 3 -ip 10.32.6.121 -host TAITC121 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC121 -hbauid c0:50:76:06:cf:0c:00:5e:c0:50:76:06:cf:0c:00:5e -sp a -spport 5 -type 3 -ip 10.32.6.121 -host TAITC121 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC121 -hbauid c0:50:76:06:cf:0c:00:5e:c0:50:76:06:cf:0c:00:5e -sp b -spport 5 -type 3 -ip 10.32.6.121 -host TAITC121 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC121 -hbauid c0:50:76:06:cf:0c:00:60:c0:50:76:06:cf:0c:00:60 -sp a -spport 5 -type 3 -ip 10.32.6.121 -host TAITC121 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC121 -hbauid c0:50:76:06:cf:0c:00:60:c0:50:76:06:cf:0c:00:60 -sp b -spport 5 -type 3 -ip 10.32.6.121 -host TAITC121 -failovermode 4 -arraycommpath 1
+
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC122 -hbauid c0:50:76:06:cf:0c:00:64:c0:50:76:06:cf:0c:00:64 -sp a -spport 4 -type 3 -ip 10.32.6.122 -host TAITC122 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC122 -hbauid c0:50:76:06:cf:0c:00:64:c0:50:76:06:cf:0c:00:64 -sp b -spport 4 -type 3 -ip 10.32.6.122 -host TAITC122 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC122 -hbauid c0:50:76:06:cf:0c:00:6a:c0:50:76:06:cf:0c:00:6a -sp a -spport 4 -type 3 -ip 10.32.6.122 -host TAITC122 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC122 -hbauid c0:50:76:06:cf:0c:00:6a:c0:50:76:06:cf:0c:00:6a -sp b -spport 4 -type 3 -ip 10.32.6.122 -host TAITC122 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC122 -hbauid c0:50:76:06:cf:0c:00:66:c0:50:76:06:cf:0c:00:66 -sp a -spport 5 -type 3 -ip 10.32.6.122 -host TAITC122 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC122 -hbauid c0:50:76:06:cf:0c:00:66:c0:50:76:06:cf:0c:00:66 -sp b -spport 5 -type 3 -ip 10.32.6.122 -host TAITC122 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC122 -hbauid c0:50:76:06:cf:0c:00:68:c0:50:76:06:cf:0c:00:68 -sp b -spport 5 -type 3 -ip 10.32.6.122 -host TAITC122 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC122 -hbauid c0:50:76:06:cf:0c:00:68:c0:50:76:06:cf:0c:00:68 -sp a -spport 5 -type 3 -ip 10.32.6.122 -host TAITC122 -failovermode 4 -arraycommpath 1
+
+</code>
+  - VNX registration document this when you get time<code>c0507606cf0c0020	
+c0507606cf0c0022
+c0507606cf0c0024
+c0507606cf0c0026
+
+Ask Unix team to force HBAs to login to switches using powerVM.
+
+Figure out which port the WWNs are logged into.
+
+http://storagedocs/doku.php?id=san:stats:tennecosanswitchwwnsall # This runs once a day, so you may have to run it adhoc. On taitc118, sudo /prod/images/scripts/docsanwwn.wiki
+
+c0507606cf0c0020	ldcds5300a1	14	A6(spa2)	B6(spb2)
+c0507606cf0c0026	ldcds5300a1	71	A6(spa2)	B6(spb2)
+
+c0507606cf0c0022	ldcds5300b1	14	A7(spa3)	B7(spb3)
+c0507606cf0c0024	ldcds5300b1	71	A7(spa3)	B7(spb3)
+
+Create zoning
+
+naviseccli -h ldcvnx53001spa port -list
+naviseccli -h ldcvnx53001spa storagegroup -create -gname TSDV1D02
+naviseccli -h ldcvnx53001spa storagegroup -list -gname TSDV1D02
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TSDV1D02 -hbauid c0:50:76:06:cf:0c:00:20:c0:50:76:06:cf:0c:00:20 -sp a -spport 6 -type 3 -ip 10.32.6.29 -host TSDV1D02 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TSDV1D02 -hbauid c0:50:76:06:cf:0c:00:20:c0:50:76:06:cf:0c:00:20 -sp b -spport 6 -type 3 -ip 10.32.6.29 -host TSDV1D02 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TSDV1D02 -hbauid c0:50:76:06:cf:0c:00:26:c0:50:76:06:cf:0c:00:26 -sp a -spport 6 -type 3 -ip 10.32.6.29 -host TSDV1D02 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TSDV1D02 -hbauid c0:50:76:06:cf:0c:00:26:c0:50:76:06:cf:0c:00:26 -sp b -spport 6 -type 3 -ip 10.32.6.29 -host TSDV1D02 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TSDV1D02 -hbauid c0:50:76:06:cf:0c:00:22:c0:50:76:06:cf:0c:00:22 -sp a -spport 7 -type 3 -ip 10.32.6.29 -host TSDV1D02 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TSDV1D02 -hbauid c0:50:76:06:cf:0c:00:22:c0:50:76:06:cf:0c:00:22 -sp b -spport 7 -type 3 -ip 10.32.6.29 -host TSDV1D02 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TSDV1D02 -hbauid c0:50:76:06:cf:0c:00:24:c0:50:76:06:cf:0c:00:24 -sp a -spport 7 -type 3 -ip 10.32.6.29 -host TSDV1D02 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TSDV1D02 -hbauid c0:50:76:06:cf:0c:00:24:c0:50:76:06:cf:0c:00:24 -sp b -spport 7 -type 3 -ip 10.32.6.29 -host TSDV1D02 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 669 -name TSDV1D02_669
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 670 -name TSDV1D02_670
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 671 -name TSDV1D02_671
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 672 -name TSDV1D02_672
+</code>
+  - DMX4 remove devices<code>cat symdevs.34gr1.devs |\
+awk '{print "form meta from dev "$1,"config=striped stripe_size=1920;";
+metaname=$1;
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+}'
+
+
+
+RAID -5
+
+create dev count=200,
+size=9207,
+emulation=FBA,
+config=RAID-5,
+data_member_count=3,
+disk_group=9,
+mvs_ssid=0021;
+
+
+RAID 1
+
+create dev count=200,
+size=9207,
+emulation=FBA,
+config=RAID-1,
+disk_group=6,
+mvs_ssid=0021;
+
+
+4 * hyper in a sequence thenb create a meta.
+
+form meta volume 
+
+
+
+136:139
+136
+37
+138
+
+
+0:160 form metavolumes
+
+Ex; Form 34GB (4 members of meta volume)
+
+form meta from dev 8A4
+config=striped
+stripe_size=1920;
+add dev 8A5:8A7 to meta 8A4;
+
+or,
+
+form meta from dev 8A4
+config=striped
+stripe_size=1920;
+add dev 8A5 to meta 8A4;
+add dev 8A6 to meta 8A4;
+add dev 8A7 to meta 8A4;
+
+
+Ex; Form 34GB (4 members of meta volume)
+
+form meta from dev 8A4
+config=striped
+stripe_size=1920;
+add dev 8A5:8A7 to meta 8A4;
+
+or,
+
+form meta from dev 8A4 config=striped stripe_size=1920;
+add dev 8A5 to meta 8A4;
+add dev 8A6 to meta 8A4;
+add dev 8A7 to meta 8A4;
+
+sudo symcfg list -ssid  # Subsystem id each has 256  devs max.
+
+RAID1 - 300G
+RAID5 - 600G
+
+Group 6
+
+
+Unmap from the ports
+dissolve meta dev <dev>;
+delete dev
+
+    --> 1336   8632        -       -  N/A                -      - N/A
+        1337   8632        -       -  N/A                -      - N/A
+        1338   8632        -       -  N/A                -      - N/A
+        1339   8632        -       -  N/A                -      - N/A
+        133A   8632        -       -  N/A                -      - N/A
+        133B   8632        -       -  N/A                -      - N/A
+        133C   8632        -       -  N/A                -      - N/A
+        133D   8632        -       -  N/A                -      - N/A
+        133E   8632        -       -  N/A                -      - N/A
+        133F   8632        -       -  N/A                -      - N/A
+        1340   8632        -       -  N/A                -      - N/A
+        1341   8632        -       -  N/A                -      - N/A
+        1342   8632        -       -  N/A                -      - N/A
+        1343   8632        -       -  N/A                -      - N/A
+        1344   8632        -       -  N/A                -      - N/A
+        1345   8632        -       -  N/A                -      - N/A</code>
+        
+  * More notes on VNX zoning and registrations <code>Hi Kapil,
+
+Please allocate 2 x 138Gig (OS) + 2 x 100Gig (data) from VNX to the following WWN's:
+
+dgaidb01
+
+c0507606cf0c0028	ldcds5300a1	14	A6(spa2)	B6(spb2)
+c0507606cf0c002e	ldcds5300a1	71	A6(spa2)	B6(spb2)
+
+alicreate "dgaidb01_0c0028","c0:50:76:06:cf:0c:00:28"
+alicreate "dgaidb01_0c002e","c0:50:76:06:cf:0c:00:2e"
+
+zonecreate "dgaidb01_0c0028__vnx53001_spa2","dgaidb01_0c0028;vnx53001_spa2"
+zonecreate "dgaidb01_0c0028__vnx53001_spb2","dgaidb01_0c0028;vnx53001_spb2"
+zonecreate "dgaidb01_0c002e__vnx53001_spa2","dgaidb01_0c002e;vnx53001_spa2"
+zonecreate "dgaidb01_0c002e__vnx53001_spb2","dgaidb01_0c002e;vnx53001_spb2"
+
+cfgadd "fab_a_act_config","dgaidb01_0c0028__vnx53001_spa2;dgaidb01_0c0028__vnx53001_spb2;dgaidb01_0c002e__vnx53001_spa2;dgaidb01_0c002e__vnx53001_spb2"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+c0507606cf0c002a	ldcds5300b1	14	A7(spa3)	B7(spb3)
+c0507606cf0c002c	ldcds5300b1	71	A7(spa3)	B7(spb3)
+
+alicreate "dgaidb01_0c002a","c0:50:76:06:cf:0c:00:2a"
+alicreate "dgaidb01_0c002c","c0:50:76:06:cf:0c:00:2c"
+
+zonecreate "dgaidb01_0c002a__vnx53001_spa3","dgaidb01_0c002a;vnx53001_spa3"
+zonecreate "dgaidb01_0c002a__vnx53001_spb3","dgaidb01_0c002a;vnx53001_spb3"
+
+zonecreate "dgaidb01_0c002c__vnx53001_spa3","dgaidb01_0c002c;vnx53001_spa3"
+zonecreate "dgaidb01_0c002c__vnx53001_spb3","dgaidb01_0c002c;vnx53001_spb3"
+
+cfgadd "fab_b_act_config","dgaidb01_0c002a__vnx53001_spa3;dgaidb01_0c002a__vnx53001_spb3;dgaidb01_0c002c__vnx53001_spa3;dgaidb01_0c002c__vnx53001_spb3"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+c0:50:76:06:cf:0c:00:28	ldcds5300a1	14	A6(spa2)	B6(spb2)
+c0:50:76:06:cf:0c:00:2e	ldcds5300a1	71	A6(spa2)	B6(spb2)
+
+c0:50:76:06:cf:0c:00:2a	ldcds5300b1	14	A7(spa3)	B7(spb3)
+c0:50:76:06:cf:0c:00:2c	ldcds5300b1	71	A7(spa3)	B7(spb3)
+
+
+naviseccli -h ldcvnx53001spa storagegroup -create -gname DGAIDB01
+naviseccli -h ldcvnx53001spa storagegroup -list -gname DGAIDB01
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGAIDB01 -hbauid c0:50:76:06:cf:0c:00:28:c0:50:76:06:cf:0c:00:28 -sp a -spport 6 -type 3 -ip 10.32.6.105 -host DGAIDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGAIDB01 -hbauid c0:50:76:06:cf:0c:00:28:c0:50:76:06:cf:0c:00:28 -sp b -spport 6 -type 3 -ip 10.32.6.105 -host DGAIDB01 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGAIDB01 -hbauid c0:50:76:06:cf:0c:00:2e:c0:50:76:06:cf:0c:00:2e -sp a -spport 6 -type 3 -ip 10.32.6.105 -host DGAIDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGAIDB01 -hbauid c0:50:76:06:cf:0c:00:2e:c0:50:76:06:cf:0c:00:2e -sp b -spport 6 -type 3 -ip 10.32.6.105 -host DGAIDB01 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGAIDB01 -hbauid c0:50:76:06:cf:0c:00:2a:c0:50:76:06:cf:0c:00:2a -sp a -spport 7 -type 3 -ip 10.32.6.105 -host DGAIDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGAIDB01 -hbauid c0:50:76:06:cf:0c:00:2a:c0:50:76:06:cf:0c:00:2a -sp b -spport 7 -type 3 -ip 10.32.6.105 -host DGAIDB01 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGAIDB01 -hbauid c0:50:76:06:cf:0c:00:2c:c0:50:76:06:cf:0c:00:2c -sp a -spport 7 -type 3 -ip 10.32.6.105 -host DGAIDB01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname DGAIDB01 -hbauid c0:50:76:06:cf:0c:00:2c:c0:50:76:06:cf:0c:00:2c -sp b -spport 7 -type 3 -ip 10.32.6.105 -host DGAIDB01 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 699 -name DGAIDB01_699
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 700 -name DGAIDB01_700
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 701 -name DGAIDB01_701
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 702 -name DGAIDB01_702</code>
+  - This is how I did taitc111 on taprvio80/81<code>New taitc111 (vio80/81):
+
+WWN:
+
+c0507606cf0c006c	ldcds5300a1	14	A6(spa2)	B6(spb2)
+c0507606cf0c0074	ldcds5300a1	71	A6(spa2)	B6(spb2)
+
+alicreate "taitc111_0c006c","c0:50:76:06:cf:0c:00:6c"
+alicreate "taitc111_0c0074","c0:50:76:06:cf:0c:00:74"
+
+zonecreate "taitc111_0c006c__vnx53001_spa2","taitc111_0c006c;vnx53001_spa2"
+zonecreate "taitc111_0c006c__vnx53001_spb2","taitc111_0c006c;vnx53001_spb2"
+zonecreate "taitc111_0c0074__vnx53001_spa2","taitc111_0c0074;vnx53001_spa2"
+zonecreate "taitc111_0c0074__vnx53001_spb2","taitc111_0c0074;vnx53001_spb2"
+
+cfgadd "fab_a_act_config","taitc111_0c006c__vnx53001_spa2;taitc111_0c006c__vnx53001_spb2;taitc111_0c0074__vnx53001_spa2;taitc111_0c0074__vnx53001_spb2"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+
+c0507606cf0c0070	ldcds5300b1	14	A7(spa3)	B7(spb3)
+c0507606cf0c0072	ldcds5300b1	71	A7(spa3)	B7(spb3)
+
+alicreate "taitc111_0c0070","c0:50:76:06:cf:0c:00:70"
+alicreate "taitc111_0c0072","c0:50:76:06:cf:0c:00:72"
+
+zonecreate "taitc111_0c0070__vnx53001_spa3","taitc111_0c0070;vnx53001_spa3"
+zonecreate "taitc111_0c0070__vnx53001_spb3","taitc111_0c0070;vnx53001_spb3"
+
+zonecreate "taitc111_0c0072__vnx53001_spa3","taitc111_0c0072;vnx53001_spa3"
+zonecreate "taitc111_0c0072__vnx53001_spb3","taitc111_0c0072;vnx53001_spb3"
+
+cfgadd "fab_b_act_config","taitc111_0c0070__vnx53001_spa3;taitc111_0c0070__vnx53001_spb3;taitc111_0c0072__vnx53001_spa3;taitc111_0c0072__vnx53001_spb3"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+c0:50:76:06:cf:0c:00:6c		ldcds5300a1	14	A6(spa2)	B6(spb2)
+c0:50:76:06:cf:0c:00:74		ldcds5300a1	71	A6(spa2)	B6(spb2)
+c0:50:76:06:cf:0c:00:70		ldcds5300b1	14	A7(spa3)	B7(spb3)
+c0:50:76:06:cf:0c:00:72		ldcds5300b1	71	A7(spa3)	B7(spb3)
+
+naviseccli -h ldcvnx53001spa storagegroup -create -gname TAITC111
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC111 -hbauid c0:50:76:06:cf:0c:00:6c:c0:50:76:06:cf:0c:00:6c -sp a -spport 6 -type 3 -ip 10.32.6.111 -host TAITC111 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC111 -hbauid c0:50:76:06:cf:0c:00:6c:c0:50:76:06:cf:0c:00:6c -sp b -spport 6 -type 3 -ip 10.32.6.111 -host TAITC111 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC111 -hbauid c0:50:76:06:cf:0c:00:74:c0:50:76:06:cf:0c:00:74 -sp a -spport 6 -type 3 -ip 10.32.6.111 -host TAITC111 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC111 -hbauid c0:50:76:06:cf:0c:00:74:c0:50:76:06:cf:0c:00:74 -sp b -spport 6 -type 3 -ip 10.32.6.111 -host TAITC111 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC111 -hbauid c0:50:76:06:cf:0c:00:70:c0:50:76:06:cf:0c:00:70 -sp a -spport 7 -type 3 -ip 10.32.6.111 -host TAITC111 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC111 -hbauid c0:50:76:06:cf:0c:00:70:c0:50:76:06:cf:0c:00:70 -sp b -spport 7 -type 3 -ip 10.32.6.111 -host TAITC111 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC111 -hbauid c0:50:76:06:cf:0c:00:72:c0:50:76:06:cf:0c:00:72 -sp a -spport 7 -type 3 -ip 10.32.6.111 -host TAITC111 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TAITC111 -hbauid c0:50:76:06:cf:0c:00:72:c0:50:76:06:cf:0c:00:72 -sp b -spport 7 -type 3 -ip 10.32.6.111 -host TAITC111 -failovermode 4 -arraycommpath 1
+
+
+
+Please provide the following Tier2
+
+2 x 138Gig
+4 x 102 Gig
+
+
+
+
+
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 753 -name TAITC111_753
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 754 -name TAITC111_754
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 755 -name TAITC111_755
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 756 -name TAITC111_756
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 757 -name TAITC111_757
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 758 -name TAITC111_758
+
+
+
+</code>

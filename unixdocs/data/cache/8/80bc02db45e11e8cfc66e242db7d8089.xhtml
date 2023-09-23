@@ -1,0 +1,147 @@
+
+<h1 class="sectionedit1" id="start_lpars_at_cdc_ptt">Start LPARs at CDC/PTT</h1>
+<div class="level1">
+
+<p>
+<strong> CDC PTT HMC is tgprhmc7.pt.int.tenneco.com </strong>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Start LPARs at CDC/PTT" [1-88] -->
+<h2 class="sectionedit2" id="switch_console_database_from_ldc_to_cdc">Switch console database from LDC to CDC</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the NIM server <code>pgnmsv01</code></div>
+</li>
+<li class="level1"><div class="li"> Update console database<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Chris has already defined few lpars in this file. So,
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> Comment the entry that is uncommented.</div>
+</li>
+<li class="level2"><div class="li"> Uncomment the entry that is commented.</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Switch console database from LDC to CDC" [89-408] -->
+<h2 class="sectionedit3" id="boot_lpars_at_cdc_ptt">Boot lpars at CDC/PTT</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Store variables that points to your systems<pre class="code">export hostname=name_of_the_system</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find our the frame and store than in a variable<pre class="code">export frame=$(grep -i ^${hostname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $4}&#039; )</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Power on the lpar<pre class="code">ssh tgprhmc7.pt.int.tenneco.com &quot;chsysstate -r lpar -o on -b sms -m ${frame} -n ${hostname}&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Boot lpars at CDC/PTT" [409-824] -->
+<h2 class="sectionedit4" id="perform_post_migration_tasks_at_cdc_ptt">Perform post migration tasks at CDC/PTT</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Open a console session to your host<pre class="code">sudo getconsole ${hostname}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure you booted from the right disk<pre class="code">lspv | grep rootvg</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> If you see a vg called “old_rootvg” – then set the bootlist to the disk for that VG and reboot.<pre class="code">bootdisk=$(lspv | grep -w old_rootvg | awk &#039;{print $1}&#039;)
+sudo bootlist -m normal ${bootdisk}</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Re-configure NICs at PTT &amp; assign the IP addres.(Validate it with the backup files in your home directory taken prior the migration)</div>
+<ol>
+<li class="level2"><div class="li"> Remove all IP configs if any from kernel<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all device files for NICs<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Re-discover the NICs<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure the front end IP address<pre class="code">sudo /usr/sbin/mktcpip -h &lt;hostname&gt; -a a.b.c.d -m 255.255.255.0 -i en0 -g a.b.c.1 -A no -s</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure the bck interface<pre class="code">sudo chdev -l en1 -a netaddr=e.f.g.h -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Look for any aliases and configure them on the respective interfaces.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On clustered CI systems, varyon and mount filesystems and nfs, virtual IPs etc. <pre class="code">paerap99
+paerap98
+
+peerap99
+peerap98</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> NTP update<pre class="code">sudo ntpdate -u pgntpap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable NFS and reboot servers at PTT</div>
+<ol>
+<li class="level2"><div class="li"> Enable NFS mounts<pre class="code">nfsfilesystems=$(grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; | tr &quot;\n&quot; &quot; &quot; )
+
+for nfsfs in ${nfsfilesystems}
+do
+   sudo /usr/local/scripts/manage_auto_mount_nfs enable ${nfsfs}
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Enable NFS exports<pre class="code">if [ -f /etc/exports.move2cdc ]
+then
+   sudo mv /etc/exports.move2cdc /etc/exports
+   sudo exportfs -ua
+   sudo exportfs -a
+fi</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Cleanup the MPIO<pre class="code">lsdev -Cc disk | grep -i defined | awk &#039;{print $1}&#039; | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Actifio client</div>
+<ol>
+<li class="level2"><div class="li"> Expand some filesystems<pre class="code">sudo chfs -a size=+1G /usr
+sudo chfs -a size=+1G /opt</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the package<pre class="code">sudo installp -acX -d /tmp/connector-AIX-latestversion.bff udsagent.rte</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the installation file<pre class="code">sudo rm /tmp/connector-AIX-latestversion.bff</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Set bootlist<pre class="code">lspv | grep -w rootvg | awk &#039;{print $1}&#039; | xargs -n1 sudo bootlist -m normal </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Perform post migration tasks at CDC/PTT" [825-] -->

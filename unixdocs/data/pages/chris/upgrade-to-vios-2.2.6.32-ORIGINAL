@@ -1,0 +1,36 @@
+====== Upgrading VIOS Servers to VIOS 2.2.6.32 ======
+
+
+
+** Before installing the Service Release 2.2.6.32 **
+** Follow the standard AIX preupgrade steps. **
+  - [[chris:backupconfig|Perform the configuration backup]]
+
+** The update could fail if there is a loaded media repository. **
+
+** Checking for a loaded media repository **
+
+** To check for a loaded media repository, and then unload it, follow these steps. **
+To check for loaded images, run the following command:<code>lsvopt</code>
+The Media column lists any loaded media. 
+To unload media images, run the following commands on all Virtual Target Devices that have loaded images.<code>unloadopt -vtd <file-backed_virtual_optical_device ></code>
+To verify that all media are unloaded, run the following command again.<code>lsvopt</code> The command output should show No Media for all VTDs.
+
+** UPGRADE PROCESS STARTS HERE **
+
+** Follow the standard AIX preupgrade steps. **
+  - [[chris:backupconfig|Perform the configuration backup]]
+  - Log in to the VIOS as the user padmin.  If you use one or more File Backed Optical Media Repositories, you need to unload media images before you apply the Update Release. If you use Shared Storage Pools(**we do not use this**), then Shared Storage Pool Services must be stopped.<code>clstartstop -stop -n <cluster_name> -m <hostname></code>
+  - Execute oem_setup_env to get out of the restriced shell litations <code> oem_setup_env </code> <code> set -o vi </code>
+  - Chan
+  - Commit previous updates, by running the updateios command. <code>updateios -commit </code>
+  - Verify the updates files that were copied, this step can only be performed if the link to openssl was created.  <code> cp /mnt/ck_sum.bff /home/padmin</code> <code> chmod 755 /home/padmin/ck_sum.bff</code> <code> ck_sum.bff /mnt </code>
+    If there are missing updates or incomplete downloads, an error message is displayed.
+  - Apply the update by running the updateios command.<code> updateios -accept -install -dev /mnt</code>
+  - Run the following command to set authorization for padmin.</code>swrole - PAdmin</code>
+  - To load all changes, reboot the VIOS as user padmin .<code> shutdown -force -restart</code>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.2.3.<code>ioslevel</code>
+  - Run the license acept command for all uprdrates <linense -accept>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.2.3.<code>ioslevel</code>
+  - Commit all the updates <code>updateios -commit</code>
+

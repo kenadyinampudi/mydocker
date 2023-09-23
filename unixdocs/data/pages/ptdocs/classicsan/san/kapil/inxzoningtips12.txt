@@ -1,0 +1,43 @@
+<code>
+fcs0 C0507606104E00C0   inxds5300a      pehrap98_4e00c0
+fcs1 C0507606104E00C2   inxds5300b      pehrap98_4e00c2
+fcs2 C0507606104E00C4   inxds5300a      pehrap98_4e00c4
+fcs3 C0507606104E00C6   inxds5300a      pehrap98_4e00c6
+
+
+Fabric A
+
+zonecreate "pehrap98_4e00c0__inxpm20v1_ct0_ct1_fc0","pehrap98_4e00c0;inxpm20v1_ct0_fc0;inxpm20v1_ct1_fc0"
+zonecreate "pehrap98_4e00c4__inxpm20v1_ct0_ct1_fc0","pehrap98_4e00c4;inxpm20v1_ct0_fc0;inxpm20v1_ct1_fc0"
+cfgadd "Production_1","pehrap98_4e00c0__inxpm20v1_ct0_ct1_fc0;pehrap98_4e00c4__inxpm20v1_ct0_ct1_fc0"
+cfgsave
+cfgenable "Production_1"
+
+
+Fabric B
+
+zonecreate "pehrap98_4e00c2__inxpm20v1_ct0_ct1_fc3","pehrap98_4e00c2;inxpm20v1_ct0_fc3;inxpm20v1_ct1_fc3"
+zonecreate "pehrap98_4e00c6__inxpm20v1_ct0_ct1_fc3","pehrap98_4e00c6;inxpm20v1_ct0_fc3;inxpm20v1_ct1_fc3"
+cfgadd "Production_1b","pehrap98_4e00c2__inxpm20v1_ct0_ct1_fc3;pehrap98_4e00c6__inxpm20v1_ct0_ct1_fc3"
+cfgsave
+cfgenable "Production_1b"
+
+
+
+purehost create pehrap98 --wwnlist C0507606104E00C0,C0507606104E00C2,C0507606104E00C4,C0507606104E00C6
+purevol create --size 138g pehrap98_001
+purevol create --size 138g pehrap98_002
+purevol connect --host teprvio10-11 pehrap98_001 pehrap98_002
+
+ssh <host> /usr/local/scripts/listwwns
+
+function findwwns {
+export host=$1
+ssh ${host} /usr/local/scripts/listwwns | while read line
+do
+   wwn=$(echo ${line} | awk '{print $2}' )
+   switch=$(grep -i ${wwn} /prod/storageteam/dokuwiki/data/pages/san/stats/tennecosanswitchwwnsall.txt | awk -F"|" '{print $3}' )
+   echo ${host} ${line} ${switch}
+done
+}
+</code>

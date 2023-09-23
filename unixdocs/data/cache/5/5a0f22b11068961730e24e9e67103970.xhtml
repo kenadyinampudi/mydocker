@@ -1,0 +1,20 @@
+
+<p>
+Unmount all of them
+</p>
+<pre class="code">grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; | sort -r | xargs -n1 umount -f</pre>
+
+<p>
+Mount all of them 
+</p>
+<pre class="code">grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; | sort | xargs -n1 mount</pre>
+
+<p>
+Check read check on all of them 
+</p>
+<pre class="code"> for fs in $(grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot;)
+ do
+ ls -l $fs
+ echo &quot;Press a key...&quot;
+ read
+ done</pre>

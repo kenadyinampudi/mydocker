@@ -1,0 +1,63 @@
+====== VMAX storage allocation - CLI ======
+
+  - Create Initiator group<code>sudo symaccess -sid 0301 -name pocafasv01_IG -type initiator create</code>
+    - Set consistent LUNs<code>sudo symaccess -sid 0301 -name pocafasv01_IG -type initiator set consistent_lun on</code>
+    - Set port flags<code>sudo symaccess -sid 0301 -name pocafasv01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable</code>
+    - Add additional WWNs - one at a time<code>sudo symaccess -sid 0301 -name pocafasv01_IG -type initiator -wwn WWN1 add</code>
+  - Create storage group<code>sudo symaccess -sid 0301 -name pocafasv01_SG -type storage create</code>
+    - Add additional LUNs to storage group<code>sudo symaccess -sid 0301 -type storage -name pocafasv01_SG add devs xxxx.yyyy.zzzz</code>
+  - Create the masking view<code>sudo symaccess -sid 0301 create view -name pocafasv01_MV -sg pocafasv01_SG -pg 2G1_3G1_PG -ig pocafasv01_IG</code>
+  - Initiator Group Commands:
+    - Alias Name Change for wwpn: <code>symaccess -sid 01 rename -wwn 10000000xxxxxxxx -alias <server name>/hba0 </code>
+    - Creating Initiator Group: <code> symaccess -sid 01 create -name peerap08_IG -type initiator -wwn 10000000xxxxxxxx </code>
+    - To delete Initiator Group: <code> symaccess -sid 01 delete -name peerap08_IG -type initiator </code>
+    - To add new wwpn in Initiator Group: <code> symaccess -sid 01 -name peerap08_IG -type initiator add -wwn 10000000xxxxxxxx </code>
+    - To remove wwpn from Initiator Group: <code> symaccess -sid 01 -name peerap08_IG -type initiator remove -wwn 10000000xxxxxxxx </code>
+    - List Initiator group: <code>symaccess -sid 01  show peerap08_IG -type init -detail  (or) symaccess -sid 01  show peerap08_IG -type init </code>
+  - Port Group Commands:
+    - Create Port Group: <code> symaccess -sid 01  create -name 2H0_3H0_PG -type port -dirport 7H:0,10H:0 </code>
+    - To delete Port Group: <code> symaccess -sid 01  delete -name 2H0_3H0_PG -type port </code>
+    - To add additional ports in to Port Group: <code> symaccess -sid 01 -name 2H0_3H0_PG -type port add -dirport 7H:1,10H:1 </code>
+    - To remove ports from Port Group: <code> symaccess -sid 01 -name 2H0_3H0_PG -type port remove -dirport 7H:1,10H:1 </code>
+    - List Port group: <code> symaccess -sid 01  show 2H0_3H0_PG -type port </code>
+  - Storage Group Commands:
+    - Creating Storage Group: <code> symaccess -sid 01  create -name peerap08_SG -type storage -dev 3A90:3A95 </code>
+    - To delete Storage Group: <code> symaccess -sid 01 delete -name peerap08_SG -type storage (or) symaccess -sid 01 delete -name peerap08_SG -type storage -force </code>
+    - To add new device in to Storage Group : <code> symaccess -sid 01  -name peerap08_SG -type storage add dev 3B94 </code>
+    - To add single device in to cluster server's with same lun id: <code> symaccess -sid 62 -name peerap08_SG -type storage add -dev 5460 -lun 2c </code> <code>symaccess -sid 62 -name peerap09_SG -type storage add -dev 5460 -lun 2c </code>
+    - To remove device from Storage Group : <code> symaccess -sid 01  -name peerap08_SG -type storage remove dev 3B94 </code>
+    - List Storage group: <code> symaccess -sid 01  show peerap08_SG -type storage (or) symsg -sid 01  show peerap08_SG </code>
+  - Masking View Commands:
+    - Creating Masking View: <code> symaccess -sid 01 create view -name peerap08_MV -ig peerap08_IG -pg 2G0_3G0_PG -sg peerap08_SG </code>
+    - Delete Masking View: <code> symaccess -sid 01 delete view -name peerap08_MV </code>
+  - Creating Thin devices:
+    - Standard Thin LUN creation (GB values): <code> symconfigure -sid 01 -cmd "create dev count=2,size=1024GB,meta_member_size=128GB,emulation=fba,config=TDEV,binding to pool=VP_FC15_MIR2;" preview </code>  <code> symconfigure -sid 01 -cmd "create dev count=2,size=1024GB,meta_member_size=128GB,emulation=fba,config=TDEV,binding to pool=VP_FC15_MIR2;" commit </code>
+    - Recommended Standard Thin LUN creation (Cylinder Values): <code> symconfigure -sid 01 -cmd "create dev count=2,size=138098,meta_member_size=36826,emulation=fba,config=TDEV,binding to pool=VP_FC15_MIR2;" preview </code> <code> symconfigure -sid 01 -cmd "create dev count=2,size=138098,meta_member_size=36826,emulation=fba,config=TDEV,binding to pool=VP_FC15_MIR2;" commit </code>
+    - Creating set of device with existing device attributes instantly: <code> symconfigure -sid 01 -cmd "configure 5 devices copying dev 07E4;" prepare -nop </code> <code> symconfigure -sid 01 -cmd "configure 5 devices copying dev 07E4;" commit -nop </code>
+    - Note above command will create 5 devices of similar size of device 07E4, bound to pool where 07E4 is bound to and all attributes set for those devices except data.
+  - Clone Commands:
+    - Creating clone device (VP Snap): <code> symclone -sid 01 -f clonea.txt create -vse -nop </code>
+    - Activating clone device: <code> symclone -sid 01 -f clonea.txt activate -consis -nop </code>
+  - Fast Policy commands:
+    - Creating a Fast Policy: <code> symfast -sid 01 -fp create -name ESX_Prod_Cluster -tier_name VP_FC15_MIR2_TIER -max_sg_percent 50 </code>
+    - Adding additional Tier in to Fast Policy: <code>symfast -sid 01  -fp add -tier_name VP_Sata_R66_TIER  -max_sg_percent 100 -fp_name ESX_Prod_Cluster</code>
+    - Modifying Fast Policy Tier usage: <code>symfast -sid 01  -fp modify -fp_name ESX_Prod_Cluster -tier_name VP_Sata_R66_TIER -max_sg_percent 10</code>
+    - Removing Tier from Fast Policy: <code>symfast -sid 01  -fp remove -tier_name VP_Sata_R66_TIER -fp_name ESX_Prod_Cluster</code>
+    - To list Fast policy: <code> symfast -sid 01  list -fp </code>
+    - To list Storage Groups Associated with Fast Policy: <code> symfast -sid 01 show -fp_name BCV </code>
+    - To add Storage Group in to Fast Policy: <code> symfast -sid 01 -fp_name BCV associate -sg peerap08_SG -priority 1 </code>
+    - To remove Storage Group from Fast Policy: <code> symfast -sid 01 -fp_name BCV disassociate -sg peerap08_SG </code>
+  - Device Clean-up commands:
+    - To delete masking view : <code>sudo symaccess -sid 01 delete view -name  peerap01_MV </code>
+    - To delete Initiator group :<code> sudo symaccess -sid 01 delete -name peerap01_IG  -type initiator </code>
+    - To delete Storage Group :<code> sudo symaccess -sid 01 delete -name  peerap01_SG  -type storage -force </code>
+    - Make all devices as not_ready : <code>symdev -sid 01 not_ready   0900 </code>
+    - Unbind device from pool :<code> unbind tdev   0900  from pool VP_FC15_MIR2 </code>
+    - Unmap device from ports :<code> unmap dev   0900  from dir all:all </code>
+    - Dissolve meta device :<code> dissolve meta dev  0900 </code>
+    - Delete device :<code> delete dev   0900:091A </code>
+  - General VMAX Commands:
+    - To list Thin pool details : <code> symcfg -sid 01 list -thin -pool -detail -gb </code>
+    - To show data dev and bound device associated with Thin pools :<code> symcfg -sid 01 show -thin -pool VP_FC15_MIR2 -detail all </code>
+    - To start balancing on Thin pools :<code>symconfigure -sid 01 -cmd "start balancing on pool VP_FC15_MIR2;" commit -nop </code>
+    - To stop balancing on Thin pools :<code>symconfigure -sid 01 -cmd "stop balancing on pool VP_FC15_MIR2;" commit -nop </code>

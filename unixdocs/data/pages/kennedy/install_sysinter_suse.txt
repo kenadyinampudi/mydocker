@@ -1,0 +1,14 @@
+===== SUSE Linux =====
+
+  - Login to the master server pcdcunxaxap01 and set a variable<code>export server_suse=<hostname></code>
+  - Check if the directory exists<code>sudo ssh ${server_suse} ls -ld /usr/local/bin</code> if exists go to step 4. 
+  - Make this directory<code>sudo ssh ${server_suse} mkdir -p /usr/local/bin</code>
+  - Copy this<code>sudo rsync -avv /prod/images/applications/csi/sysinter.suse ${server_suse}:/usr/local/bin/sysinter.suse</code>
+  - Check if the port 40035 is free to be used<code>sudo ssh ${server_suse} grep 40035 /etc/services</code>Stop! if the port is already allocated.
+  - Then do this<code>sudo ssh ${server_suse} 'echo "sysinter                40035/tcp" | tee -a /etc/services'</code>
+  - Then do this<code>sudo rsync -avv /prod/images/applications/csi/sysinter-xinetd.suse ${server_suse}:/etc/xinetd.d/sysinter-xinetd</code>
+  - Now restart inetd
+    - For SUSE Linux 11 <code>sudo ssh ${server_suse} service xinetd reload</code>
+    - For SUSE Linux 12 <code>sudo ssh ${server_suse} systemctl reload xinetd</code>
+  - Add the system to UUMA<code>sudo ssh pcdcunxlxap03 "echo ${server_suse} >> /home/oracle/uuma/hosts.txt"</code>
+

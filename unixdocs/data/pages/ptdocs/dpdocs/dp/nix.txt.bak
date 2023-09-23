@@ -1,0 +1,31 @@
+  * Get proper NBU binaries (either from VERITAS web site or from NBU 52x0 appliance) for the correct OS, ie: https://ldcnbu5230amd - choose the closest one appliance to client)
+  * copy these binaries to client - put it somewhere else then /usr/openv (which now should be 6GB in size)
+  * Install client binaries - provide correct NBU master server name (media server has to be provided later on)
+  * edit /usr/openv/netbackup/bp.conf file - make sure correct servers are in place, add media servers (different ones for different NBU domains) if client name is OK, etc... For some Linux client with already installed NBU binares (made by unix team) you need to create the bp.conf file, it can looks like this (for LDC NBU domain)<code>cat /usr/openv/netbackup/bp.conf
+SERVER = taqa1d01bck.amer.int.tenneco.com
+SERVER = ldcnbu5230amd.amer.int.tenneco.com
+SERVER = ldcnbu5230bmd.amer.int.tenneco.com
+CLIENT_NAME = pgdmr055.amer.int.tenneco.com
+CONNECT_OPTIONS = localhost 1 0 2</code> Master NBU server (the very first entry in bp.conf file with SERVER directive) name depends on clients network IP assigned... Always needs to be verifed.
+  * If server is also DB server please exclude the data directories from its standard backup. On *NIX it is done by creating a file called exclude_list.policy_name stored in /usr/openv/netbackup, such list can look like<code> cat /usr/openv/netbackup/exclude_list.STD_PGDMR055
+/sapdb/*/sapdata/
+/tmp/
+/proc/
+/dev/
+/usr/openv/
+/bkpmksb/</code> Standard policy for this client is named STD_PGDMR055. **ALWAYS VERIFY THE EXCLUDE LIST WITH DBA!!**
+  * Enable client side dedupliaction on master server end for this client, ie:<code>bpclient -client client_name -add -client_direct 1</code> or from GUI NetBackup Management/Host Properties/Master Servers/servername/Client Attributes/Deduplication location should be set to Prefer to use client-side deduplication.
+  * Check if NBU processes are started:<code>pgdmr055(pawetkac):/home/pawetkac$ ps -ef|grep bp
+    root  6488220        1   0 03:40:40      -  0:00 /usr/openv/netbackup/bin/bpcd -standalone</code> on AIX and on LINUX is should look like<code>pawetkac on qgpwap01:/home/pawetkac $ ps -ef |grep bp
+root      77930      1  0 Jul06 ?        00:00:03 /usr/openv/netbackup/bin/bpcd -standalone
+pawetkac 119918 119873  0 08:03 pts/2    00:00:00 grep --color=auto bp</code>
+  * Check if master can communicate with given client<code>taqa1d01:/>bpgetconfig -s qgpwap01.amer.int.tenneco.com 
+Client of taqa1d01bck.amer.int.tenneco.com
+Linux, RedHat2.6.18
+7.7.3
+NetBackup
+7.7
+770000
+/usr/openv/netbackup/bin
+Linux 3.10.0-514.16.1.el7.x86_64</code>
+  * Create needed policies - make sure your exclude list file name matches the policy you did create.

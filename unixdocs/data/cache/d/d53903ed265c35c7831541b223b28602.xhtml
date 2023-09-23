@@ -1,0 +1,219 @@
+
+<h1 class="sectionedit1" id="mt-i-migrate-aix-sr_lv">MT-I-Migrate-AIX-SR_LV</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "MT-I-Migrate-AIX-SR_LV" [1-39] -->
+<h2 class="sectionedit2" id="t_-_confirm_target_unix_server_is_online_and_all_required_configs_updated">T(-) Confirm Target UNIX Server is Online and all Required Configs Updated</h2>
+<div class="level2">
+
+<p>
+From NIM server:
+</p>
+<pre class="code">ssh $clonesystem</pre>
+
+<p>
+In case you cannot login into $clonesystem, escalate to UNIX team lead.
+</p>
+
+<p>
+Check the CPU and memory values against master report : <a href="/doku.php?id=unix:imodc:cutovertasks-0" class="wikilink1" title="unix:imodc:cutovertasks-0">Master Source Host-Cloned Target Host-CPU-Memory Report </a>
+</p>
+<pre class="code">prtconf | grep -E &quot;Number Of Processors|Good Memory Size&quot;</pre>
+
+<p>
+In case values do not match, escalate to UNIX team lead.
+</p>
+
+</div>
+<!-- EDIT2 SECTION "T(-) Confirm Target UNIX Server is Online and all Required Configs Updated" [40-527] -->
+<h2 class="sectionedit3" id="t_-_validate_that_test_data_has_been_cleaned_out_in_preparation_for_final_data_sync">T(-) Validate that Test data has been cleaned out in preparation for final data sync</h2>
+<div class="level2">
+
+<p>
+Validate that only rootvg and page volume groups are present, expected output:
+</p>
+<pre class="code">lsvg
+
+altinst_rootvg
+rootvg
+[pagevg01 or sanpagevg01] -- only on large database servers: peerdb99, peerdb98, paerdb99, paerdb98</pre>
+
+<p>
+In case you see any other volume groups present on the server, escalate to UNIX team lead.
+</p>
+
+<p>
+Check if /etc/filesystems contains any filesystems definitions outside of rootvg
+</p>
+<pre class="code">lsvg -l rootvg | awk &#039;{print $7}&#039; | grep &quot;^/&quot; &gt; /tmp/rootfs.txt
+cat /etc/filesystems | grep -vp nfs | grep : | cut -d: -f1 | grep &quot;^/&quot; | grep -Ev &quot;/proc|/cdrom&quot; | while read fsname
+do
+grep -qx &quot;$fsname&quot; /tmp/rootfs.txt
+if [ $? -ne 0 ]
+then
+echo &quot;STOP - filesystem $fsname exists in /etc/filesystems but not in rootvg.&quot;
+echo &quot;$fsname &gt;&gt; /tmp/fsfix.sh&quot;
+fi
+done</pre>
+
+<p>
+In case you see any messages with the word “STOP”,  escalate to UNIX team lead.
+</p>
+
+</div>
+<!-- EDIT3 SECTION "T(-) Validate that Test data has been cleaned out in preparation for final data sync" [528-1480] -->
+<h2 class="sectionedit4" id="t_0_stop_source_server_os_in_tenneco_environment">T(0) Stop Source Server OS in Tenneco environment</h2>
+<div class="level2">
+
+<p>
+From NIM server:
+</p>
+<pre class="code">ssh $source_system</pre>
+
+<p>
+In case you cannot login into $source_system, escalate to UNIX team lead.
+</p>
+
+<p>
+Validate that Oracle database(s) is not running
+</p>
+<pre class="code">ps -ef | grep ora_ | grep -v grep</pre>
+
+<p>
+In case you see DB processes are running, escalate to UNIX team lead.
+</p>
+
+<p>
+Perform AIX shutdown:
+</p>
+<pre class="code">sudo shutdown -F</pre>
+
+<p>
+If on console, wait for the “Halt Completed” message or check HMC for lpar status.
+</p>
+
+</div>
+<!-- EDIT4 SECTION "T(0) Stop Source Server OS in Tenneco environment" [1481-1979] -->
+<h2 class="sectionedit5" id="t_0_validate_firewall_separation_between_driv_and_tenneco">T(0) Validate firewall separation between DRiV and Tenneco </h2>
+<div class="level2">
+
+<p>
+From NIM server:
+</p>
+<pre class="code">ssh $clonesystem</pre>
+
+<p>
+In case you cannot login into $clonesystem, escalate to UNIX team lead.
+</p>
+
+<p>
+Perform ping test to default gateways:
+</p>
+<pre class="code">ping 10.0.48.1
+ping 10.32.50.1</pre>
+
+<p>
+If you see any of the following responses, escalate to UNIX team lead.
+</p>
+<pre class="code">64 bytes from 10.32.50.1: icmp_seq=0 ttl=255 time=1 ms
+64 bytes from 10.32.50.1: icmp_seq=1 ttl=255 time=1 ms
+
+64 bytes from 10.32.50.1: icmp_seq=0 ttl=255 time=1 ms
+64 bytes from 10.32.50.1: icmp_seq=1 ttl=255 time=1 ms</pre>
+
+</div>
+<!-- EDIT5 SECTION "T(0) Validate firewall separation between DRiV and Tenneco " [1980-2569] -->
+<h2 class="sectionedit6" id="t_0_mount_and_validate_provisioned_storage_in_driv_environment">T(0) Mount and validate provisioned Storage in DRiV environment </h2>
+<div class="level2">
+
+<p>
+From NIM server:
+</p>
+<pre class="code">ssh $clonesystem</pre>
+
+<p>
+In case you cannot login into $clonesystem, escalate to UNIX team lead.
+</p>
+
+<p>
+Run cfgmgr to acquire presented luns
+</p>
+<pre class="code">cfgmgr -v</pre>
+
+<p>
+Check if all luns are in available state
+</p>
+<pre class="code">lsdev -Cc disk | grep -v Available</pre>
+
+<p>
+If you see luns in other state than “Available”, escalate to Unix team lead.
+</p>
+
+<p>
+Check if all paths are available
+</p>
+<pre class="code">lspath | grep -v Enabled</pre>
+
+<p>
+If you see paths in other state than “Enabled”, escalate to Unix team lead.
+</p>
+
+<p>
+Do we have recent disk map file? 
+</p>
+<pre class="code">ls -l /home/tauxrpt/rpt_config/cutover_file_systems.txt</pre>
+
+<p>
+In case the file does not exist or is more than 3 days old, escalate to Unix lead.
+</p>
+<pre class="code">sudo rm /var/tmp/diskmap.imoclone</pre>
+<pre class="code">sudo cat /home/tauxrpt/rpt_config/cutover_file_systems.txt |\
+sed -n &quot;/Printing diskmap/,/Done Printing diskmap/p&quot; | egrep &quot;datavg|redovg|binvg|nfsvg|logvg|dgtvg01|dwvg01|edivg|edivg01|erappvg01|hydvg01\
+|hypvg01|internalsasvg|nim6vg01|nimvg|orasoftvg|pagevg01|psbivg01|pujmvg|pujmvg01|raid5vg01|sanpagevg01|sapexportvg|sapmedia|sapsoft_V6|softvg01\
+|srmvg01|srmvg02|swvg01|tctpvg|testvg01|tmplppvg|transfervg|tsbivg01|veritasvg|zycusvg&quot; &gt; /var/tmp/diskmap.imoclone</pre>
+<pre class="code">for vg in $(awk -F: &#039;{print $NF}&#039; /var/tmp/diskmap.imoclone | sort -u | sort)
+do
+   echo &quot;Working on ${vg} ... &quot;
+   grep ${vg}$ /var/tmp/diskmap.imoclone | awk -F: &#039;{print $2}&#039; &gt; ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot; )
+   echo &quot;Recreating ${vg} using ${disks} ... &quot;
+   sudo recreatevg -L/ -Y/ -y ${vg} ${disks}
+   if [ ${?} -eq 0 ]
+   then
+      for fs in $(lsvgfs ${vg} | sort )
+      do
+         sudo mkdir -p ${fs}
+         sudo mount ${fs}
+         if [ ${?} -ne 0 ]
+         then
+            echo &quot;Unable to mount ${newname} -- Fix and proceed &quot;
+         fi
+      done
+   else
+      echo &quot;Error running recreatevg ${vg} using ${disks} -- Fix and proceed &quot;
+   fi
+done</pre>
+
+</div>
+<!-- EDIT6 SECTION "T(0) Mount and validate provisioned Storage in DRiV environment " [2570-4612] -->
+<h2 class="sectionedit7" id="t_0_re-establish_nfs_shares_on_aix_server">T(0) Re-establish NFS shares on AIX Server</h2>
+<div class="level2">
+
+<p>
+Umount NFS filesystems
+</p>
+<pre class="code">df -k | grep : | awk &#039;{print $7}&#039; | sort -r | xargs -n1 sudo umount</pre>
+
+<p>
+Double check
+</p>
+<pre class="code">df -k | grep :</pre>
+
+<p>
+Mount NFS filesystems
+</p>
+<pre class="code">lsnfsmnt | awk &#039;{if ($(NF-1) == &quot;yes&quot;) print $0}&#039; | awk &#039;{print $1}&#039; | sort  | xargs -n1 sudo mount</pre>
+
+</div>
+<!-- EDIT7 SECTION "T(0) Re-establish NFS shares on AIX Server" [4613-] -->

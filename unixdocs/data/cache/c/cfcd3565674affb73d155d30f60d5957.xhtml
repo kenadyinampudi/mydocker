@@ -1,0 +1,202 @@
+
+<h1 class="sectionedit1" id="home_page_for_shukant">Home page for Shukant</h1>
+<div class="level1">
+
+<p>
+<a href="/doku.php?id=shukant:lvm:start" class="wikilink1" title="shukant:lvm:start">Logical Volume Manager</a>
+</p>
+
+<p>
+<a href="/doku.php?id=shukant:patching" class="wikilink1" title="shukant:patching">AIX Patching</a>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Home page for Shukant" [1-118] -->
+<h3 class="sectionedit2" id="unix_user_management_-_most_frequent_tasks">Unix user management - most frequent tasks</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> List user attributes:<pre class="code">sudo lsuser -f x1rzb826
+  x1rzb826:
+        id=4207
+        pgrp=staff
+        groups=staff
+        home=/home/x1rzb826
+        shell=/usr/bin/ksh
+        gecos=Robert Bieniek
+        login=true   ---- user can login via console or su
+        su=true
+        rlogin=true  ---- user can login rrmotely via telnet, ssh, ftp, rlogin etc.
+        daemon=true
+        admin=false
+        sugroups=ALL
+        admgroups=
+        tpath=nosak
+        ttys=ALL
+        expires=0
+        auth1=SYSTEM
+        auth2=NONE
+        umask=22
+        registry=files
+        SYSTEM=compat
+        logintimes=
+        loginretries=5        -- after this number the account will be locked due to exceeded number of failed login attempts
+        pwdwarntime=14
+        account_locked=false
+        minage=0
+        maxage=0   --- user password never expires
+        maxexpired=-1
+        minalpha=5
+        minother=1
+        mindiff=4
+        maxrepeats=2
+        minlen=8
+        histexpire=80
+        histsize=1
+        pwdchecks=
+        dictionlist=
+        fsize=-1
+        cpu=-1
+        data=-1
+        stack=-1
+        core=2048
+        data_hard=-1
+        stack_hard=-1
+        core_hard=-1
+        time_last_login=1366645544
+        time_last_unsuccessful_login=1366645538
+        tty_last_login=/dev/pts/1
+        tty_last_unsuccessful_login=ssh
+        host_last_login=paft3p01.tenneco.com
+        host_last_unsuccessful_login=paft3p01.tenneco.com
+        unsuccessful_login_count=0
+        roles=</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Example of an locked out account<pre class="code">login: x1rzb826
+x1rzb826&#039;s Password:
+3004-303 There have been too many unsuccessful login attempts; please see
+        the system administrator.
+
+login: Connection closed.</pre>
+
+<p>
+Now the lsuser command shows the following:
+</p>
+<pre class="code">paft3p01:/root&gt;sudo lsuser -f x1rzb826
+x1rzb826:
+        id=4207
+        pgrp=staff
+        groups=staff
+        home=/home/x1rzb826
+        shell=/usr/bin/ksh
+        gecos=Robert Bieniek
+        login=true
+        su=true
+        rlogin=true
+        daemon=true
+        admin=false
+        sugroups=ALL
+        admgroups=
+        tpath=nosak
+        ttys=ALL
+        expires=0
+        auth1=SYSTEM
+        auth2=NONE
+        umask=22
+        registry=files
+        SYSTEM=compat
+        logintimes=
+        loginretries=5       -- we only allow that many unsuccessfull trie to login
+        pwdwarntime=14
+        account_locked=false
+        minage=0
+        maxage=8
+        maxexpired=-1
+        minalpha=5
+        minother=1
+        mindiff=4
+        maxrepeats=2
+        minlen=8
+        histexpire=80
+        histsize=1
+        pwdchecks=
+        dictionlist=
+        fsize=-1
+        cpu=-1
+        data=-1
+        stack=-1
+        core=2048
+        data_hard=-1
+        stack_hard=-1
+        core_hard=-1
+        time_last_login=1366645544
+        time_last_unsuccessful_login=1415576907
+        tty_last_login=/dev/pts/1
+        tty_last_unsuccessful_login=/dev/pts/2
+        host_last_login=paft3p01.tenneco.com
+        host_last_unsuccessful_login=loopback
+        unsuccessful_login_count=6              ----- unsuccessful_login_count greater than allowed value 5
+        roles=</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> In order to reset the unsuccessfull login count back to zero enter the following command:<pre class="code"> sudo chsec -f /etc/security/lastlog -a &quot;unsuccessful_login_count=0&quot; -s  &#039;x1rzb826&#039;</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong>Common user management tasks</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Reset user password:<pre class="code">sudo passwd x1rzb826</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Clear flag so the user does not need to pick another password after the reset:<pre class="code">sudo pwdadm -c &lt;username&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make password never to expire:<pre class="code">chuser maxage=0 &lt;username&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable the ability to remotely login - useful when creating su - only accounts such as oracle etc:<pre class="code">sudo chuser rlogin=false $username</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add user to a group:</div>
+<ol>
+<li class="level2"><div class="li"> Get a list of existing groups<pre class="code">x1kxk630 on unixsandbox1:/home/x1kxk630 $ lsuser -a groups x1rzb826
+x1rzb826 groups=staff</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add the new group ( taunix in this case ) to the user<pre class="code">sudo chuser &quot;groups=staff,taunix&quot; x1rzb826</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Confirm the groups are added<pre class="code">x1kxk630 on unixsandbox1:/home/x1kxk630 $ lsuser -a groups x1rzb826
+x1rzb826 groups=staff,taunix</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Change primary group of the user:<pre class="code">sudo chuser &quot;pgrp=taunix&quot; x1rzb826</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List the startup shell<pre class="code">lsuser -a shell x1rzb826</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the startup shell<pre class="code">sudo chuser &quot;shell=/usr/bin/bash&quot; x1rzb826</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Making an account as a <abbr title="File Transfer Protocol">FTP</abbr> only account<pre class="code">sudo usermod -s /bin/false &lt;username&gt;</pre>
+
+<p>
+For regular ftp accounts (make sure that /bin/false is listed in the /etc/security/login.cfg file under shells):
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> For secure <abbr title="File Transfer Protocol">FTP</abbr> accounts (sftp):<pre class="code">sudo usermod -s /usr/sbin/sftp-server &lt;username&gt;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Unix user management - most frequent tasks" [119-] -->

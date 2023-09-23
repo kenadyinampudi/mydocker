@@ -1,0 +1,65 @@
+====== CDC SAN Zone Removal guidelines / instructions ======
+
+  * CDC / MP or in future will be known as DR1VE has SAN fabric constructed by using Cisco MDS switches.
+
+^SwitchName                      ^Description        ^
+|uscdcxswisan001.federalmogul.com|Switch1 or Fabric A|
+|uscdcxswisan002.federalmogul.com|Switch2 or Fabric B|
+
+  * This documentation covers CDC zoning to Pure storage arrays.
+
+
+===== Zone Removal Procedure =====
+
+==== Switch 1 ====
+
+  - Login to ''uscdcxswisan001.federalmogul.com''<code>ssh youraccount@uscdcxswisan001.federalmogul.com</code>
+  - Check if mentioned host zones exist on switch <code> show zoneset active | grep HOSTNAME</code>
+  - Check if no one else is doing anything on this switch<code>sh users</code>If there is anyone else, ping that person that you are willing to work on zone removal on this given switch.
+  - Backup the running configuration<code>copy running-config scp://sanmontr@10.32.6.150/prod/storageteam/sanmontr/cisco_fabric_backups/cdc/uscdcxswisan001-MMDDYYYY</code>
+  - Move to configuration terminal<code>config t</code>
+  - Zone Removal from Active configuration
+    - Change the context Zoneset name <code>zoneset name  ZS_VSAN_101 vsan 101</code>
+    - Remove zone from mentioned Zoneset<code>no member ZoneName</code>  
+You can mention as many zones you want to remove active zoneset here  
+  - Once done, activate the zoneset<code>zoneset activate name ZS_VSAN_101 vsan 101</code>
+  - Commit the zone<code>zone commit vsan 101</code>
+  - Validate the Zone Members in zone<code>show zone name ZoneName vsan 101</code>
+  - Remove Zone members from mentioned / to be removed Zone <code>zone name ZoneName vsan 101
+no member device-alias hostame_1
+no member device-alias hostname_1A
+no member device-alias ArrayAlias
+no member device-alias ArrayAlias</code>
+  - Once Zone members are removed then, proceed to Device Alias Database to delete the Alias for host<code>device-alias database</code>
+  - Delete Device Alias <code> no device-alias name hostname_1
+no device-alias name hostname_1A </code>
+  - Copy the running configuration to startup and commit the zone<code>zone commit vsan 101
+copy running-config startup-config</code>
+  - Exit from terminal<code>exit</code>
+
+
+==== Switch 2 ====
+
+  - Login to ''uscdcxswisan002.federalmogul.com''<code>ssh youraccount@uscdcxswisan002.federalmogul.com</code>
+  - Check if mentioned WWN are logged in to switch '' <code> flogi database | grep XX:XX:XX:XX:XX:XX:XX:XX </code>
+  - Check if no one else is doing anything on this switch<code>sh users</code>If there is anyone else, ping that person that you are willing to work on zoning on this given switch.
+  - Backup the running configuration<code>copy running-config scp://sanmontr@10.32.6.150/prod/storageteam/sanmontr/cisco_fabric_backups/cdc/uscdcxswisan002-MMDDYYYY</code>
+  - Move to configuration terminal<code>config t</code>
+  - Zone Removal from Active configuration
+    - Change the context Zoneset name <code>zoneset name  ZS_VSAN_102 vsan 102</code>
+    - Remove zone from mentioned Zoneset<code>no member ZoneName</code>  
+You can mention as many zones you want to remove active zoneset here  
+  - Once done, activate the zoneset<code>zoneset activate name ZS_VSAN_102 vsan 102</code>
+  - Commit the zone<code>zone commit vsan 102</code>
+  - Validate the Zone Members in zone<code>show zone name ZoneName vsan 102</code>
+  - Remove Zone members from mentioned / to be removed Zone <code>zone name ZoneName vsan 102
+no member device-alias hostame_2
+no member device-alias hostname_2A
+no member device-alias ArrayAlias
+no member device-alias ArrayAlias</code>
+  - Once Zone members are removed then, proceed to Device Alias Database to delete the Alias for host<code>device-alias database</code>
+  - Delete Device Alias <code> no device-alias name hostname_2
+no device-alias name hostname_2A </code>
+  - Copy the running configuration to startup and commit the zone<code>zone commit vsan 102
+copy running-config startup-config</code>
+  - Exit from terminal<code>exit</code>

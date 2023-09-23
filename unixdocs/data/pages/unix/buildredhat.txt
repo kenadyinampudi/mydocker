@@ -1,0 +1,91 @@
+====== Redhat Linux Installation notes ======
+
+===== Documentations and Standards =====
+
+  * Login to consoleDB server
+    * MP/PS<code>ssh pcdcunxaxap01</code> OR
+    * PT/CA<code>ssh pgnmsv01</code>
+  * Add the server to the console database **/prod/images/etc/unix_sys_console** on pcdcunxaxap01/pgnmsv01.<code>sudo vi /prod/images/etc/unix_sys_console</code>Sample entry would look like<code>dcdcdsmlxdb01:std-vmware-vsphere:cdcvilms156:ADACCOUNT</code>
+  * Find out the MAC address of the system
+    * Virtual Machines
+      * [[unix:vspherehosts|Login to the respective VSphere Server to document the MAC address for the VM.]]
+      * Locate the VM<code>Right click --> Edit Settings --> Select Network adapter 1 (Hardware Tab) --> You will see the MAC address to the right.</code>
+    * Physical systems
+      * Login to the iLO and pick up the first interface ( As of now, writing this document, NBU home made appliances are the only physical build of RHEL we support )
+
+===== Define the system on the build server =====
+
+  * Login to the build server and export the build server as a variable
+    * __MP/PS__<code>ssh pcdcunxlxap01
+export server="$(uname -n).driv.com"</code>__OR__
+    * __PT/CA__<code>ssh pablsv02
+export server="$(uname -n).amer.int.tenneco.com"</code>
+  * Export the server name. Please use the FQDN.<code>export host2build=<hostname></code>i.e.<code>export host2build=dcdcdsmlxdb01.driv.com</code>__OR__<code>export host2build=smhnbuhmams.pt.int.tenneco.com</code>
+  * Store the short name<code>export shortname=$(echo ${host2build} | awk -F "." '{print $1}')</code>
+  * The server's MAC address<code>export mac_addr=aa:ww:ee:rr:tt:yy:tt</code>
+  * Set the correct boot interface
+    * If the server is a VM<code>export interface="eth0"</code>
+    * If the server is physical (DL380 Gen10 for NBU appliance)<code>export interface="eno1"</code>
+    * If the server is DELL PowerEdge for NBU appliance)<code>export interface="em1"</code>
+  * The server's IP Address<code>export ipaddr=$(nslookup ${host2build} | \
+sed -n /^Name/,/^$/p | grep ^Address | awk '{print $NF}')</code>
+  * Confirm that the IP address alloted to you by the Network team is not in user<code>[[ $(ping -c1 ${ipaddr} > /dev/null 2>&1;echo ${?}) -eq 0 ]] && echo "Warning --- IP Address is in use - please check "</code>
+  * The server's DNS domain<code>export domain=$(nslookup ${host2build} | \
+grep ^Name | awk '{print $NF}' | awk -F"." '{OFS = ".";$1=""; print $0}' | sed "s;^.;;g")</code>
+  * The server's netmask. **Most times, but there are some subnets with a different mask**. When in doubt, ask Network team<code>export netmask=255.255.255.0</code>
+  * The server's default gateway. **Most times, but there are some subnets with a different mask**. When in doubt, ask Network team<code>export gateway=$(echo $ipaddr | awk -F"." '{OFS = ".";$NF="";print $0"1"}')</code>
+  * Set DNS server
+    * __MP/PS__<code>export nameserver="10.128.11.200"</code> __OR__
+    * __PT/CA__<code>export nameserver="10.131.17.100"</code>
+
+===== Pick the right server profile =====
+
+^Profile                            ^Description                                             ^
+|rhel-6.8-x86_64                    |RHEL 6.8 64 bit VMWare VM                               |
+|rhel-7.2-x86_64                    |RHEL 7.2 64 bit VMWare VM                               | 
+|rhel-7.2-x86_64-sap-app            |RHEL 7.2 64 bit VMWare VM - SAP Application servers     |
+|rhel-7.2-x86_64-sap-hana           |RHEL 7.2 64 bit VMWare VM - SAP HANA database servers   |
+|rhel-7.2-x86_64-sap-hana-app       |RHEL 7.2 64 bit VMWare VM - SAP HANA Application servers|
+|rhel-7.2-x86_64-dl380g10           |RHEL 7.2 64 bit HPE DL Physical - NBU appliance         |
+|rhel-7.7-x86_64-PowerEdgeR740xd    |RHEL 7.7 64 bit Dell PowerEdge physical - NBU appliance |
+|rhel-7.7-hpcc-x86_64               |RHEL 7.7 64 bit Dell PowerEdge physical - HPCC Builds   |
+
+
+
+  * Select a profile
+    * RHEL 6.8<code>export profile=rhel-6.8-x86_64</code>
+    * RHEL 7.2<code>export profile=rhel-7.2-x86_64</code>
+    * RHEL 7.2 for SAP HANA DB server<code>export profile=rhel-7.2-x86_64-driv-sap-hana</code>
+    * RHEL 7.2 for SAP HANA APP server<code>export profile=rhel-7.2-x86_64-driv-sap-hana-app</code>
+    * RHEL 7.2 for NBU home grown for HP<code>export profile=rhel-7.2-x86_64-dl380g10</code>
+    * RHEL 7.7 for NBU home grown for Dell<code>export profile=rhel-7.7-x86_64-PowerEdgeR740xd</code>
+    * RHEL 7.7 for HPCC Builds on Dell<code>export profile=rhel-7.7-hpcc-x86_64</code>
+
+===== Add the system to Cobbler configurations =====
+
+  * Add the system to cobbler<code>sudo cobbler system add \
+--name=${shortname} \
+--profile=${profile} \
+--netboot-enabled=False \
+--name-servers=${nameserver} \
+--name-servers-search=${domain} \
+--gateway=${gateway} \
+--interface=${interface} \
+--management=True \
+--static=True \
+--mac=${mac_addr} \
+--ip-address=${ipaddr} \
+--netmask=${netmask} \
+--server=${server}</code>
+
+===== Create an ISO boot image and prepare it for installation =====
+
+  * Create the Boot ISO on Cobbler server<code>sudo cobbler buildiso --systems="${shortname}" --iso=/var/www/html/servers/${shortname}.iso</code>
+  * [[unix:nbuappl:crnbuappliance|Perform these if you are building a home grown NBU appliance or HPCC nodes based on RHEL]]
+  * For systems at DRIV<code>sudo cp /var/www/html/servers/${shortname}.iso /prod/images/DRIV-bootisos/</code>
+
+===== Perform RHEL installation =====
+
+  * [[unix:vmware-install|VMWare ? Click here ]]
+  * [[unix:standalone-install|Standalone intel server ? Click here ]]
+  * [[unix:standalone-nbu-dl380|Standalone NBU home made appliance or HPCC builds]]

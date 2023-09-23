@@ -1,0 +1,265 @@
+
+<h1 class="sectionedit1" id="migrate_blade_from_ivm_to_hmc_control">Migrate Blade from IVM to HMC Control</h1>
+<div class="level1">
+
+<p>
+## Prerequisites Before converting, verify the HMC, VIOS release level and Blade Firmware level are at the recommended levels:
+## HMC ⇒ HMC Version 7 Release 770 or later is required.
+## Blade Firmware ⇒ Power 7 Blades needs to be 01AA730_094 or later; Power 6 Blades need to be 01EA350_132 or later. 
+</p>
+
+<p>
+## Backup the IVN configurations
+</p>
+<ol>
+<li class="level1"><div class="li"> Under MM Control, click Configuration Mgmt</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:00convertbladetohmc.png" class="media" title="chris:00convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:00convertbladetohmc.png" class="media" alt="" /></a></div>
+</li>
+</ol>
+</li>
+</ol>
+
+<p>
+ – Under Backup Configuration Click Backup. A dialog box will open asking yu to open or Save the file  use the browser&#039;s save option to save the file locally. While this file cannot be restored using the HMC, it does contain a readable version of the current partition configuration that can be used as a reference. 
+</p>
+
+<p>
+## Begin Blade Center work here
+</p>
+<ol>
+<li class="level1"><div class="li"> Get an IP Address in the 10.0.4.xxx subnet from the GIOS Network Services team for the Blade you aqre foing to convert. in this example taqprvio4-hmc 10.0.4.22 Netmask should be 255.255.252.0 and Gateway should be 10.0.4.1   Note you will need enter these in a timely manor later on in step {NNN} Mark Password here hope4u2</div>
+</li>
+<li class="level1"><div class="li"> Login to the respective Bmade Center Console and expand MM Control.</div>
+<ol>
+<li class="level2"><div class="li"> Select Chassis Int Network</div>
+<ol>
+<li class="level3"><div class="li"> Eanble Chassis Internal Network (CIN) and change from Disabled to Enabled and save</div>
+</li>
+<li class="level3"><div class="li"> Under Chassis Internetwork (CIN) Configuration select the Index you are going to modify in this example  2 (taprvio4 resides in slot 2) </div>
+</li>
+<li class="level3"><div class="li">- Change the <abbr title="Local Area Network">LAN</abbr> ID from 4094 to 4093 </div>
+</li>
+<li class="level3"><div class="li">- Change the IP Address from 0.0.0.0 to the New IP address. In this example 10.0.4.22 and save</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:01convertbladetohmc.png" class="media" title="chris:01convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:01convertbladetohmc.png" class="media" alt="" /></a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:02convertbladetohmc.png" class="media" title="chris:02convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:02convertbladetohmc.png" class="media" alt="" /></a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:03convertbladetohmc.png" class="media" title="chris:03convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:03convertbladetohmc.png" class="media" alt="" /></a></div>
+</li>
+</ol>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Select Blade Tasks  </div>
+<ol>
+<li class="level3"><div class="li"> Select Serial Over <abbr title="Local Area Network">LAN</abbr></div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:95convertbladetohmc.png" class="media" title="chris:95convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:95convertbladetohmc.png" class="media" alt="" /></a></div>
+<ol>
+<li class="level3"><div class="li"> Select the Bay corresponding to the Blade you are converting In this example BAY 2 </div>
+<ol>
+<li class="level4"><div class="li"> Under Available Actions Select Disable Serial Over <abbr title="Local Area Network">LAN</abbr> and perform Action</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:06convertbladetohmc.png" class="media" title="chris:06convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:06convertbladetohmc.png" class="media" alt="" /></a></div>
+</li>
+</ol>
+
+<p>
+note the change to hte SOL Statis indicator
+</p>
+<ol>
+<li class="level1"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:07convertbladetohmc.png" class="media" title="chris:07convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:07convertbladetohmc.png" class="media" alt="" /></a></div>
+<ol>
+<li class="level3"><div class="li"> Select Configuration </div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:08convertbladetohmc.png" class="media" title="chris:08convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:08convertbladetohmc.png" class="media" alt="" /></a></div>
+<ol>
+<li class="level4"><div class="li"> Select Management Networ</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:09convertbladetohmc.png" class="media" title="chris:09convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:09convertbladetohmc.png" class="media" alt="" /></a></div>
+<ol>
+<li class="level4"><div class="li"> Select the Bay corresponding to the Blde you are converting In this example bay 2 The  heading ssould read Bay 2 - SN#YL10W732905F: Network Configuration</div>
+<ol>
+<li class="level5"><div class="li"> Change Eanble/Disable NIC to Enabled</div>
+</li>
+<li class="level5"><div class="li"> Change Enable/Disable IPV6 to Disabeled</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:10convertbladetohmc.png" class="media" title="chris:10convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:10convertbladetohmc.png" class="media" alt="" /></a></div>
+<ol>
+<li class="level5"><div class="li"> Save the changes</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Set up IP  Note You will need to move quickly as the entries reset if there is to long a delay between making the entries and pressing save</div>
+<ol>
+<li class="level4"><div class="li"> Change <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr>  From Eanbled - Obtain IP config from <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr> server   To Disabeled - Use static IP configuration</div>
+</li>
+</ol>
+</li>
+</ol>
+
+<p>
+	 - Enter the IP address - In this example 10.0.4.22
+</p>
+<ol>
+<li class="level1"><div class="li"> Enter Subnet mask: - In this example 255.255.252.0</div>
+</li>
+<li class="level4"><div class="li"> Enter Gateway Address: - In this example 10.0.4.1 </div>
+</li>
+<li class="level4"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Amigrateviobladetohmc&amp;media=chris:12convertbladetohmc.png" class="media" title="chris:12convertbladetohmc.png"><img src="/lib/exe/fetch.php?media=chris:12convertbladetohmc.png" class="media" alt="" /></a></div>
+</li>
+<li class="level4"><div class="li"> Save your entries</div>
+</li>
+</ol>
+
+<p>
+## NOTE THis concludes the Blade Chassee section of the conversion process
+</p>
+
+<p>
+## Begin VIOS Server work here
+</p>
+<ol>
+<li class="level1"><div class="li">  Record the VIOS mappings.</div>
+</li>
+<li class="level1"><div class="li"> Log into VIOS, access oem_setup_env shell, Save the output of the following commands<pre class="code">/usr/ios/cli/ioscli lsmap -all &gt; LSMAP-ALL</pre>
+<pre class="code">/usr/ios/cli/ioscli lsmap -all -net &gt; LSMAP-ALL-NET</pre>
+<pre class="code">/usr/ios/cli/ioscli lsmap -all -npiv &gt; LSMAP-ALL-NPIV</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  Record IVM Settings.</div>
+</li>
+</ol>
+
+<p>
+In most IVM-managed blades, one VIOS partition owns all physical IO. Use screen shots or Command Line Interface (CLI) to record other useful settings such as processor/memory assignments, virtual Ethernet settings, virtual fibre channel settings, and Virtual Storage adapter settings.
+</p>
+
+<p>
+##############
+step 3: Verify Virtual Switch management
+Some power servers have the capability to manage virtual switches from Advanced System Management (ASM). Converting from IVM to HMC managed does not change the switch management policy.
+</p>
+
+<p>
+To check if ASM has virtual switches defiined:
+a. Log into ASM as admin,
+Open a browser to the FSP ip address assigned in Step 2. Log in with the user admin. The default password if it has not been set is admin.
+</p>
+
+<p>
+b. Expand System Configuration &gt; Virtual Ethernet Switches.
+If the Number of Virtual Ethernet Switches is 0 then the HMC can be used to define and manage virtual ethernet switches; no change is needed.
+If the number of switches is greater than 0, the administrator can continue to use ASM to define/manage the virtual switches or they can undefine the switches and use the HMC.
+To undefine the switch and use the HMC continue to step c.
+</p>
+
+<p>
+c. To change to HMC managed virtual switches:
+Power off all partitions and the server.
+In ASM under System Configuration &gt; Virtual Ethernet Switches set the value to 0 and save the setting.
+</p>
+
+<p>
+#############
+</p>
+<ol>
+<li class="level1"><div class="li"> Remove IVM devices </div>
+<ol>
+<li class="level2"><div class="li"> Find the ibmvmc device&#039;s location code.  On the VIOS partition, access oem_setup_env shell, then run the following command as root<pre class="code">lscfg | grep ibmvmc0</pre>
+
+<p>
+ The output shold resemble ibmvmc0 U7998.61X.100113A-V1-C2 Virtual Management Channel. Record the location code in the second column
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Stop IVM. In the VIOS partition access oem_setup_env shell, then run the following command as root: <pre class="code">/usr/ios/lpm/sbin/lparmgr accessprocess stop</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the ibmvmc device and Adapter  In the VIOS shell tun the following command<pre class="code">rmdev -dev ibmvmc0 </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Access oem_setup_env shell, then run the following command as root: <pre class="code"> drmgr -c slot -r -s drc_name_for_ibmvmc0</pre>
+
+<p>
+where drc_name_for_ibmvmc0is the location code found in step 5 I. 
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Discover the blade. </div>
+<ol>
+<li class="level2"><div class="li"> In the HMC navigation area, click on Systems Management. In the work panel, select Servers then click the task Connections &gt; Add Managed System </div>
+</li>
+<li class="level2"><div class="li"> On the Add Managed Systems panel, select Add a managed system then specify the blade FSP IP address configured in step 2.  If this is the first HMC to connect to the blade, leave the password field blank and click OK. Click Add. </div>
+</li>
+<li class="level2"><div class="li"> In the navigation panel, click on Servers. </div>
+</li>
+<li class="level2"><div class="li"> Wait for an IP address to appear in the list with a state of “Pending Authentication” with status “Pending Authentication - Password Updates Required”. This may take several minutes. </div>
+</li>
+<li class="level2"><div class="li"> Select the IP address and click Update Password.  The user will be prompted to set the HMC Access password . Enter the HMC access password and confirm password. If prompted to set the password for “general” set that as well. </div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li">  Ensure RMC is active </div>
+<ol>
+<li class="level2"><div class="li"> Verify the HMC and VIOS partition have network connectivity. </div>
+</li>
+<li class="level2"><div class="li"> Wait up to 10 minutes for RMC to go active.  To check status of the RMC connection run the following command: <pre class="code">lssyscfg -m &lt;SYSNAME&gt; -r lpar -F rmc_state,rmc_ipaddr --filter lpar_ids=1</pre>
+
+<p>
+ where &lt;SYSNAME&gt; is the system name. It will show “active” once the connection is established: active,x.x.x.x      
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li">  Confirm VASI adapter is active </div>
+</li>
+</ol>
+
+<p>
+     Note: This is needed before logical partition mobility (LPM) can be used; it may also cause errors attempting dynamic logical partition functions (dlpar) on virtual adapters on VIOS.
+</p>
+<ol>
+<li class="level1"><div class="li"> Check adapter status From the VIOS Command line run the following command <pre class="code"> $ lsdev -field name status physloc | grep vasi | grep C32</pre>
+
+<p>
+ The results should be similiar to 
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+     vasi1 Available U7891.73X.10D36AA-V1-C32769 
+</p>
+<pre class="code">   If you do see an Available vasi adapter in a slot that ends in C32XXX, the procedure is complete.
+   If you do NOT see a vasi adapter that ends in C32XXX, it can be added using the HMC. Continue to step 2. 
+- b. Creating the VASI adapter. 
+ - This procedure can be done using either the HMC GUI or Command line (CLI).
+   Using the HMC GUI: 
+    1. Select the VIOS partition then click Properties. On the properties panel un-check Mover Service Partition and click OK. 
+    2. Click Properties again. On the properties panel check Mover Service Partition and click OK. 
+   HMC CLI:&lt;code&gt;chsyscfg -m &lt;system name&gt; -r lpar -i lpar_id=1,msp=0&lt;/code&gt; &lt;code&gt;chsyscfg -m &lt;system name&gt; -r lpar -i lpar_id=1,msp=1&lt;/code&gt;</pre>
+
+</div>

@@ -1,0 +1,65 @@
+====== Configure NIM server ======
+
+  - Logon to the HMC  <code>https://phlypahmc007/hmc/connect</code>
+  - Boot tthe NIM server pcdcunxaxap01 in SMS mode. You will need to select the boot disks.
+  - {{:chris:bootserverhmc.png|}}
+  - At the  SMS menu  Select 5: Boot Options, Select 1: Install/Boot Device, Select 5: List all Devices. Wait for all devices to be scanned. 
+  - Scroll through the list of devices presented and look an entry that is like the following <code> 148 GB   FC Harddisk, part=2 (AIX 7.1.0)</code> Select that device number and continue.  On the next screen select 2: Normal Mode Boot and continue. Select 1 exit the boot memu and confunie the boot process. 
+
+
+mv /etc/resolv.conf /etc/resolv.conf.OLD
+
+# If a successful copy had been made, rename the exports file to prevent long boot times.
+
+
+# Disable CRON
+rmitab cron
+
+
+
+# Configure NTP
+#
+#
+stopsrc -s xntpd
+mv /etc/ntp.conf /etc/ntp.conf.DRtest
+
+cat << EOF >> /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+EOF
+
+chrctcp -S -a xntpd
+
+ntpdate -u nim
+
+# Configure iocp0
+#
+#
+
+chdev -l iocp0 -a autoconfig=available
+mkdev -l iocp0
+
+# Create the root mirror script
+
+
+##### WORK TO DO ######
+   - Create NTP server on NIM serverarallel / be extremely careful ) **
+<code>mv /etc/ntp.conf /etc/ntp.conf.copyforDR</code><code> vi /etc/ntp.conf </code>
+<code>server 127.127.1.0
+fudge 127.127.1.0 stratum 9
+driftfile /etc/ntp.drift
+tracefile /etc/ntp.trace</code>
+    - Create a client NTP.conf file<code>rm /root/ntp.client.conf
+cat << EOF >> /root/ntp.client.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+EOF</code>
+  - Start NTP daemons<code>chrctcp -S -a xntpd</code>
+
+** When in doubt, ask **
+
+{{:dr:whenindoubtask.jpg?400|}}
+
+** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremely careful ) **

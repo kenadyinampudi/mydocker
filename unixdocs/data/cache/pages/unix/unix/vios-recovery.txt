@@ -1,0 +1,22 @@
+====== VIOS/IVM recovery ======
+
+We backup these on a VIOS server
+
+^Item^Description^Script^Location^
+|mksysb|Contains device drivers and things specific to the system.|/usr/local/scripts/mksysb.sh|/mksysb-images/ on mksysbhost|
+|profdata|PowerVM LPAR definitions.|/usr/local/scripts/mksysb.sh|/mksysb-images/profdata on mksysbhost|
+|viosbr|Virtual IO devices and config|/usr/local/scripts/mksysb.sh|/mksysb-images/profdata on mksysbhost|
+
+
+
+** Recovery **
+
+  * If recovery is on a IVM, Restore the profile data from prodfdata backup
+  * Restore VIOSBR using viosbr command.
+
+** Reset Server Name and Serial number in NVRAM
+
+  * This makes IVM Accessable <code>ifconfig en0 <ip> netmask <up>  </code> 
+  * Open a browser window to the VIO server  <code> http://taprvioX </code> Where X is the name of the VIO server 
+  * Select  View/Modify System properties from the left side menu  nd update the system name - example Server-7998-61X-SN100AACA and click on eth APPLY button to save your entry
+

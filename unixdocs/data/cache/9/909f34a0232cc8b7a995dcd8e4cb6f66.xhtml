@@ -1,0 +1,249 @@
+
+<h1 class="sectionedit1" id="one_of_procedure_for_building_psr_clone">One of procedure for building PSR clone</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "One of procedure for building PSR clone" [1-55] -->
+<h2 class="sectionedit2" id="once_storage_is_presented_first_boot">Once storage is presented First Boot</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT2 SECTION "Once storage is presented First Boot" [56-105] -->
+<h3 class="sectionedit3" id="setup_console_database">Setup console database</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Setup entry in unix console database.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Setup console database" [106-182] -->
+<h3 class="sectionedit4" id="power_on_the_lpar_and_change_the_hostname_and_remove_network_configs">Power on the LPAR and change the hostname and remove Network configs</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Power on the system to SMS</div>
+</li>
+<li class="level1"><div class="li"> Access console and look for boot devices and boot from one of the Bootable disks<pre class="code">sudo /usr/local/scripts/getconsole ${tgtsystem}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login as root on the console</div>
+</li>
+<li class="level1"><div class="li"> First change the hostname to avoid any further confusions and accidentally doing harm to production<pre class="code"> chdev -l inet0 -a hostname=&lt;new_host_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Completely remove network configuration.</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interface<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Power on the LPAR and change the hostname and remove Network configs" [183-1061] -->
+<h3 class="sectionedit5" id="remove_monitoring_cron_and_clean_nfs">Remove monitoring, cron and clean NFS</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Remove openview software<pre class="code">/usr/lpp/OV/bin/opcagt -version | grep -q -e &quot;^11.&quot; -e &quot;^12.&quot;
+case ${?} in
+0)
+   /usr/lpp/OV/bin/OpC/install/oasetup.sh -remove
+   rm -rf /usr/lpp/OV /usr/lpp/perf /var/opt/OV /var/opt/perf
+   ;;
+*)
+   echo &quot;Y&quot; | /usr/lpp/perf/bin/ovpa.remove
+   /usr/lpp/OV/bin/OpC/install/opc_inst -r
+   rm -rf /usr/lpp/OV /usr/lpp/perf /var/opt/OV /var/opt/perf
+   ;;
+esac</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove cron<pre class="code">rmitab cron</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable NFS exports<pre class="code">[[ -f /etc/exports ]] &amp;&amp; mv /etc/exports /etc/exports.imoclone</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure fiber channel HBAs<pre class="code">for FSCSI in $(lscfg | grep fscsi | awk &#039;{print $2}&#039; )
+do
+   chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set the boot list<pre class="code">lspv | grep -w rootvg | awk &#039;{print $1}&#039; | xargs -n1 sudo bootlist -m normal</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable <abbr title="Domain Name System">DNS</abbr><pre class="code">mv /etc/resolv.conf /etc/resolv.conf.$(date +%Y%m%d)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove NFS filesystems</div>
+<ol>
+<li class="level2"><div class="li"> Make a backup of filesystems<pre class="code">cp /etc/filesystems /etc/filesystems.$(date +%Y%m%d)</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove NFS filesystems<pre class="code">for NFS in $(grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; )
+do
+   rmnfsmnt -f ${NFS}
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Reboot the server<pre class="code">shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure front end IP address.</div>
+<ol>
+<li class="level2"><div class="li"> Configure the front end IP address on en0 interface<pre class="code">/usr/sbin/mktcpip -h &lt;hostname&gt; -a a.b.c.d -m 255.255.255.0 -i en0 -g a.b.c.d -A no -s</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Cleanup MPIO devices in the ODM<pre class="code">lsdev -Cc disk | grep -i defined | awk &#039;{print $1}&#039; | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Remove monitoring, cron and clean NFS" [1062-2665] -->
+<h3 class="sectionedit6" id="post_installation_tasks_from_nim_server">Post installation tasks from NIM server</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to pcdcunxaxap01 and define a variable pointing to the system you are building<pre class="code">export tgtsystem=&lt;host_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install standard motd<pre class="code">sudo scp /prod/images/etc/motd.driv ${tgtsystem}:/etc/motd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable <abbr title="Domain Name System">DNS</abbr><pre class="code">sudo scp /prod/images/etc/resolv.conf.driv ${tgtsystem}:/etc/resolv.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install a poroper syslog.conf<pre class="code">sudo scp /prod/images/etc/syslog.conf.driv ${tgtsystem}:/etc/syslog.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable NTP<pre class="code">sudo scp /prod/images/etc/ntp.conf.aix.imoclone.driv ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com &quot;chrctcp -S -a xntpd&quot;
+sudo ssh ${tgtsystem}.driv.com &quot;ntpdate -u cdcvildns001.fmmotorparts.com&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Post installation tasks from NIM server" [2666-3406] -->
+<h3 class="sectionedit7" id="post_installation_-_generic_tasks_from_the_host">Post installation - generic tasks from the host</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the host you are building<pre class="code">ssh ${tgtsystem}.driv.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Fix hosts file<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/hosts
+127.0.0.1               loopback localhost
+EOF
+host $(uname -n) | awk &#039;{print $3&quot;\t&quot;$1&quot;\t&quot;$1&quot;h&quot;}&#039; | sed &quot;s;,;;g&quot; | sed &quot;s;.driv.comh;;g&quot; | sudo tee -a /etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Adjust .information file<pre class="code">sudo ex -sc &quot;/mksysbhost/s/pgnmsv01/pcdcunxaxap01/|x&quot; /var/adm/.information
+sudo ex -sc &quot;/location/s/Lincolnshire/Elk Grove - CDC - DRiV/|x&quot; /var/adm/.information</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove cron jobs for application accounts<pre class="code">for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v &quot;^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$&quot;)
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove these unwanted cron jobs from root&#039;s cron<pre class="code">sudo crontab -e</pre>
+
+<p>
+Remove these
+</p>
+<pre class="code">/usr/ibm/common/acsi/bin/collectbatch.sh &gt; fsout.log 2&gt;&amp;1
+perl /opt/perf/bin/watchhpcs.pl
+/usr/local/scripts/rpt_config.sh 1&gt;/dev/null 2&gt;&amp;1
+/var/adm/perfmgr/bin/verify.srm 1&gt;/dev/null 2&gt;&amp;1
+/usr/local/scripts/chkstale 1&gt;/dev/null 2&gt;&amp;1
+/usr/local/scripts/rmcore.sh &gt;/dev/null 2&gt;&amp;1
+/usr/local/scripts/security.chk 1&gt;/dev/null 2&gt;&amp;1
+/usr/local/scripts/listworldwritablefiles &gt; /dev/null 2&gt;&amp;1
+/usr/local/scripts/ww_files.sh 1&gt;/dev/null 2&gt;&amp;1
+/usr/local/bin/SymmMaskBKUP.ksh 1&gt;/dev/null 2&gt;/dev/null
+/usr/local/bin/read_info_symdev_masking.ksh 1&gt;/dev/null 2&gt;&amp;1
+/usr/local/bin/read_info_symdev.ksh 1&gt;/dev/null 2&gt;&amp;1
+/usr/local/nmon/nmon -s 900 -c 48 -ft -m /usr/local/log 1&gt;/dev/null 2&gt;&amp;1
+su - fnsw -c /fnsw/srvlink/tidy_srvlink_log &gt; /tmp/tidy_srvlink_log.log 2&gt;&amp;1
+delfile /usr/local/log &#039;*.nmon&#039; 8 1&gt;/dev/null 2&gt;&amp;1
+cat /dev/null &gt; /var/adm/cron/log
+crontab -l &gt; /tmp/root_crontab.save
+/usr/local/scripts/locked_acct.sh 1&gt;/dev/null 2&gt;&amp;1
+/usr/local/bin/userlist &gt; /dev/null 2&gt;&amp;1
+/usr/bin/security.chk 1&gt;/dev/null 2&gt;&amp;1
+/opt/csm/csmbin/cleanup.logs.csp  1&gt;&gt;/var/log/csm/csperror.log 2&gt;&gt;/var/log/csm/csperror.log
+/opt/csm/bin/cfmupdatenode -a 1&gt;/dev/null 2&gt;/dev/null
+/usr/sbin/acct/fwtmp &lt; /var/adm/wtmp | tail -5000 &gt; /var/adm/fwtmp.txt; /usr/sbin/acct/fwtmp -ic &lt; /var/adm/fwtmp.txt &gt; /var/adm/wtmp
+/usr/local/scripts/clear-edipta61-mail.sh 1&gt;/dev/null 2&gt;&amp;1
+/usr/local/bin/TA2_backlog.sh 2&gt;&amp;1
+/opt/csm/bin/cfmupdatenode -a 1&gt;/dev/null 2&gt;/dev/null
+/opt/csm/csmbin/cleanup.logs.csp  1&gt;&gt;/var/log/csm/csperror.log 2&gt;&gt;/var/log/csm/csperror.log
+/usr/local/scripts/clean_open-scan.sh &gt; /dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron<pre class="code">sudo mkitab cron:23456789:respawn:/usr/sbin/cron</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove old mksysb files<pre class="code">sudo rm /bkpmksb/bos.obj.*</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Setup the correct <abbr title="Simple Mail Transfer Protocol">SMTP</abbr> server<pre class="code">sudo cp /etc/sendmail.cf /etc/sendmail.cf.$(date +%d%m%Y)
+sudo ex -sc &quot;/^DS/s/DS/DSsmtp.driv.com/|x&quot; /etc/sendmail.cf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Setup alt_rootvg</div>
+<ol>
+<li class="level2"><div class="li"> Look for another 138G device that is not allocated to any volume group<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove existing alt_disk and Create a new alt_disk_copy<pre class="code">sudo alt_disk_install -X altinst_rootvg
+sudo alt_disk_copy -B -d hdiskX</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Review the checklist and perform whatever work is needed, NFS mounts <strong>NFS – please make sure they are in /etc/filesystems </strong> etc.</div>
+<ol>
+<li class="level2"><div class="li"> In most cases, you will need to create an alias on en0. </div>
+<ol>
+<li class="level3"><div class="li"> On standalone systems, these will be permanent alias(s)<pre class="code">sudo chdev -l en0 -a alias4=a.b.c.d,255.255.255.0</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Change hard coded hostnames from herald<pre class="code">sudo chsec -f /etc/security/login.cfg -s /dev/console -a herald=&quot;&quot;
+sudo chsec -f /etc/security/login.cfg -s default -a herald=&quot;&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create solarwinds account for monitoring<pre class="code">sudo mkuser id=6851 pgrp=staff groups=staff home=/home/solwinds shell=/usr/bin/ksh gecos=&quot;Solarwinds - ssh monitoring account&quot; solwinds
+echo &quot;solwinds:sa3qlTY77TwFs&quot; | sudo chpasswd -e
+sudo pwdadm -c solwinds
+sudo chuser maxage=0 solwinds
+sudo /usr/local/scripts/unlockuser solwinds &gt; /dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a final reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Post installation - generic tasks from the host" [3407-] -->

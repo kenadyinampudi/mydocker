@@ -1,0 +1,112 @@
+
+<h1 class="sectionedit1" id="backup_the_configuration_validation_prior_to_a_major_os_work_on_a_server">Backup the configuration / validation prior to a major OS work on a server</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Copy the pre-upgrade directory from NIM server pgnmsv01 to the host(all references to <code>host</code> is to be interpreted as the server we are going to patch.</div>
+<ol>
+<li class="level2"><div class="li"> Login to pgnmsv01<pre class="code">sudo rsync -avv /prod/images/scripts/Pre_Upgrade/ &lt;host&gt;:/tmp/Pre_Upgrade/</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the host and execute the saveenv script<pre class="code">sudo /tmp/Pre_Upgrade/aix_upgrade/save_env.sh</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> This will create a directory in your home directory that contains all the backup files.</div>
+</li>
+<li class="level2"><div class="li"> For AIX migrations ( not TL upgrades ) Make sure you check the Language Environment in the file “LANGUAGE” in the directory just created by this script. NOTE the FIRST line “LANG=” and the last line for the language reference number  YOU WILL NEED THESE at the Initial Migration Configuration Settings.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Make sure that the lppchk outputs are all 0 byte files<pre class="code">ls -l &lt;directory&gt;/pre-lppchk</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to pgnmsv01 and copy the backed up configurations from the host<pre class="code">sudo rsync -avv HOST:/home/YOURID/HOST-pre_upgradeDATEANDTIMESTAMP/ /preupgrade/reports/HOST-pre_upgradeDATEANDTIMESTAMP/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the host and preserve a copy of rootvg</div>
+<ol>
+<li class="level2"><div class="li"> Disable the alt_disk_copy script<pre class="code">sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</pre>
+</div>
+<ol>
+<li class="level3"><div class="li"> On a SAN booting system, </div>
+<ol>
+<li class="level4"><div class="li"> Find out the alt_disk<pre class="code">lspv | grep rootvg
+hdisk0          00021ffb513afe5a                    rootvg          active
+hdisk1          00021ffb513aff90                    altinst_rootvg</pre>
+
+<p>
+In this case hdisk1 is the alternate boot disk.
+</p>
+</div>
+</li>
+<li class="level4"><div class="li"> Remove the current alt_disk_rootvg<pre class="code">sudo alt_rootvg_op -X altinst_rootvg</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Create a fresh alt_disk_copy<pre class="code">sudo alt_disk_copy -B -d hdiskX</pre>
+
+<p>
+-B option makes sure that it does not execute a bootlist - FYI.
+</p>
+</div>
+</li>
+<li class="level4"><div class="li"> Check altinsta_rootvg has been created<pre class="code">lspv | grep rootvg</pre>
+
+<p>
+Make sure you see the altinst_rootvg in the output
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> On a mirrored rootvg system do this,</div>
+<ol>
+<li class="level4"><div class="li"> Unmirror the VG<pre class="code">sudo unmirrorvg rootvg hdiskX</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Remove the disk from rootvg<pre class="code">sudo reducevg rootvg hdiskX</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Clear the VGDA<pre class="code">sudo chpv -c hdiskX</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Set the bootlist to boot from the remaining disk<pre class="code">sudo bootlist -m normal hdiskY</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Perform an alt_disk_copy to the alt_rootvg<pre class="code">sudo alt_disk_copy -B -d hdiskX</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Make sure that NIM server has a latest copy of mksysb</div>
+<ol>
+<li class="level2"><div class="li"> On the server to be patched, find out the NIM server<pre class="code">grep mksysb /var/adm/.information
+mksysbhost:pgnmsv01</pre>
+
+<p>
+In this case, it is pgnmsv01
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Login to the NIM server we figured out above, make sure a latest copy of mksysb image backup exists<pre class="code">sudo ls -l /mksysb-images/bos.obj.&lt;hostname&gt;.gz</pre>
+
+<p>
+<strong>Check the timestamp on the file, it has to be less than 3 days old.</strong>  If the mksysb is 3 days old or less Proceed to Step 8
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On the server to be upgraded create a new mksysb image. When the command has completed proceed to next step  <pre class="code"> sudo /usr/local/scripts/mksysb.sh adhoc </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the mksysb image to the repository - This is the backout of last resort. <pre class="code"> sudo cp -p /mksysb-images/bos.obj.&lt;hostname&gt;.gz /preupgrade/mksysb/ </pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,23 @@
+====== Upgrade to RHEL6.6 64bit and RHEL 6.5 32bit ======
+
+  - Shutdown applications.
+  - Plan with VMWARE team and perform a VMWARE snapshot
+    - Shutdown the OS
+    - Take a cold snapshot -- Wintel
+    - Power the system back on
+  - Login to the client
+  - Modify the local.repo file with the latest repository. First make a copy<code>sudo cp /etc/yum.repos.d/local.repo local.repo</code><code>sudo vi /etc/yum.repos.d/local.repo</code>Remove everything except the following depending on the OS and type.
+    - RHEL6 64 bit<code>[local-rhel-6.6-x86_64]
+name=local-rhel-6.6-x86_64
+baseurl=http://pablsv01/sources/rhel-6.6-x86_64/
+enabled=1
+gpgcheck=0</code>
+    - RHEL6 32 bit<code>[local-rhel-6.5-i386]
+name=local-rhel-6.5-i386
+baseurl=http://pablsv01/sources/rhel-6.5-i386/
+enabled=1
+gpgcheck=0</code>
+  - Install the updates / patches.<code>sudo yum clean all
+sudo yum update</code>
+  - Reboot the server<code>sudo init 6</code>
+  - [[unix:vmware:vmwaretools|Reinstall VMWARE Tools]]

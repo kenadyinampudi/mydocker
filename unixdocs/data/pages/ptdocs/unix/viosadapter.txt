@@ -1,0 +1,43 @@
+====== Get real adapter location codes for VIOS adapters ======
+
+To get the adapter location for a given SEA, there are a few steps to go through.\\ 
+\\ 
+==== Log in as padmin ====
+Get the shared ethernet name via CLI.\\
+<code>cdcpillx055:~> ssh padmin@cdcpilpv025
+padmin@cdcpilpv025's password:
+Last unsuccessful login: Wed Sep  7 10:24:27 EDT 2016 on ssh from sfldmiax241.federalmogul.com
+Last login: Wed Mar 20 13:47:35 EDT 2019 on /dev/pts/0 from 134.238.148.94
+$</code>
+
+==== Get the SEA adapter name ====
+A simple lsdev and grep will suffice.\\ 
+<code>$ lsdev -type adapter | grep "Shared"
+ent8             Available   Shared Ethernet Adapter
+$</code>
+
+==== Get the Etherchannel adapter name ====
+Get the full details of the SEA and use that to get the name of the etherchannel.\\
+<code>$ lsdev -dev ent8 -attr | grep real_adapter
+real_adapter    ent7     Physical adapter associated with the SEA                                           True
+$</code>
+
+==== Get the real adapter names ====
+Get the full details of the etherchannel adapter.\\ 
+<code>$ lsdev -dev ent7 -attr | grep adapter_names
+adapter_names   ent0,ent1      EtherChannel Adapters                           True
+$</code>
+
+==== Get the locations ====
+Knowing the physical adapters associated with the etherchannel and SEA, get the physical codes.
+<code>$ lsdev -dev ent0 -field name physloc
+name             physloc
+ent0             U78CB.001.WZS0P9S-P1-C2-T1
+$ lsdev -dev ent1 -field name physloc
+name             physloc
+ent1             U78CB.001.WZS0P9S-P1-C2-T2
+$
+</code>
+
+The adapters in this instance are two ports on the same card.
+(C2-T1 and C2-T2).  T1 and T2 would go to separate switches for redundancy.

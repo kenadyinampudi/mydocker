@@ -1,0 +1,119 @@
+
+<h1 class="sectionedit1" id="vios_consise_network_post_install_for_cdc_mp_vios_configuration_of_network_onnected_systems">VIOS Consise Network Post install for CDC / MP VIOS  configuration of Network onnected systems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li">  Based on a meeting at LDC with Kapil, Jeannine, Abdul, Mohmmmed, Chris of the current VIOS build at the CDC</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "VIOS Consise Network Post install for CDC / MP VIOS  configuration of Network onnected systems" [2-227] -->
+<h2 class="sectionedit2" id="network_adapters">Network Adapters</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> the netwrok adapter shoudl be ser up as 802.3ad mode Esmaple from cdcvilpv095 <pre class="code">lsattr -El ent7
+adapter_names   ent0,ent1      EtherChannel Adapters                           True
+alt_addr        0x000000000000 Alternate EtherChannel Address                  True
+auto_recovery   yes            Enable automatic recovery after failover        True
+backup_adapter  NONE           Adapter used when whole channel fails           True
+hash_mode       src_dst_port   Determines how outgoing adapter is chosen       True
+interval        long           Determines interval value for IEEE 802.3ad mode True
+mode            standard       EtherChannel mode of operation                  True
+netaddr         0              Address to ping                                 True
+noloss_failover yes            Enable lossless failover after ping failure     True
+num_retries     3              Times to retry ping before failing              True
+retry_time      1              Wait time (in seconds) between pings            True
+use_alt_addr    no             Enable Alternate EtherChannel Address           True
+use_jumbo_frame no             Enable Gigabit Ethernet Jumbo Frames            True</pre>
+
+<p>
+  Mode shoudl be set to 
+</p>
+<pre class="code"> mode            8023ad         EtherChannel mode of operation                  True</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> SEA Load Balancing Mode should be set to shared </div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Network Adapters" [228-1634] -->
+<h2 class="sectionedit3" id="fibre_adapters">Fibre Adapters</h2>
+<div class="level2">
+
+<p>
+Configure FC <abbr title="Small Computer System Interface">SCSI</abbr> attributes
+</p>
+<pre class="code">for FSCSI in $(lscfg | grep fscsi | awk &#039;{print $2}&#039; )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</pre>
+
+</div>
+<!-- EDIT3 SECTION "Fibre Adapters" [1635-1833] -->
+<h2 class="sectionedit4" id="storage_array_specific_device_drivers_since_all_servers_are_built_on_pure_this_section_is_abbreviated">Storage Array specific device drivers since all servers are built on pure this section is abbreviated</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check if pure ODM has been installed.<pre class="code">lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte</pre>
+
+<p>
+You should see this if ODM i
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+s installed
+</p>
+<pre class="code"> Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  devices.fcp.disk.pure.flasharray.mpio.rte
+                             1.0.0.4  COMMITTED  AIX MPIO Support for PURE
+                                                 Flash Arrays(New Install)</pre>
+
+<p>
+If Pure ODM is not installed, you would find somethin
+g like this
+</p>
+<pre class="code">lslpp: 0504-132  Fileset devices.fcp.disk.pure.flasharray.mpio.rte not installed.</pre>
+<ol>
+<li class="level1"><div class="li"> If Pure ODM is not installed, install it now.</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> What type of operating system is this ?</div>
+<ol>
+<li class="level2"><div class="li"> AIX</div>
+<ol>
+<li class="level3"><div class="li"> What type of disks are we using on this LPAR ?</div>
+<ol>
+<li class="level5"><div class="li">If the system is using Pure Storage disks, do nothing</div>
+</li>
+<li class="level5"><div class="li">If the system is NOT using Pure Storage disks, install the proper device drivers</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> vSCSI</div>
+<ol>
+<li class="level5"><div class="li"> Do not install any device drivers</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> NPIV</div>
+<ol>
+<li class="level4"><div class="li"> If the system is using Pure Storage disks, do nothing</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Storage Array specific device drivers since all servers are built on pure this section is abbreviated" [1834-] -->

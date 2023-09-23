@@ -1,0 +1,107 @@
+===== Tenneco Unix team work to do =====
+
+  - Update / correct /etc/exports file on all servers. - remove entries that are no longer required for servers and exported files
+  - Document average service times from all unix servers. (sar-d)
+  - Docuemntation (hostname,virtual/phys,vio/vmware,array,application)
+  - Implement cleaning up /home filesystem on NIM post install cleanup script.
+  - Reconfigure Production EDI FTP cluster.
+  - NFS softmount timeout / sshd startup.
+  - [[unix:adauthentication|Research AD authentication for Unix users.]]
+  - Enable time synchronization **ntpdate** in RC scripts or CRON.
+  - Design and implement I/O load balancing on Virtual SCSI guests.
+  - Find out and list mirrored logical volumes on SAN.
+  - Find out who does ifconfigs on servers. erasent ?
+  - Migrate pahrdb01, qeerdb01, qaerdb01 to boot from VIO disks.
+  - Consolidated systems and storage inventory.
+  - Do not rely completely on sendmail to send alerts. Have syslog send a trap for standard scripts.
+  - Develop, test and implement Linux mksysb.
+  - Report sudo aging
+  - Research VMcontrol and Active memory expansion.
+  - Move reporting tasks to a non-privileged user.
+  - We need a script to parse vhost -> vio server names.
+  - Install a standard version of OpenSSL and OpenSSH
+  - Migrate storage from 146G LUNs to 34G/102G LUNs for sehrdb01 and dehrdb99.
+  - Implement a consolidated inventory of unix servers, model, ser number, storage, san allocated, used and location. We should use /var/adm/.information
+  - Audit /etc/profile, /etc/environment, /root/.profile - change the "PATH" variable .
+  - Remove sulog script - that is redundant as sudo rolled out.
+  - Implement NOEXEC in sudo to prevent shell escapes from known commands like "vi". ( For a very far future )
+  - Install and maintain samhain for system files.
+  - Re-write rpt_config.sh as a generic one.
+    - Install latest cfg2html versions for ''hpux AIX redhat SuSE CentOS''
+  - Modify / Re-write dr.sh
+    - Improve VG creation.
+    - Improve filesystem creation.
+    - Simplify the script.
+  - Eliminate the need for rsh for BCV backups. ( PTA TA2 ). Examine .rhosts for root on all servers.
+  - Too many cron jobs on servers .... Standardize and remove the unwanted. Consolidate some of the housekeeping jobs.
+  - Implement a documentation site on the Interexion data-centre and rsync the contents.
+  - Document and display all physical servers and their network ports
+  - Document all unix users and groups in one page and the command to re-create them if required.
+  - Turn off sendmail from all servers.
+  - taitc118 NIM server's network is kind of a mess. Fix it .
+  - On AIX, make sure we have ssh started right after TCP/IP so that we can turn off telnet.
+  - VIO server's /etc/profile is to be tuned.
+  - Implement historical data display on Lpar documentation.
+  - Implement the new UCRT summary page and new cfg2html. Write a new one using the allhosts file.
+  - Write a lsdiskcfg equivalent to VIO networking configuration.
+  - **/prod/images/scripts** to be the master copy of all shell scripts. Install a revision control system and manage the versions that way.
+
+** Scripts to modify and how **
+
+  - Work on the Redhat repository and replace them with the default one cobbler installed.
+  - Modify **/usr/local/scripts/stales.sh** 
+    - Send email for HPUX as well.
+    - Use sendmail with correct return path.
+
+** Done List **
+  - Figure out the unused disks on taitc103. Removed,  12 Raid1 disks returned to GIOS Storage Team. 
+  - Write up patching procedure for Redhat - do it once.
+  - Test the redhat upgrade process. - Use paavap02 - install with 6.2 and upgrade to 6.3 - This is not possible, find an alternative.
+  - Research and integrate Bladecentres in HMC.
+  - Migrate paitap01 -> paitap02 and move pablsv02 to the HS21 blade.
+  - SNMP configuration
+    - Solaris 8
+    - AIX
+  - Make sure rsyslog is correctly configured to goto unixlogs on all servers.
+  - Bladecentre SAN switch upgrades.
+  - Move the lpar2rrd workload from qehrdb01 to penmsv01.
+  - Fix mksysb on all servers and standardize the script
+  - Fix NTP and standardize configuration.
+  - Have a script that checks for printQs status and enable them if found down & pingable [ Logit ].
+  - Maintain a unix hosts database.
+  - House keep /var/adm/wtmp if it grows more than 100Meg.
+  - Document server decomm procedure.
+  - Document server rename procedure.
+  - New AIX/VIOS installs needs sysinter service enabled.
+  - Make sure the special dr.sh on all VIO servers.
+  - Install a temporary NIM server at Interexion.<code>penmsv01 - 10.56.1.*
+penmsv01bck - 10.56.12.*</code>
+  - Document the I/O relationship between VIOS and guests
+  - Find root cause of tasew007/8 Permanent Hardware errors on hdisks from Clariion. ( Moon has to unmap the VCM device )
+  - LPAR2RRD error on taprvio6, taprvio15,18 etc
+  - Consolidate the create alt_disk_copy script
+  - NIM Investigate tftpboot time. ( Tweak in place )
+  - Update getconsole database
+  - Re-build pablsv01 as pglgsv01.
+  - Migrate ''/edipro /patches /taediarch'' from tedv2e01's rootvg.
+  - Migrate dggtdb01 to vio60/70.
+  - Add a wiki page  for all SAN storage for all systems.
+  - Consolidate exclude.rootvg
+  - Modify post install steps to support Redhat installations.
+  - Migrate boot disks to R5 ''taprvio18,peerap09''
+  - Deploy the new mksysb-dr script.
+  - Modify the mksysb script not to rely on hosts file Probably the best idea is to have it on ''/var/adm/.information'' file.
+  - Housekeep /var/adm/wtmp
+  - Point NTP configuration to these network devices.''10.1.1.1,10.1.1.2,10.56.0.10 and 10.56.0.11''
+  - Modify lsdiskcfg to include pvids.
+  - Run lsvpcfg.sh on all SAN connected servers and push data to wiki in a searchable format.
+  - Implement a lsvpcfg.sh for MPIO. May be we need SYMCLI on all SAN connected servers.
+  - Setup a housekeeping job to remove files older than 7 days from /var/spool/lpd/qdir and /var/spool/qdaemon.
+  - LOCK DOWN itocroot OR replace with sudo.
+  - Implement /var/adm/.information file on all servers and add it to the documentation.
+  - Setup a ddir job for logfiles like "wtmp".
+  - Document blades, servers, locations and lpars.
+  - taitc108 - dvds VG  Removed VG and returned three 34 GB disks to GIOS Storage Team
+  - Documented Disaster Recovery Servers Non Roorvg Volume Group Disk use
+  -   - Modify / Re-write dr.sh
+    - Add AIO information. Done in time for 2013 D.R. Test.  distributed to all servers. - Done - in dr.sh - Chris

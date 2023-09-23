@@ -1,0 +1,35 @@
+
+<h1 class="sectionedit1" id="power_on_the_lpar_at_the_dr_site">Power on the LPAR at the DR site</h1>
+<div class="level1">
+
+<p>
+<strong>Make sure you login to the right server for MPPS pcdcunxaxap01 and for PTCA pgnmsv01</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Function to activiate the lpar<pre class="code">function power_on_lpar_fdc {
+export lparnames=${*}
+for lparname in ${lparnames}
+do
+    HMC=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $3}&#039; )
+    FRAME=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $4}&#039; )
+    LPARNAME=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $5}&#039; )
+    echo &quot;Powering on ${HMC} -&gt; ${FRAME} -&gt; ${LPARNAME} &quot;
+    ssh ${HMC} &quot;chsysstate -m ${FRAME} -r lpar -o on -n ${LPARNAME}&quot;
+done
+}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Call the function<pre class="code">power_on_lpar_fdc lpar1</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Example for single server startup<pre class="code">power_on_lpar_fdc pcdcunxaxap01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Example for multiple server startup<pre class="code">power_on_lpar_fdc pcdcunxaxap01 dcdcc11axdb98 dcdcc11axdb99</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

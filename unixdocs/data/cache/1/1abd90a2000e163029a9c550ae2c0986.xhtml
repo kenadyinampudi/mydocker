@@ -1,0 +1,84 @@
+
+<h1 class="sectionedit1" id="installing_patches_on_hpux">Installing patches on HPUX</h1>
+<div class="level1">
+
+<p>
+<strong>Do not use the console to install patches - the console messages will messup the window. Always patch from a ssh session </strong>
+</p>
+
+<p>
+HPUX standard patch bundles are divided into 3 sets.
+</p>
+<ul>
+<li class="level1"><div class="li"> QPK1131</div>
+</li>
+<li class="level1"><div class="li"> HWEnable11i</div>
+</li>
+<li class="level1"><div class="li"> FEATURE11i</div>
+</li>
+</ul>
+
+<p>
+<strong> Installing QPK1131 or Quality Pack </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:backupconfig-hpux" class="wikilink1" title="unix:backupconfig-hpux">Perform configuration backup</a></div>
+</li>
+<li class="level1"><div class="li"> Download the patch bundle from HP&#039;s website. This needs an HP passport login account.</div>
+</li>
+<li class="level1"><div class="li"> Download the patches and store it in a central location. At tenneco, we store it under &#039;pgnmsv01:/prod/images/hpux&#039;</div>
+</li>
+<li class="level1"><div class="li"> From pgnmsv01, either nfs mount OR scp the file to the target server<pre class="code">cd /prod/images/hpux
+scp hpux_11.31_01140520.tgz taitc114:/opt/oracle</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Logon to the server on it&#039;s console.<pre class="code">telnet taitc114-gsp</pre>
+
+<p>
+Login as Admin.  <strong>Do not use the console to install patches - the console messages will messup the window. Always patch from a ssh session </strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Unzip and untar the patches<pre class="code">cd /opt/oracle
+gunzip hpux_11.31_01140520.tgz
+tar xf hpux_11.31_01140520.tar</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a sanity reboot - This is to make sure that the server is working okay as of now. These servers are rebooted very rarely, hence it is a good idea to reboot it once.<pre class="code">shutdown -r -y now</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the patch depot<pre class="code">cd /opt/oracle
+./create_depot_hpux.11.31</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the patches<pre class="code">export LC_ALL=C.en_US
+swinstall -s /opt/oracle/depot</pre>
+</div>
+<ul>
+<li class="level2"><div class="li"> At the menu, use &#039;space bar&#039; to select all the bundles listed. </div>
+</li>
+<li class="level2"><div class="li"> Then hit “m” to mark them for installation.</div>
+</li>
+<li class="level2"><div class="li"> Hit &#039;tab&#039; to get to the menus</div>
+<ul>
+<li class="level3"><div class="li"> Select Actions</div>
+<ul>
+<li class="level4"><div class="li"> Select Install</div>
+<ul>
+<li class="level5"><div class="li"> Hit &#039;OK&#039; to install the patches.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Phew ….</div>
+</li>
+<li class="level1"><div class="li"> After the system has come back up, cleanup the temporary location in this example <code>/opt/oracle</code></div>
+</li>
+</ul>
+
+</div>

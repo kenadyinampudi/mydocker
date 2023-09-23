@@ -1,0 +1,18 @@
+a:2:{s:7:"current";a:7:{s:4:"date";a:2:{s:7:"created";i:1415648746;s:8:"modified";i:1415736918;}s:4:"user";s:0:"";s:7:"creator";s:0:"";s:5:"title";s:28:"Storage Migration - taglk055";s:11:"description";a:2:{s:15:"tableofcontents";a:7:{i:0;a:4:{s:3:"hid";s:28:"storage_migration_-_taglk055";s:5:"title";s:28:"Storage Migration - taglk055";s:4:"type";s:2:"ul";s:5:"level";i:1;}i:1;a:4:{s:3:"hid";s:21:"shutdown_applications";s:5:"title";s:21:"Shutdown Applications";s:4:"type";s:2:"ul";s:5:"level";i:2;}i:2;a:4:{s:3:"hid";s:7:"fix_ntp";s:5:"title";s:7:"Fix NTP";s:4:"type";s:2:"ul";s:5:"level";i:2;}i:3;a:4:{s:3:"hid";s:24:"start_the_rename_process";s:5:"title";s:25:"Start the Rename  process";s:4:"type";s:2:"ul";s:5:"level";i:2;}i:4;a:4:{s:3:"hid";s:22:"start_the_copy_process";s:5:"title";s:23:"Start the Copy  process";s:4:"type";s:2:"ul";s:5:"level";i:2;}i:5;a:4:{s:3:"hid";s:38:"rename_mnd_mount_original_file_systems";s:5:"title";s:38:"Rename mnd Mount Original File Systems";s:4:"type";s:2:"ul";s:5:"level";i:2;}i:6;a:4:{s:3:"hid";s:22:"start_the_applications";s:5:"title";s:22:"Start the applications";s:4:"type";s:2:"ul";s:5:"level";i:2;}}s:8:"abstract";s:442:"Shutdown Applications
+
+	*  Run the RC script that brings down application
+sudo /etc/rc.d/rc2.d/K02content
+sudo /etc/rc.d/rc2.d/K02plotmng
+sudo /etc/rc.d/rc2.d/K02UnicenterAT
+
+	*  Make sure applications are shutdown.
+
+Fix NTP
+
+	*  Fix NTP
+sudo cp /etc/ntp.conf /etc/ntp.conf.07262014
+sudo cp /home/x1kxk630/sanmigration/ntp.conf /etc/ntp.conf
+sudo stopsrc -s xntpd
+sudo chrctcp -S -a xntpd
+date ; sudo ntpdate -u 10.1.1.1 ; date
+sudo xntpdc -l";}s:8:"internal";a:2:{s:5:"cache";b:1;s:3:"toc";b:1;}s:8:"relation";a:1:{s:10:"firstimage";s:0:"";}}s:10:"persistent";a:3:{s:4:"date";a:1:{s:7:"created";i:1415648746;}s:4:"user";s:0:"";s:7:"creator";s:0:"";}}

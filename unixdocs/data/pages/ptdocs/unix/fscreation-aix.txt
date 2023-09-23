@@ -1,0 +1,69 @@
+====== AIX - Create a new filesystem ======
+
+===== Standards (?) =====
+
+As you might see, there are multiple standards here for creating filesystems. ( read, standards are not enforced all the time / standards are compromized when SAN cloning like things are performed)
+
+If you are the lucky one who got the chance to create a filesystem from scratch, like a new project requesting an oracle database, here are some pointers.
+
+  * Try to keep smaller databases in one volume group. Bigger databases may have a different VG for binaries, redos, archives and data files.
+  * Try to name the logical volumes with a prefix of the application name for e.g. **tsbilv001** for the first logical volume of TSBI database. This helps when SAN clonings are performed or the database is moved to a different host. If you use the default **fslv** name, you may not be able to import the VG successfully on another host. Another acceptable standard is to name is according to the mountpoint e.g. **/oracle/TSBI/data1** filesystem may be created on a logical volume **oraTSBIdata1**. I removed some characters to limit the length of the lvname.
+  * Try to name the VG unique in the environment e.g. **tsbidatavg01**, **tsbisoftvg01**, **tsbiredovg01** etc.
+
+===== Create database filesystem(s) =====
+
+This document was written as I created filesystems for TSBI database for a GIS upgrade project.
+
+==== Create a volume group ====
+
+As TGIS is going to be a small test database, I decided to keep everything in one single VG. The VG name will be **tsbivg01**
+
+  * Create tsbivg01<code>sudo mkvg -B -s 512 -y tsbivg01 hdisk26 hdisk27 hdisk28 hdisk29 hdisk30</code>
+
+==== Create logical volumes and filesystems ====
+
+  - The storage request looked like this<code>/oracle/TSBI           10g
+/oracle/TSBI/data1     50g
+...lines removed...
+/oracle/TSBI/112_64    10g</code>
+  - Prepare commands to create logicalvolumes<code>cat /var/tmp/tsbiinfo | sed -e "s;/oracle;ora;g" -e "s;/;;g" \
+|sed "s;g$;;g" |  awk '{print $1,$2*1024/512}' | awk '{print "mklv -tjfs2 -y "$1,"tsbivg01",$NF}' > /var/tmp/cr_lv_cmds</code>
+  - Check the script<code>mklv -tjfs2 -y oraTSBI tsbivg01 80
+...lines removed...
+mklv -tjfs2 -y oraTSBIarchive tsbivg01 80
+mklv -tjfs2 -y oraTSBI112_64 tsbivg01 80</code>
+  - Create the logical volumes<code>sudo ksh -x /var/tmp/cr_lv_cmds
++ mklv -tjfs2 -y oraTSBI tsbivg01 80
+oraTSBI
+...lines removed...
++ mklv -tjfs2 -y oraTSBI112_64 tsbivg01 80
+oraTSBI112_64</code>
+  - Increase the Maximum allocation for LV where seems needed<code>for lv in lv1 lv2 .......
+do
+   sudo chlv -x 10240 ${lv}
+done</code>
+  - Create filesystems<code>cat /var/tmp/tsbiinfo | awk '{print $1}' > /var/tmp/fsnames
+cat /var/tmp/cr_lv_cmds | awk '{print $4}' > /var/tmp/lvnames</code>Get the commands<code>paste /var/tmp/lvnames /var/tmp/fsnames \
+| awk '{print "crfs -vjfs2 -d "$1,"-A yes -t no -m "$NF}' > /var/tmp/cr_fs.tsbi</code>
+  - Create filesystems<code>root on taitc102:/root>sudo ksh -x /var/tmp/cr_fs.tsbi
++ crfs -vjfs2 -d oraTSBI -A yes -t no -m /oracle/TSBI
+File system created successfully.
+10485236 kilobytes total disk space.
+New File System size is 20971520
+...lines removed...
++ crfs -vjfs2 -d oraTSBI112_64 -A yes -t no -m /oracle/TSBI/112_64
+File system created successfully.
+10485236 kilobytes total disk space.
+New File System size is 20971520</code>
+  - Mount the filesystems<code>for fs in $(lsvgfs tsbivg01 | sort )
+do
+  sudo mkdir $fs
+  sudo chmod 111 $fs
+  sudo mount $fs
+done</code>
+  - Set permissions for filesystems<code>for fs in $(lsvgfs tsbivg01 | sort )
+do
+  sudo chown oratsbi:dba ${fs}
+  sudo chmod 755 ${fs}
+done</code>
+  - Send an email to the DBA team and let them decide when to turn on the "cio" mount option.

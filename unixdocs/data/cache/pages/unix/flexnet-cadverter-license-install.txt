@@ -1,0 +1,18 @@
+
+====== Installing / renewing Flexnet Cadverter License on pggpdb01 for Frank Sessler  ======
+
+** Contact Frank Sessler /DE/TA.EU and schedule the installation.  Be sure to work with Frank while doing this.  Also make sure you can use Netmeeting or Genesys to share screen so Frank can check work as it progresses if required.  
+
+  * Frank will email you the new license as an attachment. Save the attachment to a local file on your PC
+  * Use FileZilla to transfer file from local pc to pggpdb01. Transfer to your  directory .  !!! NOTE MAKE SURE TRANSFER TYPE IS SET TO ASCII !!!!  Thsi removes all special characters ^M from file
+  * Change to the cadverter directory <code>cd /opt/FLEXnet/cadverter </code>
+  * Save the current license as backup. <code>cp -p license.lic license.lic.yyyymmdd</code> where yyyymmdd is current date   
+  * Copy the new licene <code>cp -p {new license location} ./license.lic</code>
+  * Invoke the new license <code>./lmutil lmreread -c ./license.lic</code>
+  * 
+  * Frank will check the file and run tests to insure the new license is activated. 
+  
+  * Sample code for copy<code>cp -p theorem.lic theorem.lic.back-20130620</code><code>cp -p license.lic theorem.lic</code><code>chmod 666 theorem.lic</code><code>./daemon_theorem start</code>
+  * extra commands if necesary
+  * <code>chmod 666 theorem.lic</code>
+  * <code>./daemon_theorem start</code>

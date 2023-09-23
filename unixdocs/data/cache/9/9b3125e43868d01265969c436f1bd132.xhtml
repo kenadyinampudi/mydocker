@@ -1,0 +1,100 @@
+
+<p>
+=
+</p>
+
+<h3 class="sectionedit1" id="update_pure_odm_and_set_hcheck_interval">Update Pure ODM and set hcheck_interval</h3>
+<div class="level3">
+<pre class="code">  lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte </pre>
+<pre class="code"> lsdev -Ccdisk | head -4 </pre>
+<pre class="code"> sudo mkdir -p /mnt/updates ; sudo mount pcdcunxaxap01:/prod/images/storage /mnt/updates </pre>
+<ol>
+<li class="level1"><div class="li"> Remove the OLD Pure ODM device Driver before installation <pre class="code"> sudo sudo installp -u devices.fcp.disk.pure.flasharray.mpio.rte </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the NEW Pure ODM Device Driver  <pre class="code">sudo installp -acxd /mnt/updates/PureODM/1.0.0.7/devices.fcp.disk.pure.flasharray.mpio.rte all</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmount the carrier  <pre class="code">sudo umount /mnt/updates </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Double check installation <pre class="code"> lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Set hcheck_interval to 30 sec. <pre class="code"> lsdev -Ccdisk | grep &quot;PURE MPIO Drive&quot; | awk &#039;{print $1}&#039; | xargs -n1 sudo chdev -a hcheck_interval=30 -Pl </pre>
+</div>
+</li>
+</ol>
+
+<p>
+After last system done cleanup the NIM server.
+</p>
+<ol>
+<li class="level1"><div class="li"> On the NIM Server, remove the exported lppsource file system from the exports list  <pre class="code"> /usr/sbin/rmnfsexp -d &#039;/prod/images/service-packs/LATEST-SSL-SSH&#039; &#039;-B&#039; </pre>
+</div>
+</li>
+</ol>
+
+<p>
+Servers to update are listed here
+</p>
+
+<p>
+qgimdb01
+dggtdb01
+dgasdb01
+dggpdb01
+tndv3d01
+deerap98
+dgrmdb01
+qamesd02
+dgjbdb01
+taitc121
+qgaidb01
+qgsodb02
+dggwdb01
+maerdb99
+dafodb01
+qgscdb01
+tsqa1d01
+qaerdb01
+dgsodb01
+daerap98
+qgbcdb01
+tnqa3d01
+daerdb98
+dafoap01
+dagi3p01
+qggtdb01
+dgimdb01
+tsdv1d01
+deerdb98
+dgsndb01
+dgaidb01
+dgomdb01
+mgscdb01
+deerap99
+dgscdb01
+deerdb99
+daerdb99
+dgbcdb01
+maerap99
+tedv2d03
+daerap99
+daap3p01
+qggpdb01
+qgsndb01
+qgrmdb01
+qamesd01
+qgjbdb01
+tedv2d01
+qggwdb01
+qgsnap01
+qgsodb01
+qaap3p01
+tedv2e01
+taitc102
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Update Pure ODM and set hcheck_interval" [2-] -->

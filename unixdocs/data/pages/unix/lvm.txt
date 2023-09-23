@@ -1,0 +1,8 @@
+====== AIX LVM Cool CLIs ======
+
+  - Mount all filesystems on an AIX server in one line <code> lsvg -o | xargs -n1 lsvgfs | sort | xargs -n1 mount </code>
+  - Unmount all filesystems in one line <code> lsvg -o | xargs -n1 lsvgfs | sort -r | xargs -n1 umount </code>
+  - Unlock a Volume Group so that the VG can be imported on the other host <code> varyonvg -b -u <vg_name> </code> On the remote host do <code> importvg -n -y <vgname> diskname </code>
+  - Create a JFS2 filesystem <code>mklv -t jfs2 -y <lvname> <vgname> <no_of_lps> <hdisk.....> 
+crfs -v jfs2 -d <lvname> -m <mountpoint> -A yes -t no</code>
+  - 

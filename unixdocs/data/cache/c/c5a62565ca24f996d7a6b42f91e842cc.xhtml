@@ -1,0 +1,29 @@
+
+<h1 class="sectionedit1" id="create_lppsrc_using_aix_dvd_isos">Create LPPSRC using AIX DVD isos</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Download the DVDs from IBM entitled software website</div>
+</li>
+<li class="level1"><div class="li"> Mount them<pre class="code">sudo mkdir -p /mnt/dvd1 /mnt/dvd2
+sudo loopmount -i aix7.1-dvd1.iso -o &quot;-V cdrfs -o ro&quot; -m /mnt/dvd1
+sudo loopmount -i aix7.1-dvd2.iso -o &quot;-V cdrfs -o ro&quot; -m /mnt/dvd2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount them if udf files <pre class="code">sudo loopmount -i AIX_V7.2_Base_Install_7200-00-00_DVD_1_of_2_122015.udf -l loop0 -o &quot;-V udfs -o ro&quot; -m  /mnt/dvd1
+sudo loopmount -i AIX_V7.2_Base_Install_7200-00-00_DVD_2_of_2_122015.udf -l loop0 -o &quot;-V udfs -o ro&quot; -m  /mnt/dvd2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define a lppsrouce<pre class="code">sudo nim -o define -t lpp_source -a server=master -a source=/mnt/dvd1 -a location=/prod/images/lppsrc/710TL03-03 710TL03-03_lppsrc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update/Add packages from the second DVD.<pre class="code">sudo nim -o update -a packages=all -a source=/mnt/dvd2 710TL03-03_lppsrc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update NIM server to the level on lppsrc, reboot.</div>
+</li>
+<li class="level1"><div class="li"> Define a Spot<pre class="code">sudo nim -o define -t spot -a server=master -a source=710TL03-03_lppsrc -a location=/prod/images/spot/710TL03-03_spot 710TL03-03_spot</pre>
+</div>
+</li>
+</ol>
+
+</div>

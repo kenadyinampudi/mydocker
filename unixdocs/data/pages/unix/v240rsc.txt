@@ -1,0 +1,24 @@
+====== RSC configuration on Sun V240 ======
+
+  - Front view of the V240{{:unix:v240frontview.png|}}
+  - Rear view of the V240{{:unix:v240rearview.png|}}
+  - Top open view of the V240{{:unix:v240topopen.png|}}
+  - Cable up the RSC port (Also called Net management port ) to a 10/100 Ethernet Switch.
+  - Configure the network on RSC. Login as root<code>/usr/platform/`uname -i`/sbin/scadm set if_network true
+/usr/platform/`uname -i`/sbin/scadm set netsc_ipaddr 10.34.64.X
+/usr/platform/`uname -i`/sbin/scadm set netsc_ipnetmask 255.255.254.0
+/usr/platform/`uname -i`/sbin/scadm set netsc_ipgateway 10.34.64.1</code>
+  - Check the settings<code>/usr/platform/`uname -i`/sbin/scadm show | grep netsc</code>
+  - Set password for the admin user<code>/usr/platform/`uname -i`/sbin/scadm  userpassword admin</code>
+  - Reset the ALOM using this command<code>/usr/platform/`uname -i`/sbin/scadm resetrsc</code>
+  - telnet to the RSC port and login as admin.
+  - Use the console command to get to the console<code>console</code>or<code>console -f</code>
+  - Some useful commands are<code>poweron
+poweroff
+reset
+break
+flashupdate</code>
+  - You may need to take the system down to redefine the console sometimes and at the ok prompt<code>diag-console rsc
+setenv input-device rsc-console
+setenv output-device rsc-console</code>OR do this so the next reboot will take care of it<code>eeprom input-device=rsc-console
+eeprom output-device=rsc-console</code>

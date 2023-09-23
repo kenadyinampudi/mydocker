@@ -1,0 +1,85 @@
+[[https://wiki.microfocus.com/index.php/SUSE_Manager/Register_Clones | Official SUSE documentation for registering VM Clones]]  
+
+<markdown>
+# Register with SUSE Manager
+
+### Short Path!
+
+`cat /etc/*release` (Check release version, and use the bootstrap script below accordingly.)  
+`zypper mr -da && zypper ref` (Check for success)  
+`ping -c 3 cdcpillx086.federalmogul.com` (Check for success)  
+`rm /etc/zypp/credentials.d/NCCcredentials /var/cache/SuseRegister/lastzmdconfig.cache /etc/sysconfig/rhn/systemid`  
+`rm -f /etc/zypp/credentials.d/{SCCcredentials,NCCcredentials}`  
+`rm /etc/machine-id /var/lib/dbus/machine-id`  
+`dbus-uuidgen --ensure; systemd-machine-id-setup`  
+`curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/<keyname>.sh" | /bin/bash`  
+(Usually like `curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/pt-sles12-5-sap.sh" | /bin/bash`. )  
+*If command is not successful, then*  
+`zypper install rhncfg-actions`  
+`curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/<keyname>.sh" | /bin/bash` (A second time)  
+If you get `-bootstrap complete-`, then the registration is complete.
+ 
+### Prep work
+
+Actual registration with Suse Manager is a fairly simple process, but there may be a bit of prep work involved for things to function correctly.
+
+!!! note "Make sure the system has zypper and that zypper works."
+
+First, you'll need to make sure you are up to date enough to actually run the registration.
+
+Check the release file to see what is up.  `cat /etc/*release`
+If you are at 11.3, you probably are OK. If you are lower than that, you will probably need to install or update zypper for the registration process to work correctly.
+
+Second, YAST, yum and zypper need to be functioning correctly.  
+At times, there may be an invalid repository left over on the system from an install of some package or another.  These all need to be removed so a "zypper refresh" will run correctly.
+
+You can skip this step if you are confident that everything is OK, but experience has taught it's good to check.
+
+* Check for existing repositories by using zypper.  
+`zypper lr -E`
+* Disable any enabled repositories.  
+`zypper mr -da` (Modify repository, diable all)
+* Make sure zypper refresh works.  
+`zypper ref`
+
+Lastly, you'll want to make sure that the FQDN of the SUSE Manager server is resolvable.
+`ping cdcpillx086.federalmogul.com`
+
+### Time to register
+
+The hardest part of this process is determining the proper registration "key" to use.
+I use the registration keys for grouping OS types and sites.  
+So Nuremburg would have its own key for SUSE 12, Shanghai would have its own key for SUSE 12 and another for SUSE 11, and Chicago would have its own set of keys for SUSE 11.3, SUSE 11.4, and SUSE 12.1.
+
+Log into the target system and register.  
+
+!!! note "The goal is to execute the script. You can pull the script, push the script or download the script and execute."
+I like to pull the script while logged into the client, as I'm already there checking the prereqs.
+
+`curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/<keyname>.sh" | /bin/bash`
+
+Lots of stuff should flash on the screen, things scroll by, etc etc.
+You are looking for a line which says `-bootstrap complete-`
+
+If this message is not displayed, there will probably be a suggestion to install the rhncfg-actions package.  Do that and rerun the registration.
+`zypper install rhncfg-actions  `  
+`curl "http://cdcpillx086.federalmogul.com/pub/bootstrap/<keyname>.sh" | /bin/bash`
+
+!!! warning "If a server disappears after registration, it may be it was already registered directly."
+This is caused when two machines have the same Novell Customer Center registration IDDs.  Most likely, this system was previous registered, then cloned and renamed.  SUSE manager picks up on this and thinks it is the same system.
+
+See [https://www.suse.com/support/kb/doc?id=7012170](https://www.suse.com/support/kb/doc?id=7012170) for info on how to fix.  
+Short version:
+
+* Remove the client systems in SUSE Manager using the web interface.
+* Run "mgr-ncc-sync" or "mgr-sync refresh" on the SUSE Manager server from command line.
+* On SLES 11 client systems, move "/etc/zypp/credentials.d/NCCcredentials", "/var/cache/SuseRegister/lastzmdconfig.cache" and "/etc/sysconfig/rhn/systemid" to "/tmp", or simply delete them (on SLES 10 client systems, remove /etc/zmd/deviceid and /etc/zmd/secret, then restart zmd).  
+`rm /etc/zypp/credentials.d/NCCcredentials /var/cache/SuseRegister/lastzmdconfig.cache /etc/sysconfig/rhn/systemid`
+* On SLES 11, check if /etc/zmd/deviceid and /etc/zmd/secret exist and delete them anyway, even if those files are legacy ones from SLES 10.
+* On SLES 12, remove "/etc/SUSEConnect"
+* In addition, the problem explained in TID 7017994 could exist. Please remove the machine-id for dbus and regenerate it again as explained in that TID.  
+`rm /var/lib/dbus/machine-id`  
+`dbus-uuidgen --ensure`  
+* Run the bootstrap script on the client systems again.
+* Run again "mgr-ncc-sync" or "mgr-sync refresh" on the SUSE Manager server from command line.
+</markdown>

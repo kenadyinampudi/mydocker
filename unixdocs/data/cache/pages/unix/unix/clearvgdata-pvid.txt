@@ -1,0 +1,17 @@
+===== Tenneco Clear PVID and VGDA =====
+
+#<>#<>#<>#<>#<>#<>#<>#<>#<>#<>#  NOTE
+This process is dependent upon the following condition(s) being met:
+ 
+ - A new Email group is defined as TA-San o TA-SAN to include all SAN Adminstrators  who will/may assign disk from the EMC platforms for use by the UNIX Team 
+#<>#<>#<>#<>#<>#<>#<>#<>#<>#<>#  End of NOTE
+
+  - The SAN administrator will present the disks to pgdskcln
+  - The unix admin should execute the following commands to clean the LVM metadata.
+    - Remove the pvid<code>chdev -l <hdiskname> -a pv=clear</code>
+    - Remove VGDA<code>chpv -C <hdiskname></code>Example<code>chpv -C hdiskpower129</code>
+  - Once done, remove the disks from AIX kernel
+    - Remove from powerpath<code>powermt remove dev=hdiskpowername</code>
+    - Remove the devicefile<code>rmdev -dl <hdiskpowername></code>
+    - Remove the child devices<code>rmdev -dl hdiskname
+rmdev -dl hdiskname</code>If the disk has more than 2 paths, remove all the 4 hdisk child devices.

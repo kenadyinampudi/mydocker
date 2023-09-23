@@ -1,0 +1,34 @@
+
+<h1 class="sectionedit1" id="rapid7">Rapid7</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create the splunk filesystem<pre class="code">sudo pvcreate -f /dev/sdb
+sudo vgcreate datavg01 /dev/sdb
+sudo lvcreate -l 100%FREE -n opt_rapid7 /dev/datavg01
+sudo mkfs -t ext4 /dev/datavg01/opt_rapid7
+echo &quot;/dev/mapper/datavg01-opt_rapid7        /opt/rapid7          ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+sudo mkdir /opt/rapid7
+sudo mount /opt/rapid7</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create security accounts, groups for service and team members<pre class="code">sudo groupadd -g 6786 hg_dm
+sudo groupadd -g 6787 nxpgsql
+sudo groupadd -g 6788 nexpose
+sudo useradd -g nxpgsql -d /opt/rapid7/nexpose/nsc/nxpgsql -c &quot;Rapid7  Account&quot;     -m -u 6775 nxpgsql
+sudo useradd -g nexpose -d /home/nexpose                   -c &quot;Rapid7  Account&quot;     -m -u 6549 nexpose
+sudo useradd -g secteam -d /home/jhahn                     -c &quot;John Hahn&quot;           -m -u 6692 jhahn
+sudo useradd -g secteam -d /home/kevimitc                  -c &quot;Kevin Mitchel&quot;       -m -u 6858 kevimitc
+sudo useradd -g secteam -d /home/abdumush                  -c &quot;Abdul Mushtaq&quot;       -m -u 6950 abdumush
+sudo useradd -g hg_dm   -d /home/hg_dm                     -c &quot;Herjavec Group&quot;      -m -u 6786 hg_dm
+sudo useradd -g secteam -d /home/ses8739                   -c &quot;Steven E Satkiewicz&quot; -m -u 6145 ses8739</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set an initial password for security team<pre class="code">for user in nxpgsql nexpose jhahn kevimitc abdumush hg_dm ses8739
+do
+   echo &quot;${user}:sa/1Ryd7Wk0z.&quot; | sudo chpasswd -e
+done</pre>
+</div>
+</li>
+</ol>
+
+</div>

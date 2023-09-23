@@ -1,0 +1,30 @@
+====== PTA migration to power8 ======
+
+  - Old storage group is called tapr1d01_SG on VMAX
+  - New storage group is called tapr1d01-p8_SG on VMAX.
+  - There is also nfsvg01 which is on a different masking view & storage group.
+  - Unmask LUNs from tapr1d01
+    - Remove all LUNs of "binvg01,datavg01,datavg02,datavg03,datavg04,redovg01,nfsvg02." from tapr1d01<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>Then remove the VGs<code>echo "datavg01 datavg02 datavg03 datavg04 redovg01 nfsvg02 binvg01" | xargs -n1 lsvgfs | xargs -n1 sudo umount</code>Varyoff the VGs<code>echo "datavg01 datavg02 datavg03 datavg04 redovg01 nfsvg02 binvg01" | xargs -n1 sudo varyoffvg</code>Export them<code>echo "datavg01 datavg02 datavg03 datavg04 redovg01 nfsvg02 binvg01" | xargs -n1 sudo exportvg</code>
+      - Delete the devices from tapr1d01<code>egrep "binvg01|datavg01|datavg02|datavg03|datavg04|redovg01|nfsvg02" lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+      - Login to pgunap01<code>ssh pgunap01</code>
+      - Remove binvg01 LUNs from tapr1d01_SG and add to tapr1d01p8_SG<code>sudo symaccess -sid 0301 -name tapr1d01_SG -type storage remove dev 0691,0692,0693,0694,0695,0696</code>Then<code>sudo symaccess -sid 0301 -name tapr1d01-p8_SG -type storage add devs 0691,0692,0693,0694,0695,0696</code>
+      - Remove datavg & redovg LUNs from tapr1d01_SG and add to tapr1d01p8_SG<code>sudo symaccess -sid 0301 -name tapr1d01_SG -type storage remove dev 0665,0AC5,0AC6,0AC7,0AC8,0AC9,0ACA,0ACB,0ACC,0ACD,0ACE,0ACF,0AD0,0AD1,0AD2,0AD3,0AD4,0AD5,0AD6,0AD7,0AD8,0AD9,0ADA,0ADB,0ADC,0ADD,0ADE,0ADF,0AE0,0AE1,0AE2,0AE3,0AE4,0AE5,0AE6,0AE7,0AE8,0AE9,0AEA,0AEB,0AEC,0AED,0AEE,0AEF,0AF0,0AF1,0AF2,0AF3,0AF4,0AF5,0AF6,0AF7,0AF8,0AF9,0AFA,0AFB,0AFC,179D,1A4D,1A4E,1AC5,1AC6,1AE5</code>Then<code>sudo symaccess -sid 0301 -name tapr1d01-p8_SG -type storage add devs 0665,0AC5,0AC6,0AC7,0AC8,0AC9,0ACA,0ACB,0ACC,0ACD,0ACE,0ACF,0AD0,0AD1,0AD2,0AD3,0AD4,0AD5,0AD6,0AD7,0AD8,0AD9,0ADA,0ADB,0ADC,0ADD,0ADE,0ADF,0AE0,0AE1,0AE2,0AE3,0AE4,0AE5,0AE6,0AE7,0AE8,0AE9,0AEA,0AEB,0AEC,0AED,0AEE,0AEF,0AF0,0AF1,0AF2,0AF3,0AF4,0AF5,0AF6,0AF7,0AF8,0AF9,0AFA,0AFB,0AFC,179D,1A4D,1A4E,1AC5,1AC6,1AE5</code>
+      - Delete masking view for PTA Archive<code>sudo symaccess -sid 0301 delete view -name PTASAPARCH_MV</code>
+      - Create masking view to include the new initiators<code>symaccess -sid 01 create view -name PTASAPARCH_MV -ig tapr1d01-p8_IG -pg tapr1d01-p8_PG -sg PTASAPARCH_SG</code>
+   - Discover the LUNs on the new host<code>sudo lsvpcfg.sh > lsvpcfg.out.1
+sudo cfgmgr
+sudo lsvpcfg.sh > lsvpcfg.out.2
+diff lsvpcfg.out.1 lsvpcfg.out.2 | grep ">" | awk '{print $2}' | awk -F: '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l</code>
+  - Import the VGs<code>sudo importvg -y binvg01 00c9f39016992bc8
+sudo importvg -y datavg01 00c9f39013c204e6
+sudo importvg -y datavg02 00c9f39013cb55b1
+sudo importvg -y datavg03 00c9f39013cf401a
+sudo importvg -y datavg04 00c9f39013d56594
+sudo importvg -y nfsvg02 00c9f390b33b780d</code>
+  - Mount the filesystems<code>for vg in binvg01 datavg01 datavg02 datavg03 datavg04 nfsvg02
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mount $fs
+   done
+done</code>

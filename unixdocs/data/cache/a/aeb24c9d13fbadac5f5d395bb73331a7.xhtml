@@ -1,0 +1,162 @@
+
+<h1 class="sectionedit1" id="for_omi_servers_-_additional_steps_are_needed">For OMI servers - additional steps are needed</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "For OMI servers - additional steps are needed" [1-61] -->
+<h2 class="sectionedit2" id="generic_steps_on_all_omi_servers_after_consulting_with_john_ziegler">Generic steps on all OMI servers after consulting with John Ziegler</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the server you are building<pre class="code">ssh &lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check /tmp it should be 5GB if not then do this step increase the size accordingly<pre class="code">sudo lvextend -L5G /dev/mapper/sysvg-tmp
+sudo resize2fs /dev/mapper/sysvg-tmp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create users account and provide the password to John ziegler he will change it after first login<pre class="code">sudo useradd -K PASS_MAX_DAYS=-1 -s /usr/bin/bash -g ovteam -G ovteam -d /home/omiuser -c &quot;OMI administrator&quot; -m -u 7111 omiuser
+sudo groupadd -g 201 dba
+sudo useradd -K PASS_MAX_DAYS=-1  -u 500 -g dba -c &quot;Oracle account&quot; -d /home/oracle -m oracle
+echo &quot;omiuser:sanQizA8rxfiI&quot; | sudo chpasswd -e
+echo &quot;oracle:sanQizA8rxfiI&quot; | sudo chpasswd -e</pre>
+
+<p>
+The password is set to &#039;abcd1234&#039; – please ask OV team to change.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">sudo lvcreate -L 50G -n opt_HP_BSM /dev/datavg01
+sudo lvcreate -L 20G -n var_opt_OV /dev/datavg01
+sudo lvcreate -L 10G -n source /dev/datavg01
+sudo lvcreate -L 5G -n oracle_client /dev/datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/opt_HP_BSM
+sudo mkfs -t ext4 /dev/datavg01/var_opt_OV
+sudo mkfs -t ext4 /dev/datavg01/source
+sudo mkfs -t ext4 /dev/datavg01/oracle_client
+
+cat &lt;&lt; EOF | sudo tee -a /etc/fstab
+/dev/datavg01/opt_HP_BSM   /opt/HP/BSM                    ext4    defaults        1 2
+/dev/datavg01/var_opt_OV   /var/opt/OV                    ext4    defaults        1 2
+/dev/datavg01/source   /source                    ext4    defaults        1 2
+/dev/datavg01/oracle_client   /oracle/client                    ext4    defaults        1 2
+EOF
+
+sudo mkdir -p /opt/HP/BSM
+sudo mkdir -p /var/opt/OV
+sudo mkdir -p /source
+sudo mkdir -p /oracle/client
+
+sudo mount /opt/HP/BSM
+sudo mount /var/opt/OV
+sudo mount /source
+sudo mount /oracle/client
+
+sudo chown oracle:dba /oracle/client</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install packages<pre class="code">sudo yum install initscripts perl libaio libpng12.x86_64 liberation-sans-fonts.noarch\
+ gnome-session metacity xterm tigervnc-server m4 perl-DBI compat-libcap1 compat-libstdc++-33 gcc gcc-c++ glibc-devel\
+ libaio-devel perl-devel</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Oracle client and DBD</div>
+<ol>
+<li class="level2"><div class="li"> Login to pgnmsv01</div>
+<ol>
+<li class="level3"><div class="li"> Copy the Oracle client installables<pre class="code">sudo rsync -avv /prod/images/cds/oracle/12cclient-rhel64bit/ &lt;server_name&gt;:/tmp/oracle/</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Copy the DBD installables<pre class="code">sudo rsync -avv /prod/images/cds/perl/perl-Oracle-DBD/DBD-Oracle-1.75_2/ &lt;server_name&gt;:/tmp/DBD-Oracle-1.75_2/</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Login to the client</div>
+<ol>
+<li class="level3"><div class="li"> Install Oracle Client</div>
+<ol>
+<li class="level4"><div class="li"> Create response file<pre class="code">sudo -u oracle cat /tmp/oracle/oracle_client_rhel_12c.rsp | sed &quot;s;ORA_TENNECO_HOSTNAME;$(uname -n);g&quot; &gt; /tmp/oracle_client_rhel_12c.rsp</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Run the installer as oracle<pre class="code">sudo -u oracle /tmp/oracle/runInstaller -silent -waitforcompletion -responseFile /tmp/oracle_client_rhel_12c.rsp</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Run the root.sh<pre class="code">sudo /oracle/client/oraInventory/orainstRoot.sh</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> Install Oracle:DBD perl module.</div>
+<ol>
+<li class="level4"><div class="li"> Execute these<pre class="code">sudo chown -R oracle:dba /tmp/DBD-Oracle-1.75_2</pre>
+
+<p>
+Then as oracle user
+</p>
+<pre class="code">sudo su - oracle
+cd /tmp/DBD-Oracle-1.75_2
+export ORACLE_HOME=/oracle/client
+perl Makefile.PL
+make</pre>
+
+<p>
+Back to root id
+</p>
+<pre class="code">cd /tmp/DBD-Oracle-1.75_2
+sudo make install</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install a basic tnsnames.ora<pre class="code">sudo -u oracle vi /oracle/client/network/admin/tnsnames.ora</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">&lt;SID_NAME&gt; =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = &lt;HOST_NAME&gt;)(PORT = 1527))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = &lt;SID_NAME&gt;)
+    )
+  )
+
+ov_net =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = &lt;HOST_NAME&gt;)(PORT = 1527))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = &lt;SID_NAME&gt;)
+    )
+  )</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install these additional perl modules<pre class="code">sudo yum install perl-Crypt-SSLeay perl-IO-Socket-SSL perl-libwww-perl perl-URI perl-LWP-Protocol-https perl-XML-Parser</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install these additional perl modules manually as Redhat does not provide them.</div>
+<ol>
+<li class="level2"><div class="li"> Login to pgnmsv01<pre class="code">sudo rsync -avv /prod/images/cds/perl/ &lt;servername&gt;:perlmodules/</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the modules. Login to the server<pre class="code">for dir in MIME-Base64-3.15 MIME-Types-2.13 SOAP-Lite-1.20 Test-Simple-1.302085 Class-Inspector-1.31 ServiceNow-1.01
+do
+  cd perlmodules/${dir}
+  perl Makefile.PL
+  make
+  sudo make install
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Generic steps on all OMI servers after consulting with John Ziegler" [62-] -->

@@ -1,0 +1,32 @@
+====== JAVA Installation For SAP Webdispatcher on TA2 App Server Systems ======
+ - Mount the /prod/images/Java/Java14_64 from pgnmsv01 to the server <code> sudo mkdir -p /mnt/java ; sudo mount pgnmsv01:/prod/images/Java/Java14_64 /mnt/java </code>
+ - Change Directory to /mnt/java <code> sudo cd /mnt/java </code> Invoke smitty </code> sudo smitty install_all </code>Then select "."
+        * SOFTWARE INSTALL - Press F4 and select the following <code> Java14_64.license ALL </code> and <code> Java14_64.sdk   ALL </code>
+        * PREVIEW only - should be set to no
+        * COMMIT software updates must be set to yes
+        * ACCEPT new license agreements? must be set to yes
+        * Then hit enter 
+
+ -  After installation completes update the .profile in root with the following entry <code> sudo mv .profile .profile-OLD </code> <code> sudo vi .profile </code> and add the following to the PATH vaitrable <code> :/usr/java14_64/jre/bin </code>
+
+ -  Here is the environment documentation shoud the Basis Team question the java Version.  Note thsy have seversl environment vaitables set within their user SAP profiles that will result in slightly different that standatrd expectred output.  These environment variables are dcumented below. <code> setenv PATH JAVA_HOME </code> <code>setenv JAVA_HOME /usr/java14_64/jre </code> <code> setenv IBM_JAVA_OPTIONS '-Xmx256M -Xj9' </code> If they have any questins please ask them to consult their documentation and set the appriporate environment vairables. 
+
+
+Below is an example from TA2 Application Server peerap01
+  Without environemnt vaitables set 
+  peerap01:ta2adm 52> /usr/java14_64/jre/bin/java -version
+  java version "1.4.2" 
+  Java(TM) 2 Runtime Environment, Standard Edition (build 1.4.2)
+  Classic VM (build 1.4.2, J2RE 1.4.2 IBM AIX 5L for PowerPC (64 bit JVM) build caix64142-20060824 (SR6) (JIT enabled: jitc))
+
+After settiont environement variables
+  peerap01:ta2adm 53> setenv PATH JAVA_HOME
+  peerap01:ta2adm 53> setenv JAVA_HOME /usr/java14_64/jre
+  peerap01:ta2adm 54> setenv IBM_JAVA_OPTIONS '-Xmx256M -Xj9'
+  peerap01:ta2adm 55> /usr/java14_64/jre/bin/java -version
+  java version "1.4.2"
+  Java(TM) 2 Runtime Environment, Standard Edition (build 2.3)
+  IBM J9 VM (build 2.3, J2RE 1.4.2 IBM J9 2.3 AIX ppc64-64 j9ap64142-20060824a (JIT enabled)
+  J9VM - 20060823_07696_BHdSMr
+  JIT  - 20060722_1500ifx1_r8
+  GC   - 20060724_AA)

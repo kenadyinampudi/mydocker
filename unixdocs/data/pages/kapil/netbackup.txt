@@ -1,0 +1,15 @@
+====== Netbackup notes ======
+
+  - List backup policies<code>sudo bppllist</code>
+  - Most SAP related backup policies follow a naming standard ''SAP_C11'' ''SAP_PTA'' likewise
+  - List details of a policy in human readable format<code>sudo bppllist SAP_C11_FLASHCP -U</code>
+  - List currently active jobs<code>bpdbjobs |grep Active</code>
+  - Cancel a backup job<code>sudo bpdbjobs -cancel <id></code>
+  - If you were to restore a backup for a given host, say SAP_TA2, this is how you do it.
+    - Login to the media-server from which it was backed up, In this case it is, teprbk01.
+    - List the backups in the last 96 hours<code>sudo bpimagelist -policy SAP_TA2 -hoursago 96 -U</code>
+    - List in a different format<code>sudo bpimagelist -policy SAP_TA2 -hoursago 96 -idonly</code>
+    - To see what is backed up on each streams that you see on the above output<code>sudo bplist -C teprbk01 -t 17 -k SAP_TA2 -s 02/07/2016 16:23:12 -e 02/07/2016 16:23:12 -R /</code>
+    - To restore this on a different system,
+      - First drop a file on the master server, taqa1d01 at this location<code>sudo touch /usr/openv/netbackup/db/altnames/No.Restrictions</code>This allows any client to be restored anywhere.
+      - Login to the target system<code>sudo bprestore –B –L /tmp/ta2_progress_1st-stream.log –C teprbk01 –t 17 –p SAP_TA2 -s 02/07/2016 16:23:12 -e 02/07/2016 16:23:12 /oracle/</code>Execute this for each stream.

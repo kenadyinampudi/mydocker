@@ -1,0 +1,85 @@
+====== RHEL Patching - June - 2021 ======
+
+===== Preparation work =====
+
+  - Get the downtime approved by users.
+  - Align resources to perform shutdown and startup of applications, databases etc.
+  - Create change controls, get approval.
+  - Send IT communications for production systems.
+
+===== During the downtime =====
+
+  - Shutdown applications.
+  - [[unix:vspherehosts|Login to the respective vCenter servers documented here]] 
+  - Login using your active directory credentials i.e. ''AMER\x1.....''
+  - Backup the OS using VMWARE snapshots.
+    - Shutdown the OS
+    - Take a cold snapshot -- Wintel/Unix
+    - Power the system back on
+  - Login to the server.
+  - Set the build server as a variable
+    - For MP/PS<code>export server=pcdcunxlxap01</code>__OR__
+    - For CA/PT<code>export server=pablsv02</code>
+  - Modify the local.repo file with the latest patches.
+    - First make a copy<code>sudo cp /etc/yum.repos.d/local.repo local.repo</code>
+    - ***For all RHEL7 systems which includes (SAP App servers, NON-SAP servers and SAP HANA servers -- This will take release level to RHEL 7.9.*** Add this<code>cat << EOF | sudo tee /etc/yum.repos.d/local.repo
+[06-15-2021-rhel-7-9-server-rpms]
+name=06-15-2021-rhel-7-9-server-rpms
+baseurl=http://${server}/sources/15-06-2021/rhel-7.9/rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[06-15-2021-rhel-7-9-server-extras-rpms]
+name=06-15-2021-rhel-7-9-server-extras-rpms
+baseurl=http://${server}/sources/15-06-2021/rhel-7.9/rhel-7-server-extras-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[06-15-2021-rhel-7-9-server-optional-rpms]
+name=06-15-2021-rhel-7-9-server-optional-rpms
+baseurl=http://${server}/sources/15-06-2021/rhel-7.9/rhel-7-server-optional-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+EOF</code>
+  - Add the standard DRiV packages<code>cat << EOF | sudo tee -a /etc/yum.repos.d/local.repo
+[local-driv-noarch]
+name=local-driv-noarch
+baseurl=http://${server}/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-driv-nbu]
+name=local-driv-nbu
+baseurl=http://${server}/sources/nbuclient/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+EOF</code>
+  - **On SAP App servers modify the sap.repo with the latest repository.**First make a copy<code>sudo cp /etc/yum.repos.d/sap.repo sap.repo</code>Add this<code>cat << EOF | sudo tee /etc/yum.repos.d/sap.repo
+[06-15-2021-rhel-sap-for-rhel-7-server-rpms]
+name=06-15-2021-rhel-sap-for-rhel-7-server-rpms
+baseurl=http://${server}/sources/15-06-2021/rhel-7.9/rhel-sap-for-rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+EOF</code>
+  - **On SAP HANA servers modify the saphana.repo with the latest repository.** First make a copy<code>sudo cp /etc/yum.repos.d/saphana.repo saphana.repo</code>Add this<code>cat << EOF | sudo tee /etc/yum.repos.d/saphana.repo
+[06-15-2021-rhel-sap-hana-for-rhel-7-server-rpms]
+name=06-15-2021-rhel-sap-hana-for-rhel-7-server-rpms
+baseurl=http://${server}/sources/15-06-2021/rhel-7.9/rhel-sap-hana-for-rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+EOF</code>
+  - Install the updates / patches.<code>sudo yum clean all
+sudo yum update</code>
+  - Reboot the server<code>sudo init 6</code>
+  - Login to the server and verify the patches have been installed.<code>cat /etc/redhat-release</code>Expected output<code>Red Hat Enterprise Linux Server release 7.9</code>

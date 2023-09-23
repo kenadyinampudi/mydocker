@@ -1,0 +1,31 @@
+
+<h1 class="sectionedit1" id="configure_centralized_unixlogs_-_aix">Configure centralized unixlogs - AIX</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Add the required ODM entries to forward errpt events to logger</div>
+<ol>
+<li class="level2"><div class="li"> Create the ODM definition<pre class="code">cat &lt;&lt; EOF | tee /var/tmp/tensyslogadd
+errnotify:
+en_name=&quot;ten-central-log&quot;
+en_persistenceflg = 1
+en_method = &quot;logger -pnotice Msg from Error Log: \$(errpt -a -l \$1 ) ; logger -ttenerrpt \$(errpt -l \$1 | grep -v ^IDENTIFIER &quot;
+EOF</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add the definition to ODM<pre class="code">sudo odmadd /var/tmp/tensyslogadd</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Cleanup<pre class="code">rm /var/tmp/tensyslogadd</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check if syslog is already forwarding <code>*.notice</code> to unixlogs.driv.com. If not - configure syslog toi do so<pre class="code">sudo cp /etc/syslog.conf /etc/syslog.conf.$(date +%m%d%Y)
+grep -q unixlogs /etc/syslog.conf
+[[ ${?} -ne 0 ]] &amp;&amp; echo &#039;*.notice           @unixlogs.driv.com&#039; | sudo tee -a /etc/syslog.conf
+[[ ${?} -eq 0 ]] &amp;&amp; sudo refresh -s syslogd</pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,141 @@
+====== EWM - snapshot backup and re-alignment of storage 3/3/2018 ======
+
+===== 30 mins prior to the downtime on EWM =====
+
+  - Perform a final sync<code>
+sudo rsync --delete -axvv /appl/platinum/         /NEW/appl/platinum/
+sudo rsync --delete -axvv /oracle/                /NEW/oracle/
+sudo rsync --delete -axvv /oracle/PSC/            /NEW/oracle/PSC/
+sudo rsync --delete -axvv /oracle/PSC/12102/      /NEW/oracle/PSC/12102/
+sudo rsync --delete -axvv /oracle/PSC/mirrlogA/   /NEW/oracle/PSC/mirrlogA/
+sudo rsync --delete -axvv /oracle/PSC/mirrlogB/   /NEW/oracle/PSC/mirrlogB/
+sudo rsync --delete -axvv /oracle/PSC/oraarch/    /NEW/oracle/PSC/oraarch/
+sudo rsync --delete -axvv /oracle/PSC/origlogA/   /NEW/oracle/PSC/origlogA/
+sudo rsync --delete -axvv /oracle/PSC/origlogB/   /NEW/oracle/PSC/origlogB/
+sudo rsync --delete -axvv /oracle/PSC/sapreorg/   /NEW/oracle/PSC/sapreorg/
+sudo rsync --delete -axvv /oracle/client/         /NEW/oracle/client/
+sudo rsync --delete -axvv /sapcomm/PSC/PWC/       /NEW/sapcomm/PSC/PWC/
+sudo rsync --delete -axvv /sapmnt/PSC/            /NEW/sapmnt/PSC/
+sudo rsync --delete -axvv /users/unispool/        /NEW/users/unispool/
+sudo rsync --delete -axvv /usr/sap/               /NEW/usr/sap/
+sudo rsync --delete -axvv /usr/sap/PSC/           /NEW/usr/sap/PSC/
+sudo rsync --delete -axvv /usr/sap/trans/         /NEW/usr/sap/trans/</code>
+  - Wait for all applications are brought down
+  - Perform a snapshot backup<code>ssh ldcv9ac2vip1  prestartfcconsistgrp EWMUPG030318
+ssh ldcv9ac2vip1  startfcconsistgrp EWMUPG030318</code>
+  - Take a snapshot of the disk allocation<code>sudo lsvpcfg.sh > lsvpcfg.out.20</code>
+  - Backup /etc/filesystems<code>sudo cp /etc/filesystems /etc/filesystems.03032018.1</code>
+  - Unmount filesystems<code>for fs in $(lsvgfs datavg01 | sort -r )
+do
+   sudo umount $fs
+done</code>
+  - Export datavg01<code>sudo varyoffvg datavg01
+sudo exportvg datavg01</code>
+  - Import datavg01<code>sudo importvg -y datavg01 00f95d2242e9a491</code>
+  - Rename the old filesystems and disable automount<code>sudo chfs -A n -m /OLD/oracle /oracle
+sudo chfs -A n -m /OLD/oracle/PSC /oracle/PSC
+sudo chfs -A n -m /OLD/oracle/PSC/mirrlogA /oracle/PSC/mirrlogA
+sudo chfs -A n -m /OLD/oracle/PSC/mirrlogB /oracle/PSC/mirrlogB
+sudo chfs -A n -m /OLD/oracle/PSC/oraarch /oracle/PSC/oraarch
+sudo chfs -A n -m /OLD/oracle/PSC/origlogA /oracle/PSC/origlogA
+sudo chfs -A n -m /OLD/oracle/PSC/origlogB /oracle/PSC/origlogB
+sudo chfs -A n -m /OLD/oracle/PSC/sapreorg /oracle/PSC/sapreorg
+sudo chfs -A n -m /OLD/oracle/client /oracle/client
+sudo chfs -A n -m /OLD/usr/sap/trans /usr/sap/trans
+sudo chfs -A n -m /OLD/sapmnt/PSC /sapmnt/PSC
+sudo chfs -A n -m /OLD/usr/sap /usr/sap
+sudo chfs -A n -m /OLD/usr/sap/PSC /usr/sap/PSC
+sudo chfs -A n -m /OLD/users/unispool /users/unispool
+sudo chfs -A n -m /OLD/appl/platinum /appl/platinum
+sudo chfs -A n -m /OLD/oracle/PSC/12102 /oracle/PSC/12102
+sudo chfs -A n -m /OLD/sapcomm/PSC/PWC /sapcomm/PSC/PWC</code>
+  - Mount the renamed filesystems<code>sudo mount /OLD/appl/platinum
+sudo mount /OLD/oracle
+sudo mount /OLD/oracle/PSC
+sudo mount /OLD/oracle/PSC/12102
+sudo mount /OLD/oracle/PSC/mirrlogA
+sudo mount /OLD/oracle/PSC/mirrlogB
+sudo mount /OLD/oracle/PSC/oraarch
+sudo mount /OLD/oracle/PSC/origlogA
+sudo mount /OLD/oracle/PSC/origlogB
+sudo mount /OLD/oracle/PSC/sapreorg
+sudo mount /OLD/oracle/client
+sudo mount /OLD/sapcomm/PSC/PWC
+sudo mount /OLD/sapmnt/PSC
+sudo mount /OLD/users/unispool
+sudo mount /OLD/usr/sap
+sudo mount /OLD/usr/sap/PSC
+sudo mount /OLD/usr/sap/trans</code>
+  - Perform a final sync<code>sudo rsync --delete -axvv /OLD/oracle/ /NEW/oracle/
+sudo rsync --delete -axvv /OLD/oracle/PSC/ /NEW/oracle/PSC/
+sudo rsync --delete -axvv /OLD/oracle/PSC/mirrlogA/ /NEW/oracle/PSC/mirrlogA/
+sudo rsync --delete -axvv /OLD/oracle/PSC/mirrlogB/ /NEW/oracle/PSC/mirrlogB/
+sudo rsync --delete -axvv /OLD/oracle/PSC/oraarch/ /NEW/oracle/PSC/oraarch/
+sudo rsync --delete -axvv /OLD/oracle/PSC/origlogA/ /NEW/oracle/PSC/origlogA/
+sudo rsync --delete -axvv /OLD/oracle/PSC/origlogB/ /NEW/oracle/PSC/origlogB/
+sudo rsync --delete -axvv /OLD/oracle/PSC/sapreorg/ /NEW/oracle/PSC/sapreorg/
+sudo rsync --delete -axvv /OLD/oracle/client/ /NEW/oracle/client/
+sudo rsync --delete -axvv /OLD/usr/sap/trans/ /NEW/usr/sap/trans/
+sudo rsync --delete -axvv /OLD/sapmnt/PSC/ /NEW/sapmnt/PSC/
+sudo rsync --delete -axvv /OLD/usr/sap/ /NEW/usr/sap/
+sudo rsync --delete -axvv /OLD/usr/sap/PSC/ /NEW/usr/sap/PSC/
+sudo rsync --delete -axvv /OLD/users/unispool/ /NEW/users/unispool/
+sudo rsync --delete -axvv /OLD/appl/platinum/ /NEW/appl/platinum/
+sudo rsync --delete -axvv /OLD/oracle/PSC/12102/ /NEW/oracle/PSC/12102/
+sudo rsync --delete -axvv /OLD/sapcomm/PSC/PWC/ /NEW/sapcomm/PSC/PWC/</code>
+  - Unmount the new filesystems<code>sudo umount /NEW/usr/sap/trans
+sudo umount /NEW/usr/sap/PSC
+sudo umount /NEW/usr/sap
+sudo umount /NEW/users/unispool
+sudo umount /NEW/sapmnt/PSC
+sudo umount /NEW/sapcomm/PSC/PWC
+sudo umount /NEW/oracle/client
+sudo umount /NEW/oracle/PSC/sapreorg
+sudo umount /NEW/oracle/PSC/origlogB
+sudo umount /NEW/oracle/PSC/origlogA
+sudo umount /NEW/oracle/PSC/oraarch
+sudo umount /NEW/oracle/PSC/mirrlogB
+sudo umount /NEW/oracle/PSC/mirrlogA
+sudo umount /NEW/oracle/PSC/12102
+sudo umount /NEW/oracle/PSC
+sudo umount /NEW/oracle
+sudo umount /NEW/appl/platinum</code>
+  - Unmount the old filesystems<code>sudo umount /OLD/usr/sap/trans
+sudo umount /OLD/usr/sap/PSC
+sudo umount /OLD/usr/sap
+sudo umount /OLD/users/unispool
+sudo umount /OLD/sapmnt/PSC
+sudo umount /OLD/sapcomm/PSC/PWC
+sudo umount /OLD/oracle/client
+sudo umount /OLD/oracle/PSC/sapreorg
+sudo umount /OLD/oracle/PSC/origlogB
+sudo umount /OLD/oracle/PSC/origlogA
+sudo umount /OLD/oracle/PSC/oraarch
+sudo umount /OLD/oracle/PSC/mirrlogB
+sudo umount /OLD/oracle/PSC/mirrlogA
+sudo umount /OLD/oracle/PSC/12102
+sudo umount /OLD/oracle/PSC
+sudo umount /OLD/oracle
+sudo umount /OLD/appl/platinum</code>
+  - Rename the new filesystems to original<code>sudo chfs -m /oracle /NEW/oracle
+sudo chfs -m /oracle/PSC /NEW/oracle/PSC
+sudo chfs -m /oracle/PSC/mirrlogA /NEW/oracle/PSC/mirrlogA
+sudo chfs -m /oracle/PSC/mirrlogB /NEW/oracle/PSC/mirrlogB
+sudo chfs -m /oracle/PSC/oraarch /NEW/oracle/PSC/oraarch
+sudo chfs -m /oracle/PSC/origlogA /NEW/oracle/PSC/origlogA
+sudo chfs -m /oracle/PSC/origlogB /NEW/oracle/PSC/origlogB
+sudo chfs -m /oracle/PSC/sapreorg /NEW/oracle/PSC/sapreorg
+sudo chfs -m /oracle/client /NEW/oracle/client
+sudo chfs -m /usr/sap/trans /NEW/usr/sap/trans
+sudo chfs -m /sapmnt/PSC /NEW/sapmnt/PSC
+sudo chfs -m /usr/sap /NEW/usr/sap
+sudo chfs -m /usr/sap/PSC /NEW/usr/sap/PSC
+sudo chfs -m /users/unispool /NEW/users/unispool
+sudo chfs -m /appl/platinum /NEW/appl/platinum
+sudo chfs -m /oracle/PSC/12102 /NEW/oracle/PSC/12102
+sudo chfs -m /sapcomm/PSC/PWC /NEW/sapcomm/PSC/PWC</code>
+  - Mount the new filesystems<code>lsvgfs binvg01 | sort | xargs -n1 sudo mount</code>
+  - Mount the sapdata filesystems<code>lsvgfs datavg01 | grep sapdata | xargs -n1 sudo mount</code>
+  - Re-export NFS filesystems<code>sudo exportfs -ua
+sudo exportfs -av</code>Check on clients if NFS mounts are good. ''qgscdb01 dgscdb01 xgscdb01 sgscdb01 xdgscdb1''
+  - Handover back to DBA/Basis/Project team

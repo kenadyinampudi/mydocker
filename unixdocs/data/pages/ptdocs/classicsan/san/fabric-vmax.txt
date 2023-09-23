@@ -1,0 +1,72 @@
+====== Fabric zoning servers to VMAX ======
+
+Detailed process can be copied from VNX examples. Here is the port groups reserved for respective hosts. If a new host is to be added, please discuss within the team and get an agreement on where to place it.
+
+^Port Group Name^Host(s)^Notes^
+|1E0_2E0_3E0_4E0_PG|tapr1d01|PTA gets dedicated FA|
+|2F0_3F0_PG|taqa1d01|Backup server + HR - will be decommed soon.|
+|2G0_3G0_PG|paerap01-6, peerap01-09|PTA & TA2 app servers and TA2 SandBox|
+|2H0_3H0_PG|taprvio15,taprvio16,taprvio17,taprvio18,taprvio19,taprvio20,taprvio21,taitc113,peerap99|Low IO VIO servers and TA2 CI|
+|1E0_2E0_3E0_4E0_PG|tapr1d01|PTA gets dedicated FA|
+|1F0_4F0_PG|ESXi, peerdb98, tnpr3d01, pggtdb01, pgaidb01, paft3p01, paft3p02|Other production servers|
+|1G0_4G0_PG|qaerdb01, tedv2d01|FTA and IT0 system|
+|1H0_4H0_PG|taprvio30,taprvio31,taprvio40,taprvio41,taprvio50,taprvio51,taprvio60,taprvio70|Medium IO VIOS servers|
+|1G1_4G1_PG|Systems in LDCDS6510 switches|Medium IO SAP app servers|
+|2G1_3G1_PG|Systems in LDCDS6510 switches|Medium IO SAP app servers|
+
+===== NPIV based systems =====
+
+On NPIV based AIX systems, the WWN will be logged on the port where the VIOS server is connected. 
+
+  * Check with the Unix team which VIOS server the guest is from.
+  * Check the Switch connection document in itchome to find out the switch port number.[[http://itchome/storage/Shared%20Documents/SAN%20Fabric/LDC%20-%20Fabric%20A%20-%20B%20Connections-08012013.xls]]
+  * For example, taprvio80/81 is connected to these ports.<code>LDCDS5300A1	14	SAN1	A1-14--TAPRVIO80-1	taprvio80	10:00:00:90:fa:2a:55:bc
+LDCDS5300B1	14	SAN1	B1-14--taprvio80-2	taprvio80	10:00:00:90:fa:2a:5b:98
+LDCDS5300A1	71	SAN1	A1-71--TAPRVIO81-1	taprvio81	10:00:00:90:fa:2a:5a:e2
+LDCDS5300B1	71	SAN1	B1-71--TAPRVIO81-2	taprvio81	10:00:00:90:fa:2a:54:24</code>
+  * List the WWNs logged in and make sure that the WWNs Unix team sent out are all logged in. xeerdb99 as an example<code>c0507606cf0c0008
+c0507606cf0c000a
+c0507606cf0c000c
+c0507606cf0c000e</code>
+    * Fabric A<code>ldcds5300a1:admin> portloginshow 14
+Type  PID     World Wide Name        credit df_sz cos
+=====================================================
+  fe  010e03 c0:50:76:06:cf:0c:00:09    40  2048   c  scr=0x3
+  fe  010e02 c0:50:76:06:cf:0c:00:08    40  2048   c  scr=0x3
+  fe  010e01 c0:50:76:06:cf:0c:00:00    40  2048   c  scr=0x3
+  fe  010e00 10:00:00:90:fa:2a:55:bc    40  2048   c  scr=0x3
+  ff  010e01  c0:50:76:06:cf:0c:00:00    12  2048   c  d_id=FFFFFC
+  ff  010e00  10:00:00:90:fa:2a:55:bc    12  2048   c  d_id=FFFFFC</code>
+    * Fabric B<code>ldcds5300b1:admin> portloginshow 14
+Type  PID     World Wide Name        credit df_sz cos
+=====================================================
+  fe  0b0e03 c0:50:76:06:cf:0c:00:0b    40  2048   c  scr=0x3
+  fe  0b0e02 c0:50:76:06:cf:0c:00:0a    40  2048   c  scr=0x3
+  fe  0b0e01 c0:50:76:06:cf:0c:00:02    40  2048   c  scr=0x3
+  fe  0b0e00 10:00:00:90:fa:2a:5b:98    40  2048   c  scr=0x3
+  ff  0b0e01  c0:50:76:06:cf:0c:00:02    12  2048   c  d_id=FFFFFC
+  ff  0b0e00  10:00:00:90:fa:2a:5b:98    12  2048   c  d_id=FFFFFC</code>
+  * Once we are sure the WWNs are logged in, register them.
+    * Fabric A<code>alicreate "xeerdb99_0c0008","c0:50:76:06:cf:0c:00:08"
+alicreate "xeerdb99_0c000e","c0:50:76:06:cf:0c:00:0e"</code>
+    * Fabric B<code>alicreate "xeerdb99_0c000a","c0:50:76:06:cf:0c:00:0a"
+alicreate "xeerdb99_0c000c","c0:50:76:06:cf:0c:00:0c"</code>
+
+**On NPIV systems, for now, zone two initiators to one FA. i.e. Fab A and B will have two HBAs each logged in. Zone the two HBAs to one FA connected to the switch.**
+
+Follow the below mentioned procedure to finish rest of the steps.
+
+===== Example - zoning taprvio5 to VMAX ( 2H0_3H0_PG ) =====
+
+  * Fabric A zoning - taprvio5 to 2H0
+    - Login to Fabric A principal switch<code>ssh admin@ldcds5300a1</code>
+    - Create zones<code>zonecreate "taprvio5_09a119__vmax_0301_2h0","taprvio5_09a119;vmax_0301_2h0"</code>
+    - Add the zone to config<code>cfgadd "fab_a_act_config","taprvio5_09a119__vmax_0301_2h0"</code>
+    - Save and enable the config<code>cfgsave
+cfgenable "fab_a_act_config"</code>
+  * Fabric B zoning - taprvio5 to 3H0
+    - Login to Fabric B principal switch<code>ssh admin@ldcds5300b1</code>
+    - Create zones<code>zonecreate "taprvio5_2ab012__vmax_0301_3h0","taprvio5_2ab012;vmax_0301_3h0"</code>
+    - Add the zone to config<code>cfgadd "fab_b_act_config","taprvio5_2ab012__vmax_0301_3h0"</code>
+    - Save and enable the config<code>cfgsave
+cfgenable "fab_b_act_config"</code>

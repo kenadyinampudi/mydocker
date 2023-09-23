@@ -1,0 +1,48 @@
+====== Figure out DMX4 storage allocation ======
+
+===== Assumptions =====
+
+  * The following method is for meta volumes ( that is all we use in the opensystems )
+  * DMX4 is connected to AIX/VIOS systems only.
+
+
+===== How ? ======
+
+  - Login to taitc118<code>mv dmx4 dmx4.$(date +%m%d%Y)
+mkdir -p dmx4/lsvpcfg dmx4/directors dmx4/viosmaps
+cd dmx4</code>
+  - Get lsvpcfg from all AIX servers. Loop through all servers<code>for host in $(cat /prod/images/etc/allhosts.tenneco.aix )
+do
+   echo "Collecting SAN disks information from ${host} "
+   ssh ${host} "sudo /usr/local/scripts/lsvpcfg.sh" > lsvpcfg/${host}.lsvpcfg.out
+done</code>
+  - Get VIOS maps<code>mkdir viosmaps</code>Then<code>for host in taprvio60 taprvio50 taprvio20 taprvio30 taprvio40 taprvio90
+do
+   echo "Working on ${host} "
+   ssh ${host} "sudo /usr/local/scripts/lsdiskcfg" > viosmaps/${host}.lsdiskcfg.out
+done</code>
+  - Get a list of all meta volumes<code>sudo symdev -sid 39 list  -meta | grep Striped |sed "s;/dev/rhdisk;/dev/rhdisk ;g" | awk '{print $1":"$4":"$NF}' > alldmx4devs.meta</code>
+  - Get a list of all devices mapped to FAs<code>mkdir directors</code>Loop through all FAs<code>for fa in $(sudo symcfg -sid 39 -fa all list | grep FA | awk '{print $1}' | sed "s;FA-;;g" )
+do
+   for port in 0 1
+   do
+      echo "Collecting details for ${fa}-${port} "
+      sudo symcfg list -sid 39 -FA ${fa} -P ${port} -addr -avail | grep "(M)" |  awk '{print $1}' > directors/${fa}-${port}.devs
+   done
+done</code>
+  - Prepare the report<code>for dev in $(awk -F: '{print $1}' alldmx4devs.meta)
+do
+   type=$(grep -w ${dev} alldmx4devs.meta | awk -F: '{print $2}')
+   size=$(grep -w ${dev} alldmx4devs.meta | awk -F: '{print $3}')
+   port=$(grep -w ${dev} directors/* | awk -F/ '{print $2}' | awk -F"." '{print $1}' | tr "\n" " ")
+   host=$(grep -w ${dev} lsvpcfg/* |grep ":000190103339:" | awk -F/ '{print $2}' | awk -F"." '{print $1}' | tr "\n" " " )
+   echo "${host}" | grep -q vio
+   if [ ${?} -eq 0 ]
+   then
+      vios1=$(echo ${host} | tr " " "\n" | grep vio | head -1)
+      guest=$(grep "000190103339:${dev}" viosmaps/${vios1}.lsdiskcfg.out | awk -F: '{print $3}')
+   else
+      guest="N/A"
+   fi
+   echo "${dev}:${type}:${size}:${host}:${guest}:${port}"
+done</code>

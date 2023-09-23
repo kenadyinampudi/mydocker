@@ -1,0 +1,52 @@
+
+<h1 class="sectionedit1" id="north_america_-_lincolnshire_disaster_recovery_test_-_2018_--_destroy_aix_server_s_data">North America - Lincolnshire Disaster Recovery test - 2018 -- Destroy AIX server&#039;s data</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to the server you wish to destroy<a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a></div>
+</li>
+<li class="level1"><div class="li"> Shutdown/kill applications<a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a><pre class="code">ps -ef | egrep &quot;sap|ora|unispool|edi&quot; | grep -v grep | awk &#039;{print $2}&#039; | xargs -n5 kill -9</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount all fileystems<a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a><pre class="code">for fs in $(lsvg | grep -v rootvg | xargs -n1 lsvg -l | grep -w jfs2 | grep open | awk &#039;{print $NF}&#039; | sort -r )
+do
+   echo &quot;Working on ${fs} &quot;
+   umount ${fs}
+   if [ ${?} -ne 0 ]
+   then
+      fuser -kuc ${fs}
+      umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         echo &quot;Check Whats wrong with ${fs} &quot;
+         return 1
+      fi
+   fi
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export the VGs<a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a><pre class="code">lsvg | grep -v rootvg | xargs -n1 varyoffvg
+lsvg | grep -v rootvg | xargs -n1 exportvg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the destruction script<a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a><pre class="code">echo &quot;&quot; &gt; /root/destroy.sh
+for disk in $(lspv | sort -k3 | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot;)
+do
+   echo date &gt;&gt; /root/destroy.sh
+   echo &quot;Destroying ${disk} ...&quot; &gt;&gt; /root/destroy.sh
+   echo &quot;dd if=/dev/zero of=/dev/r${disk} bs=4k count=50000&quot; &gt;&gt; /root/destroy.sh
+done
+for lv in $(lsvg -l rootvg | grep jfs2 | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot;)
+do
+   echo date &gt;&gt; /root/destroy.sh
+   echo &quot;dd if=/dev/zero of=/dev/r${lv} bs=4k count=50000&quot; &gt;&gt; /root/destroy.sh
+   echo &quot;Destroying ${lv} ...&quot; &gt;&gt; /root/destroy.sh
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Execute destruction<a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a><a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a><a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a><a href="/lib/exe/detail.php?id=dr%3Adestroydrdata-2018&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" title="Are you sure ??" alt="Are you sure ??" width="100" /></a><pre class="code">chmod 755  /root/destroy.sh
+nohup /root/destroy.sh &amp; </pre>
+</div>
+</li>
+</ol>
+
+</div>

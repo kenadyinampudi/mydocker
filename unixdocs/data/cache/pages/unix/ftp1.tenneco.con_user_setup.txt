@@ -1,0 +1,38 @@
+====== FTP1.TENNECO.COM User Setup ======   
+   After Entitlement creates the user id on the server thwy will send the UNIX Team a ticket to alow the user id FTP access to the server. 
+   Make the following changes to the user id substitute actual user name and uid where applicable 
+   
+   Check the ticket for a Preferred Password. If one is present set the password to that password. 
+   If no prefered password is documented, create a complex password and document it so it can be sent to the user. 
+   
+ 
+    - Change the user shell from /usr/bin/ksh to /usr/sbin/sftp-server <code> sudo chuser shell='/usr/sbin/sftp-server' {user login here} </code> 
+    - Change the users home directory from /home/user to /prod/ftp/user <code> sudo chuser home='/prod/ftp/{user login here}' {user login here} </code>
+    - Change the users rlogin to false <code>sudo  chuser rlogin='false' <user login here> </code>
+    - Set the users password with specified/ requested on one you have generated and documented <code> sudo passwd {user login here}</code>
+    - Set Password to not request change at first login <code>sudo  pwdadm -c {user login here}</code>
+    - Set the password to not expire <code> sudo chuser maxage=0 {user login here) </code>
+      
+   Add a group that is unique to this user. 
+    - Get the users UID from /etc/password <code> sudo  grep {user name} /etc/passwd | awk -F: '{print $3}' </code>
+    - Set so user can only see his own data <code> sudo  mkgroup -'A' id='{UID from step above}' users='{user login here}' {user login here} </code><code> sudo chuser pgrp='{user login here}' {user login here}</code> <code> sudo chuser groups='{user login here}' {user login here} </code>
+    - Move the users home directory to /prod/ftp <code> cd /prod/ftp </code> <code> sudo mv /home/{user login here} . </code>
+    - Set the users ownership and group permissions <code> sudo chown {user login here}:{user login here} {user login here} </code>
+    - Set the permissions so others can not see or cd to user <code>sudo chmod 700 {user login here} </code>
+   
+   Edit the /etc/ftpusers file and remove the user from the file. <code> sudo vi /etc/ftpusers </code> Delete the users ID and save the file.
+   
+   Modify ssh config file to further harden the user id and server Add the user to the appropirate stanza in /etc/ssh/sshd_config 
+    - Create a backup copy of sshd_config  where .yn = your initials 
+<code> cd /etc/ssh </code> <code> sudo  cp -p  sshd_config sshd_config-$(date +%Y%m%d-%H:%M:%S).yn </code>
+<code> sudo vi sshd_config </code> Add the username to the end of the stanza "Example of overriding settings on a per-user basis"
+    - Save the file and restart the ssh daemon so the change takes effect <code> sudo kill -HUP $(lssrc -a |grep sshd | awk '{print $3}')</code>
+
+   Now test the user id with FileZilla from your pc to insure that the user can access the server as requested. 
+   Attach a screen shot of the access from your pc to the ticket as proof of access to the server. 
+
+
+   
+
+   
+  

@@ -1,0 +1,69 @@
+  - The change is to start on Thursday  07/25/2013at 5:30 PM CDT - after the change the host will be migrated to vio40/41 cluster
+  - On Monday 22 July 2013 Kapil to present 134Gig LUNs to the following WWN's:
+    - Network Address.............10000000C94EE877
+    - Network Address.............10000000C94E0532
+  - On Thursday 25 July , Chris to unmirror the rootvg and perform alt_disk_copy<code>unmirrorvg rootvg hdisk3</code><code>alt_disk_copy -d <134gig_hdiskpower></code><code>bootlist -m normal hdiskpower0</code><code>mirrorvg rootvg hdisk5</code><code>bosboot -ad hdisk5</code><code>powermt remove dev=134gighdiskpower</code><code>rmdev -dl 134gighdiskpower; rmdev -dl hdiskxx; rmdev -dl hdiskxx;</code>
+  - On Thursday, July 25 Kapil to move 134gighdiskpower to vio40/41 cluster together with another 1324gig LUN from taitc184 server
+  - On Thursday, July 25, Chris to assign both LUN's to vhost9 adapter on vio40/41<code>chdev -l hdiskxx -a reserve_policy=no_reserve</code><code>chdev -l hdiskxxx -a pv=yes</code>
+  - As padmin do on vio40/41:<code>mkvdev -vdev hdisk -vadapter vhost9</code>
+  - On Thursday, July 25  @ 5:30PM, Raja will shutdown SAP on tndv3d01.
+  - On Thursday , July 25 @ 5:40 PM, Chris will unmount, varryoff and export all non-rootvg volume groups:<code>lsvg | grep -v rootvg | while read line
+do
+lsvg -l $line | awk '{print "umount "$7}' | sort -r >> umount.sh
+done
+varyoffvg zycusvg
+varyoffvg dwvg01
+
+export zycusvg
+export dwvg01
+
+for i in hdiskpower0 hdiskpower1 hdiskpower31 hdiskpower32 hdiskpower33 hdiskpower34 hdiskpower35 hdiskpower36 hdiskpower37 hdiskpower38 hdiskpower39 hdiskpower40 hdiskpower41 hdiskpower43 hdiskpower43 hdiskpower44 hdiskpower45 hdiskpower46 hdiskpower47 hdiskpower48 hdiskpower49 hdiskpower50 hdiskpower51 hdiskpower52 hdiskpower53  
+do
+powermt display dev=$i | grep fscs | awk '{print "rmdev -dl "$3}' >> rm-hdisk.sh
+done
+
+for i in hdiskpower0 hdiskpower1 hdiskpower31 hdiskpower32 hdiskpower33 hdiskpower34 hdiskpower35 hdiskpower36 hdiskpower37 hdiskpower38 hdiskpower39 hdiskpower40 hdiskpower41 hdiskpower43 hdiskpower43 hdiskpower44 hdiskpower45 hdiskpower46 hdiskpower47 hdiskpower48 hdiskpower49 hdiskpower50 hdiskpower51 hdiskpower52 hdiskpower53  
+do
+powermt remove dev=$i
+rmdev -dl $i
+done
+
+sh ./rm-hdisk.sh
+</code> 
+  - On Thursday July 25 @ 5:30PM, Kapil to swing the following LUN's from old tnpr3d01 to vio40/41 cluster:<code>Disk:PVID:SYM ID:LUN:SIZE:PATHS:VG/VGID
+  - hdiskpower0:none:000198700301:0885:138097:hdisk6:hdisk97:
+hdiskpower1:none:000198700301:0886:138097:hdisk7:hdisk98:
+hdiskpower31:00cb962f2eb5fdd2:000198700301:1100:34526:hdisk72:hdisk82:zycusvg
+hdiskpower32:00cb962f2ee3a325:000198700301:1101:34526:hdisk73:hdisk83:dwvg01
+hdiskpower33:00cb962f2ee74b6f:000198700301:0F42:34526:hdisk105:hdisk74:dwvg01
+hdiskpower34:00cb962f2eeb19d0:000198700301:0F43:34526:hdisk106:hdisk75:dwvg01
+hdiskpower35:00cb962f2eeee2de:000198700301:0F44:34526:hdisk107:hdisk76:dwvg01
+hdiskpower36:00cb962f2ee3c087:000198700301:0F45:34526:hdisk108:hdisk77:dwvg01
+hdiskpower37:00cb962f2ee7d4d2:000198700301:0F46:34526:hdisk109:hdisk78:dwvg01
+hdiskpower38:00cb962f2eec3b68:000198700301:0F47:34526:hdisk110:hdisk79:dwvg01
+hdiskpower39:00cb962f2ee1428c:000198700301:0F48:34526:hdisk111:hdisk80:dwvg01
+hdiskpower40:00cb962f2ee52e6f:000198700301:0F49:34526:hdisk112:hdisk81:dwvg01
+hdiskpower41:00cb962f2eea1a7b:000198700301:0F4A:34526:hdisk113:hdisk84:dwvg01
+hdiskpower42:00cb962f3247fea4:000198700301:0F4B:34526:hdisk114:hdisk85:dwvg01
+hdiskpower43:00cb962f324ba036:000198700301:0F4C:34526:hdisk115:hdisk86:dwvg01
+hdiskpower44:00cb962f32417388:000198700301:0F4D:34526:hdisk116:hdisk87:dwvg01
+hdiskpower45:00cb962f3243f341:000198700301:0F4E:34526:hdisk117:hdisk88:dwvg01
+hdiskpower46:00cb962f324b4163:000198700301:0F4F:34526:hdisk118:hdisk89:dwvg01
+hdiskpower47:00cb962f324350c0:000198700301:0F50:34526:hdisk119:hdisk90:dwvg01
+hdiskpower48:00cb962f324b0654:000198700301:0F51:34526:hdisk120:hdisk91:dwvg01
+hdiskpower49:00cb962f32464b25:000198700301:0F52:34526:hdisk121:hdisk92:dwvg01
+hdiskpower50:00cb962f323f4322:000198700301:0F53:34526:hdisk122:hdisk93:dwvg01
+hdiskpower51:00cb962f3246ae0d:000198700301:0F54:34526:hdisk123:hdisk94:dwvg01
+hdiskpower52:00cb962f36a3bd5e:000198700301:0F55:34526:hdisk124:hdisk95:dwvg01
+hdiskpower53:00cb962f36a77f75:000198700301:0F56:34526:hdisk125:hdisk96:dwvg01</code>
+    - Unmask the devices from tnpr3d01's HBAs
+    - Map the devices to the new FAs
+    - Mask the above LUNs to vio40 and 41
+    - Refresh the directors.
+  - On Thurdsay, July 25 @ 6:30 PM, Chris to change reserve_lock to no on the above devices on vio40/41.<code>for i in <hdisk list> do
+  - chdev -l $i -a reserve_policy=no_reserve
+  - done</code>
+  - On Thursday July 25 22 @ 6:30PM, chris as padmin to present the devices to vhost9 on vio40/41.<code>for i in <hdisk list>do
+mkvdev -vdev $i -vadapter vhost9
+done</code>
+  -On Thursday July 25, @ 6:30PM, Robert to start new tnpr3d01 as vio40/41 guest OS.

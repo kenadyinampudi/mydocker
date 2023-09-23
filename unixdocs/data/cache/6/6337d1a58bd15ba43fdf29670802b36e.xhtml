@@ -1,0 +1,35 @@
+
+<h1 class="sectionedit1" id="fix_usr_sap_c11_sum_on_deerap99">FIX /usr/sap/C11/SUM on deerap99</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Unmount and rename current fiel system to OLD</div>
+</li>
+</ol>
+<pre class="code">sudo unmount /usr/sap/C11/SUM </pre>
+<pre class="code">sudo chfs -A yes -m /OLD/usr/sap/C11/SUM /usr/sap/C11/SUM </pre>
+<pre class="code">sudo mount /OLD/usr/sap/C11/SUM </pre>
+<ol>
+<li class="level1"><div class="li"> Create NEW file system</div>
+</li>
+</ol>
+<pre class="code">sudo mkdir -p /NEW/usr/sap/C11/SUM </pre>
+<pre class="code">sudo chown root:system /NEW/usr/sap/C11/SUM </pre>
+<pre class="code">sudo chmod 755 /NEW/usr/sap/C11/SUM </pre>
+<pre class="code">sudo crfs -g nfsvg01 -A yes -v jfs2 -m /NEW/usr/sap/C11/SUM -a size=20971520 </pre>
+<pre class="code">sudo mount /NEW/usr/sap/C11/SUM </pre>
+<pre class="code">sudo chown c11adm:sapsys /NEW/usr/sap/C11/SUM </pre>
+<pre class="code">sudo chmod 755 /NEW/usr/sap/C11/SUM </pre>
+<ol>
+<li class="level1"><div class="li"> COPY OLD to NEW</div>
+</li>
+</ol>
+<pre class="code">sudo rsync -axvv /OLD/usr/sap/C11/SUM/ /NEW/usr/sap/C11/SUM/ &gt; thread1.log 2&gt;&amp;1 </pre>
+<ol>
+<li class="level1"><div class="li"> Unmount and rename NEW</div>
+</li>
+</ol>
+<pre class="code">sudo unmount /NEW/usr/sap/C11/SUM </pre>
+<pre class="code">sudo chfs -A yes -m /usr/sap/C11/SUM /NEW/usr/sap/C11/SUM </pre>
+<pre class="code">sudo mount /usr/sap/C11/SUM </pre>
+
+</div>

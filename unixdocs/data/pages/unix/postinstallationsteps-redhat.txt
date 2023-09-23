@@ -1,0 +1,69 @@
+====== Redhat Server Post installation work ======
+
+==== Steps from the server that is being built ====
+
+  - Login to the ADMIN server
+    - For DRiV or MP/PS<code>ssh pcdcunxaxap01</code>
+    - For Tenneco or CA/PT<code>ssh pgnmsv01</code>
+  - Login to the server (as root) you just built<code>sudo ssh <hostname></code>
+  - [[unix:setupresolv.conf|A basic North American resolv.conf is installed, for specific sites in NA and EU, please click the link]]
+  - [[unix:timezone|Setup correct timezone for servers please click the link]]
+  - [[unix:setupntp&#redhat|For NA servers NTP is already configured, for European servers please click the link]]
+  - [[unix:createinformationfile&#linux|Update the information file]]
+
+==== Steps from the Master server ====
+
+  - Login to management server
+    - For Driv or MP/PS - pcdcunxaxap01<code>ssh pcdcunxaxap01</code>__OR__
+    - For Tenneco or CA/PT - pgnmsv01<code>ssh pgnmsv01</code>
+  - Only do followng on NEW BUILD  if not sure STOP !!! contact Chris Stachowiak
+  - Copy SSH keys, sudoers (add servername to Host_Alias BKPSRVR) and such<code>sudo vi /prod/images/etc/sudoers
+sudo /prod/images/scripts/config_tenneco_linux <servername></code>
+  - Add the system to Ansible Provisioning tool. Follow the link [[kennedy:manage-hosts-ansible|Managing Hosts in Ansible provisioning tool]]
+  - Copy the rapid7 agent file.  Rapid 7 agent can be installed after updating to latest RHEL7 <code>sudo scp /prod/images/rapid7-agent/agent_installer.sh <servername>:/tmp</code>
+  - [[unix:lpar2rrd-os-agent&#installing_lpar2rrd_agent_-_rhel|~~Setup lpar2rrd agent - no longer needed~~]]
+  - Send ticket for netbackup
+  - [[unix:post_installation_steps_dell_server|For Dell hardware - additional steps are ~~no longer needed~~ -- Click here]]
+  - Create [[https://onetenneco.service-now.com/sp?id=sc_cat_item&sys_id=3ad014c9dbe353407785d12c5e9619d0&sysparm_category=ed1dd647db3a909079a6a07c13961985&catalog_id=e0d08b13c3330100c8b837659bba8fb4|ticket]] to the monitoring team. According to the new process, this doesn't cover Service NOW discovery.  Make sure to request them to be kept muted.  Once Application team completes the built, they should notify the monitoring team/unix team to unmute the alerts.  **No longer needed, but remember to request the team in the change task to keep it muted**
+  - Create [[https://onetenneco.service-now.com/sp?id=sc_cat_item&sys_id=5de49a51dba11f807785d12c5e9619f5|a ticket]] to discover the CI in CMDB - **No longer needed, as the Std Change template now has a Change task created automatically**
+  - Send a ticket to "GIOS Operations - Entitlement" to add the systems.
+  - [[unix:postinstallationsteps-redhat-sap|For SAP servers - additional steps are needed -- Click here]]
+  - [[unix:postinstallationsteps-redhat-OMI|For OMI servers - additional steps are needed -- Click here]]
+  - [[unix:postinstallationsteps-redhat-Network|For Network Monitoring servers - additional steps are needed -- Click here]]
+  - [[unix:postinstallationsteps-redhat-splunk|For Security servers - additional steps are needed -- Click here]]
+  - [[unix:postinstallationsteps-redhat-hpcc|For HPCC nodes for Engineering team - additional steps are needed -- Click here]]
+  - Shutdown the VM<code>ssh ${server_tenneco}</code>Shutdown<code>sudo init 0</code>
+  - Remove the installation CDROM
+    - On VMWARE based systems<code>Edit settings on the vSphere client and remove the isofile mapping to Virtual CDROM
+Make it client device</code>Once done --> Power on the VM
+    - On standalone NBU home made appliances<code>ssh LAN@${server_tenneco}rmb</code>Eject the CDROM<code>vm cdrom eject
+OR 
+racadm remoteimage -d</code>Exit from iLO<code>exit</code>
+  - [[unix:rhelpatching-072022|Click here to patch to the latest level RHEL7]]
+  - **Contact Jinu - jinu.sureshbabu@driv.com before proceeding with the next steps. This is to upgrade to RHEL8**
+  - [[unix:ansibleinstall|Systems that needs ansible - Install ansible]]
+  - [[unix:postinstallationsteps-redhat-NBU|For Netbackup home made appliances - additional steps are needed -- Click here]]
+  - Install RAPID 7 Agent on the server.<code>[ $(grep domain /etc/resolv.conf |awk '{print $2}') == 'driv.com' ] && \
+sudo /tmp/agent_installer.sh install_start --token us:c58ccdc4-7f37-44ba-b13f-ede6b9decc76 || \
+sudo /tmp/agent_installer.sh install_start --token  us:c58ccdc4-7f37-44ba-b13f-ede6b9decc76
+
+sudo rm /tmp/agent_installer.sh</code>
+  - On physical systems directly connected to SAN storage arrays iSCSI or FC, please install multipath
+    - Install<code>sudo yum -y install device-mapper-multipath</code>
+    - Configure basic failover and enable multipath daemon<code>sudo mpathconf --enable --with_multipathd y</code>
+  - After the installation check the kickstart logs to make sure there were no errors<code>sudo more /root/ks-pre.log
+sudo more /root/ks-post.log</code>
+  - Fix the messed up /etc/hosts file until a permanent fix is in place
+    - Change this<code>x1kxk630 on plonbuhmams:/home/x1kxk630 $ cat /etc/hosts
+127.0.0.1       localhost
+10.5.128.150
+fe80::e63d:1aff:fe53:a2b2      plonbuhmams</code>To<code>x1kxk630 on plonbuhmams:/home/x1kxk630 $ cat /etc/hosts
+127.0.0.1       localhost
+10.5.128.150    plonbuhmams</code>
+  - In one or two days after the server is added to monitoring, the snowscan will crawl and discover the new CIs.  
+    - CI should be related to the change ticket before the change ticket is closed.  Typically, the CIs are in uppercase with shortname (and not FQDN) and is different from a DNS CI record. 
+    - Update the CI with missing information (most details are captured automatically).  Make sure all the mandatory parameters are filled, and especially the following ones.
+      - Environment & Criticality in Category/Class
+      - Owned By, Managed By, Assignment Group, Support Group, DR Solution in Ownership/Support
+    - If CI is not visible in Service Now, log a ticket with the Monitoring team to rediscover the CI
+  - If the site is new, add the details to [[unix:localcontacts]]

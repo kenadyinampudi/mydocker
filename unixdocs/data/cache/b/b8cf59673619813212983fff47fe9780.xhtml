@@ -1,0 +1,39 @@
+
+<h1 class="sectionedit1" id="enable_epel_repository_for_systems">Enable EPEL repository for systems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Enable locally hosted EPEL 7 repository<pre class="code">sudo vi /etc/yum.repos.d/localepel.repo</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">[local-epel7]
+name=local-epel7
+baseurl=http://pablsv02/sources/05-18-2018/epel7/epel/
+enabled=1
+gpgcheck=0
+proxy=_none_</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Downloading EPEL repository. Document this <pre class="code">x1kxk630 on pablsv02:/home/x1kxk630 $ sudo reposync -p /var/www/html/sources/05-18-2018/epel7 -r epel -l
+x1kxk630 on pablsv02:/home/x1kxk630 $ sudo ls -l /var/www/html/sources/05-18-2018/epel7
+total 4
+drwxr-xr-x 3 root root 4096 May 18 14:33 epel
+x1kxk630 on pablsv02:/home/x1kxk630 $ sudo ls -l /var/www/html/sources/05-18-2018/epel7/epel
+total 4
+drwxr-xr-x 32 root root 4096 May 18 14:33 Packages
+x1kxk630 on pablsv02:/home/x1kxk630 $ sudo createrepo /var/www/html/sources/05-18-2018/epel7/epel
+Spawning worker 0 with 12542 pkgs
+Workers Finished
+Saving Primary metadata
+Saving file lists metadata
+Saving other metadata
+Generating sqlite DBs
+Sqlite DBs complete</pre>
+</div>
+</li>
+</ol>
+
+</div>

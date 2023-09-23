@@ -1,0 +1,27 @@
+
+<h2 class="sectionedit1" id="install_fm-aix_sysinter">install FM-AIX sysinter</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li">Define the function<pre class="code">function fm_sysinter {
+sudo mkdir -p /usr/local/scripts
+sudo mkdir -p /usr/local/bin
+sudo tar -xvf HULS.tar
+sudo cp -p /home/x1cxs952/HOLD-SYSINTER/sysinter.aix5 /usr/local/bin/sysinter.aix5
+sudo chown root:system /usr/local/bin/sysinter.aix5
+sudo cp -p /etc/services /etc/services-$(date +%Y%m%d-%H:%M:%S).cs
+echo &quot;sysinter                40035/tcp&quot; | sudo tee -a /etc/services
+sudo cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y%m%d-%H:%M:%S).cs
+echo &quot;sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5&quot; | sudo tee -a /etc/inetd.conf
+sudo refresh -s inetd
+exit
+}</pre>
+</div>
+</li>
+<li class="level1"><div class="li">Execute the function<pre class="code">fm_sysinter</pre>
+</div>
+</li>
+</ol>
+<pre class="code">sudo ssh pcdcunxlxap03 &quot;echo ${server_driv} &gt;&gt; /home/oracle/uuma/hosts.txt&quot; </pre>
+
+</div>
+<!-- EDIT1 SECTION "install FM-AIX sysinter" [2-] -->

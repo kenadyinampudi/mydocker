@@ -1,0 +1,43 @@
+**To remove NetBackup from AIX servers**
+  -  Log on as the root user on the server or the client.
+  - If the NetBackup Administration Console is open, you must close it now. Of course the one from client... most likely not the case...
+  - Stop the NetBackup/Media Manager daemons with the following command:<code>/usr/openv/netbackup/bin/bp.kill_all</code>
+  - Identify any installed add-on products by using the following command:<code> lslpp -L |grep -e VRTS -e SYMC</code>
+  - Seven add-on products can be installed on servers and clients. They are: VRTSfrnb (Applies only to servers) VRTSfrnbclt VRTSjanb (Applies only to servers) VRTSjanbclt VRTSzhnb (Applies only to servers) VRTSzhnbclt VRTSnbsds (Applies only to servers) Remove any **add-on products** found.<code>installp -u 'what was found'</code>
+  - To unregister NetBackup from the VxUL master configuration that is stored in the /etc/vx/vrtslog.conf file, run the following command:<code>/usr/openv/netbackup/bin/vxlogcfg -r -p 51216</code>The -p option specifies the product ID, which is 51216 for NetBackup.
+  - To unregister all NetBackup products with LiveUpdate, enter the following command:<code>/usr/openv/netbackup/bin/nblu_registration -r</code>
+  - Remove the NetBackup-Java Display Console by using the appropriate native command as follows:<code>installp -u VRTSnbjava</code> or <code>installp -u SYMCnbjava</code> if client is pre 8 family.
+  - Remove the NetBackup Java Runtime Environment by using the appropriate native command as follows:<code>installp -u VRTSnbjre</code> or <code>installp -u SYMCnbjre</code> if client is pre 8 family.
+  - Remove the NetBackup client by using the appropriate native command as follows:<code>installp -u VRTSnbclt</code>or <code>installp -u SYMCnbclnt</code> if client is pre 8 family.
+  - Remove PBX with the appropriate native command as follows: Note: Remember, you should not remove PBX if your server uses other Veritas software products that require PBX to run.<code>installp -u VRTSpbx</code>
+  - Remove the following startup scripts:<code>rm -f /etc/rc.netbackup.aix</code>
+  - For AIX systems only: In the /etc/inittab file, remove the following NetBackup entry: /etc/rc.netbackup.aix In the /etc/rc.shutdown file, remove the following line: /etc/rc.netbackup.aix stop
+  - Remove the LiveUpdate components as follows: Removing NetBackup server and client software: First, examine the following file to see if NetBackup is the only product that uses LiveUpdate:<code>cat /etc/Product.Catalog.JavaLiveUpdate</code>
+  - If NetBackup is the only product that currently uses LiveUpdate, run the following command:<code>/opt/Symantec/LiveUpdate/uninstall.sh -a</code>
+  - If LiveUpdate is the only product installed in the /opt/Symantec directory, remove the following files:<code>rm -f /etc/Symantec.conf</code>Note: Before you remove the following product catalog file, make sure that it is empty. The empty file size is equal to 0 bytes. If the product catalog file is not empty, do not remove it because other products still require it.<code>rm -f /etc/Product.Catalog.JavaLiveUpdate</code>
+  - To remove the NetBackup-Java application state data for the root account, run the appropriate command as follows: Warning: Do not insert a space between the slash character (/) and the period or the dot character (.) of /.veritas. A space between these characters removes all of your files from the root level and beyond. To remove the NetBackup-Java application state data for the root account for all releases, run the following command: <code>/bin/rm -rf /.veritas</code>
+  - To remove the NetBackup-Java application state data for the root account for a specific release, run the following command:<code>/bin/rm -rf /.veritas/java/<version></code> Where <version> is the six-digit NetBackup version number. For example, NetBackup version 7.7 with no upgrades applied would be entered as 770000.
+  - Inform NetBackup-Java users that they can remove their $HOME/.veritas directory. The $HOME/.veritas and the $HOME/.veritas/java directories contain application state information, that is saved when the user exits NetBackup-Java applications. The saved information includes table column order and size. The process removes this directory for the root user only. The common subdirectory in $HOME/.veritas/java/.userPrefs/vrts can be removed
+  - Check if all programs were removed<code>lslpp -L |grep VRTS</code>
+  - The /usr/openv filesystem can be destroyed and space taken back - or renamed for Actifio software needs.
+  - All in one go<code>sudo /usr/openv/netbackup/bin/bp.kill_all
+lslpp -L |grep -e VRTS -e SYMC
+sudo /usr/openv/netbackup/bin/vxlogcfg -r -p 51216
+sudo /usr/openv/netbackup/bin/nblu_registration -r
+sudo installp -u VRTSnbjava
+sudo installp -u VRTSnbjre
+sudo installp -u VRTSnbcfg
+sudo installp -u VRTSnbjre
+sudo installp -u VRTSnbclt
+sudo installp -u VRTSpbx
+sudo rm -f /etc/rc.netbackup.aix
+cat /etc/Product.Catalog.JavaLiveUpdate
+sudo /opt/Symantec/LiveUpdate/uninstall.sh -a
+sudo rm -f /etc/Symantec.conf
+sudo rm -f /etc/Product.Catalog.JavaLiveUpdate
+lslpp -L |grep VRTS
+sudo installp -u VRTSpddea
+sudo installp -u VRTSpddes
+sudo installp -u VRTSnetbp
+sudo installp -u VRTSnbpck
+sudo installp -u VRTSicsco</code>

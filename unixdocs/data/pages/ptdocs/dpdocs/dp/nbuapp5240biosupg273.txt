@@ -1,0 +1,86 @@
+In order to upgrade BIOS on NBU 5240 appliance running **NBU 2.7.3** version follow below steps:
+
+1) On the appliance create a folder called  /tmp/bios_upgrade , run this    
+<code>mkdir /tmp/bios_upgrade</code>
+
+2)Copy/Download the zipped file S2600WT_SFUP_BIOS01010022_ME030103043_BMC0150r10802_FRUSDR117.zip to the NBU appliance here /tmp/bios_upgrade 
+
+Two options to achieve this 
+
+a) Files to be copied available at \\taitc009\e$\DataPres_share\BIOS\NBU_5240_273_BIOS_File
+
+b) Moreover you can check with Veritas CE, is this the latest one, if not they will give you the latest one, then you download and move it   to /tmp/bios_upgrade on the respective appliance, use this procedure to copy files [[dpdocs:dp:nbucopying|from here]]
+
+3) Elevate to CLISH
+
+4) Unzip the file S2600WT_SFUP_BIOS01010022_ME030103043_BMC0150r10802_FRUSDR117.zip 
+
+<code>unzip /tmp/bios_upgrade/S2600WT_SFUP_BIOS01010022_ME030103043_BMC0150r10802_FRUSDR117.zip</code>
+
+5) Change the working directory to where you unzipped the downloaded BIOS file S2600WT_SFUP_BIOS01010022_ME030103043_BMC0150r10802_FRUSDR117 
+
+<code>cd /tmp/bios_upgrade/S2600WT_SFUP_BIOS01010022_ME030103043_BMC0150r10802_FRUSDR117</code>
+
+6) Run the following command, “sh bios_update_5x40.sh”.
+
+<code>/tmp/bios_upgrade/S2600WT_SFUP_BIOS01010022_ME030103043_BMC0150r10802_FRUSDR117 # sh bios_update_5x40.sh</code>
+
+Output is like that 
+
+########################### BIOS BMC Update #######################
+
+The Latest BIOS and BMC version is:
+
+Primary BIOS Version:.. SE5C610.86B.01.01.0022.062820171903
+Op Code:........... 1.50.10802
+
+Checking for BIOS and BMC Version
+
+Current BIOS and BMC version on the system is:
+
+Primary BIOS Version:.. SE5C610.86B.01.01.0015.012820160943
+Op Code:........... 1.41.9579
+
+########################### UPDATING BIOS ###############################
+
+One Boot Flash Update Utility Version 13.1 Build 9
+Copyright (c) 2015 Intel Corporation
+
+Update file Configuration: XXX  S2600WTTS1R:S2600WT2R:S2600WTTR:S2600WT2:S2600WTT:S2600WT,1.0
+
+7) Once the update completes ,reboot the system.  The system would be powered off, and use IPMI web GUI to monitor the appliance.
+
+<code>reboot</code>
+
+8) Wait until the system boots up, and go to the BIOS folder again. 
+
+<code>/tmp/bios_upgrade/S2600WT_SFUP_BIOS01010022_ME030103043_BMC0150r10802_FRUSDR117</code>
+
+9) Run the following command, “flashupdt -u flashupdt.cfg” to perform the update again.
+  
+<code>flashupdt -u flashupdt.cfg</code>
+
+Output is like that 
+
+One Boot Flash Update Utility Version 13.1 Build 9
+Copyright (c) 2015 Intel Corporation
+
+Update file Configuration: XXX  S2600WTTS1R:S2600WT2R:S2600WTTR:S2600WT2:S2600WTT:S2600WT,1.0
+
+Processing capsule file - ./R0022_ME.cap
+
+Processing capsule file - ./R0022_FD.cap
+
+Processing capsule file - ./R0022_VRTS.cap
+Update file Configuration: Revision S2600WT_117  
+FRU & SDR Update Package for Intel(R) Server Board S2600WTx (S2600WT_117)
+Copyright (c) 2017 Intel Corporation
+
+
+Intel(R) Server Board S2600WTTR detected
+
+Auto-detecting chassis model and attached hardware.
+This may take up to 1 minute to complete.
+
+
+10)Once the update completes and reboot the system again.  The reboot will take slightly longer than usual, and do not interrupt this reboot as the BIOS backup image is being updated during the reboot.

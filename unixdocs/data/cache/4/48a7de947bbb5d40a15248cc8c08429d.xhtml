@@ -1,0 +1,292 @@
+
+<h1 class="sectionedit1" id="h1p_and_vios_shutdown_startup_procedures_for_the_rack_move_work_scheduled_for_march_10th">H1P and VIOS shutdown / startup procedures for the rack move work scheduled for March 10th</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "H1P and VIOS shutdown / startup procedures for the rack move work scheduled for March 10th" [1-106] -->
+<h2 class="sectionedit2" id="shutdown_process">Shutdown process</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT2 SECTION "Shutdown process" [107-136] -->
+<h3 class="sectionedit3" id="while_others_are_working_steps_that_can_go_in_parallel">While others are working (Steps that can go in parallel)</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Save current profile for all LPARs assigned to yourself. ( those dynamic lpar&#039;ed but not saved )</div>
+</li>
+<li class="level1"><div class="li"> Login to pgnmsv01</div>
+<ol>
+<li class="level2"><div class="li"> teprvio10<pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p teprvio10 -n teprvio10 --force</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> teprvio11<pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p teprvio11 -n teprvio11 --force</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> teprvio20<pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p teprvio20 -n teprvio20 --force</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> teprvio21<pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p teprvio21 -n teprvio21 --force</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> pehrdb99 <pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrdb99  -n pehrdb99  --force</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> pehrap99 <pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrap99  -n pehrap99  --force</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> pehrap01 <pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8205-E6C-SN101261T -o save -p pehrap01  -n pehrap01  --force</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> pehrdb98 <pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p pehrdb98  -n pehrdb98  --force</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> pehrap98 <pre class="code">sudo ssh hscroot@tgprhmc3 mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p pehrap98  -n pehrap98  --force</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Shutdown pehrap98<pre class="code">sudo getconsole pehrap98</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -F</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown pehrdb98</div>
+<ol>
+<li class="level2"><div class="li"> Have the DBAs shutdown the database and stop replication</div>
+</li>
+<li class="level2"><div class="li"> Shutdown<pre class="code">sudo getconsole pehrdb98</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -F</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "While others are working (Steps that can go in parallel)" [137-1858] -->
+<h3 class="sectionedit4" id="after_all_applications_and_rest_of_the_unix_servers_are_down">After all applications and rest of the Unix servers are down</h3>
+<div class="level3">
+
+</div>
+
+<h4 id="assumptions">Assumptions</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> SAP HR Production, QA, Dev, Sandbox, Soln Mgr applications including databases are down.</div>
+</li>
+<li class="level1"><div class="li"> All non-production lpars and NIM servers are down ( operating system shutdown )</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="shutdown_h1p_systems">Shutdown H1P systems</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> Shutdown pehrdb99<pre class="code">sudo getconsole pehrdb99</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -F</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown pehrap99<pre class="code">sudo getconsole pehrap99</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -F</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown pehrap01<pre class="code">sudo getconsole pehrap01</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -F</pre>
+</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="shutdown_vios_servers">Shutdown VIOS servers</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> Shutdown teprvio10<pre class="code">sudo getconsole teprvio10</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -force</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown teprvio11<pre class="code">sudo getconsole teprvio11</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -force</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown teprvio20<pre class="code">sudo getconsole teprvio20</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -force</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown teprvio21<pre class="code">sudo getconsole teprvio21</pre>
+
+<p>
+Then
+</p>
+<pre class="code">shutdown -force</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "After all applications and rest of the Unix servers are down" [1859-2825] -->
+<h2 class="sectionedit5" id="startup_process">Startup process</h2>
+<div class="level2">
+
+</div>
+
+<h4 id="assumptions1">Assumptions</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> All cables have been moved.</div>
+</li>
+<li class="level1"><div class="li"> HMC access has been restored.</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="startup_vios_servers">Startup VIOS servers</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> Login to pgnmsv01</div>
+</li>
+<li class="level1"><div class="li"> Startup teprvio10<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8202-E4C-SN101260T -n teprvio10 -f teprvio10</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Startup teprvio11<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8202-E4C-SN101260T -n teprvio11 -f teprvio11</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Startup teprvio20<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n teprvio20 -f teprvio20</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Startup teprvio21<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n teprvio21 -f teprvio21</pre>
+</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="validate_vios_server_s_san_connectivity">Validate VIOS server&#039;s SAN connectivity</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> Login to each VIOS server and execute<pre class="code">lspath</pre>
+
+<p>
+Make sure there are no failed paths.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if VIOS server&#039;s network is healthy.</div>
+</li>
+<li class="level1"><div class="li"> At this time, it is a go ahead for non-production systems not dependent on NFS mounts.</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="startup_h1p_systems">Startup H1P systems</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> Login to pgnmsv01</div>
+</li>
+<li class="level1"><div class="li"> Startup pehrdb99<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n pehrdb99 -f pehrdb99</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Startup pehrap99<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n pehrap99 -f pehrap99</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Startup pehrap01<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8205-E6C-SN101261T -n pehrap01 -f pehrap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Startup pehrdb98<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8202-E4C-SN101260T -n pehrdb98 -f pehrdb98</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Startup pehrap98<pre class="code">sudo ssh hscroot@tgprhmc3 chsysstate -r lpar -o on -b norm -m Server-8202-E4C-SN101260T -n pehrap98 -f pehrap98</pre>
+</div>
+</li>
+</ol>
+
+</div>
+
+<h4 id="validate_and_activate_cluster_resources_for_h1p">Validate and activate cluster resources for H1P</h4>
+<div class="level4">
+<ol>
+<li class="level1"><div class="li"> pehrdb99</div>
+<ol>
+<li class="level2"><div class="li"> Check missing paths<pre class="code">lsdev -Ccdisk ; lspath</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Activate the cluster resource<pre class="code">sudo /root/cluster/alias99.sh</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> pehrap99</div>
+<ol>
+<li class="level2"><div class="li"> Check missing paths<pre class="code">lsdev -Ccdisk ; lspath</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Activate the cluster resource<pre class="code">sudo /root/cluster/mount99.sh</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> pehrap01</div>
+<ol>
+<li class="level2"><div class="li"> Check missing paths<pre class="code">lsdev -Ccdisk ; lspath</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <strong> At this time, H1P can be handed over to SAP Basis to bring up</strong></div>
+</li>
+<li class="level1"><div class="li"> <strong> At this time, it is a go ahead for rest of the non-production systems </strong></div>
+</li>
+<li class="level1"><div class="li"> pehrdb98</div>
+<ol>
+<li class="level2"><div class="li"> Check missing paths<pre class="code">lsdev -Ccdisk ; lspath</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Handover to <abbr title="Database Administrator">DBA</abbr> to re-establish Dataguard.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> pehrap98</div>
+<ol>
+<li class="level2"><div class="li"> Check missing paths<pre class="code">lsdev -Ccdisk ; lspath</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Startup process" [2826-] -->

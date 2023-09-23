@@ -1,0 +1,16 @@
+= ==== Update Pure ODM and set hcheck_interval  ======
+    - Check the Pure Device driver level installed  <code>  lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte </code>
+    - List some disk atttributes <code> lsdev -Ccdisk | head -4 </code>
+    - Check the reserve_policy, algorithe, and size <code> sudo /home/x1cxs952/Pre_Upgrade/aix_upgrade/chk_reserve_lock.sh  </code>
+    - Make directory and mount <code> sudo mkdir -p /mnt/updates ; sudo mount pcdcunxaxap01:/prod/images/storage /mnt/updates ; cd /mnt/updates </code> 
+    - Remove the OLD Pure ODM device Driver before installation <code> sudo sudo installp -u devices.fcp.disk.pure.flasharray.mpio.rte </code>
+    - Install the NEW Pure ODM Device Driver  <code>sudo installp -acxd /mnt/updates/PureODM/1.0.0.11/devices.fcp.disk.pure.flasharray.mpio.rte all</code> 
+    - Double check installation <code> lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte </code>  
+    - Unmount the carrier  <code>cd; sudo umount /mnt/updates </code>
+    - Set hcheck_interval to 30 sec. and make sure algorithm is shortest queue <code> lsdev -Ccdisk | grep "PURE MPIO Drive" | awk '{print $1}' | xargs -n1 sudo chdev -a hcheck_interval=30 -a  algorithm=shortest_queue -Pl </code>  
+    - Check the reserve_policy, algorithe, and size <code> sudo /home/x1cxs952/Pre_Upgrade/aix_upgrade/chk_reserve_lock.sh  </code>
+    - Clear the error report, manes new isues easier to determine/track <code> sudo errclear 00</code>
+
+After last system done cleanup the NIM server. 
+  - On the NIM Server, remove the exported lppsource file system from the exports list  <code> sudo /usr/sbin/rmnfsexp -d '/prod/images/storage' '-B' </code>
+

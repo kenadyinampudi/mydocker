@@ -1,0 +1,66 @@
+
+<h1 class="sectionedit1" id="h1p_cutover_plan">H1P Cutover plan</h1>
+<div class="level1">
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">No</th><th class="col1">Description</th><th class="col2">Who</th><th class="col3">Time</th><th class="col4">When</th><th class="col5">Comments</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">1</td><td class="col1">Shutdown SAP and database on pehrdb01</td><td class="col2">Basis &amp; <abbr title="Database Administrator">DBA</abbr></td><td class="col3">30 mins </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">2</td><td class="col1">Backup /usr/sap/trans &amp; /sapmnt/H1P/global from pehrdb01</td><td class="col2">Data preservation</td><td class="col3">1 Hr </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">3</td><td class="col1">Unmount and varyoff the VGs and delete disks from ODM on pehrdb01</td><td class="col2">Unix</td><td class="col3">30 mins </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">4</td><td class="col1">Shutdown the <abbr title="Operating System">OS</abbr> on pehrdb01 and disable auto start</td><td class="col2">Unix</td><td class="col3">15 mins </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">6</td><td class="col1">Remove the VIO disk mapping for pehrb01 and delete disks from teprvio1</td><td class="col2">Unix</td><td class="col3">15 mins </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">8</td><td class="col1">Swing H1P LUNs from pehrdb01 to pehrdb99</td><td class="col2">SAN</td><td class="col3">30 mins </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">9</td><td class="col1">Configure the disks on pehrdb99 and import VGs, mount filesystems</td><td class="col2">Unix</td><td class="col3">30 mins </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">10</td><td class="col1">Configure the VIP 10.56.1.103 on pehrap99</td><td class="col2">Unix</td><td class="col3">5 mins </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row9">
+		<td class="col0">11</td><td class="col1">Startup H1P database on pehrdb99 and validate</td><td class="col2"><abbr title="Database Administrator">DBA</abbr></td><td class="col3">30 mins </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row10">
+		<td class="col0">12</td><td class="col1">Restore /usr/sap/trans &amp; /sapmnt/H1P/global from pehrdb01&#039;s backup and restore to pehrap99</td><td class="col2">Data Preservation</td><td class="col3">1 Hr </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row11">
+		<td class="col0">13</td><td class="col1">Split CI &amp; Startup H1P SAP instance</td><td class="col2">Basis</td><td class="col3">?? </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+	<tr class="row12">
+		<td class="col0">14</td><td class="col1">Functional testing</td><td class="col2">???</td><td class="col3">?? </td><td class="col4"> </td><td class="col5"> </td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [33-979] --><div class="table sectionedit3"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Team</th><th class="col1">Members</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">Basis</td><td class="col1">Arthur</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0"><abbr title="Database Administrator">DBA</abbr></td><td class="col1">Kempe</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">Unix</td><td class="col1">Robert, Kapil</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">SAN</td><td class="col1">Pawel, Kapil</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">Data-Preservation</td><td class="col1">Pawel</td>
+	</tr>
+</table></div>
+<!-- EDIT3 TABLE [982-1089] -->
+</div>

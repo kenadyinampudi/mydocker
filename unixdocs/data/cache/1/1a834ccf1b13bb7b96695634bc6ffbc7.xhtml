@@ -1,0 +1,24 @@
+
+<h1 class="sectionedit1" id="configure_syslog-ng">Configure syslog-ng</h1>
+<div class="level1">
+
+<p>
+<strong> Forwarding syslog-ng messages to remove log server </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Do this<pre class="code">sudo vi /etc/syslog-ng/syslog-ng.conf</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">destination unixlog { udp(&quot;pablsv01&quot; port(514)); };
+filter sudologs {facility(authpriv);};
+log { source(src); filter(sudologs); destination(unixlog); };</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart syslog-ng<pre class="code">sudo /etc/init.d/syslog restart</pre>
+</div>
+</li>
+</ol>
+
+</div>

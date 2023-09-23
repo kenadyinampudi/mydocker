@@ -1,0 +1,35 @@
+
+<h1 class="sectionedit1" id="check_the_status_of_the_lpar_on_dr_site">Check the status of the LPAR on DR site</h1>
+<div class="level1">
+
+<p>
+<strong>Make sure you login to the right server for MPPS pcdcunxaxap01 and for PTCA pgnmsv01</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Function to check the status of LPAR<pre class="code">function check_lpar_status_fdc {
+export lparnames=${*}
+for lparname in ${lparnames}
+do
+    HMC=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $3}&#039; )
+    FRAME=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $4}&#039; )
+    LPARNAME=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $5}&#039; )
+    echo &quot;Checking status on ${HMC} -&gt; ${FRAME} -&gt; ${LPARNAME} &quot;
+    ssh ${HMC} &quot;lssyscfg -r lpar -m ${FRAME} --filter &quot;&quot;lpar_names=${LPARNAME}&quot;&quot; -F state&quot;
+done
+}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Call the function<pre class="code">check_lpar_status_fdc lpar1</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Example for single server status checkup<pre class="code">check_lpar_status_fdc pcdcunxaxap01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Example for multiple server status checkup<pre class="code">check_lpar_status_fdc pcdcunxaxap01 dcdcc11axdb98 dcdcc11axdb99</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

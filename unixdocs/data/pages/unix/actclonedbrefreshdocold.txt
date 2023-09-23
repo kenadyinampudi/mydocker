@@ -1,0 +1,202 @@
+====== Server clones using Actifio Clone / Mount - Legacy MP VMs ======
+
+** Some documented commands are PowerShell commands. Connect to the respective vCenter with your AD credentials and execute carefully, it is a very powerful tool - you can do a lot of damage if you have rights **
+
+  - Generally this is used in Legacy MP VMs. They are usually VMs, they are backed up using Actifio.
+  - {{:unix:sap-server-build-actifio-clone_v1.docx|Original documentation from Balaji on Actifio clone steps}}
+  - {{:unix:system_copy_checklist_v1.xlsx|Sample system refresh checklist}}
+
+** If you have powerCLI modules added to your PowerShell environment - Use these steps to connect **
+
+  - Connect to vCenter<code>Connect-VIServer -server cdcvilms156.driv.com</code>This will ask for credentials so use ''<domain>\<accountname>'' and supply credentials
+
+===== Pre-requisites =====
+
+  - The team requesting the copy should ideally fill out a checklist that contains the source and target systems and customizations to be done post clone.
+  - In this example, we are cloning ED3 SAP instance ( both DB and CI ) to a new system called ED1.
+
+===== Scope =====
+
+^Source Server^Source VMware cluster^Source SID^Target server^Target VMware cluster^Target SID^Target ESXi Host^
+|sfldmilx237  |non-prod-linux2      |ED3       |dcdced1lxdb01|non-prod-linux2      |ED1       |cdcvilvm125     |
+|sfldmilx238  |non-prod-linux2      |ED3       |dcdced1lxci01|non-prod-linux2      |ED1       |cdcvilvm125     |
+
+===== Pre-steps, restores, clones etc =====
+
+  - Create DNS requests for the target systems, aliases etc.
+  - Create storage requests and create datastores for the target VMs. In this example, we created the following datastores<code>CDC-PURE-NL-054
+CDC-PURE-NL-055
+CDC-PURE-NL-056</code>
+  - If Actifio mount option is needed, 
+    - Ensure target ESXi system has iSCSI configured. 
+    - Share the IQN number to the Data-Preservation team member<code>Get-VMHost cdcvilvm125.driv.com | Get-VMHostHba -type iscsi | select IScsiName</code>You should see an output similar to this<code>PS /prod/storageteam/sanmontr> Get-VMHost cdcvilvm125.driv.com | Get-VMHostHba -type iscsi | select IScsiName
+
+IScsiName
+---------
+iqn.1998-01.com.vmware:cdcvilvm125-68d06527</code>
+  - Make a request to the Data-Preservation team to either mount or clone the source VMs to the given cluster/ESXi host with the target names.
+    - If there is a specific request from the requester for a point in time ( backup from a specific time ) - please pass those details over the Data-Preservation team.
+  - Data-Preservation team once done, will leave us with the target VMs in a powered off state. In this example, they are<code>dcdced1lxdb01
+dcdced1lxci01</code>
+
+===== Unix steps =====
+
+  - Setup console database
+    - Login to the DRiV NIM server ''pcdcunxaxap01''
+    - Export a variable to store the system and vCenter hostname
+      - Legacy FMMP vCenter<code>export vcenter=cdcvilms156.fmmp.fmmotorparts.com</code>
+      - DRiV vCenter<code>export vcenter=egdcilms010.driv.com</code>
+    - Export a variable pointing to the hostname we just built<code>export tgtsystem=name_of_the_system</code>
+    - Add the system to console database<code>echo "${tgtsystem}:std-vmware-vsphere:${vcenter}:ADACCOUNT" | sudo tee -a /prod/images/etc/unix_sys_console</code>
+    - Logout from the DRiV NIM Server
+  - Validate the VMs and their state. (To be executed from PowerShell)<code>Get-VM dcdced1lxdb01,dcdced1lxci01</code>The output should look like this<code>PS /prod/storageteam/sanmontr> Get-VM dcdced1lxdb01,dcdced1lxci01
+
+Name                 PowerState Num CPUs MemoryGB
+----                 ---------- -------- --------
+DCDCED1LXCI01        PoweredOff 2        48.000
+DCDCED1LXDB01        PoweredOff 2        48.000</code>
+  - Make sure the network interfaces are in "Not connected state"<code>Get-VM dcdced1lxdb01 | Get-NetworkAdapter | Select-Object ConnectionState</code>In this example, you get this<code>PS /prod/storageteam/sanmontr> Get-VM dcdced1lxdb01 | Get-NetworkAdapter | Select-Object ConnectionState
+
+ConnectionState
+---------------
+NotConnected, NoGuestControl, NoStartConnected
+
+PS /prod/storageteam/sanmontr> Get-VM dcdced1lxci01 | Get-NetworkAdapter | Select-Object ConnectionState
+
+ConnectionState
+---------------
+NotConnected, NoGuestControl, NoStartConnected</code>
+  - To be absolutely sure this VM will not come up in the same subnet, change the VLAN. 
+    - These VMs are in DV-15 VLAN, for now we will temporarily change them to DV-101
+      - dcdced1lxdb01<code>Get-VM dcdced1lxdb01 | Get-NetworkAdapter | Set-NetworkAdapter -NetworkName "DV-101"</code>Output should be<code>PS /prod/storageteam/sanmontr> Get-VM dcdced1lxdb01 | Get-NetworkAdapter | Set-NetworkAdapter -NetworkName "DV-101"
+
+Confirm
+Are you sure you want to perform this action?
+Performing the operation "Setting NetworkName: DV-101" on target "Network adapter 1".
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"): Y
+WARNING: Specifying a distributed port group name as network name is no longer supported. Use the -Portgroup parameter.
+Name                 Type            NetworkName     MacAddress         WakeOnLan    Enabled
+----                 ----            -----------     ----------         ---------
+Network adapter 1    Vmxnet3         DV-101          00:50:56:96:31:f4       True</code>
+      - dcdced1lxci01<code>Get-VM dcdced1lxci01 | Get-NetworkAdapter | Set-NetworkAdapter -NetworkName "DV-101"</code>Output should be<code>PS /prod/storageteam/sanmontr> Get-VM dcdced1lxci01 | Get-NetworkAdapter | Set-NetworkAdapter -NetworkName "DV-101"
+
+Confirm
+Are you sure you want to perform this action?
+Performing the operation "Setting NetworkName: DV-101" on target "Network adapter 2".
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"): Y
+Name                 Type            NetworkName     MacAddress         WakeOnLan Enabled
+Network adapter 2    Vmxnet3         DV-101          00:50:56:96:f5:05       True</code>
+  - Power on the VM<code>Start-VM dcdced1lxci01,dcdced1lxdb01</code>The output should be<code>PS /prod/storageteam/sanmontr> Start-VM dcdced1lxci01,dcdced1lxdb01
+Name                 PowerState Num CPUs MemoryGB
+----                 ---------- -------- --------
+DCDCED1LXDB01        PoweredOn  2        48.000
+DCDCED1LXCI01        PoweredOn  2        48.000</code>
+  - Login to Linux console from vCenter.
+  - Open a terminal window & Terminate any SAP processes - pkill should work, if it does, please update the document<code>sudo pkill sap 
+OR 
+ps -ef | grep sap | grep -v grep | awk '{print $2}' | xargs -n5 sudo kill -9</code>
+  - Verify that no SAP process is running<code>ps -ef |grep sap</code>
+  - Disable cron job<code>sudo systemctl stop cron.service
+sudo systemctl disable cron.service</code>Validate cron is down<code>ps -ef | grep cron</code>
+  - Configure the VM's IP address temporarily so that we can "ssh" to it.<code>sudo ifconfig eth0 <ipaddr>/mask up
+sudo ip route add default via <gateway></code>
+  - From the Powershell prompt, Enable the network adapter<code>Get-VM dcdced1lxdb01 | Get-NetworkAdapter | Set-NetworkAdapter -NetworkName "DV-15" -Connected:$true -StartConnected:$true</code>
+  - ssh to the target VM and update hostname, IP address and default route
+    - Hostname<code>sudo hostnamectl set-hostname dcdced1lxdb01
+echo "dcdced1lxdb01.driv.com" | sudo tee /etc/hostname</code>
+    - Hosts file<code>sudo cp /etc/hosts /etc/hosts.$(date +%m%d%Y)
+cat << EOF | sudo tee /etc/hosts
+127.0.0.1               loopback localhost
+EOF
+host $(uname -n) | awk '{print $NF"\t"$1"\t"$1"h"}' | sed "s;,;;g" | sed "s;.driv.comh;;g" | sudo tee -a /etc/hosts</code>
+    - IP Address<code>sudo vi /etc/sysconfig/network/ifcfg-eth0</code>Change the IPADDR line to match the target IP address<code>IPADDR='10.135.56.201/23'</code>
+    - Default route<code>sudo vi /etc/sysconfig/network/ifroute-eth0</code>Change the default route<code>default 10.135.56.1 - eth0</code>
+    - Update the hostname in postfix configuration file<code>sudo cp -p /etc/postfix/main.cf /etc/postfix/main.cf.$(date +%m%d%Y)
+sudo vi /etc/postfix/main.cf #Change the hostname to the new one against the myhostname parameter
+sudo systemctl restart postfix</code>
+  - Remove unwanted cron jobs
+    - Inspect<code>sudo ls -l /var/spool/cron/tabs</code>
+    - Comment out un-necessary cron jobs
+      - Oracle<code>sudo -u oraed3 crontab -e
+#31 *  * * *  /oracle/home/actifio/archive_cleanup.sh
+#00 8 * * * /oracle/ED3/local/reports/monitortbs.sh
+#00 1 * * * /oracle/ED3/local/reports/cleanup.sh</code>
+      - root<code>Found nothing to cleanup on the DB server</code>
+  - Enable cron daemon<code>sudo systemctl start cron.service
+sudo systemctl enable cron.service</code>
+  - Dismount all filesystems named as the original SID name<code>grep ED3 /etc/fstab | grep -v : | grep -v ^# | awk '{print $2}' | sort -r | xargs -n1 sudo umount</code>
+  - Dismount any NFS mounts<code>df -k | grep : | awk '{print $NF}' | sort -r | xargs -n1 sudo umount</code>
+  - Rename the mountpoints and remove NFS from fstab<code>sudo cp /etc/fstab /etc/fstab.$(date +%m%d%Y)
+grep ED3 /etc/fstab | sed "s;ED3;ED1;g" > fstab.ed1
+grep -v -e ED3 -e nfs /etc/fstab > fstab.new
+cat fstab.ed1 >> fstab.new
+sudo cp fstab.new /etc/fstab</code>
+  - Rename the original base mount point to match the new SID<code>sudo mv /oracle/ED3 /oracle/ED1
+sudo mv /sapmnt/ED3 /sapmnt/ED1
+sudo mv /usr/sap/ED3 /usr/sap/ED1</code>
+  - Remove all old files (older than 2 days) from /tmp<code>$ sudo find /tmp/* -daystart -mtime +2 -delete</code>
+  - Mount the filesystems<code>sudo mount -a</code>
+  - If the server has NFS exports, please modify the ACLs ''/etc/exports'' and mount them on the correct App/DB servers.
+  - Update user accounts<code>sudo /usr/sbin/usermod -l ed1adm ed3adm
+sudo /usr/sbin/usermod -l oraed1 oraed3
+sudo mv /home/ed3adm /home/ed1adm
+sudo /usr/sbin/usermod -d /home/ed1adm ed1adm
+sudo /usr/sbin/pwconv</code>
+  - If Actifio mount option was used, Perform Storage vMotion to the target datastores
+    - Get the list of hard disks<code>Get-VM dcdced1lxdb01 | Get-HardDisk | Select-Object Name,CapacityGB,Filename</code>Output should be<code>PS /prod/storageteam/sanmontr> Get-VM dcdced1lxdb01 | Get-HardDisk | Select-Object Name,CapacityGB,Filename
+
+Name         CapacityGB Filename
+----         ---------- --------
+Hard disk 1          50 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADF9F.vmdk
+Hard disk 2          50 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA0.vmdk
+Hard disk 3         200 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA1.vmdk
+Hard disk 4        1024 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA2.vmdk
+Hard disk 5        1536 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA3.vmdk
+Hard disk 6        1536 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA4.vmdk
+Hard disk 7        1536 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA5.vmdk
+Hard disk 8        1536 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA6.vmdk
+Hard disk 9        1536 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA7.vmdk
+Hard disk 10         30 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA8.vmdk
+Hard disk 11        750 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFA9.vmdk
+Hard disk 12         10 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFAA.vmdk
+Hard disk 13         45 [CDC-PURE-NL-052] DCDCED1LXDB01/rdm_638A95F22580005D10000000000ADFAB.vmdk</code>
+  - Some notes about vMotion**not applicable if you have iSCSI RDMs on a different datastore**
+    - Actifio places iSCSI pointers (RDMs) on a given datastore. If you use the same datastore as the target, the vMotion just ignores as the source and target are the same. 
+    - So always move to a different Datastore or have the DataPres resourcekeep the iSCSI pointers outside of our target datastores.
+    - In this case, all of them were in 054, so we had to move them to 55 and then move it back in many cases. This needs some improvement from a process perspective.
+    - Prepare Storage vMotion commands and execute them<code>Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 1"  | Move-HardDisk -Datastore CDC-PURE-NL-054 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 2"  | Move-HardDisk -Datastore CDC-PURE-NL-054 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 11"  | Move-HardDisk -Datastore CDC-PURE-NL-054 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 4"  | Move-HardDisk -Datastore CDC-PURE-NL-054 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 5"  | Move-HardDisk -Datastore CDC-PURE-NL-054 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 6"  | Move-HardDisk -Datastore CDC-PURE-NL-055 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 7"  | Move-HardDisk -Datastore CDC-PURE-NL-055 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 8"  | Move-HardDisk -Datastore CDC-PURE-NL-056 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 9"  | Move-HardDisk -Datastore CDC-PURE-NL-056 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 10" | Move-HardDisk -Datastore CDC-PURE-NL-056 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 3" | Move-HardDisk -Datastore CDC-PURE-NL-056 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 12" | Move-HardDisk -Datastore CDC-PURE-NL-056 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false
+Get-VM dcdced1lxdb01 | Get-HardDisk -Name "Hard disk 13" | Move-HardDisk -Datastore CDC-PURE-NL-056 -StorageFormat EagerZeroedThick -RunAsync -Confirm:$false</code>**Storage vMotion from Actifio iSCSI Virtual devices (RDMs) are pretty slow. A 10TB VM took about 12 hours**
+    - Once storage migration tasks are complete, inform DataPreservation resource to reclaim the RDMs.
+  - Take a look at the checklist and make necessary changes.
+    - To change the number of CPUs<code>Get-VM dcdced1lxdb01 | Set-VM -NumCpu 4</code>
+    - To change memory to 64G<code>Get-VM dcdced1lxdb01 | Set-VM -MemoryGB 64</code>
+  - Create filesystems if needed
+  - Fix ntp.conf and synchronize the time<code>sudo cp /etc/ntp.conf /etc/ntp.conf.$(date +%m%d%Y)
+sudo vi /etc/ntp.conf</code>Legacy MP systems seems to have NTP servers pointing to some PT DNS server - please change them to the following<code>server cdcvildns001.fmmotorparts.com
+server cdcvildns002.fmmotorparts.com
+server lddcgbdns030.fmmotorparts.com</code>Synchronize the clock<code>sudo /usr/sbin/ntpdate -u cdcvildns001.fmmotorparts.com
+sudo systemctl restart ntpd.service</code>
+  - Setup NFS mounts etc.
+  - If additional filesystems have been requested, 
+    - check if the respective volume group have space. If space is there, add LVs, create FS & add to fstab & mount it
+    - If not enough space in the corresponding VG, go to vcenter and add the required Disk (use the default options)
+      - **In this case - we are creating a temporary filesystems called "/usr/sap/ED1/SUM and /usr/sap/EHP7" hence a new disk was added and a new VG defined so that it is easy to clean up later** 
+      - Back at the Unix shell, scan, create VG/LV/FS<code>sudo rescan-scsi-bus.sh</code>
+      - Identify the disk<code>sudo lsscsi
+sudo /sbin/pvs</code>
+      - Create VG, LV, FS<code>sudo /sbin/vgcreate tmpvg /dev/sd?
+sudo /sbin/lvcreate -n sumlv -L 4096 tmpvg
+sudo /usr/sbin/mkfs -t ext3 /dev/tmpvg/sumlv</code>
+      - Add to fstab & mount it<code>$ sudo mount -a</code>
+  - Perform a final reboot and handover to apps team.

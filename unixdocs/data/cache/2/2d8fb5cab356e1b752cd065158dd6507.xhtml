@@ -1,0 +1,123 @@
+
+<p>
+<strong> MPIO </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> NFS mount the source for packages<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reinstall NAVIAGENT<pre class="code">sudo rm /etc/log/HostIdFile.txt</pre>
+
+<p>
+Remove it
+</p>
+<pre class="code">sudo installp -u NAVIAGENT</pre>
+
+<p>
+Install it
+</p>
+<pre class="code">sudo installp -acX -d /mnt/emc/NaviHostAgent-AIX-32-NA-en_US-6.29.6.0.35-1.lpp NAVIAGENT</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Configure the Navi agent<pre class="code">sudo scp taitc118:/prod/images/EMC/config/agent.config.ldc.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install / Update ODM<pre class="code">sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot now.<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup old device files<pre class="code">lsdev -Ccdisk | grep -i defined | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable round robin.<pre class="code">lsdev -Ccdisk | grep MPIO | awk &#039;{print $1}&#039; | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot now.<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> Powerpath </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> NFS mount the source for packages<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reinstall NAVIAGENT<pre class="code">sudo rm /etc/log/HostIdFile.txt</pre>
+
+<p>
+Remove it
+</p>
+<pre class="code">sudo installp -u NAVIAGENT</pre>
+
+<p>
+Install it
+</p>
+<pre class="code">sudo installp -acX -d /mnt/emc/NaviHostAgent-AIX-32-NA-en_US-6.29.6.0.35-1.lpp NAVIAGENT</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Configure the Navi agent<pre class="code">sudo scp taitc118:/prod/images/EMC/config/agent.config.ldc.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install / Update ODM<pre class="code">sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMC.Symmetrix.fcp.rte</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot now.<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup old device files<pre class="code">lsdev -Ccdisk | grep -i defined | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Stop openview and NAVIagent<pre class="code">sudo ovc -kill
+sudo /etc/rc.agent stop</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount filesystems and swapoff paging spaces.<pre class="code">sudo swapoff /dev/paging....</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> varryoff All SAN VGs<pre class="code">sudo varyoffvg &lt;vgname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Delete all hdiskpower devices<pre class="code">lspv | grep hdiskpower | awk &#039;{print $1}&#039; | while read line
+do
+   sudo powermt remove dev=${line}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove Powerpath software<pre class="code">sudo installp -u &#039;EMCpower*&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> NFS mount the source for packages<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install latest Powerpath software<pre class="code">sudo installp -acX -d /mnt/emc/PowerPath/latest EMCpower.base EMCpower.encryption EMCpower.migration_enabler EMCpower.mpx</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure Powerpath<pre class="code">sudo powermt config</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Varyon the VGs, mount filesystems and enable paging spaces<pre class="code">sudo varyonvg &lt;vgname&gt;</pre>
+<pre class="code">sudo swapon /dev/paging.....</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot now.<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>

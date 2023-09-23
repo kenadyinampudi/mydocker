@@ -1,0 +1,119 @@
+
+<h1 class="sectionedit1" id="setting_up_bonding_on_rhel">Setting up bonding on RHEL.</h1>
+<div class="level1">
+
+<p>
+<strong> In this example we are bonding(or teaming or etherchanneling) the following devices </strong>
+</p>
+<pre class="code">eth0 + eth1 = bond0      10.0.48/24
+eth2 + eth3 = bond1      10.0.49/24</pre>
+<ol>
+<li class="level1"><div class="li"> Enable bonding devices<pre class="code">sudo vi /etc/modprobe.d/bonding.conf</pre>
+
+<p>
+Insert the following lines
+</p>
+<pre class="code">alias bond0 bonding
+alias bond1 bonding</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the bond interfaces<pre class="code">sudo vi /etc/sysconfig/network-scripts/ifcfg-bond0</pre>
+
+<p>
+Insert the following lines for bond0 <strong>change IPs</strong>
+</p>
+<pre class="code">DEVICE=bond0
+IPADDR=10.0.48.5
+NETMASK=255.255.255.0
+ONBOOT=yes
+BOOTPROTO=none
+USERCTL=no
+BONDING_OPTS=&quot;mode=active-backup fail_over_mac=1&quot;</pre>
+
+<p>
+And bond1 <strong>change IPs</strong>
+</p>
+<pre class="code">sudo vi /etc/sysconfig/network-scripts/ifcfg-bond1</pre>
+
+<p>
+these lines
+</p>
+<pre class="code">DEVICE=bond1
+IPADDR=10.0.49.35
+NETMASK=255.255.255.0
+ONBOOT=yes
+BOOTPROTO=none
+USERCTL=no
+BONDING_OPTS=&quot;mode=active-backup arp_interval=3000 arp_ip_target=xx.xx.xx.xx&quot;</pre>
+
+<p>
+<strong>xx.xx.xx.xx is the default router for that subnet</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the slave adapters for bond0</div>
+<ol>
+<li class="level2"><div class="li"> eth0<pre class="code">sudo vi /etc/sysconfig/network-scripts/ifcfg-eth0</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">DEVICE=eth0
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+USERCTL=no</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> eth1<pre class="code">sudo vi /etc/sysconfig/network-scripts/ifcfg-eth1</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">DEVICE=eth1
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+USERCTL=no</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Now that all devices are configured, turn on the devices.<pre class="code">sudo service network restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the bonding configuration<pre class="code">cat /proc/net/bonding/bond0
+Ethernet Channel Bonding Driver: v3.6.0 (September 26, 2009)
+
+Bonding Mode: fault-tolerance (active-backup)
+Primary Slave: None
+Currently Active Slave: eth0
+MII Status: up
+MII Polling Interval (ms): 0
+Up Delay (ms): 0
+Down Delay (ms): 0
+ARP Polling Interval (ms): 3000
+ARP IP target/s (n.n.n.n form): 170.64.0.129
+
+Slave Interface: eth0
+MII Status: up
+Speed: 1000 Mbps
+Duplex: full
+Link Failure Count: 1
+Permanent HW addr: 00:17:08:50:4b:42
+Slave queue ID: 0
+
+Slave Interface: eth1
+MII Status: up
+Speed: 1000 Mbps
+Duplex: full
+Link Failure Count: 1
+Permanent HW addr: 00:17:08:50:4b:41
+Slave queue ID: 0</pre>
+</div>
+</li>
+</ol>
+
+</div>

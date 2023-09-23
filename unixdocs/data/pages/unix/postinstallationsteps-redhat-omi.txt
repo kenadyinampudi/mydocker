@@ -1,0 +1,86 @@
+====== For OMI servers - additional steps are needed ======
+
+===== Generic steps on all OMI servers after consulting with John Ziegler =====
+
+  - Login to the server you are building<code>ssh <hostname></code>
+  - Check /tmp it should be 5GB if not then do this step increase the size accordingly<code>sudo lvextend -L5G /dev/mapper/sysvg-tmp
+sudo resize2fs /dev/mapper/sysvg-tmp</code>
+  - Create users account and provide the password to John ziegler he will change it after first login<code>sudo useradd -K PASS_MAX_DAYS=-1 -s /usr/bin/bash -g ovteam -G ovteam -d /home/omiuser -c "OMI administrator" -m -u 7111 omiuser
+sudo groupadd -g 201 dba
+sudo useradd -K PASS_MAX_DAYS=-1  -u 500 -g dba -c "Oracle account" -d /home/oracle -m oracle
+echo "omiuser:sanQizA8rxfiI" | sudo chpasswd -e
+echo "oracle:sanQizA8rxfiI" | sudo chpasswd -e</code>The password is set to 'abcd1234' -- please ask OV team to change.
+  - Create filesystems<code>sudo lvcreate -L 50G -n opt_HP_BSM /dev/datavg01
+sudo lvcreate -L 20G -n var_opt_OV /dev/datavg01
+sudo lvcreate -L 10G -n source /dev/datavg01
+sudo lvcreate -L 5G -n oracle_client /dev/datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/opt_HP_BSM
+sudo mkfs -t ext4 /dev/datavg01/var_opt_OV
+sudo mkfs -t ext4 /dev/datavg01/source
+sudo mkfs -t ext4 /dev/datavg01/oracle_client
+
+cat << EOF | sudo tee -a /etc/fstab
+/dev/datavg01/opt_HP_BSM   /opt/HP/BSM                    ext4    defaults        1 2
+/dev/datavg01/var_opt_OV   /var/opt/OV                    ext4    defaults        1 2
+/dev/datavg01/source   /source                    ext4    defaults        1 2
+/dev/datavg01/oracle_client   /oracle/client                    ext4    defaults        1 2
+EOF
+
+sudo mkdir -p /opt/HP/BSM
+sudo mkdir -p /var/opt/OV
+sudo mkdir -p /source
+sudo mkdir -p /oracle/client
+
+sudo mount /opt/HP/BSM
+sudo mount /var/opt/OV
+sudo mount /source
+sudo mount /oracle/client
+
+sudo chown oracle:dba /oracle/client</code>
+  - Install packages<code>sudo yum install initscripts perl libaio libpng12.x86_64 liberation-sans-fonts.noarch\
+ gnome-session metacity xterm tigervnc-server m4 perl-DBI compat-libcap1 compat-libstdc++-33 gcc gcc-c++ glibc-devel\
+ libaio-devel perl-devel</code>
+  - Install Oracle client and DBD
+    - Login to pgnmsv01
+      - Copy the Oracle client installables<code>sudo rsync -avv /prod/images/cds/oracle/12cclient-rhel64bit/ <server_name>:/tmp/oracle/</code>
+      - Copy the DBD installables<code>sudo rsync -avv /prod/images/cds/perl/perl-Oracle-DBD/DBD-Oracle-1.75_2/ <server_name>:/tmp/DBD-Oracle-1.75_2/</code>
+    - Login to the client
+      - Install Oracle Client
+        - Create response file<code>sudo -u oracle cat /tmp/oracle/oracle_client_rhel_12c.rsp | sed "s;ORA_TENNECO_HOSTNAME;$(uname -n);g" > /tmp/oracle_client_rhel_12c.rsp</code>
+        - Run the installer as oracle<code>sudo -u oracle /tmp/oracle/runInstaller -silent -waitforcompletion -responseFile /tmp/oracle_client_rhel_12c.rsp</code>
+        - Run the root.sh<code>sudo /oracle/client/oraInventory/orainstRoot.sh</code>
+      - Install Oracle:DBD perl module.
+        - Execute these<code>sudo chown -R oracle:dba /tmp/DBD-Oracle-1.75_2</code>Then as oracle user<code>sudo su - oracle
+cd /tmp/DBD-Oracle-1.75_2
+export ORACLE_HOME=/oracle/client
+perl Makefile.PL
+make</code>Back to root id<code>cd /tmp/DBD-Oracle-1.75_2
+sudo make install</code>
+  - Install a basic tnsnames.ora<code>sudo -u oracle vi /oracle/client/network/admin/tnsnames.ora</code>Add this<code><SID_NAME> =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = <HOST_NAME>)(PORT = 1527))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = <SID_NAME>)
+    )
+  )
+
+ov_net =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = <HOST_NAME>)(PORT = 1527))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = <SID_NAME>)
+    )
+  )</code>
+  - Install these additional perl modules<code>sudo yum install perl-Crypt-SSLeay perl-IO-Socket-SSL perl-libwww-perl perl-URI perl-LWP-Protocol-https perl-XML-Parser</code>  
+  - Install these additional perl modules manually as Redhat does not provide them.
+    - Login to pgnmsv01<code>sudo rsync -avv /prod/images/cds/perl/ <servername>:perlmodules/</code>
+    - Install the modules. Login to the server<code>for dir in MIME-Base64-3.15 MIME-Types-2.13 SOAP-Lite-1.20 Test-Simple-1.302085 Class-Inspector-1.31 ServiceNow-1.01
+do
+  cd perlmodules/${dir}
+  perl Makefile.PL
+  make
+  sudo make install
+done</code>

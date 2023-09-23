@@ -1,0 +1,157 @@
+a:7:{i:0;a:3:{i:0;s:14:"document_start";i:1;a:0:{}i:2;i:0;}i:1;a:3:{i:0;s:6:"header";i:1;a:3:{i:0;s:31:"Setting up local YUM repository";i:1;i:1;i:2;i:1;}i:2;i:1;}i:2;a:3:{i:0;s:12:"section_open";i:1;a:1:{i:0;i:1;}i:2;i:1;}i:3;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:3449:"
+
+mkdir -p /share/CentOS/6.3
+cd /share/CentOS
+ln -s 6.3 6
+
+mount -o vers=3 taitc118:/prod/images/cds /mnt/cdrom
+
+mount /mnt/cdrom/CentOS-6.3-i386-bin-DVD1.iso /cdrom -t iso9660 -o loop
+
+rsync -avHPS /cdrom /share/CentOS/6.3/os/i386/
+
+cd /share/CentOS/6.3
+
+mkdir -p addons/i386
+mkdir -p addons/x86_64
+mkdir -p centosplus/i386
+mkdir -p centosplus/x86_64
+mkdir -p contrib/i386
+mkdir -p contrib/x86_64
+mkdir -p cr/i386
+mkdir -p cr/x86_64
+mkdir -p extras/i386
+mkdir -p extras/x86_64
+mkdir -p fasttrack/i386
+mkdir -p fasttrack/x86_64
+mkdir -p mkdir -p isos/i386
+mkdir -p isos/x86_64
+mkdir -p os/i386
+mkdir -p os/x86_64
+mkdir -p updates/i386
+mkdir -p updates/x86_64
+
+rsync -avHPS /cdrom /share/CentOS/6.3/os/i386/
+
+mkdir /cdrom2
+
+
+[root@pablsv01 ~]# mount /mnt/cdrom/CentOS-6.3-x86_64-bin-DVD1.iso /cdrom3 -t iso9660 -o loop
+mount: mount point /cdrom3 does not exist
+[root@pablsv01 ~]# mkdir /cdrom3
+[root@pablsv01 ~]# mount /mnt/cdrom/CentOS-6.3-x86_64-bin-DVD1.iso /cdrom3 -t iso9660 -o loop
+[root@pablsv01 ~]# mkdir /cdrom4
+[root@pablsv01 ~]# mount /mnt/cdrom/CentOS-6.3-x86_64-bin-DVD2.iso /cdrom4 -t iso9660 -o loop
+[root@pablsv01 ~]#
+
+rsync -avHPS /cdrom1 /share/CentOS/6.3/os/i386/
+rsync -avHPS /cdrom3 /share/CentOS/6.3/os/x86_64/
+rsync -avHPS /cdrom4 /share/CentOS/6.3/os/x86_64/
+
+
+Create a link if the version has changed
+
+cd /share/CentOS/
+ln -fs 5.8 5
+
+On the server you can use NFS to export the directory. NFS has the advantage over HTTP or FTP that updates will be used "in place" rather than copies to the cache being made by yum. 
+
+cat >> /etc/exports
+/share  192.168.1.0/24(rw,mountpoint)
+
+
+exportfs -a
+chkconfig nfs on
+service nfs start
+
+exportfs -r
+
+Clients
+
+myserver.my.net:/share   /share   nfs   rw  0 0
+
+
+Set up /etc/yum.repos.d/CentOS-Base.repo like: 
+
+[base]
+name=CentOS-$releasever - Base
+baseurl=file:/share/CentOS/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=file:/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-5
+protect=1
+priority=1
+enabled=1
+[updates]
+name=CentOS-$releasever - Updates
+baseurl=file:/share/CentOS/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=file:/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-5
+protect=1
+priority=1
+enabled=1
+[extras]
+name=CentOS-$releasever - Extras
+baseurl=file:/share/CentOS/$releasever/extras/$basearch/
+gpgcheck=1
+gpgkey=file:/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-5
+protect=1
+priority=1
+enabled=1
+[centosplus]
+name=CentOS-$releasever - Plus
+baseurl=file:/share/CentOS/$releasever/centosplus/$basearch/
+exclude=kernel*
+gpgcheck=1
+enabled=1
+gpgkey=file:/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-5
+protect=0
+priority=1
+[contrib]
+name=CentOS-$releasever - Contrib
+baseurl=file:/share/CentOS/$releasever/contrib/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=file:/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-5
+protect=0
+priority=3
+
+Or HTTP by using 
+
+
+[base]
+name=CentOS-$releasever - Base
+baseurl=http://192.168.*.*/centos/$releasever/os/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os
+#baseurl=http://mirror.centos.org/centos/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-5
+#released updates
+[update]
+name=CentOS-$releasever - Updates
+baseurl=http://192.168.*.*/centos/$releasever/updates/$basearch/
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=updates
+#baseurl=http://mirror.centos.org/centos/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-5
+
+
+";i:1;N;i:2;N;}i:2;i:53;}i:4;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:429:"Steve Satkiewic...	interface GigabitEthernet4/1
+ description U2.3-7 PAAVAP01con 10.32.10.22
+ switchport access vlan 410
+
+
+
+interface GigabitEthernet3/26
+ description U2.3-8 PAAVAP01 10.32.50.53
+ switchport access vlan 450
+
+
+interface GigabitEthernet3/27
+ description U2.3-10 PAAVAP02con 10.32.10.23
+ switchport access vlan 410
+
+
+interface GigabitEthernet4/25
+ description U2.3-11 PAAVAP02 10.32.50.56
+ switchport access vlan 450
+";i:1;N;i:2;N;}i:2;i:3522;}i:5;a:3:{i:0;s:13:"section_close";i:1;a:0:{}i:2;i:3959;}i:6;a:3:{i:0;s:12:"document_end";i:1;a:0:{}i:2;i:3959;}}

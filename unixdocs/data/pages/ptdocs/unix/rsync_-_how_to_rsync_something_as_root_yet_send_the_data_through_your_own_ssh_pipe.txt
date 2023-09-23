@@ -1,0 +1,17 @@
+====== rsync - Use nonprivileged unix account's ssh password-less login to sync files owned by root/another user ======
+
+===== Scenario =====
+
+  * server1 has a directory that contains software or data, no necessarily owned by the non-privileged user that a team uses for automating cron jobs etc
+  * The data needs to be replicated to server2
+  * The non-privileged user has "sudo" rights to perform "rsync" on both the servers.
+
+==== Our Scenario ====
+
+  - We have https://storagedocs running on pgunap01 in Lincolnshire. 
+  - We would like to host https://storagedocs-dr on pgunap02 server in Interxion.
+  - In order to make sure all documents are syncd, we need to "rsync" the data from pgunap01 to pgunap02.
+  - We use a non-privileged user "sanmontr" to schedule cronjobs i.e. We don't use root or any system account for security reasons.
+  - sanmontr unix account has 'sudo rsync' rights on both pgunap01 and pgunap02.
+  - sanmontr unix account has ssh-password-less login access from pgunap01 to pgunap02.
+  - **After much googling and brain picking multiple people here, we got this method that works.**<code>rsync --delete -a ${wikihome}/ --rsync-path="sudo rsync" ${drhost}:${wikihome}/</code>

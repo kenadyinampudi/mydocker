@@ -1,0 +1,81 @@
+
+<h1 class="sectionedit1" id="customization_for_gpdm_prod_app_servers">Customization for GPDM Prod App servers</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create groups and users accounts<pre class="code">sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,unispool -d /home/pltadm -c &quot;SAP GPDM System Admin&quot; -m -u 4142 pltadm
+echo &quot;pltadm:DKK*],E-7Pwp?tqX&quot; | sudo chpasswd
+
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,unispool -d /home/oraplp -c &quot;Oracle GPDM System Admin&quot; -m -u 4186 plpadm
+echo &quot;plpadm:DKK*],E-7Pwp?tqX&quot; | sudo chpasswd
+
+sudo useradd -s /usr/bin/bash -g dba -d /home/oraplt -c &quot;SAP GPDM System Admin&quot; -m -u 107 oraplt
+echo &quot;oraplt:DKK*],E-7Pwp?tqX&quot; | sudo chpasswd
+
+sudo useradd -s /usr/bin/bash -g dba -d /home/oraplp -c &quot;SAP GPDM System Admin&quot; -m -u 108 oraplp
+echo &quot;oraplp:DKK*],E-7Pwp?tqX&quot; | sudo chpasswd
+
+sudo chage -M -1 pltadm
+sudo chage -M -1 plpadm
+sudo chage -M -1 unispool
+sudo chage -M -1 sapadm
+sudo chage -M -1 daaadm
+sudo chage -M -1 oraplt
+sudo chage -M -1 oraplp
+
+</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">sudo lvcreate -n oracle_PLP        -L 1024MB  datavg01
+sudo lvcreate -n usr_sap_PLP       -L 8192MB  datavg01
+sudo lvcreate -n usr_sap_PLP_SUM   -L 10240MB datavg01
+sudo lvcreate -n home_PLPadm       -L 512MB   datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/oracle_PLP
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_PLP
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_PLP_SUM
+sudo mkfs -t ext4 /dev/datavg01/home_PLPadm
+
+cat &lt;&lt; EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-oracle_PLP         /oracle/PLP           ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_PLP        /usr/sap/PLP          ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_PLP_SUM    /usr/sap/PLP/SUM      ext4    defaults        1 2
+/dev/mapper/datavg01-home_PLPadm        /home/plpadm          ext4    defaults        1 2
+EOF
+
+sudo chown oraplp:dba     /oracle
+sudo chown oraplp:dba     /oracle/client
+sudo chown plpadm:sapsys  /usr/sap
+
+sudo mkdir -p /oracle/PLP        ; sudo mount /oracle/PLP          ; sudo chown oraplp:dba /oracle/PLP
+sudo mkdir -p /usr/sap/PLP       ; sudo mount /usr/sap/PLP         ; sudo chown plpadm:sapsys /usr/sap/PLP
+sudo mkdir -p /usr/sap/PLP/SUM   ; sudo mount /usr/sap/PLP/SUM     ; sudo chown plpadm:sapsys /usr/sap/PLP/SUM
+sudo mkdir -p /home/plpadm       ; sudo mount /home/plpadm         ; sudo chown plpadm:sapsys /home/plpadm</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Add NFS. First export the filesystems from the NFS server<pre class="code">cat &lt;&lt; EOF | sudo tee -a  /etc/fstab
+pggpdb01:/sapmnt/PLP/exe	/sapmnt/PLP/exe  	nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pggpdb01:/sapmnt/PLP/profile	/sapmnt/PLP/profile	nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pggpdb01:/sapmnt/PLP/global	/sapmnt/PLP/global	nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pggpdb01:/usr/sap/trans		/usr/sap/trans		nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pggpdb01:/sapcomm		/sapcomm		nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+EOF
+
+sudo mkdir -p /sapmnt/PLP/exe		;sudo mount /sapmnt/PLP/exe
+sudo mkdir -p /sapmnt/PLP/profile	;sudo mount /sapmnt/PLP/profile
+sudo mkdir -p /sapmnt/PLP/global	;sudo mount /sapmnt/PLP/global
+sudo mkdir -p /usr/sap/trans		;sudo mount /usr/sap/trans
+sudo mkdir -p /sapcomm			;sudo mount /sapcomm</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> If the system needs unispool, enable it<pre class="code">sudo systemctl enable unispool</pre>
+</div>
+</li>
+</ol>
+
+</div>

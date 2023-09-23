@@ -1,0 +1,109 @@
+Moving the DVD-RAM Between LPARs using the VIO server
+Technote (FAQ)
+
+Question
+
+Is there a method to share the DVD-RAM or DVD-ROM device on System p servers that does not require a dynamic logical partition (DLPAR) action?
+Cause
+
+Limitations of the hardware
+Answer
+
+One of the common features normally available with HMC attached System p servers is the ability to use Dynamic Logical Partitioning (DLPAR) to add/move/remove I/O devices such as the CDROM or DVD controller between LPARs without taking an outage. The functionality required for DLPAR actions includes an active network connections between the LPARs and the HMC over port 657. If you have a virtual I/O (VIO) server partition that owns the DVD controller then you can run a few simple commands on the VIO server to allow you to map cd0 from one client LPAR to another using virtual SCSI.
+
+The process to move cd0 from one logical partition to another using VIO server commands is illustrated below. The example assumes the user is logged in as padmin on VIO server:
+
+- Determine if the VIO server owns an optical device we use the lsdev command.
+
+
+$ lsdev -type optical
+name status description
+cd0 Available IDE DVD-ROM Drive
+
+- Determine if cd0 is already mapped to a client LPAR we use the lsmap command.
+
+
+$ lsmap -all |more
+SVSA Physloc Client Partition ID
+--------------- -------------------------------------------- ------------------
+vhost0 U9111.520.104797E-V1-C11 0x00000002
+
+VTD vtscsi0
+LUN 0x8100000000000000
+Backing device rootvg2a
+Physloc
+
+SVSA Physloc Client Partition ID
+--------------- -------------------------------------------- ------------------
+vhost1 U9111.520.104797E-V1-C13 0x00000003
+
+VTD vtscsi1
+LUN 0x8100000000000000
+Backing device rootvg3a
+Physloc
+
+VTD vtscsi2
+LUN 0x8200000000000000
+Backing device datavg3a
+Physloc
+
+- Looking through the "Backing device" section of each vhosts we do not see cd0 listed. We could have run "lsmap -all | grep cd0" as a quick check as well.
+
+- To assign device cd0 to LPAR ID 2 we first need to locate its associated virtual SCSI server (vhost) device from the output listed above. If you look at the "Client Partition ID" section of the lsmap output you can see that vhost0 is associated with partition ID 2 (hex 0x00000002).
+
+- To make the virtual SCSI map of cd0 to LPAR ID 2, we use mkvdev as follows:
+
+$ mkvdev -vdev cd0 -vadapter vhost0
+vtopt0 Available
+
+- To check to see if cd0 and vtopt0 show up under vhost0 resources we use lsmap.
+
+$ lsmap -vadapter vhost0
+SVSA Physloc Client Partition ID
+--------------- -------------------------------------------- ------------------
+vhost0 U9111.520.104797E-V1-C11 0x00000002
+
+VTD vtopt0
+LUN 0x8200000000000000
+Backing device cd0
+Physloc U787A.001.DPM06E2-P4-D2
+
+VTD vtscsi0
+LUN 0x8100000000000000
+Backing device rootvg2a
+Physloc
+
+
+By virtually mapping the DVD device cd0 to LPAR 2's vhost, there is no need to make changes to the LPAR's profile or perform further actions such as DLPAR functions from the HMC. The cd0 device is now ready for the client LPAR to use. If the LPAR is already in a running state, the cfgmgr command would need to be run as root on the client LPAR so the new device could be configured. If the LPAR is not activated then once it is started, the DVD device will be available for performing installation or maintenance functions on the LPAR.
+
+Once LPAR 2 is finished using the DVD, it can then be removed and mapped to a different LPAR if desired. For example, suppose that LPAR ID 3 needed the DVD for maintenance, by removing the VTD name from vhost0 and making a new virtual SCSI map to vhost1, we would be giving LPAR 3 access to the DVD. Following commands illustrate the actions required.
+
+$ rmdev -dev vtopt0 -recursive
+vtopt0 deleted
+
+$ mkvdev -vdev cd0 -vadapter vhost1
+vtopt0 Available
+
+$ lsmap -vadapter vhost1
+
+SVSA Physloc Client Partition ID
+--------------- -------------------------------------------- ------------------
+vhost1 U9111.520.104797E-V1-C13 0x00000003
+
+VTD vtopt0
+LUN 0x8500000000000000
+Backing device cd0
+Physloc U787A.001.DPM06E2-P4-D2
+
+VTD vtscsi1
+LUN 0x8100000000000000
+Backing device rootvg3a
+Physloc
+
+VTD vtscsi2
+LUN 0x8200000000000000
+Backing device datavg3a
+Physloc
+
+The process of virtual mapping of the optical device, cd0, between client LPARs of a VIO server is much simpler than trying to perform DLPAR related functions to achieve the same result since all the interaction takes place on the VIO server command line.
+

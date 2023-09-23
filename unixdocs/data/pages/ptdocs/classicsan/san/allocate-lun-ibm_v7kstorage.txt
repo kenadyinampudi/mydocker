@@ -1,0 +1,13 @@
+====== IBM V7000 Storage allocation ======
+
+  -Login to the storage admin server<code>ssh pgunap01</code>
+  -Login to IBM v7000 storage array as superuser<code>ssh superuser@monv7kvip1</code>
+===== Defining a new host on V7000 =====
+
+  -Collect the WWNs from the systems team, complete zoning.
+  -To add a host to V7000<code>mkhost -fcwwpn wwn1:wwn2:wwn3...... -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name <name_of_the_host> -type generic</code>
+  -Adding additional WWNs to an existing host<code>addhostport -force -fcwwpn wwn1:wwn2:wwn3...... <host_name></code>
+  -creating LUN<code>mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_789CNW0 -name taitc103_015 -nofmtdisk -rsize 2% \
+-size 103578 -syncrate 50 -unit mb -vtype striped -warning 0% </code>
+  -map the LUN to the servers<code> mkvdiskhostmap -host taitc103 taitc103_013</code>
+

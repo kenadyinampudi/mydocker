@@ -1,0 +1,103 @@
+====== Redhat PABLSV02 Cobbler server build ======
+
+  * Request wintel team to create a VM called pablsv02 with the following specifications<code>Processor  : 1 Virtual CPU
+Memory     : 8GB
+VLAN       : 10.32.6/24
+Storage    : 1 * 70G (Boot), 1 * 100GB (Data)</code>
+  * [[unix:buildredhat|Please follow the standard linux build instruction for pablsv02]]
+  * Please create /var/www filesystem of size 50Gig<code>sudo pvcreate /dev/sdb
+sudo vgcreate datavg01 /dev/sdb
+sudo lvcreate -L 50G -n varwww /dev/datavg01
+sudo mkfs -t ext4 /dev/datavg01/varwww
+echo "/dev/mapper/datavg01-varwww   /var/www                    ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /var/www
+sudo mount /var/www</code>
+
+==== Patch pablsv02 to RHEL 6.8 ====
+
+  * Login to pablsv01 ( existing build server )
+    * Copy the iso to the build server<code>sudo scp rhel-server-6.8-x86_64-dvd.iso pablsv01:/var/tmp/</code>
+    * Loopback mount the iso file on build server<code>sudo mount /var/tmp/rhel-server-6.8-x86_64-dvd.iso /cdrom -t iso9660 -o loop</code>
+    * rsync the contents to the sources directory<code>sudo mkdir -p /var/www/html/sources/rhel-6.8-x86_64</code><code>sudo rsync -a /cdrom/ /var/www/html/sources/rhel-6.8-x86_64/</code>
+    * Create a repository<code>sudo createrepo /var/www/html/sources/rhel-6.8-x86_64</code>
+    * Import the repository to Cobbler. 64 bit<code>sudo cobbler import --path=/cdrom --name=rhel-6.8-x86_64 --arch=x86_64</code>
+    * Associate the kickstart file to the profile<code>sudo cobbler profile edit --name rhel-6.8-x86_64 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-6.8.ks</code>
+    
+  * Login to pablsv02
+    * Modify the local.repo file with the latest repository. First make a copy<code>sudo cp /etc/yum.repos.d/local.repo local.repo</code><code>sudo vi /etc/yum.repos.d/local.repo</code>Remove everything except the following depending on the OS and type.<code>
+[local-rhel-6.8-x86_64]
+name=local-rhel-6.8-x86_64
+baseurl=http://pablsv01/sources/rhel-6.8-x86_64/
+enabled=1
+gpgcheck=0</code><code>sudo yum clean all</code><code>sudo yum update</code><code>sudo init 6</code>
+
+==== Setup cobbler on pablsv02 ====
+
+  * Install createrepo<code>sudo yum install createrepo</code>
+  * Install http<code>sudo yum install httpd</code><code>sudo service httpd start</code>
+  * Enable proxy for YUM<code>sudo cp /etc/yum.conf /etc/yum.conf.10042016</code><code>sudo vi /etc/yum.conf</code>Do the entry in the last line of the file<code>proxy=http://170.64.0.72:8080
+proxy_username=x1vasuna
+proxy_password=*****</code>
+  * Export proxy<code>export https_proxy=http://username:password@170.64.0.72:8080/</code>
+  * Enable epel repositroy<code>sudo rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm</code>
+  * Disable proxy for local repositories. Add this<code>sudo vi /etc/yum.repos.d/local.repo</code><code>proxy=_none_</code>at the end of ''local-rhel-6.8-x86_64'' repository. In the end it would look like this<code>[local-rhel-6.8-x86_64]
+name=local-rhel-6.8-x86_64
+baseurl=http://pablsv01/sources/rhel-6.8-x86_64/
+enabled=1
+gpgcheck=0
+proxy=_none_</code>
+  * Install Cobbler<code>sudo yum install cobbler</code>
+  * Perform cobbler check<code>sudo cobbler check</code>It will show <code>The following are potential configuration items that you may want to fix:
+
+1 : The 'server' field in /etc/cobbler/settings must be set to something other than localhost, or kickstarting features will not work.  This should be a resolvable hostname or IP for the boot server as reachable by all machines that will use it.
+2 : For PXE to be functional, the 'next_server' field in /etc/cobbler/settings must be set to something other than 127.0.0.1, and should match the IP of the boot server on the PXE network.
+3 : change 'disable' to 'no' in /etc/xinetd.d/tftp
+4 : some network boot-loaders are missing from /var/lib/cobbler/loaders, you may run 'cobbler get-loaders' to download them, or, if you only want to handle x86/x86_64 netbooting, you may ensure that you have installed a *recent* version of the syslinux package installed and can ignore this message entirely.  Files in this directory, should you want to support all architectures, should include pxelinux.0, menu.c32, elilo.efi, and yaboot. The 'cobbler get-loaders' command is the easiest way to resolve these requirements.
+5 : change 'disable' to 'no' in /etc/xinetd.d/rsync
+6 : file /etc/xinetd.d/rsync does not exist
+7 : debmirror package is not installed, it will be required to manage debian deployments and repositories
+8 : ksvalidator was not found, install pykickstart
+9 : The default password used by the sample templates for newly installed machines (default_password_crypted in /etc/cobbler/settings) is still set to 'cobbler' and should be changed, try: "openssl passwd -1 -salt 'random-phrase-here' 'your-password-here'" to generate new one
+10 : fencing tools were not found, and are required to use the (optional) power management features. install cman or fence-agents to use them
+
+Restart cobblerd and then run 'cobbler sync' to apply changes.</code>Resolve the errors it shows in the above points.
+  * Make a backup and modify the servername parameter in ''/etc/cobbler/settings''<code>sudo cp /etc/cobbler/settings /etc/cobbler/settings.09232016.vn</code>Edit the file /etc/cobbler/settings<code>sudo vi /etc/cobbler/settings</code>search for the line which looks something like this server = 127.0.0.1 and replace it with the server name like it shown here<code>server = pablsv02</code>
+  * Restart and sync cobbler<code>sudo service cobblerd restart</code>Resync<code>sudo cobbler sync</code>
+
+=== Import RHEL6.8 distribution to the new cobbler server pablsv02 ===
+
+  * Copy the iso to the build server<code>cd /var/tmp/
+wget http://unixisos/redhat/cds/rhel-server-6.8-x86_64-dvd.iso</code>
+  * Loopback mount the iso file on build server<code>sudo mount /var/tmp/rhel-server-6.8-x86_64-dvd.iso /cdrom -t iso9660 -o loop</code>
+  * Copy the contents to the sources directory<code>sudo mkdir -p /var/www/html/sources/rhel-6.8-x86_64</code><code>sudo rsync -a /cdrom/ /var/www/html/sources/rhel-6.8-x86_64/</code>
+  * Create a RHEL6.8 repository<code>sudo createrepo /var/www/html/sources/rhel-6.8-x86_64</code>
+  * Import RHEL6.8 distribution to cobbler<code>sudo cobbler import --path=/cdrom --name=rhel-6.8-x86_64 --arch=x86_64</code>
+  * Cleanup the files<code>sudo umount /cdrom
+rm /var/tmp/rhel-server-6.8-x86_64-dvd.iso</code>
+  * Copy the kickstart file from the old build server<code>sudo scp pablsv01:/var/lib/cobbler/kickstarts/tenneco.rhel-6.8.ks /var/lib/cobbler/kickstarts/tenneco.rhel-6.8.ks</code>
+  * Associate kickstart to the RHEL6.8 profile<code>sudo cobbler profile edit --name rhel-6.8-x86_64 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-6.8.ks</code>
+  * Point pablsv02 to its own YUM repository and disable proxy<code>sudo vi /etc/yum.repos.d/local.repo</code>Replace the file with this<code>[local-rhel-6.8-x86_64]
+name=local-rhel-6.8-x86_64
+baseurl=http://pablsv02/sources/rhel-6.8-x86_64/
+enabled=1
+gpgcheck=0
+proxy=_none_</code>
+
+=== Import RHEL7.2 distribution to the new cobbler server pablsv02 ===
+
+  * Copy the iso to the build server<code>cd /var/tmp
+wget http://unixisos/redhat/cds/rhel-server-7.2-x86_64-dvd.iso</code>
+  * Loopback mount the iso file on build server<code>sudo mkdir -p /cdrom</code><code>sudo mount /var/tmp/rhel-server-7.2-x86_64-dvd.iso /cdrom -t iso9660 -o loop</code>
+  * Copy the contents to the sources directory<code>sudo mkdir -p /var/www/html/sources/rhel-7.2-x86_64</code><code>sudo rsync -a /cdrom/ /var/www/html/sources/rhel-7.2-x86_64/</code>
+  * Create a RHEL7.2 repository<code>sudo createrepo /var/www/html/sources/rhel-7.2-x86_64</code>
+  * Import RHEL7.2 distribution to cobbler<code>sudo cobbler import --path=/cdrom --name=rhel-7.2-x86_64 --arch=x86_64</code>
+  * Cleanup the files<code>sudo umount /cdrom
+rm /var/tmp/rhel-server-7.2-x86_64-dvd.iso</code>
+  * Create RHEL7 kickstart file<code>sudo vi /var/lib/cobbler/kickstarts/tenneco.rhel-7.ks</code>
+    * [[unix:tennecorhel7ks|Add this content]] 
+  * Associate kickstart to the RHEL7.2 profile.<code>sudo cobbler profile edit --name rhel-7.2-x86_64 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-7.ks</code>
+
+=== Test RHEL installations ===
+
+  * RHEL-6.8 -- Install a test server using the following profile<code>rhel-6.8-x86_64</code>
+  * RHEL-7.2 -- Install a test server using the following profile<code>rhel-7.2-x86_64</code>

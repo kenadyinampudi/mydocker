@@ -1,0 +1,109 @@
+====== qehrdb01 cleanup work ======
+
+  - DBA / Basis resource to shutdown SAP and Database on qehrdb01
+  - Shutdown and activate qehrdb01.<code>sudo shutdown -F</code>
+  - Unmount the filesystems that we do not need to copy over<code>sudo umount /oracle/H1T/sapreorg 
+sudo umount /oracle/H1T/sapdata9
+sudo umount /oracle/H1T/sapdata8 
+sudo umount /oracle/H1T/sapdata7 
+sudo umount /oracle/H1T/sapdata6 
+sudo umount /oracle/H1T/sapdata5 
+sudo umount /oracle/H1T/sapdata4
+sudo umount /oracle/H1T/sapdata3
+sudo umount /oracle/H1T/sapdata2
+sudo umount /oracle/H1T/sapdata15
+sudo umount /oracle/H1T/sapdata14
+sudo umount /oracle/H1T/sapdata13
+sudo umount /oracle/H1T/sapdata12
+sudo umount /oracle/H1T/sapdata11
+sudo umount /oracle/H1T/sapdata10
+sudo umount /oracle/H1T/sapdata1
+sudo umount /oracle/H1T/saparch
+sudo umount /oracle/H1T/origlogB
+sudo umount /oracle/H1T/origlogA
+sudo umount /oracle/H1T/oraarch
+sudo umount /oracle/H1T/mirrlogB
+sudo umount /oracle/H1T/mirrlogA</code>
+  - Rsync the filesystems that we need to copy over<code>sudo rsync -avv /oracle/H1T/11203/ /NEW/oracle/H1T/11203/
+sudo rsync -avv /oracle/H1T/ /NEW/oracle/H1T/
+sudo rsync -avv /sapcomm/H1T/merge-na-eu-in/ /NEW/sapcomm/H1T/merge-na-eu-in/
+sudo rsync -avv /sapmnt/H1T/ /NEW/sapmnt/H1T/
+sudo rsync -avv /usr/sap/H1T/ /NEW/usr/sap/H1T/</code>
+  - Unmount the old H1T filesystems<code>for fs in /usr/sap/H1T /sapmnt/H1T /sapcomm/H1T/merge-na-eu-in /oracle/H1T/11203 /oracle/H1T
+do
+   echo "Unmounting ${fs} "
+   sudo umount ${fs}
+done</code>
+  - Rename the old filesystems<code>sudo chfs -m /OLD/oracle/H1T /oracle/H1T
+sudo chfs -m /OLD/oracle/H1T/11203 /oracle/H1T/11203
+sudo chfs -m /OLD/oracle/H1T/mirrlogA /oracle/H1T/mirrlogA
+sudo chfs -m /OLD/oracle/H1T/mirrlogB /oracle/H1T/mirrlogB
+sudo chfs -m /OLD/oracle/H1T/oraarch /oracle/H1T/oraarch
+sudo chfs -m /OLD/oracle/H1T/origlogA /oracle/H1T/origlogA
+sudo chfs -m /OLD/oracle/H1T/origlogB /oracle/H1T/origlogB
+sudo chfs -m /OLD/oracle/H1T/saparch /oracle/H1T/saparch
+sudo chfs -m /OLD/oracle/H1T/sapdata1 /oracle/H1T/sapdata1
+sudo chfs -m /OLD/oracle/H1T/sapdata10 /oracle/H1T/sapdata10
+sudo chfs -m /OLD/oracle/H1T/sapdata11 /oracle/H1T/sapdata11
+sudo chfs -m /OLD/oracle/H1T/sapdata12 /oracle/H1T/sapdata12
+sudo chfs -m /OLD/oracle/H1T/sapdata13 /oracle/H1T/sapdata13
+sudo chfs -m /OLD/oracle/H1T/sapdata14 /oracle/H1T/sapdata14
+sudo chfs -m /OLD/oracle/H1T/sapdata15 /oracle/H1T/sapdata15
+sudo chfs -m /OLD/oracle/H1T/sapdata2 /oracle/H1T/sapdata2
+sudo chfs -m /OLD/oracle/H1T/sapdata3 /oracle/H1T/sapdata3
+sudo chfs -m /OLD/oracle/H1T/sapdata4 /oracle/H1T/sapdata4
+sudo chfs -m /OLD/oracle/H1T/sapdata5 /oracle/H1T/sapdata5
+sudo chfs -m /OLD/oracle/H1T/sapdata6 /oracle/H1T/sapdata6
+sudo chfs -m /OLD/oracle/H1T/sapdata7 /oracle/H1T/sapdata7
+sudo chfs -m /OLD/oracle/H1T/sapdata8 /oracle/H1T/sapdata8
+sudo chfs -m /OLD/oracle/H1T/sapdata9 /oracle/H1T/sapdata9
+sudo chfs -m /OLD/oracle/H1T/sapreorg /oracle/H1T/sapreorg
+sudo chfs -m /OLD/sapcomm/H1T/merge-na-eu-in /sapcomm/H1T/merge-na-eu-in
+sudo chfs -m /OLD/sapmnt/H1T /sapmnt/H1T
+sudo chfs -m /OLD/usr/sap/H1T /usr/sap/H1T</code>
+  - Unmount the new filesystems<code>for fs in /NEW/usr/sap/H1T /NEW/sapmnt/H1T /NEW/sapcomm/H1T/merge-na-eu-in /NEW/oracle/H1T/sapreorg \
+/NEW/oracle/H1T/sapdata9 /NEW/oracle/H1T/sapdata8 /NEW/oracle/H1T/sapdata7 /NEW/oracle/H1T/sapdata6 \
+/NEW/oracle/H1T/sapdata5 /NEW/oracle/H1T/sapdata4 /NEW/oracle/H1T/sapdata3 /NEW/oracle/H1T/sapdata2 \
+/NEW/oracle/H1T/sapdata15 /NEW/oracle/H1T/sapdata14 /NEW/oracle/H1T/sapdata13 /NEW/oracle/H1T/sapdata12 \
+/NEW/oracle/H1T/sapdata11 /NEW/oracle/H1T/sapdata10 /NEW/oracle/H1T/sapdata1 /NEW/oracle/H1T/saparch \
+/NEW/oracle/H1T/origlogB /NEW/oracle/H1T/origlogA /NEW/oracle/H1T/oraarch /NEW/oracle/H1T/mirrlogB \
+/NEW/oracle/H1T/mirrlogA /NEW/oracle/H1T/11203 /NEW/oracle/H1T
+do
+   sudo umount ${fs}
+done</code>
+  - Rename the new filesystems<code>sudo chfs -m /oracle/H1T /NEW/oracle/H1T
+sudo chfs -m /oracle/H1T/11203 /NEW/oracle/H1T/11203
+sudo chfs -m /oracle/H1T/mirrlogA /NEW/oracle/H1T/mirrlogA
+sudo chfs -m /oracle/H1T/mirrlogB /NEW/oracle/H1T/mirrlogB
+sudo chfs -m /oracle/H1T/oraarch /NEW/oracle/H1T/oraarch
+sudo chfs -m /oracle/H1T/origlogA /NEW/oracle/H1T/origlogA
+sudo chfs -m /oracle/H1T/origlogB /NEW/oracle/H1T/origlogB
+sudo chfs -m /oracle/H1T/saparch /NEW/oracle/H1T/saparch
+sudo chfs -m /oracle/H1T/sapdata1 /NEW/oracle/H1T/sapdata1
+sudo chfs -m /oracle/H1T/sapdata10 /NEW/oracle/H1T/sapdata10
+sudo chfs -m /oracle/H1T/sapdata11 /NEW/oracle/H1T/sapdata11
+sudo chfs -m /oracle/H1T/sapdata12 /NEW/oracle/H1T/sapdata12
+sudo chfs -m /oracle/H1T/sapdata13 /NEW/oracle/H1T/sapdata13
+sudo chfs -m /oracle/H1T/sapdata14 /NEW/oracle/H1T/sapdata14
+sudo chfs -m /oracle/H1T/sapdata15 /NEW/oracle/H1T/sapdata15
+sudo chfs -m /oracle/H1T/sapdata2 /NEW/oracle/H1T/sapdata2
+sudo chfs -m /oracle/H1T/sapdata3 /NEW/oracle/H1T/sapdata3
+sudo chfs -m /oracle/H1T/sapdata4 /NEW/oracle/H1T/sapdata4
+sudo chfs -m /oracle/H1T/sapdata5 /NEW/oracle/H1T/sapdata5
+sudo chfs -m /oracle/H1T/sapdata6 /NEW/oracle/H1T/sapdata6
+sudo chfs -m /oracle/H1T/sapdata7 /NEW/oracle/H1T/sapdata7
+sudo chfs -m /oracle/H1T/sapdata8 /NEW/oracle/H1T/sapdata8
+sudo chfs -m /oracle/H1T/sapdata9 /NEW/oracle/H1T/sapdata9
+sudo chfs -m /oracle/H1T/sapreorg /NEW/oracle/H1T/sapreorg
+sudo chfs -m /sapcomm/H1T/merge-na-eu-in /NEW/sapcomm/H1T/merge-na-eu-in
+sudo chfs -m /sapmnt/H1T /NEW/sapmnt/H1T
+sudo chfs -m /usr/sap/H1T /NEW/usr/sap/H1T</code>
+  - Mount the new filesystems<code>for fs in /oracle/H1T /oracle/H1T/11203 /oracle/H1T/mirrlogA /oracle/H1T/mirrlogB /oracle/H1T/oraarch \
+/oracle/H1T/origlogA /oracle/H1T/origlogB /oracle/H1T/saparch /oracle/H1T/sapdata1 /oracle/H1T/sapdata10 \
+/oracle/H1T/sapdata11 /oracle/H1T/sapdata12 /oracle/H1T/sapdata13 /oracle/H1T/sapdata14 /oracle/H1T/sapdata15 \
+/oracle/H1T/sapdata2 /oracle/H1T/sapdata3 /oracle/H1T/sapdata4 /oracle/H1T/sapdata5 /oracle/H1T/sapdata6 \
+/oracle/H1T/sapdata7 /oracle/H1T/sapdata8 /oracle/H1T/sapdata9 /oracle/H1T/sapreorg /sapcomm/H1T/merge-na-eu-in \
+/sapmnt/H1T /usr/sap/H1T
+do
+   sudo mount ${fs}
+done</code>

@@ -1,0 +1,81 @@
+
+<h1 class="sectionedit1" id="splunk">Splunk</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create the splunk filesystem<pre class="code">sudo pvcreate -f /dev/sdb
+sudo vgcreate datavg01 /dev/sdb
+sudo lvcreate -l 100%FREE -n opt_splunk /dev/datavg01
+sudo mkfs -t ext4 /dev/datavg01/opt_splunk
+echo &quot;/dev/mapper/datavg01-opt_splunk        /opt/splunk          ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+sudo mkdir /opt/splunk
+sudo mount /opt/splunk</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create security accounts, groups for service and team members<pre class="code">sudo groupadd -g 6786 hg_dm
+sudo useradd -g secteam -d /opt/splunk    -c &quot;Splunk Account&quot;      -m -u 6747 splunk
+sudo useradd -g secteam -d /home/jhahn    -c &quot;John Hahn&quot;           -m -u 6692 jhahn
+sudo useradd -g secteam -d /home/kevimitc -c &quot;Kevin Mitchel&quot;       -m -u 6858 kevimitc
+sudo useradd -g secteam -d /home/abdumush -c &quot;Abdul Mushtaq&quot;       -m -u 6950 abdumush
+sudo useradd -g hg_dm   -d /home/hg_dm    -c &quot;Herjavec Group&quot;      -m -u 6786 hg_dm
+sudo useradd -g secteam -d /home/ses8739  -c &quot;Steven E Satkiewicz&quot; -m -u 6145 ses8739</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set an initial password for security team<pre class="code">for user in splunk jhahn kevimitc abdumush hg_dm ses8739
+do
+   echo &quot;${user}:sa/1Ryd7Wk0z.&quot; | sudo chpasswd -e
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable Transparent hugepages<pre class="code">sudo vi /etc/default/grub</pre>
+
+<p>
+Add this to the end of the line that starts with <code>GRUB_CMDLINE_LINUX </code>
+</p>
+<pre class="code">transparent_hugepage=never</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Or use this short cut<pre class="code">sudo ex -sc &quot;/GRUB_CMDLINE_LINUX/s/\&quot;$/ transparent_hugepage=never\&quot;/|x&quot; /etc/default/grub</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Rebuild the grub.cfg file<pre class="code">sudo grub2-mkconfig -o /boot/grub2/grub.cfg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update limits for splunk user<pre class="code">cat &lt;&lt; EOF | sudo tee -a /etc/security/limits.conf
+splunk          soft    nofile           64000
+splunk          hard    nofile           64000
+splunk          soft    nproc            16000
+splunk          hard    nproc            16000
+splunk          soft    data             1073741824
+splunk          hard    data             1073741824
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install EPEL repositories<pre class="code">cat &lt;&lt; EOF | sudo tee -a /etc/yum.repos.d/epel-rhel7.repo
+[local-tenneco-epel-rhel7]
+name=local-tenneco-nbu
+baseurl=http://pcdcunxlxap01/sources/epel-rhel7/
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Splunk repositories<pre class="code">cat &lt;&lt; EOF | sudo tee -a /etc/yum.repos.d/splunk.repo
+[local-tenneco-splunk]
+name=local-tenneco-nbu
+baseurl=http://pcdcunxlxap01/sources/splunk/
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install splunk and syslog-ng packages<pre class="code">sudo yum clean all
+sudo yum install splunk syslog-ng</pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,22 @@
+====== Perform Remote restart - PowerVM ======
+
+  - Add the reserved storage pool for all frames that wish to participate in the Remote Restart function
+  - Allocate a device that is atleast 120% of the Max memory profile to each lpar that needs remote restart functionality
+  - Commands are here **document them neately later **<code>hscroot@tgprhmc6:~> chsysstate -r lpar -o on -m Server-8284-22A-SN215D22V -n taprvio100
+hscroot@tgprhmc6:~> chsysstate -r lpar -o on -m Server-8284-22A-SN215D22V -n taprvio101
+
+
+
+Example commands for remote restart operations:
+Remote Restart :
+rrstartlpar -m <source managed system> -t <target managed system> -o restart -p <lpar name> | --id <lpar id>
+rrstartlpar -m <source managed system> -t <target managed system> -o restart -p <lpar name> | --id <lpar id> [-- usecurrdata] [--force]
+Remote Restart Validate:
+rrstartlpar -m <source managed system> -t <target managed system> -o validate -p <lpar name> | --id <lpar id>
+Remote Restart Recover:
+rrstartlpar -m <source managed system> -t <target managed system> -o recover -p <lpar name> [--force]
+Remote Restart Abort:
+rrstartlpar -m <source managed system> -t <target managed system> -o cancel -p <lpar name> 
+Remote Restart Cleanup:
+rrstartlpar -m <source managed system>  -o cleanup -p <lpar name> | --id <lpar id> [--force]
+</code>

@@ -1,0 +1,238 @@
+
+<p>
+Preserve disks for vio60
+</p>
+<pre class="code">ssh taprvio60 &quot;lspv&quot; &gt; lspv.taprvio60.before
+ssh taprvio60 &quot;lsdev -Cc disk&quot; &gt;lsdev.taprvio60.before
+scp taprvio60:/usr/local/scripts/file_systems.txt file_systems.txt.taprvio60.before
+sudo ssh taprvio60 &quot;/usr/ios/cli/ioscli lsmap -all&quot; &gt; lsmap.taprvio60.before
+sudo ssh taprvio60 &quot;/usr/local/scripts/lsdiskcfg&quot; &gt; lsdiskcfg.taprvio60.before</pre>
+
+<p>
+Preserve disks for vio70
+</p>
+<pre class="code">ssh taprvio70 &quot;lspv&quot; &gt; lspv.taprvio70.before
+ssh taprvio70 &quot;lsdev -Cc disk&quot; &gt;lsdev.taprvio70.before
+scp taprvio70:/usr/local/scripts/file_systems.txt file_systems.txt.taprvio70.before
+sudo ssh taprvio70 &quot;/usr/ios/cli/ioscli lsmap -all&quot; &gt; lsmap.taprvio70.before
+sudo ssh taprvio70 &quot;/usr/local/scripts/lsdiskcfg&quot; &gt; lsdiskcfg.taprvio70.before</pre>
+
+<p>
+Remove Disabled paths from all guests
+</p>
+<pre class="code">sudo smitty mpio;  MPIO Path Management;  Remove Paths; Remove Paths under a Parent</pre>
+
+<p>
+make alt_disk_copy of the boot disk
+</p>
+<pre class="code">sudo alt_disk_copy -d &lt;target_hdiskxx&gt;</pre>
+
+<p>
+Disable cron based alt disks creations
+</p>
+<pre class="code">sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</pre>
+
+<p>
+Reboot VIOS to make sure that the alt boot disk is good and boot back to original as padmin
+</p>
+<pre class="code">shutdown -restart</pre>
+
+<p>
+Ignore these errors
+</p>
+<pre class="code">Apr 15 20:02:19 dggpdb01 tenerrpt: 81453EE1 0416020817 T S vscsi0 Underlying transport error
+Apr 15 20:03:09 qggtdb01 tenerrpt: 81453EE1 0416010817 T S vscsi0 Underlying transport error
+Apr 15 20:03:38 sggpdb01 tenerrpt: 81453EE1 0416020817 T S vscsi1 Underlying transport error
+Apr 15 20:04:28 taitc102 tenerrpt: 6382B81C 0415201117 T S vscsi1 Temporary VSCSI software error
+Apr 15 20:04:28 dgimdb01 tenerrpt: 6382B81C 0416011117 T S vscsi1 Temporary VSCSI software error
+Apr 15 20:04:28 dgasdb01 tenerrpt: 6382B81C 0415201117 T S vscsi0 Temporary VSCSI software error
+Apr 15 20:04:28 qgimdb01 tenerrpt: 6382B81C 0416011117 T S vscsi0 Temporary VSCSI software error
+Apr 15 20:04:28 tsdv1d01 tenerrpt: 6382B81C 0415201117 T S vscsi2 Temporary VSCSI software error
+Apr 15 20:04:28 qggpdb01 tenerrpt: 6382B81C 0416021117 T S vscsi1 Temporary VSCSI software error</pre>
+
+<p>
+Put SEA&#039;s in standby mode
+</p>
+<pre class="code">for i in `lsdev -Cc adapter | grep -i share | awk &#039;{print $1}&#039;`
+do
+sudo chdev -l $i -a ha_mode=standby
+done</pre>
+
+<p>
+Check SEA&#039;s
+</p>
+<pre class="code">for i in `lsdev -Cc adapter | grep -i share | awk &#039;{print $1}&#039;`
+do
+sudo entstat -d $i | grep -e &quot;  Priority&quot; -e &quot;Virtual Adapter&quot; -e &quot;  State:&quot; -e &quot;High Availability Mode&quot;
+done</pre>
+
+<p>
+List all disk maps as padmin
+</p>
+<pre class="code">lsmap -all | grep Backing | awk &#039;{print $3}&#039;</pre>
+
+<p>
+Save the output in the file /tmp/disks.txt
+</p>
+<pre class="code">vi /tmp/disks.txt</pre>
+
+<p>
+As padmin unmap all devices
+</p>
+<pre class="code">for i in `cat /tmp/disks.txt`
+do
+rmvdev -vdev $i
+done</pre>
+
+<p>
+Check lsmap to make sure nothing is mapped
+</p>
+<pre class="code">lsmap -all | more</pre>
+
+<p>
+Stop the common and platform agents, run the following command as root:
+</p>
+<pre class="code">sudo /opt/ibm/director/agent/bin/stopagent_vios 
+sudo cimserver -s</pre>
+
+<p>
+Mount VIOS fix pack 2.2.4.10
+</p>
+<pre class="code">sudo mkdir -p /mnt/VIOS
+sudo mount pgnmsv01://prod/images/vio/vios2/fixpacks /mnt/VIOS</pre>
+
+<p>
+as root Create a link to openssl 
+</p>
+<pre class="code">sudo ln -s /usr/bin/openssl /usr/ios/utils/openssl
+sudo ls -alL /usr/bin/openssl /usr/ios/utils/openssl</pre>
+
+<p>
+Perform the update as padmin
+</p>
+<pre class="code">updateios -accept -dev /mnt/VIOS/VIOS_FP_2.2.4.10</pre>
+
+<p>
+If the update gets stuck on Restarting the CAS nonstop service…………….
+</p>
+<pre class="code">x1rzb826 on taprvio31:/home/x1rzb826&gt;ps -ef | grep nonstop
+    root 12714170  1442038   0 13:13:28      -  0:00 /bin/ksh /var/opt/tivoli/ep/runtime/nonstop/bin/cas_src.sh
+x1rzb826 12910728 26673156   0 13:39:00  pts/1  0:00 grep nonstop
+    root 24772778        1   0 13:13:29      -  0:00 bin/nonstop_aix @/var/opt/tivoli/ep/runtime/nonstop/config/nonstop.properties
+
+kill 24772778</pre>
+<pre class="code">updateios -commit</pre>
+
+<p>
+To view the differences between system and the recommended settings, run the following:
+</p>
+<pre class="code">rules -o diff -s -d</pre>
+
+<p>
+To deploy the VIOS recommended default settings, run the following:
+</p>
+<pre class="code">rules -o deploy -d
+rulescfgset
+shutdown -restart</pre>
+
+<p>
+Get rid off all hdiskpowers and underlinks
+</p>
+<pre class="code">for i in `lspv | grep power | awk &#039;{print $1}&#039;`
+do
+echo &quot;sudo powermt remove dev=$i&quot;
+echo &quot;sudo rmdev -dl $i&quot;
+sudo powermt display dev=$i | grep fscsi | awk &#039;{print &quot;sudo rmdev -dl &quot;$3}&#039;
+done  &gt; /tmp/rmdevs.sh
+
+sh /tmp/rmdevs.sh</pre>
+
+<p>
+Remove any other EMC device (except boot if such)
+</p>
+<pre class="code">for dev in $( lsdev -Ccdisk | grep EMC | awk &#039;{print $1}&#039; )
+do
+   sudo rmdev -dl ${dev}
+done</pre>
+<pre class="code">for dev in $( lsdev -Ccdisk | grep Power | awk &#039;{print $1}&#039; )
+do
+   sudo rmdev -dl ${dev}
+done</pre>
+
+<p>
+Remove any other FC device (except boot if such)
+</p>
+<pre class="code">lsdev -Ccdisk 
+for dev in $( lsdev -Ccdisk | grep FC | awk &#039;{print $1}&#039; )
+do
+   sudo rmdev -dl ${dev}
+done</pre>
+
+<p>
+Remove Powerpath software and EMC ODM
+</p>
+<pre class="code">sudo installp -u EMC.Symmetrix.aix.rte EMC.Symmetrix.fcp.rte EMC.Symmetrix.iscsi.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMCpower.base EMCpower.encryption EMCpower.mpx
+sudo installp -u EMCpower.base EMCpower.encryption EMCpower.migration_enabler EMCpower.mpx</pre>
+
+<p>
+Reboot vio server
+</p>
+<pre class="code">shutdown -restart</pre>
+
+<p>
+Install latest ODM drivers
+<a href="https://unixdocs/doku.php?id=unix:aixsaninitconfig" class="urlextern" title="https://unixdocs/doku.php?id=unix:aixsaninitconfig"  rel="nofollow">https://unixdocs/doku.php?id=unix:aixsaninitconfig</a>
+</p>
+
+<p>
+Get rid of Defines devices
+</p>
+<pre class="code">sudo lsdev -Cc disk | grep FC | grep Define | xargs -n1 rmdev -dl</pre>
+
+<p>
+Check reserve lock
+</p>
+<pre class="code">for dev in $(lsdev -Ccdisk | egrep &quot;FC&quot; | awk &#039;{print $1}&#039; )
+do
+   lsattr -El ${dev} -a reserve_policy
+done</pre>
+
+<p>
+Remap based on pvid and saved configs
+To get pvids for a host:
+</p>
+<pre class="code">grep qggpdb01 lsdiskcfg.taprvio70.before | cut -d : -f6</pre>
+
+<p>
+On VIOS get the hdisk names based of the pvids pasted into file j
+</p>
+<pre class="code">lspv | grep -f j | awk &#039;{print $1}&#039; &gt; /tmp/qggpdb01.txt</pre>
+
+<p>
+As padmin map
+</p>
+<pre class="code">for i in `cat /tmp/qggpdb01.txt`
+do
+mkvdev -vdev $i -vadapter vhost999
+done</pre>
+
+<p>
+Enable paths on all guests (one at a time)
+</p>
+<pre class="code">sudo cfgmgr -v</pre>
+
+<p>
+Put SEA&#039;s back in auto mode
+</p>
+<pre class="code">for i in `lsdev -Cc adapter | grep -i share | awk &#039;{print $1}&#039;`
+do
+sudo chdev -l $i -a ha_mode=auto
+done</pre>
+
+<p>
+Check SEA&#039;s
+</p>
+<pre class="code">for i in `lsdev -Cc adapter | grep -i share | awk &#039;{print $1}&#039;`
+do
+sudo entstat -d $i | grep -e &quot;  Priority&quot; -e &quot;Virtual Adapter&quot; -e &quot;  State:&quot; -e &quot;High Availability Mode&quot;
+done</pre>

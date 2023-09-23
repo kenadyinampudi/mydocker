@@ -1,0 +1,26 @@
+====== North America - Lincolnshire Disaster Recovery test - 2017 -- Mount NFS filesystems ======
+
+
+  - We recommend that NFS mounts to be completed as a step between Datapreservation completing the restore and the delivery of systems to application teams.
+
+===== AIX systems =====
+
+  - Login to all NFS servers, enable NFS exports<code>sudo cp /etc/exports.OLDD /etc/exports</code>Export all filesystems<code>sudo exportfs -av</code>
+  - Login to all NFS clients, mount the filesystems
+    - Add the NFS filesystems back. **Deferred until all systems have been recovered **<code>echo "" >> /etc/filesystems
+grep -p nfs /etc/filesystems.copyforDR | sed "s;bck;;g" >> /etc/filesystems</code>
+    - Umount the filesystems<code>lsnfsmnt | awk '{if ($(NF-1) == "yes") print $0}' | awk '{print $1}' | sort -r | xargs -n1 sudo umount</code>
+    - Mount all filesystems<code>lsnfsmnt | awk '{if ($(NF-1) == "yes") print $0}' | awk '{print $1}' | sort  | xargs -n1 sudo mount</code>
+
+===== Linux systems =====
+
+  - We don not have any NFS servers running on Linux ( ? ) probably.
+  - Login to all NFS clients, mount the filesystems
+    - Unmount the filesystems<code>grep nfs /etc/fstab | grep -v ^# | awk '{print $2}' | sort -r | xargs -n1 sudo umount</code>
+    - Add the NFS filesystems back. **Deferred until all systems have been recovered **<code>grep nfs /etc/fstab | grep -v ^# | awk '{print $2}' | sort | xargs -n1 sudo mount</code>
+
+** When in doubt, ask **
+
+{{:dr:whenindoubtask.jpg?400|}}
+
+** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremly careful ) **

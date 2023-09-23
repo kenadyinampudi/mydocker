@@ -1,0 +1,72 @@
+====== New LPAR Zone and Map ======
+
+=== Discovering new LPARs ===
+Sometimes you will be notified that new LPARs have been created.\\ 
+Sometimes you need to find out yourself.\\ 
+To search for any new LPARs, run
+   ssh tgprhmc7.pt.int.tenneco.com "lssvcevents -t console -d 1 | grep mksyscfg"
+(This assumes that the ssh keys have been exchanged.)
+There's a cron job on CDCPILLX151/root which scans and emails out any new LPARs.
+
+=== What do I zone where? ===
+
+To get a list of LPARs and their WWNs, log into the HMC.
+First, set up some keys for your user.
+  cdcpillx151:> ssh {user}@tgprhmc7.pt.int.tenneco.com
+  tgprhmc7:> mkauthkeys --add '<contents of id_rsa.pub>'
+Next, get all the allocated WWNs.  Because keys are set up, you can execute the command locally to save the output.  This command works because only the "default_profile" is ever used with the automatic LPAR creation.
+  ssh tgprhmc7.pt.int.tenneco.com lsnportlogin -m Powervm11-9040-MR9-SN78AAEAX --filter "profile_names=default_profile" -F lpar_name:slot_num:wwpn >> activewwns.txt
+  ssh tgprhmc7.pt.int.tenneco.com lsnportlogin -m Powervm12-9040-MR9-SN78AAE9X --filter "profile_names=default_profile" -F lpar_name:slot_num:wwpn >> activewwns.txt
+  ssh tgprhmc7.pt.int.tenneco.com lsnportlogin -m Server-8284-22A-SN215D24V --filter "profile_names=default_profile" -F lpar_name:slot_num:wwpn >> activewwns.txt  
+  ssh tgprhmc7.pt.int.tenneco.com lsnportlogin -m Server-8284-22A-SN21F075V --filter "profile_names=default_profile" -F lpar_name:slot_num:wwpn >> activewwns.txt
+  
+Next, turn on all the WWNs.  There's a new command to make the WWNs light up without activating any LPARs.  This lights up EVERY WWN.  You need to loop through each LPAR individually for this to work.
+  ssh tgprhmc7.pt.int.tenneco.com chnportlogin -o login -m Powervm11-9040-MR9-SN78AAEAX --id ${partitionID} -v
+  ssh tgprhmc7.pt.int.tenneco.com chnportlogin -o login -m Powervm12-9040-MR9-SN78AAE9X --id ${partitionID} -v
+  ssh tgprhmc7.pt.int.tenneco.com chnportlogin -o login -m Server-8284-22A-SN215D24V --id ${partitionID} -v
+  ssh tgprhmc7.pt.int.tenneco.com chnportlogin -o login -m Server-8284-22A-SN21F075V --id ${partitionID} -v
+
+Log into each switch to sort out what shows up where.
+  cdcpillx151:> ssh mds01 
+    ussdcxswisan-001# show flogi data | grep c4:3f
+  cdcpillx151:> ssh mds02 
+    ussdcxswisan-002# show flogi data | grep c4:3f
+
+==== Zoning Example ====
+I use Excel to map the WWNs that show up on the switches to the WWNs that belong to each LPAR.
+This is a really manual process.  I don't have it down enough to automate it yet.  
+  * Basically, I sed out the colons 
+    * <code>sed -i 's/://g' filename.txt</code>
+  * Then I paste it into Excel, using the import wizard to grab the lines using space as a delimiter.
+  * Then I use a VLOOKUP to map an LPAR name to the WWN which shows up on the switch.\\  There are usually more WWNs on the switch than defined LPARs.  I'm assuming this is from aborted LPAR creations.
+  * Next I figure out which Pure port to use.  We have 4 ports available per controller.  Use a round-robin approach to assign out the LPARs to a set of ports.\\ For example, the first LPAR would use "TAPRPUR001_CT0PT0" and "TAPRPUR001_CT1PT0"\\ The next LPAR would use "TAPRPUR001_CT0PT1" and "TAPRPUR001_CT1PT1", etc etc.
+  * Next, I format the fields into a format my zoning script likes and save it to CDCPILLX151
+    * <code>cdcpillx151:> cat newzones.txt
+           DAERDB99_0      c050760ac43f0098        TAPRPUR001_CT1PT3       102
+           DAERDB99_0A     c050760ac43f0099        TAPRPUR001_CT1PT3       102
+           DAERDB99_1      c050760ac43f009a        TAPRPUR001_CT0PT3       101
+           DAERDB99_1A     c050760ac43f009b        TAPRPUR001_CT0PT3       101</code>
+  * I run the zone generation script.  I did the same to create Actifio zones for these guys as well.
+    * <code>cdcpillx151:> make-zones-lpar.sh newzones.txt
+cdcpillx151:> make-zones-actifio-cdc-lpar.sh newzones.txt</code>
+  * I then open the zone 101 file in one window, and an actual SSH session to mds01 in another window.
+    * Copy and paste about 50 lines at a time.  Putty has a bug that doesn't like more than that.  It starts dropping lines when you paste.
+  * Do the same for the zone 102 file.
+\\ 
+This should make accurate, up to date zones that match what was actually done in the HMC.
+Obviously, this exact process is hard to follow, as it's not fully automated.  It should provide good insight into the process and places for automation should be evident.
+
+=== How do I check that things are correct? ===
+
+  * Log into a switch.
+    * <code>cdcpillx151:> ssh mds01</code>
+  * Do a show zone active and begin your display at the LPAR name.
+    * <code>mds01:> show zone active | begin <lparname></code>
+  * A good zone will show both the target and initiator as active (with a star)
+    * <code>zone name CDCPILLX075_2-F1500_20514_5B vsan 101
+* fcid 0x654e23 [device-alias CDCPILLX075_2]
+* fcid 0x6556a0 [device-alias F1500_20514_5B]</code>
+  * A zone which needs more investigation will be missing one or the other.
+    * <code>zone name CDCPILLX025_0-CDCPILTL001_F1_R6 vsan 101
+           device-alias CDCPILLX025_0
+* fcid 0x654e40 [device-alias CDCPILTL001_F1_R6]</code>

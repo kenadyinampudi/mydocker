@@ -1,0 +1,263 @@
+
+<h1 class="sectionedit1" id="imo_project_clones_-_driv_-_aix_build_documentation_--_for_t0">IMO Project clones - DRiV - AIX build documentation -- for T0</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> In most cases , the <abbr title="Domain Name System">DNS</abbr> name and IP addresses are already secured.</div>
+</li>
+<li class="level1"><div class="li"> Until a proper firewall is in place, <abbr title="In my opinion">IMO</abbr> builds are <abbr title="Domain Name System">DNS</abbr> disabled to prevent corruption to production.</div>
+</li>
+<li class="level1"><div class="li"> Build AIX systems on these frames </div>
+</li>
+</ul>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">HMC                          </th><th class="col1 leftalign">Frame                     </th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">cdcvilhmc003.fmmotorparts.com</td><td class="col1">Powervm40-9040-MR9-78AAE7X</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">cdcvilhmc003.fmmotorparts.com</td><td class="col1">Powervm39-9040-MR9-78AAE8X</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">cdcvilhmc003.fmmotorparts.com</td><td class="col1">Powervm44-9009-42A-7823D20</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">cdcvilhmc003.fmmotorparts.com</td><td class="col1">Powervm41-9009-42A-7823D40</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">cdcvilhmc003.fmmotorparts.com</td><td class="col1">Powervm42-9009-42A-7823D50</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">cdcvilhmc003.fmmotorparts.com</td><td class="col1">Powervm43-9009-42A-7823D30</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [295-707] -->
+</div>
+<!-- EDIT1 SECTION "IMO Project clones - DRiV - AIX build documentation -- for T0" [1-709] -->
+<h2 class="sectionedit3" id="sizing_guidelines">Sizing guidelines</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Keep the same config as the source.</div>
+</li>
+<li class="level1"><div class="li"> Exceptions</div>
+<ol>
+<li class="level2"><div class="li"> There is only one NIC instead of two.</div>
+</li>
+<li class="level2"><div class="li"> For now, configure another NIC from another subnet - to configure fake IP addresses. ( Until we have a real firewall )</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Sizing guidelines" [710-964] -->
+<h3 class="sectionedit4" id="nim_installation_steps">NIM installation Steps</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> For ease of documentation, export variables for source and target systems<pre class="code">export srcsystem=&lt;system_of_which_you_plan_to_use_mksysb_from&gt;
+export tgtsystem=&lt;system_which_you_plan_to_built&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the mksysb to a temp location and umcompress it<pre class="code">sudo cp /mksysb-images/bos.obj.${srcsystem}.gz /preupgrade/mksysb/
+cd /preupgrade/mksysb/ ; sudo gunzip bos.obj.${srcsystem}.gz</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define a mksysb resource<pre class="code">sudo nim -o define -t mksysb -a server=master -a location=/preupgrade/mksysb/bos.obj.${srcsystem} ${srcsystem}-mksysb</pre>
+
+<p>
+If NIM complains there is an existing resource with that name, please remove it
+</p>
+<pre class="code">sudo nim -o remove ${srcsystem}-mksysb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the OSLEVEL on the system that we plan to clone<pre class="code">ssh ${srcsystem} oslevel -s
+7100-05-02-1810	</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the correct Spot and LPPSRC for the above AIX release level. In this case they are,<pre class="code">710TL05-02_spot
+710TL05-02_lppsrc</pre>
+
+<p>
+Export them as variables
+</p>
+<pre class="code">export lppsrc=&quot;710TL05-02_lppsrc&quot;
+export spot=&quot;710TL05-02_spot&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add systems to /etc/hosts file because the reverse lookups don&#039;t work.<pre class="code">host ${tgtsystem}.driv.com | awk &#039;{print $NF&quot;\t&quot;$1}&#039; | sed &quot;s;.driv.com;;g&quot; | sudo tee -a /etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define system on NIM<pre class="code">sudo nim -o define -t standalone -a platform=chrp -a if1=&quot;find_net ${tgtsystem} 0&quot; -a netboot_kernel=mp ${tgtsystem}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare for a NIM installation<pre class="code">sudo nim -o bos_inst \
+-a source=mksysb \
+-a spot=${spot} \
+-a lpp_source=${lppsrc} \
+-a no_client_boot=yes \
+-a script=postinstallcloneDRiV \
+-a mksysb=${srcsystem}-mksysb \
+${tgtsystem}</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Change the bootp config to send traffic to 10.32.60/24 subnet<pre class="code">sudo ex -sc &quot;/${tgtsystem}/s/10.0.48.12/10.32.60.60/|x&quot; /etc/bootptab</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Add the server to the console database <strong>/prod/images/etc/unix_sys_console</strong><pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> A regular lpar on a P Series frame<pre class="code">pgnmsv01:lpar-ibm:taitc051:pgnmsv01-9111-520-SN10B4F8D:pgnmsv01:2:hscroot</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Power on the server to SMS from HMC.</div>
+<ol>
+<li class="level2"><div class="li"> Find out the frame<pre class="code">export frame=$(grep -i ^${tgtsystem} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $4}&#039; )</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Power on <pre class="code">ssh cdcvilhmc003.fmmotorparts.com &quot;chsysstate -r lpar -o on -b sms -m ${frame} -n ${tgtsystem}&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Open up a console session to the new server. On pgnmsv01<pre class="code">sudo getconsole ${tgtsystem}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At the console, setup Remote IPL as normal and perform a network boot.</div>
+<ol>
+<li class="level2"><div class="li"> Details you need<pre class="code">Client IP : The IP address of the host you are building
+Server IP : 10.32.60.60
+Netmask   : 255.255.255.0
+Def Route : 10.128.40.1 (MP AIX systems), 10.32.60.1 (LDC Clones)</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Wait for the installation to complete</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "NIM installation Steps" [965-3761] -->
+<h3 class="sectionedit5" id="tasks_on_first_boot_from_console">Tasks on first boot from console</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login on console as root.</div>
+</li>
+<li class="level1"><div class="li"> Completely remove network configuration.</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interface<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure IP address.</div>
+<ol>
+<li class="level2"><div class="li"> Configure the front end IP address on en0 interface<pre class="code">/usr/sbin/mktcpip -h &lt;hostname&gt; -a a.b.c.d -m 255.255.255.0 -i en0 -g a.b.c.d -A no -s</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Once done, disconnect from the console, get back to NIM server and remove the temporary /etc/hosts entry<pre class="code">sudo cp /etc/hosts /etc/hosts.$(date +%m%d%Y)
+sudo ex -sc &quot;/${tgtsystem}/d|x&quot; /etc/hosts</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Tasks on first boot from console" [3762-4693] -->
+<h3 class="sectionedit6" id="post_installation_tasks_from_nim_server">Post installation tasks from NIM server</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to pgnmsv01 and define a variable pointing to the system you are building<pre class="code">export tgtsystem=&lt;host_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable <abbr title="Domain Name System">DNS</abbr>, push hosts file, NTP etc<pre class="code">sudo ssh ${tgtsystem}.driv.com rm /etc/resolv.conf
+sudo scp /prod/images/etc/hostsfile.imoclone.driv ${tgtsystem}.driv.com:/etc/hosts
+sudo scp /prod/images/etc/ntp.conf.aix.imoclone.driv ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com &quot;chrctcp -S -a xntpd&quot;
+sudo ssh ${tgtsystem}.driv.com &quot;ntpdate -u cdcvildns001.fmmotorparts.com&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Post installation tasks from NIM server" [4694-5274] -->
+<h3 class="sectionedit7" id="post_installation_-_generic_tasks_from_the_host">Post installation - generic tasks from the host</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the host you are building<pre class="code">ssh ${tgtsystem}.driv.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable cron jobs for application accounts<pre class="code">sudo ls -1 /var/spool/cron/crontabs \
+| egrep -v &quot;^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$&quot; | sudo tee -a /var/adm/cron/cron.deny</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron<pre class="code">sudo mkitab cron:23456789:respawn:/usr/sbin/cron</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable production VLANs using dummy VLAN tagged interfaces<pre class="code">for dummyvlan in 500 501 502 503 504 505
+do
+   sudo mkdev -t eth -a base_adapter=ent1 -a vlan_tag_id=${dummyvlan}
+done</pre>
+
+<p>
+Then discover new devices
+</p>
+<pre class="code">sudo cfgmgr</pre>
+
+<p>
+Configure dummy IPs to production subnets
+</p>
+<pre class="code">inum=2
+for IP in 10.0.48.22 10.0.49.21 10.32.50.23 10.32.51.31 10.32.6.44 10.56.1.121
+do
+   sudo chdev -l en${inum} -a netaddr=${IP} -a netmask=255.255.255.0 -a state=up
+   inum=$(echo &quot;${inum} + 1&quot; | bc )
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Setup alt_rootvg</div>
+<ol>
+<li class="level2"><div class="li"> Look for another 138G device that is not allocated to any volume group<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh</pre>
+
+<p>
+Create a alt_disk_copy
+</p>
+<pre class="code">sudo alt_disk_copy -B -d hdiskX</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Some systems are part of clusters. Let&#039;s change the automount and autovarryon values<pre class="code">lsvg | grep -v rootvg | xargs -n1 sudo chvg -a y
+
+for vg in $(lsvg | grep -v rootvg )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo chfs -A yes ${fs}
+      echo &quot;Enabling ${vg} - ${fs} &quot;
+   done
+done</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Post installation - generic tasks from the host" [5275-] -->

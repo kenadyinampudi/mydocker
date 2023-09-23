@@ -1,0 +1,19 @@
+version: '3'
+services:
+  dokuwiki:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - dokuwiki-data:/var/www/html/data
+    networks:
+      - dokuwiki-network
+
+volumes:
+  dokuwiki-data:
+
+networks:
+  dokuwiki-network:
+

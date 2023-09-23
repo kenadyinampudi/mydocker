@@ -1,0 +1,64 @@
+====== Install Tanium Client on AIX and Linux servers  =======
+
+===== Preparation work =====
+    - Check the /opt file system on the  server being worked on has at lease 2Gb of free space AIX <code> df -g /opt </code> Linux <code>df -h</code> If it does not have 2Gb of free space increase he size of /opt until there is 2Gb of free space.
+
+===== AIX =====
+
+    - Make directory and mount <code> sudo mkdir -p /mnt/tanium ; sudo mount pcdcunxaxap01:/prod/images/applications/tanium /mnt/tanium </code> 
+    - Change Driectoroy to AIX installation Code <code> cd /mnt/tanium/AIX ;ls </code> Outout should look like this<code>7.2.314.3632_client_package.zip        TaniumClient-7.2.314.3632-powerpc.pkg  tanium.pub
+SetupClient.exe                        TaniumClient-7.2.314.3632.pkg
+</code>
+    - Install the Tanium Client <code>sudo installp -agqXYd  /mnt/tanium/AIX/TaniumClient-7.2.314.3632-powerpc.pkg TaniumClient</code> 
+    - Double check installation <code>lslpp -l TaniumClient.rte </code> utput should look like this <code>Installation Summary
+--------------------
+Name                        Level           Part        Event       Result
+-------------------------------------------------------------------------------
+TaniumClient.rte            7.2.314.3632    USR         APPLY       SUCCESS
+TaniumClient.rte            7.2.314.3632    ROOT        APPLY       SUCCESS
+</code>
+    - Copy the configuratonfile to the Tanium driectory on the the server <code> sudo cp -p /mnt/tanium/AIX/tanium.pub  /opt/Tanium/TaniumClient/ </code>
+    - Run the following commands <code> sudo /opt/Tanium/TaniumClient/TaniumClient config set ServerNameList CDCUSLA025.driv.com</code><code>sudo /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel 1</code><code>sudo /opt/Tanium/TaniumClient/TaniumClient config set resolver nslookup</code><code>sudo startsrc -s taniumclient</code>
+    - Check that it started <code>lssrc -s taniumclient</code> output should look like <code>Subsystem         Group            PID          Status
+ taniumclient     tcpip            19136642     active</code>
+
+
+
+===== Red Hat =====
+
+    - Make directory and mount <code> sudo mkdir -p /mnt/tanium ; sudo mount -o rw,vers=3 pcdcunxaxap01:/prod/images/applications/tanium /mnt/tanium </code> 
+    - Change Driectoroy to Linux/redhat for installation Code <code> cd /mnt/tanium/LINUX/redhat ;ls </code> Outout should look like this<code>TaniumClient-7.2.314.3632-1.rhe5.i386.rpm    TaniumClient-7.2.314.3632-1.rhe8.x86_64.rpm  TaniumClient-7.4.2.2073-1.rhe7.aarch64.rpm
+TaniumClient-7.2.314.3632-1.rhe5.x86_64.rpm  TaniumClient-7.4.2.2073-1.rhe5.i386.rpm      TaniumClient-7.4.2.2073-1.rhe7.x86_64.rpm
+TaniumClient-7.2.314.3632-1.rhe6.i686.rpm    TaniumClient-7.4.2.2073-1.rhe5.x86_64.rpm    TaniumClient-7.4.2.2073-1.rhe8.x86_64.rpm
+TaniumClient-7.2.314.3632-1.rhe6.x86_64.rpm  TaniumClient-7.4.2.2073-1.rhe6.i686.rpm
+TaniumClient-7.2.314.3632-1.rhe7.x86_64.rpm  TaniumClient-7.4.2.2073-1.rhe6.x86_64.rpm
+</code>
+    - Check the versuon of Red Hat to install the corrrect client <code>/mnt/tanium/scripts/get-instructions.sh</code>
+    - If Version = 6 Install the Tanium Client <code>sudo rpm -i TaniumClient-7.4.2.2073-1.rhe6.x86_64.rpm</code> 
+    - If Version = 7 Install the Tanium Client <code>sudo rpm -i TaniumClient-7.4.2.2073-1.rhe7.x86_64.rpm</code> 
+    - Check the installation completed <code> rpm -qa | grep Tanium</code> Output should look like this <code> TaniumClient-7.4.2.2073-1.rheX.x86_64</code>
+    - Copy the configuratonfile to the Tanium driectory on the the server <code> sudo cp -p /mnt/tanium/LINUX/tanium-init.dat  /opt/Tanium/TaniumClient/ </code>
+    - Run the following commands <code> sudo /opt/Tanium/TaniumClient/TaniumClient config set ServerNameList CDCUSLA025.driv.com</code><code>sudo /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel 1</code><code>sudo systemctl start taniumclient</code>
+    - Check to see if it is running <code>ps -aef | grep -i TaniumClient </code>Note per Tanium Support there could be between 2 and 4 processes running depending on the state of the client at the time the command was run output should look something like<code>/opt/Tanium/TaniumClient/TaniumClient -d
+/opt/Tanium/TaniumClient/TaniumClient -c
+/opt/Tanium/TaniumClient/TaniumClient -m
+/opt/Tanium/TaniumClient/TaniumCX --purpose libSupportCX.so</code>  
+    
+===== SUSE =====
+
+    - Make directory and mount <code> sudo mkdir -p /mnt/tanium ; sudo mount pcdcunxaxap01:/prod/images/applications/tanium /mnt/tanium </code> 
+    - Change Driectoroy to Linux/suse for installation Code <code> cd /mnt/tanium/LINUX/suse ;ls </code> Outout should look like this<code>TaniumClient-7.2.314.3632-1.sle11.i586.rpm    TaniumClient-7.2.314.3632-1.sle12.x86_64.rpm  TaniumClient-7.4.2.2073-1.sle12.x86_64.rpm
+TaniumClient-7.2.314.3632-1.sle11.x86_64.rpm  TaniumClient-7.2.314.3632-1.sle15.x86_64.rpm  TaniumClient-7.4.2.2073-1.sle15.x86_64.rpm
+TaniumClient-7.2.314.3632-1.sle12.i586.rpm    TaniumClient-7.4.2.2073-1.sle12.i586.rpm
+</code>
+    - Check the versuon of SUSE to install the corrrect client <code>/mnt/tanium/scripts/get-instructions.sh</code>
+    - If Version 11  Install the Tanium Client <code>sudo rpm -i TaniumClient-7.2.314.3632-1.sle11.x86_64.rpm</code>Check the installation completed <code> rpm -qa | grep Tanium</code> Output should look like this <code> TaniumClient-7.2.314.3632-1.sle11..x86_64</code>Copy the configuratonfile to the Tanium driectory on the the server <code> sudo cp -p /mnt/tanium/LINUX/tanium.pub  /opt/Tanium/TaniumClient/ </code>
+    - If Version 12  Install the Tanium Client <code>sudo rpm -i TaniumClient-7.4.2.2073-1.sle12.x86_64.rpm</code>Check the installation completed <code> rpm -qa | grep Tanium</code> Output should look like this <code> TaniumClient-7.4.2.2073-1.sle12.x86_64.rpm</code>  Tanium driectory on the the server <code> sudo cp -p /mnt/tanium/LINUX/tanium-init.dat  /opt/Tanium/TaniumClient/ </code>
+    - Check the installation completed <code> rpm -qa | grep Tanium</code> Output should look like this <code> TaniumClient-7.2.314.3632-1.slexx..x86_64</code>
+    - Run the following commands <code> sudo /opt/Tanium/TaniumClient/TaniumClient config set ServerNameList CDCUSLA025.driv.com</code><code>sudo /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel 1</code><code>sudo /sbin/service taniumclient start</code>
+    - Check to see if it is running <code>ps -aef | grep -i TaniumClient </code>Note per Tanium Support there could be between 2 and 4 processes running depending on the state of the client at the time the command was run output should look something like<code>/opt/Tanium/TaniumClient/TaniumClient -d
+/opt/Tanium/TaniumClient/TaniumClient -c
+/opt/Tanium/TaniumClient/TaniumClient -m
+/opt/Tanium/TaniumClient/TaniumCX --purpose libSupportCX.so</code>  
+    
+

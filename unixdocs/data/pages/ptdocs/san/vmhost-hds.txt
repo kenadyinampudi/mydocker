@@ -1,0 +1,139 @@
+====== Adding VMWare host - HDS ======
+
+The first thing is to work out the proper ports.\\
+We use a [[\\cdcpilns013.federalmogul.com\sandocumentation\engineering\hds\f1500\f1500 20514 port documentation.xlsx | port documentation Excel sheet]] to figure out a range of where things should go.\\ 
+Then I can use [[http://cdcpilla023.federalmogul.com:22015/DeviceManager/ | Replication Manager ]] to roughly guess which ports of the range are least used and choose that.\\ 
+The temptation will be to just choose the same port everything else uses.  This could lead to overloading a port. Try to spread the load out evenly, even if this means some ports are more densely assigned than others.\\ 
+
+
+Next, I hop onto CDCPILLX151 to create the zoning scripts.\\
+See the [[:newlpar#[Zoning Example] | existing example]] for LPARs.
+
+Apply these to each switch, remembering to save afterwards.\\ 
+
+==== Create HostGroups ====
+
+Next, as root cd over to /home/leedsn16 to use some of the raidcom tools I filched from Bruce.\\
+  cd /home/leedsn16/projects/raidcom/cdc-bin
+  
+Figure out which array to tackle first.\\ 
+Here's a handy [[san:HorcmInstances | list of HORCM instances ]] and their purposes.\\
+
+Login to that HORCM instance to grant you rights to add a hostgroup.\\
+Let's use HORCM instance 69 (G800) as an example.\\
+<code>cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom -login -IH69
+User for Serial#[441548] : leedsn16
+Password :
+</code>
+Any valid user with modify rights in DeviceManager should be valid.\\
+\\
+Run the raidcom commands to add the host to both the odd and even port at the same time.  This helps maintain the same group ID on both ports.\\
+<code>
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add host_grp -port cl7-d -host_grp_name CDCPILVM191 -IH69
+raidcom: Host group ID 12(0xc) will be used for adding.
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add host_grp -port cl8-d -host_grp_name CDCPILVM191 -IH69
+raidcom: Host group ID 12(0xc) will be used for adding.
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add host_grp -port cl3-c -host_grp_name CDCPILVM192 -IH69
+raidcom: Host group ID 13(0xd) will be used for adding.
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add host_grp -port cl4-c -host_grp_name CDCPILVM192 -IH69
+raidcom: Host group ID 13(0xd) will be used for adding.
+</code>
+\\ 
+Next, modify the host group mode and options to support VMware functions.\\
+<code>
+raidcom modify host_grp -port cl7-d CDCPILVM191 -host_mode VMWARE_EX -host_mode_opt 54 63 -IH69
+raidcom modify host_grp -port cl8-d CDCPILVM191 -host_mode VMWARE_EX -host_mode_opt 54 63 -IH69
+raidcom modify host_grp -port cl3-c CDCPILVM192 -host_mode VMWARE_EX -host_mode_opt 54 63 -IH69
+raidcom modify host_grp -port cl4-c CDCPILVM192 -host_mode VMWARE_EX -host_mode_opt 54 63 -IH69
+</code>\\ 
+Next, add the WWNs to the host group and set the nickname of the WWNs to match the device alias on the switches.\\ 
+<code>
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add hba_wwn -port cl3-c CDCPILVM192 -hba_wwn 20000025b5a80002 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add hba_wwn -port cl4-c CDCPILVM192 -hba_wwn 20000025b5b80002 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add hba_wwn -port cl7-d CDCPILVM191 -hba_wwn 20000025b5a80001 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add hba_wwn -port cl8-d CDCPILVM191 -hba_wwn 20000025b5b80001 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom set hba_wwn -port cl3-c CDCPILVM192 -hba_wwn 20000025b5a80002 -wwn_nickname CDCPILVM192_0 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom set hba_wwn -port cl4-c CDCPILVM192 -hba_wwn 20000025b5b80002 -wwn_nickname CDCPILVM192_1 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom set hba_wwn -port cl7-d CDCPILVM191 -hba_wwn 20000025b5a80001 -wwn_nickname CDCPILVM191_0 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom set hba_wwn -port cl8-d CDCPILVM191 -hba_wwn 20000025b5b80001 -wwn_nickname CDCPILVM191_1 -IH69
+</code>
+Add the host to Device Manager, if this host does not already exist.\\
+Once added, refresh the array within Device Manager.\\
+\\
+After waiting for the refresh, you should now be able to allocate disk.\\
+\\
+==== Cloning an existing VM server ====
+Most of the time, you are adding a server into an existing cluster, which means you want to add all the same disks from one server to an additional server.\\
+In the same "cdc-bin" directory, there's a script to print out the necessary commands to allocate the disks over to a separate VM host.\\
+<code>
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # ./clone-vmhost-safe.sh
+enter SourceVMHost VMPort DestVMHost DestPort1 DestPort2
+example:
+SFLDMIAX37 cl1-n CDCVILAX37 cl1-c cl2-c HORCMINST
+</code>
+Since the host groups were just created, you now know what to use for the second parts.  Find a source server for the example to copy from.  This is usually an existing VMHost in the cluster.\\
+Execute the script.  This does not actually do anything.  It will just print out the commands for you to run manually.\\
+<code>
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # ./clone-vmhost-safe.sh CDCPILVM151 cl7-d CDCPILVM191 cl7-d cl8-d 69
+clone CDCPILVM151, port cl7-d to vsp91658 port cl7-d and port cl8-d
+CL7-D 6 CDCPILVM151 441548 VMWARE_EX 54 63
+CL7-D 12 CDCPILVM191 441548 VMWARE_EX 54 63
+CL8-D 12 CDCPILVM191 441548 VMWARE_EX 54 63
+raidcom get lun -port cl7-d-6 -IH69
+0 01:B1
+1 01:CE
+2 01:CF
+3 01:D0
+4 01:D1
+5 01:D2
+6 01:D3
+7 01:D4
+8 01:D5
+9 01:D6
+A 01:D7
+B 01:D8
+C 01:D9
+D 01:DA
+E 00:8D
+F 00:8F
+10 00:96
+11 00:07
+12 00:B5
+1C 02:9E
+30 01:F7
+# add 1 01:CE to CDCPILVM191
+raidcom add lun -port cl7-d-12 -ldev_id 462 -lun_id 1 -IH69
+raidcom add lun -port cl8-d-12 -ldev_id 462 -lun_id 1 -IH69
+# add 2 01:CF to CDCPILVM191
+raidcom add lun -port cl7-d-12 -ldev_id 463 -lun_id 2 -IH69
+raidcom add lun -port cl8-d-12 -ldev_id 463 -lun_id 2 -IH69
+# add 3 01:D0 to CDCPILVM191
+raidcom add lun -port cl7-d-12 -ldev_id 464 -lun_id 3 -IH69
+raidcom add lun -port cl8-d-12 -ldev_id 464 -lun_id 3 -IH69
+...
+</code>
+I truncated the output for clarity.  Copy and paste the commands into the terminal as displayed and the disks will be mapped to the servers.\\
+<code>
+...
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # # add 2 01:CF to CDCPILVM191
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add lun -port cl7-d-12 -ldev_id 463 -lun_id 2 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add lun -port cl8-d-12 -ldev_id 463 -lun_id 2 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # # add 3 01:D0 to CDCPILVM191
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add lun -port cl7-d-12 -ldev_id 464 -lun_id 3 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add lun -port cl8-d-12 -ldev_id 464 -lun_id 3 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # # add 4 01:D1 to CDCPILVM191
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add lun -port cl7-d-12 -ldev_id 465 -lun_id 4 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add lun -port cl8-d-12 -ldev_id 465 -lun_id 4 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # # add 5 01:D2 to CDCPILVM191
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add lun -port cl7-d-12 -ldev_id 466 -lun_id 5 -IH69
+cdcpillx151:/home/leedsn16/projects/raidcom/cdc-bin # raidcom add lun -port cl8-d-12 -ldev_id 466 -lun_id 5 -IH69
+...
+</code>\\
+Once this completes and you are done, remember to log out of the command device using raidcom.\\ 
+  raidcom -logout -IH69
+\\
+Verify in VMWare, but the server should see disk. 
+**If this is the first time the server has been mapped to the storage array, you may need to reboot the VMHost to get it to recognize the new array.**  You will not need to do this more than once per host per array.
+
+
+

@@ -1,0 +1,211 @@
+====== More power8 zoning ======
+<code>qnpr3d01
+
+c0507607f353001e	ldcds6510a1		9
+c0507607f353001f	ldcds6510a1		9
+c0507607f353001c	ldcds6510b1		8	
+c0507607f353001d	ldcds6510b1		8	
+
+2 x 134Gig for OS
+14 x 103Gig for data Tier2 
+
+All VNX --
+
+
+xnpr3d01
+
+c0507607f3530018	ldcds6510a1		8
+c0507607f3530019	ldcds6510a1		8
+c0507607f353001a	ldcds6510b1		9
+c0507607f353001b	ldcds6510b1		9
+
+2 * 134G
+14 * 102G
+
+All VMAX -- bronze
+
+
+
+Fabric A
+
+alicreate "tnqa3d01_53001e","c0:50:76:07:f3:53:00:1e"
+alicreate "tnqa3d01_53001f","c0:50:76:07:f3:53:00:1f"
+alicreate "xnpr3d01_530018","c0:50:76:07:f3:53:00:18"
+alicreate "xnpr3d01_530019","c0:50:76:07:f3:53:00:19"
+
+
+zonecreate "tnqa3d01_53001e__vnx53001_spa0_spb0","tnqa3d01_53001e;vnx53001_spa0;vnx53001_spb0"
+zonecreate "tnqa3d01_53001f__vnx53001_spa0_spb0","tnqa3d01_53001f;vnx53001_spa0;vnx53001_spb0"
+
+zonecreate "xnpr3d01_530018__vmax_0301_2g1","xnpr3d01_530018;vmax_0301_2g1"
+zonecreate "xnpr3d01_530019__vmax_0301_2g1","xnpr3d01_530019;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","tnqa3d01_53001e__vnx53001_spa0_spb0;tnqa3d01_53001f__vnx53001_spa0_spb0"
+cfgadd "fab_a_act_config","xnpr3d01_530018__vmax_0301_2g1;xnpr3d01_530019__vmax_0301_2g1"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+Fabric B
+
+alicreate "tnqa3d01_53001c","c0:50:76:07:f3:53:00:1c"
+alicreate "tnqa3d01_53001d","c0:50:76:07:f3:53:00:1d"
+
+alicreate "xnpr3d01_53001a","c0:50:76:07:f3:53:00:1a"
+alicreate "xnpr3d01_53001b","c0:50:76:07:f3:53:00:1b"
+
+zonecreate "tnqa3d01_53001c__vnx53001_spa1_spb1","tnqa3d01_53001c;vnx53001_spa1;vnx53001_spb1"
+zonecreate "tnqa3d01_53001d__vnx53001_spa1_spb1","tnqa3d01_53001d;vnx53001_spa1;vnx53001_spb1"
+
+zonecreate "xnpr3d01_53001a__vmax_0301_3g1","xnpr3d01_53001a;vmax_0301_3g1"
+zonecreate "xnpr3d01_53001b__vmax_0301_3g1","xnpr3d01_53001b;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","tnqa3d01_53001c__vnx53001_spa1_spb1;tnqa3d01_53001d__vnx53001_spa1_spb1"
+cfgadd "fab_b_act_config","xnpr3d01_53001a__vmax_0301_3g1;xnpr3d01_53001b__vmax_0301_3g1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+naviseccli -h ldcvnx53001spa storagegroup -create -gname TNQA3D01
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TNQA3D01 -hbauid c0:50:76:07:f3:53:00:1e:c0:50:76:07:f3:53:00:1e -sp a -spport 4 -type 3 -ip 10.0.48.73 -host TNQA3D01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TNQA3D01 -hbauid c0:50:76:07:f3:53:00:1e:c0:50:76:07:f3:53:00:1e -sp b -spport 4 -type 3 -ip 10.0.48.73 -host TNQA3D01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TNQA3D01 -hbauid c0:50:76:07:f3:53:00:1f:c0:50:76:07:f3:53:00:1f -sp a -spport 4 -type 3 -ip 10.0.48.73 -host TNQA3D01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TNQA3D01 -hbauid c0:50:76:07:f3:53:00:1f:c0:50:76:07:f3:53:00:1f -sp b -spport 4 -type 3 -ip 10.0.48.73 -host TNQA3D01 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TNQA3D01 -hbauid c0:50:76:07:f3:53:00:1c:c0:50:76:07:f3:53:00:1c -sp a -spport 5 -type 3 -ip 10.0.48.73 -host TNQA3D01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TNQA3D01 -hbauid c0:50:76:07:f3:53:00:1c:c0:50:76:07:f3:53:00:1c -sp b -spport 5 -type 3 -ip 10.0.48.73 -host TNQA3D01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TNQA3D01 -hbauid c0:50:76:07:f3:53:00:1d:c0:50:76:07:f3:53:00:1d -sp a -spport 5 -type 3 -ip 10.0.48.73 -host TNQA3D01 -failovermode 4 -arraycommpath 1
+naviseccli -h ldcvnx53001spa storagegroup -setpath -o -gname TNQA3D01 -hbauid c0:50:76:07:f3:53:00:1d:c0:50:76:07:f3:53:00:1d -sp b -spport 5 -type 3 -ip 10.0.48.73 -host TNQA3D01 -failovermode 4 -arraycommpath 1
+
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 803 -name TNQA3D01_803
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName PROD-POOL -aa 1 -l 804 -name TNQA3D01_804
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 805 -name TNQA3D01_805
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 806 -name TNQA3D01_806
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 807 -name TNQA3D01_807
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 808 -name TNQA3D01_808
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 809 -name TNQA3D01_809
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 810 -name TNQA3D01_810
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 811 -name TNQA3D01_811
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 812 -name TNQA3D01_812
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 813 -name TNQA3D01_813
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 814 -name TNQA3D01_814
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 815 -name TNQA3D01_815
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 816 -name TNQA3D01_816
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 817 -name TNQA3D01_817
+naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName PROD-POOL -aa 1 -l 818 -name TNQA3D01_818
+
+
+HLU=0
+
+for LUN in 803 804 805 806 807 808 809 810 811 812 813 814 815 816 817 818
+do
+   echo "naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname TNQA3D01 -alu ${LUN} -hlu ${HLU}"
+   export HLU=$(echo "${HLU} + 1" | bc )
+done
+
+c0507607f3530018	ldcds6510a1		8
+c0507607f3530019	ldcds6510a1		8
+c0507607f353001a	ldcds6510b1		9
+c0507607f353001b	ldcds6510b1		9
+
+
+sudo symaccess -sid 0301 -name xnpr3d01_IG -type initiator create
+sudo symaccess -sid 0301 -name xnpr3d01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name xnpr3d01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name xnpr3d01_IG -type initiator -wwn c0507607f3530018 add
+sudo symaccess -sid 0301 -name xnpr3d01_IG -type initiator -wwn c0507607f3530019 add
+sudo symaccess -sid 0301 -name xnpr3d01_IG -type initiator -wwn c0507607f353001a add
+sudo symaccess -sid 0301 -name xnpr3d01_IG -type initiator -wwn c0507607f353001b add
+
+
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 08FA;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 08FA;" commit -nop
+
+sudo symconfigure -sid 0301 -cmd "configure 14 devices copying dev 1026;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 14 devices copying dev 1026;" commit -nop
+
+sudo symaccess -sid 0301 -name xnpr3d01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name xnpr3d01_SG add devs 
+sudo symfast -sid 0301 -fp_name Bronze associate -sg xnpr3d01_SG -priority 2
+sudo symaccess -sid 0301 create view -name xnpr3d01_MV -sg xnpr3d01_SG -pg 2G1_3G1_PG -ig xnpr3d01_IG</code>
+
+
+<code>pgscdb01
+
+c0507607f34d0010		ldcds6510b1		7
+c0507607f34d0012		ldcds6510a1		14
+
+
+pagi3p01
+
+c0507607f34d0014		ldcds6510a1		7
+c0507607f34d0016		ldcds6510b1		14
+
+	
+Fabric A
+
+VMAX --> zone to vmax_0301_2g1
+DMX4 --> zone to dmx4_3339_9d1
+
+
+alicreate "dmx4_3339_9d1","50:06:04:8a:d5:2f:ca:f8"
+
+alicreate "pgscdb01_4d0012","c0:50:76:07:f3:4d:00:12"
+alicreate "pagi3p01_4d0014","c0:50:76:07:f3:4d:00:14"
+
+zonecreate "pgscdb01_4d0012__vmax_0301_2g1","pgscdb01_4d0012;vmax_0301_2g1"
+zonecreate "pgscdb01_4d0012__dmx4_3339_9d1","pgscdb01_4d0012;dmx4_3339_9d1"
+zonecreate "pagi3p01_4d0014__vmax_0301_2g1","pagi3p01_4d0014;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","pgscdb01_4d0012__vmax_0301_2g1;pgscdb01_4d0012__dmx4_3339_9d1;pagi3p01_4d0014__vmax_0301_2g1"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+
+
+Fabric B
+
+VMAX --> zone to vmax_0301_3g1
+DMX4 --> zone to dmx4_3339_8d1
+
+alicreate "dmx4_3339_8d1","50:06:04:8a:d5:2f:ca:f7"
+
+alicreate "pgscdb01_4d0010","c0:50:76:07:f3:4d:00:10"
+alicreate "pagi3p01_4d0016","c0:50:76:07:f3:4d:00:16"
+
+zonecreate "pgscdb01_4d0010__vmax_0301_3g1","pgscdb01_4d0010;vmax_0301_3g1"
+zonecreate "pgscdb01_4d0010__dmx4_3339_8d1","pgscdb01_4d0010;dmx4_3339_8d1"
+zonecreate "pagi3p01_4d0016__vmax_0301_3g1","pagi3p01_4d0016;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","pgscdb01_4d0010__vmax_0301_3g1;pgscdb01_4d0010__dmx4_3339_8d1;pagi3p01_4d0016__vmax_0301_3g1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator create
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator -wwn c0507607f34d0012 add
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator -wwn c0507607f34d0010 add
+
+
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator create
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator -wwn c0507607f34d0014 add
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator -wwn c0507607f34d0016 add
+
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 08FA;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 08FA;" commit -nop
+
+sudo symaccess -sid 0301 -name pgscdb01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pgscdb01_SG add devs 
+sudo symfast -sid 0301 -fp_name Gold associate -sg pgscdb01_SG -priority 2
+sudo symaccess -sid 0301 create view -name pgscdb01_MV -sg pgscdb01_SG -pg 2G1_3G1_PG -ig pgscdb01_IG
+
+sudo symaccess -sid 0301 -name pagi3p01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pagi3p01_SG add devs 
+sudo symfast -sid 0301 -fp_name Gold associate -sg pagi3p01_SG -priority 2
+sudo symaccess -sid 0301 create view -name pagi3p01_MV -sg pagi3p01_SG -pg 2G1_3G1_PG -ig pagi3p01_IG</code>

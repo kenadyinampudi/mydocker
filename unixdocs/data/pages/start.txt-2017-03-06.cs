@@ -1,0 +1,314 @@
+
+**This is a place holder for creating and updating standard operational procedures but not limited to any technical documentation. The pages are indexed so that it can be searched in future.**
+
+
+Dokuwiki has a syntax that helps you format the documentation and codes when required. More documentation on this can be found here. [[wiki:syntax|Formatting Syntax]]
+
+====== Unix Team's Contact details ======
+
+==== Unix Oncall ====
+
+|Phone|+1-224-286-1240|
+|Email|giosunix@tenneco.com|
+
+
+  - [[unix:unix_on_call_rotation_from_start_through_2017_year_end | UNIX On Call Schedule ]]
+
+==== Additional contact information ====
+
+^Name^Phone^Email^
+|Robert Bieniek|+1-312-371-8267|rbieniek@tenneco.com|
+|Chris Stachowiak|+1-224-456-5077|cstachowiak@tenneco.com|
+|Kapilraj Koroth|+1-443-878-3970|kkoroth@tenneco.com|
+|Shukant Lagwankar|+91-982-172-9019|slagwankar@tenneco.com|
+|Vasudevan Nadar|+91-916-798-4732|vnadar@tenneco.com|
+|India-Oncall-No|+1-224-509-5516| |
+|Oncall-GoogleNo|+1-224-286-1240|csincus@gmail.com|
+
+====== Documents for Unix customers / users ======
+
+  - [[security:sudoforuers|sudo documentation for our customers ( Basis, Middleware, DBA, Openview etc ) ]]
+
+
+====== Unix Team's Wish list ======
+
+  - [[worktodo:listtodo|Work to do - when you get free time from projects/maintenance]]
+
+====== Frequently used URLs ======
+
+  - [[http://taqa1a03.na.ten:8080/uuma/?|Unix User Management Application]]
+  - [[unix:hmcurls|HMC - Hardware Management Consoles ]]
+  - [[https://tenneco.planflex.net|Planview URL]]
+  - [[http://helpdesk|HelpDesk application]]
+  - [[https://my.intercall.com/taunix|Unix Team Unified meeting URL]]
+  - [[unix:tennecooffices|Tenneco Offices - Address and contacts]]
+  - [[http://talakdb1/ITProcurementSystem.nsf/Main?OpenForm|E - Procurement Request system]]
+====== Vendor Contact details ======
+
+^Name^Contact No^Email^CustomerNo/Contract No^Description^Application Contact^
+|HPE - Software|+1-800-633-3600|http://www.hpe.com/go/hpesc|SAID number 104682770304, SAR number PCASMPD501USE6408YHP|
+|HPE - Hardware|+1-800-633-3600|http://www.hpe.com/go/hpesc|SAID number XXXXXXXXXXX, SAR number ASMPD501512AP4ZH15H|
+|Service Express|+1-800-940-5585\\ +1-866-632-4573| | |
+|Osiatis|+32-2 7182648|call.dispatching.be@econocom.com|2011/019/M |
+|US IBM|+1-800-426-7378| | |
+|EU IBM|+32-2-339-3611| | |
+|Poland IBM|+48-22-87-86-999| | |
+|Sentinel.com|+1-800-860-8102| |Serial#78025012|IBM 3996 Model 174 Optical Library - EU|Danny Smeets is App contact|
+|Sentinel.com|+1-800-426-7378| |Serial#007820055 |IBM 3996 Model 174 Optical Library - US|Danny Smeets is App contact|
+
+** Onsite contact for remote locations **
+
+[[unix:localcontacts|Local contact for Remote Locations ]]
+
+** Change Unix On Call **
+  - [[unix:unix_on_call_rotation_from_start_through_2017_year_end | UNIX On Call Schedule ]]
+
+[[unix:unix_on_call| Change the Unix On Call list]]
+
+====== System documentation ======
+
+  - [[http://itclap01.na.ten/unixdocs/|Unix Systems Inventory Page]]
+  - [[unix:hmc:cr_cfg_power:cr_cfg_power|All IBM P Series systems - New]]
+  - [[unix:perfcharts|IBM Performance charts and documentation]]
+  - [[http://taitc212/html/pmlogin.html|HP Openview Performance Manager for non-virtualized servers]]
+  - [[unix:bladecentredoc|Tenneco Blade Centre Documentation (Lincolnshire)]]
+  - [[unix:viodisksmap|VIO Disks mapping]]
+    - [[unix:viodisksmap-summary|VIO Disks mapping - Summary]]
+  - [[unix:emcdisksmap|Disks on servers (SAN & Local)]]
+  - Unix systems Inventory
+    - [[unix:sorted_by_unsupported_operating_system_level|**Servers on Unsupported Version of AIX**]]
+    - [[unix:sorted_by_model_aix_operating_system_levels|Current UNIX Server Operating System levels,Disk Use and Application by Model]]
+    - [[unix:sorted_by_location_aix_operating_system_levels|Current UNIX Server Operating System levels,Disk Use and Application by Location]]
+    - [[unix:aix_operating_system_levels|Current UNIX Server Operating System levels,Disk Use and Application by System Name]]
+    - [[unix:sorted_by_serial_aix_operating_system_levels|Current UNIX Server Operating System levels,Disk Use and Application by System Serial Number]]
+    - [[unix:sorted_by_oslevel_aix_operating_system_levels|Current UNIX Server Operating System levels,Disk Use and Application by Operating System Level]]
+    - [[unix:vios-aix-oslevels|VIOS OS Levels to AIX OS Levels for Todd]]
+    - [[unix:full_unix_doc_location|Pipe Delimited File with all attributes]]
+   - [[unix:Private HMC Network Map]]
+   - [[unix:Power8 NPIV Mapping Rules]]
+
+====== Redhat Infrastructure ======
+
+  - [[unix:rhel6to7upgrade|Release upgrade from RHEL6 to RHEL7]]
+  - [[unix:rhel7tips|Redhat Enterprise Linux 7 ( RHEL7) - Tips]]
+  - [[unix:linux:planning|Build Infrastructure for Redhat]]
+  - [[unix:rhelpatching|Redhat Patching process.]]
+  - [[unix:rhellicenses|Redhat Subscriptions.]]
+  - [[unix:rhelcobbler|Build cobbler server PABLSV02]]
+====== Security notes ======
+
+  - [[unix:managingsudo|Configuring sudoers]]
+  - [[unix:chpasswd-encrypt|chpasswd]]
+
+====== Server Build notes ======
+
+  - [[unix:buildserverfortenneco|Build procedures AIX/VIOS/Linux and HPUX]]
+  - [[unix:buildhmcfortenneco|Build procedures HMC]]
+
+====== Server upgrade tasks ======
+
+  - [[unix:upgrademksysb|Upgrade aix 5.3 mksysb to 6.1 using NIM to a new server]]
+  - [[unix:aixmigration|AIX Migration from 5.3 to 6.1 ]]
+  - [[unix:v71-aixmigration|AIX Migration from 5.3 to v7.1 ]]
+  - [[unix:tlupgrade|AIX Technology level upgrades ]]
+  - [[unix:upgrade-to-vios-2.2.2.3|VIOS 2.2.2.3 Patching process. ]]
+  - [[unix:HMCreleaseupgrade|HMC Release Level Upgrades ]]
+  - [[unix:install-hmc-patches| HMC Patch Installation ]]
+  - [[unix:rhelpatching|Redhat Patching process. ]]
+  - [[unix:crisolppsrc|Create LPPSRC using AIX DVD isos]]
+
+====== Firmware / Microcode upgrade ======
+
+  - [[unix: update_blade_firmware| Update Firmware on IBM Blades ]]
+  - [[unix:install_ibm_firmware| Install/Uppdate IBM Server Firmware]]
+
+
+====== Server Recovery Documentation ======
+
+  - [[unix:mksysb|AIX mksysb recovery notes]]
+  - [[unix:hpuxrecovery|HPUX tape recovery process]]
+  - [[unix:vios-recovery|VIOS recovery documentation]]
+  - [[unix:reset-server-in-recovery-mode|Reset Server in HMC Recovery Mode]]
+
+====== Server De-commission process ======
+
+  - [[unix:decomm-server|Decommission Unix Server(s)]]
+
+
+====== Server Day to day tasks ======
+
+==== Datacentre Access documentation ====
+
+  - [[unix:inxaccessmethod|Interexion - Datacentre Access Procedures]]
+
+==== Filesystem creation documentation ====
+
+  - [[unix:createfsviosdual|Configuring disks on Dual VIOS allocate to guest and create filesystem]]
+
+==== AIX/VIOS ====
+
+  - [[unix:filesystemexpansion|What to do when you get a ticket for filesystem expansion - Unix]]
+  - [[unix:seafailover-manual|Failover SEA manually]]
+  - [[unix:ftp1.tenneco.con_user_setup|AIX - FTP User Access for ftp1.tenneco.com]]
+  - [[unix:ftp1.tenneco.con_remove_user | AIX Remove a user from ftp1.tenneco.com]]
+  - [[unix:fscreation-aix|AIX - Create a new filesystem]]
+  - [[unix:clearvgdata-pvid|Removing LVM metadata from disks.]]
+  - [[unix:adddskviocluster|Add additional disks on a dual VIO setup]]
+  - [[unix:remdskviocluster|Remove LUNs from dual-VIO environment]]
+  - [[unix:adddskvio|Add additional disks on a single VIO setup]]
+  - [[unix:unixprinting|Unix printing - PTA & PTB]]
+  - [[unix:unixadmintips|Unix Common Tasks]]
+  - [[unix:bringdownaserverformaint|Bring Down a Server for Maintenance]]
+  - [[unix:powerpath|Powerpath tips]]
+  - [[unix:nfsnotes|Notes on NFS]]
+  - [[unix:performancetuning|Performance tuning notes]]
+  - [[unix:netbackupcmds|Start/Stop netbackup on a backup server]]
+  - [[unix:serverrenamingprocess|Renaming an AIX Server]]
+  - [[unix:servermigration|Server Migration - AIX ]]
+  - [[unix:vhostss|Creating a new vhost on VIO cluster ]]
+  - [[unix:vioupdatesinstall|Installing VIO updates]]
+  - [[unix:snmpdpublic|Turn off SNMPD public]]
+  - [[unix:manageuuma|Start / Stop UUMA application]]
+  - [[unix:updateemcodm|Update EMC ODM]]
+  - [[unix:fixrmcconnections|Fix RMC connection problems]]
+  - [[unix:fixodmdefinitions|Configure AIX's EMC ODM to manipulate the default behaviour for reserve_lock]]
+  - [[unix:fixdyntrk|Fix dyntrk and fast_fail options after the fact]]
+  - [[unix:full_file_systems|Full File Systems ]]
+  - [[unix:paging_space|Who uses paging space ]]
+  - [[unix:etherchannel|Etherchannel Add / Remove Adapters ]]
+  - [[unix:aixlogs|View AIX boot logs ]]
+  - [[unix:syslogs|View UNIX central syslog ]]
+  - [[unix:failoverethchannel|Failover / Failback Etherchannel]]
+  - [[unix:mount_data_domain | Mount the Data Domain Device if not already mounted]]
+  - [[unix:aixedition|Display the edition of AIX - Enterprice, Standard or express]]
+  - [[unix:entitlement_update_access_keys | Power8 Hardware Maintenance Entitlement Access]]
+  - [[unix:ethchan-lacp-failovertest|Etherchannel LACP failover test on VIOS / SEA]]
+  - [[unix:handle-storage-request-on-VIO |Handling Storage request on 3 node VIO Cluster taprvio17,18,19 ]]
+==== Linux ====
+
+  - [[unix:cobblerinfo|Cobbler Notes]]
+  - [[unix:linuxtricks|Linux notes]]
+  - [[unix:redhattimezone|Setting timezone in Redhat]]
+  - [[unix:linuxlvm|Linux LVM / filesystem tasks]]
+  - [[unix:redhatnamechange|Changing the hostname and IP address on redhat]]
+  - [[unix:redhatmpio|Setting up MPIO on RHEL6]]
+  - [[unix:redhatbonding|Setting up bonding (etherchannel - AIX ) on RHEL6]]
+  - [[unix:redhatkernparam|Changing kernel parameters on Redhat]]
+  - [[unix:redhatsendmail|Enable sendmail on Redhat]]
+  - [[unix:redhatnovicolors| Trun off Colors in vi editor on Redhat ]]
+
+==== HPUX ====
+
+  - [[unix:hpuxlvm|Logical Volume Manager]]
+  - [[unix:hpuxpatches|Patch installation on HPUX]]
+  - [[unix:hpuxsan|SAN on HPUX]]
+  - [[unix:hpux-ssh|SSH installation on HP-UX]]
+  - [[unix:hpux-rsync|RSYNC installation on HP-UX]]
+
+==== General ====
+
+  - [[unix:virtualbox|VirtualBox Tricks]]
+  - [[unix:sitescopemonitoring|Setting up for sitescope monitoring]]
+  - [[unix:housekeeptaqa1a03|TAQA1A03 - Housekeeping "/" filesystem]]
+  - [[unix:stopopenview|Stop OpenView and EMC Storewatch on AIX Servers]]
+  - [[unix:setup-iocp-for-oracle|Set IOCP to Available for Oracle 12c upgrades]]
+
+====== Other Documentation ======
+
+  - [[unix:systemdunispool|How to add Unispool to the automatic startup scripts - RHEL7]]
+  - [[unix:disablednsforsapprojects|Instructions disable DNS for some SAP projects]]
+  - [[unix:purestoragemigration|AIX - Instructions to migrate Interxion NS480 storage to Pure]]
+  - [[unix:power8sysraidsad|Configured pdisks to hdisks on the Power8 SAS Raid controller]]
+  - [[unix:remoterestartpowervm|Perform Remote restart - PowerVM]]
+  - [[unix:emcodmdefinitions|Installing ODM definitions on AIX]]
+  - [[unix:ta2failoverdoc|TA2 Failover documentation]]
+  - [[unix:ftpfailover|FTP server failover documentation]]
+  - [[unix:ftpfailover-new|**NEW** - paft3p01 - paft3p02 FTP server failover documentation]]
+  - [[unix:Paft3p01_02|Secure FTP User Account Setup documentation]]
+  - [[unix:printerprobs|Printer Problems]]
+  - [[unix:one-off-soft-install|RPMs that we install]]
+  - [[dr:usefulcmds|What we normally do for DR]]
+  - [[unix:hmc|IBM Virtualization - Cool HMC CLIs]]
+  - [[unix:v240rsc|RSC configuration on Sun V240]]
+  - [[unix:sol8sshinstall|SSH installation on Solaris8]]
+  - [[unix:one-off|One off procedures ]]
+  - [[unix:ta2appsrvsetup|Customize AIX server as a TA2 app server]]
+  - [[http://www.ibm.com/developerworks/aix/library/au-T10E2E/index.html|T10 DIF standard on AIX 6.1 TL5 onwards]]
+  - [[unix:inhousescripts|Our own shell scripts]]
+  - [[unix:virtualboxnotes|VirtualBox Notes]]
+  - [[unix:fedoranotes|Fedora notes]]
+  - [[unix:lotustraveller|Install Lotus Traveler on RHEL]]
+  - [[unix:install-lpar2rrd|Installing LPAR2RRD]]
+  - [[unix:printers-new|Configuring a new printer - Obsolete - all printers converted to Unispool This Entry left as historical reference]]
+  - [[unix:flexnet-cadverter-license-install|Install / Refresh new FLEXNet Cadvrter License]]
+  - [[unix:sas_setinit-v9.4-license-renewal-instrictions-taestr006|Renewing SAS Software / SAS SETINIT Renewal Instructions V9.4 (server = taestr006)]]
+  - [[unix:install_ibm_endpoint_manager_agent|Install IBM Endpoint Manager Agent Tool - IBM Software License Audit]]
+  - [[unix:splitvgexperience|Split VG usage]]
+  - [[unix:syslogconfigtenneco|Custom syslog configurations]]
+  - [[unix:sshkeysputty|Geneating ssh keys and configuring putty for automatic login]]
+  - [[unix:usb_file_system| Create a New USB File System / Mount an Existing USB FIle System ]]
+  - [[unix:AddXeroxPrinteratLDC| Link to Xerox printer at LDC / Link to Xerox printer at LDC ]]
+  - [[http://taitc207:9080/ADReset/loginDisplay.do|How to reset your AD password]]
+  - [[unix:Test-Atlas-Server-Application| Test Atlas Server Application ]]
+  - [[unix:HP-UX-tnpr1d01| PTM SAP Instance - old from Pactive ]]
+  - [[unix:sap_webdispatcher_java | SAP JAVA Installation for Webdispatcher ]]
+  - [[unix:sap-personas-failover | SAP Web Dispatcher / Personas Application Fail Over ]]
+  - [[unix:How to create SSL CERT & KEY ]]
+  - [[unix:AIX MPIO - How to check if round robin is enabled and working]]
+  - [[unix:rsync - How to rsync something as root, yet send the data through your own ssh pipe]]
+  - [[unix:SAP-RHEL7-POC-configuration| SAP RHEL7 some fine tune to POC servers]]
+  - [[unix:UUMA-ADD-REMOVE| UUMA Add / Remove Users]]
+====== EMC ======
+
+  - [[unix:emcpowerpath|Powerpath installation and maintenance]]
+  - [[unix:emcsymcli|SYMCLI Installation]]
+  - [[unix:emcremoval|Removing the un-removable powerpath device]]
+  - [[unix:emcpowerpathencryption|emcp_xcryptd (Related Primus emc286557)]]
+
+====== DR Documentation ======
+
+  - [[dr:drdblink|DR Database link - Lotus notes]]
+  - [[dr:unixrecoverycmds-2016|North America - Lincolnshire - Disaster Recovery test - 2016]]
+  - [[dr:unixrecoverycmds-2015|North America - Lincolnshire - Disaster Recovery test - 2015]]
+  - [[dr:usefulcmds-2013|NA - DR testing notes - 2013]]
+  - [[dr:usefulcmds|NA - DR testing notes]]
+  - [[dr:mksysbs-tenneco|Tenneco mksysb backup overview]]
+  - [[dr:na_aix_disaster_recovery_os_levels|North American DR Server Operating System Levels]]
+  - [[dr:na_aix_disaster_recovery_space|North American DR Server Disk Space Used]]
+  - [[dr:european_aix_disaster_recovery_os_levels|European DR Server Operating System Levels]]
+  - [[dr:european_aix_disaster_recovery_space|European DR Server Disk Space Used]]
+  - [[dr:relay-go-south|If relay1 server goes down for a long time]]
+  - [[dr:create-itocroot | Create missing itocroot user]]
+====== Confidential ======
+
+  - [[secret:vendordetails|Vendor details ]]
+
+====== HR NA EU Merge Project ======
+
+  - [[unix:naeuhrmergeproject|NA EU HR Merge Project]]
+
+====== UNIX Team CE Plans of Attack ======
+
+  - [[unix:tndv3d01hostmigration|tndv3do1 (BW/DEV) host migration to vio40/41 cluster]]
+  - [[changeeventplans:upgradebladefirmwarevios|Change plan for 03282013A01]]
+  - [[changeeventplans:upgradepenmsv01|Change plan for SR# 04122013A01]]
+  - [[changeeventplans:upgradetaitc118|Change plan for SR# 04122013A02]]
+  - [[changeeventplans:tsdv1d01hostmigration| tsdv1d01 HW/DEV Migration from taprvio12 to taprvio17]]
+  - [[changeeventplans:ptbmigration|Change plan for migration PTB lpar from MMa-P570 to P740 Frame]]
+  - [[changeeventplans:ptaupgrade-os-71|Change plan for PTA OS upgrades and firmware and ODM]]
+  - [[changeeventplans:tnpr3d01hostmigration| tnpr3d01 HW Migration taprvio40 7 taprvio41]]
+  - [[changeeventplans:ta2upgradenov2013|TA2 Landscaper upgrade to AIX 7]]
+  - [[changeeventplans:cleanupusrsap|Cleanup /usr/sap/ filesytem]]
+  - [[changeeventplans:ede2san|Migrate Edenkoben Content Server to SAN]]
+  - [[changeeventplans:pggtdb01move|Upgrade memory and move pggtdb01 server]]
+  - [[changeeventplans:ldcviosupgradesodmpowerpath|Attack plan for LDC VIOS EMC ODM and Powerpath upgrades]]
+  - [[changeeventplans:fixh1dsmallvgs|Fix H1D smallVG convert them to Big VG]]
+  - [[changeeventplans:stgmigrtamon055|TAMON055 Storage migration]]
+  - [[changeeventplans:ta2framemigration|TA2 Frame Migration to new frame - Nov 15, 2014]]
+  - [[changeeventplans:stgmigrtaglk055|TAGLK055 Storage migration]]
+  - [[changeeventplans:pta-aix-upgrade|PTA AIX Upgrade -- 02-14-2015]]
+  - [[changeeventplans:taqa1d01-nicchange|taqa1d01 - Network IP changes.]]
+  - [[changeeventplans:vasustestpage|This is a test page created for training purposes]]
+  - [[changeeventplans:dbasdb01migrationtov9000|V9000 Migration procedure]]
+  - [[changeeventplans:9119-mme-firmware| **May 08 2016 9119-MME Firmware**]]
+  - [[changeeventplans:vio60-upgrade| **taprvio60 - vios upgrade and cleanup**]]

@@ -1,0 +1,26 @@
+
+<h2 class="sectionedit1" id="stop_openview_monitoring_and_emc_storwatch_on_aix_servers">Stop OpenView Monitoring and EMC Storwatch on AIX Servers</h2>
+<div class="level2">
+
+<p>
+<strong>## Stop OpenView Monitoring on AIX Server ##</strong>
+</p>
+<pre class="code">sudo /usr/lpp/OV/bin/ovc -kill</pre>
+<pre class="code">sudo /usr/lpp/perf/bin/ovpa -stop</pre>
+<pre class="code">sudo /usr/lpp/perf/bin/pctl stop</pre>
+<pre class="code">sudo /etc/rc.agent stop</pre>
+
+<p>
+ To stop Openview from Starting at Reboot change<strong><em class="u">wait</em></strong> to <strong><em class="u">off</em></strong> in te following lines in /etc/inittab
+</p>
+<pre class="code">OVCtrl:2:wait:/etc/rc.d/OVCtrl start &gt;/dev/console  # Start Agent
+ovpa:2:wait:/etc/rc.ovpa start &gt;/dev/console  # Start OV Performance Agent</pre>
+
+<p>
+<strong>## Stop EMC Storewatch Daemon on AIX Servers ##</strong>
+</p>
+<pre class="code">sudo /usr/symcli/bin/stordaemon shutdown storwatchd</pre>
+<pre class="code">sudo /usr/symcli/bin/stordaemon shutdown storapid</pre>
+<pre class="code">sudo /usr/emc/API/symapi stop</pre>
+
+</div>

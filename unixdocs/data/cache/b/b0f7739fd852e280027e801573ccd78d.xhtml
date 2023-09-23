@@ -1,0 +1,192 @@
+
+<h1 class="sectionedit1" id="jacksonville_fault_disk_replacement">Jacksonville fault disk replacement</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Jacksonville fault disk replacement" [1-50] -->
+<h2 class="sectionedit2" id="overview">Overview</h2>
+<div class="level2">
+
+<p>
+This document describes the procedure of replacing a faulty disk in AIX servers of Jacksonville 
+</p>
+
+<p>
+Jacksonville servers are located at 
+</p>
+<pre class="code">HWY 21 North,
+Jacksonville,
+Alabama
+36265</pre>
+
+<p>
+Jacksonville has two AIX servers
+</p>
+<ol>
+<li class="level1"><div class="li">Jackalaix001</div>
+</li>
+<li class="level1"><div class="li">Jackalaix002  </div>
+</li>
+</ol>
+
+<p>
+These servers are hosted on an 8202-ED frame (s/n 06CCD9T) attached to the HMC jackalahmc002.
+</p>
+
+<p>
+The HMC link is 
+<a href="https://10.82.129.7/" class="urlextern" title="https://10.82.129.7/"  rel="nofollow">https://10.82.129.7/</a>
+</p>
+
+<p>
+<strong><em class="u">Alert</em></strong>
+</p>
+
+<p>
+This HMC has a call home function so whenever there is a fault disk in the server, the HMC calls home to IBM and raises a PMR an email similar to below email would be sent to MPUNIX team.
+<img src="/lib/exe/fetch.php?media=1.png" class="media" alt="" />
+</p>
+
+<p>
+Once the PMR is raised IBM contacts UNIX team to schedule disk replacement and prep for the disk replacement.
+First thing, UNIX team has to move the data from the faulty disk to another disk.
+Secondly, the UNIX team has to schedule a visit for the IBM field engineer to replace the disk.
+This has to be achieved by creating two change requests one to move the data which needs downtime and the second is to replace the disk for which we don’t need any downtime.
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Overview" [51-1159] -->
+<h2 class="sectionedit3" id="pre_steps_for_data_migration">Pre steps for data migration</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li">Check error report and find the failed disk number using the command. <pre class="code">errpt</pre>
+</div>
+</li>
+<li class="level1"><div class="li">Check the logical volumes in that disk. <pre class="code">lspv -l hdiskX</pre>
+
+<p>
+   - here X is the failed disk number
+</p>
+</div>
+</li>
+<li class="level1"><div class="li">Check the volume group associated with this logical volume. <pre class="code">lslv lvname</pre>
+
+<p>
+ – replace lvname with the faulty lvname 
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+UNIX team can estimate the downtime required depending on the data that has to be migrated.
+</p>
+
+</div>
+<!-- EDIT3 SECTION "Pre steps for data migration" [1160-1623] -->
+<h2 class="sectionedit4" id="creating_change_request_and_implementing_data_migration">Creating Change Request and Implementing Data Migration</h2>
+<div class="level2">
+
+<p>
+Get downtime and Log a change request with appropriate change task.
+Change approvers are <strong>Dan Daley</strong> for infrastructure <strong>David Jones</strong> for application.
+</p>
+
+<p>
+<em class="u"><strong>First change request for data migration</strong></em>
+</p>
+
+<p>
+<strong>Involved parties</strong> are Mary Curry, David Jones Team, UNIX team and <abbr title="Database Administrator">DBA</abbr> team.
+</p>
+<ol>
+<li class="level1"><div class="li">First task would be for Mary Curry to shut down ASRS server.</div>
+</li>
+<li class="level1"><div class="li">Second task would be for David Jones team to shut down Move WMS.</div>
+</li>
+<li class="level1"><div class="li">Third task would be UNIX team to shut down WebSphere (WebSphere is in the 2 AIX server jackalax002)<pre class="code">su - wasadmin
+cd /usr/WebSphere/AppServer/profiles/AppSrv01
+./stopServer.sh server1</pre>
+</div>
+</li>
+<li class="level1"><div class="li">Fourth task would be for Database team to shut down the database(vm01)</div>
+</li>
+<li class="level1"><div class="li">Fifth task would be for UNIX team To perform the data migration</div>
+<ol>
+<li class="level2"><div class="li">Identify a free disk to which the data can be moved (Either you can add a free disk to the volume group or use a disk in the volume group which has free LPs).</div>
+</li>
+<li class="level2"><div class="li">Migrate the data from the faulty disk to the identified free disk. Use “migratepv” command to migrate the data. <pre class="code">Example: “migratepv -l ptclv hdisk9 hdisk16” in the above command ptclv is the logical volume, hdisk9 is the faulty disk and hdisk16 is the identified free disk.</pre>
+</div>
+</li>
+<li class="level2"><div class="li">Wait until the above command is executed successfully you can check that by the command “lspv -l hdisk*”, with this command the faulty disk should not show any logical volumes.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li">Once the data migration is completed the WebSphere, the database, move server and ASRS server has to be started respectively.</div>
+</li>
+</ol>
+
+<p>
+<em class="u"><strong>Second Change request for Disk Replacement</strong></em>
+</p>
+<pre class="file">Note : make a note of Jacksonville working hours that is 8 AM to 4 PM CST Monday to Friday the disk replacement has to be scheduled within  Jacksonville working hours.</pre>
+
+<p>
+IBM has to be notified 24 hours prior to the downtime window. 
+</p>
+
+<p>
+<strong>Involved parties</strong> would be UNIX team and Mary Curry.
+</p>
+
+<p>
+Inform Mary Curry are about the visit of IBM field engineer so she can arrange access to the server room.
+</p>
+
+<p>
+Once the field engineer is ready to replace the disk, he would call in UNIX admin 
+</p>
+
+<p>
+UNIX admin has to perform the below task to prep the faulty disk for removal. On the server console, type 
+</p>
+<pre class="code">diag</pre>
+
+<p>
+ Press enter to continue
+</p>
+<ul>
+<li class="level1"><div class="li">Select <strong>Task Selection</strong> in the <strong>FUNCTION SELECTION</strong> window and hit enter</div>
+<ul>
+<li class="level2"><div class="li">Then select <strong>Hot Plug Task</strong> in <strong>TASK SELECTION LIST</strong> window</div>
+<ul>
+<li class="level3"><div class="li">Select <strong><abbr title="Small Computer System Interface">SCSI</abbr> and <abbr title="Small Computer System Interface">SCSI</abbr> <abbr title="Redundant Array of Inexpensive Disks">RAID</abbr> Hot Plug Manager</strong> in Hot Plug Task window</div>
+<ul>
+<li class="level4"><div class="li">Select <strong>Replace/Remove a Device Attached to an <abbr title="Small Computer System Interface">SCSI</abbr> Hot Swap Enclosure Device</strong></div>
+<ul>
+<li class="level5"><div class="li">And choose the disk that you want to remove and hit enter</div>
+<ul>
+<li class="level6"><div class="li">After the field engineer replaces the disk, select <strong>Configure Added/Replaced Devices</strong></div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<p>
+Communicate the success of disk replacement to the involved teams.
+</p>
+
+<p>
+ — <em><a href="mailto:&#x6b;&#x65;&#x6e;&#x6e;&#x65;&#x64;&#x79;&#x2e;&#x69;&#x6e;&#x61;&#x6d;&#x70;&#x75;&#x64;&#x69;&#x40;&#x64;&#x72;&#x69;&#x76;&#x2e;&#x63;&#x6f;&#x6d;" class="mail" title="&#x6b;&#x65;&#x6e;&#x6e;&#x65;&#x64;&#x79;&#x2e;&#x69;&#x6e;&#x61;&#x6d;&#x70;&#x75;&#x64;&#x69;&#x40;&#x64;&#x72;&#x69;&#x76;&#x2e;&#x63;&#x6f;&#x6d;">Kennedy</a> 2021/02/17 13:01</em>
+</p>
+
+</div>
+<!-- EDIT4 SECTION "Creating Change Request and Implementing Data Migration" [1624-] -->

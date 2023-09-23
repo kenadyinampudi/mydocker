@@ -1,0 +1,27 @@
+
+<h1 class="sectionedit1" id="installing_vios_updates">Installing VIOS updates</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Latest VIOS updates can be found at <pre class="code">pgnmsv01:/prod/images/vio/vios2</pre>
+
+<p>
+Inspect the level the current server is at as padmin
+</p>
+<pre class="code">ioslevel</pre>
+
+<p>
+Now update the rest. The fixpacks must be installed prior to interim fixes.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Switch to root and NFS mount the updates directory<pre class="code">mkdir -p /mnt/viosupdate
+mount pgnmsv01:/prod/images/vio/vios2/fixpacks /mnt/viosupdate</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the updates as padmin user<pre class="code">updateios -commit
+updateios -accept -dev /mnt/viosupdate/{insert latest VIOS level here}</pre>
+</div>
+</li>
+</ol>
+
+</div>

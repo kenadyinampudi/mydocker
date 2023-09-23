@@ -1,0 +1,83 @@
+====== Jacksonville fault disk replacement ======
+===== Overview =====
+
+This document describes the procedure of replacing a faulty disk in AIX servers of Jacksonville 
+
+Jacksonville servers are located at 
+<code>
+HWY 21 North,
+Jacksonville,
+Alabama
+36265</code>
+
+Jacksonville has two AIX servers
+  -Jackalaix001
+  -Jackalaix002  
+These servers are hosted on an 8202-ED frame (s/n 06CCD9T) attached to the HMC jackalahmc002.
+
+The HMC link is 
+[[https://10.82.129.7/]]
+
+
+**__Alert__**
+
+
+This HMC has a call home function so whenever there is a fault disk in the server, the HMC calls home to IBM and raises a PMR an email similar to below email would be sent to MPUNIX team.
+{{:1.png?nolink}}
+
+
+Once the PMR is raised IBM contacts UNIX team to schedule disk replacement and prep for the disk replacement.
+First thing, UNIX team has to move the data from the faulty disk to another disk.
+Secondly, the UNIX team has to schedule a visit for the IBM field engineer to replace the disk.
+This has to be achieved by creating two change requests one to move the data which needs downtime and the second is to replace the disk for which we don’t need any downtime.
+
+===== Pre steps for data migration =====
+  -Check error report and find the failed disk number using the command. <code>errpt</code>
+  -Check the logical volumes in that disk. <code>lspv -l hdiskX</code>   - here X is the failed disk number
+  -Check the volume group associated with this logical volume. <code>lslv lvname</code> – replace lvname with the faulty lvname 
+UNIX team can estimate the downtime required depending on the data that has to be migrated.
+===== Creating Change Request and Implementing Data Migration =====
+Get downtime and Log a change request with appropriate change task.
+Change approvers are **Dan Daley** for infrastructure **David Jones** for application.
+
+__**First change request for data migration**__
+
+**Involved parties** are Mary Curry, David Jones Team, UNIX team and DBA team.
+  -First task would be for Mary Curry to shut down ASRS server.
+  -Second task would be for David Jones team to shut down Move WMS.
+  -Third task would be UNIX team to shut down WebSphere (WebSphere is in the 2 AIX server jackalax002)<code>su - wasadmin
+cd /usr/WebSphere/AppServer/profiles/AppSrv01
+./stopServer.sh server1</code>
+  -Fourth task would be for Database team to shut down the database(vm01)
+  -Fifth task would be for UNIX team To perform the data migration
+    -Identify a free disk to which the data can be moved (Either you can add a free disk to the volume group or use a disk in the volume group which has free LPs).
+    -Migrate the data from the faulty disk to the identified free disk. Use "migratepv" command to migrate the data. <code>Example: “migratepv -l ptclv hdisk9 hdisk16” in the above command ptclv is the logical volume, hdisk9 is the faulty disk and hdisk16 is the identified free disk.</code>
+    -Wait until the above command is executed successfully you can check that by the command “lspv -l hdisk*”, with this command the faulty disk should not show any logical volumes.
+  -Once the data migration is completed the WebSphere, the database, move server and ASRS server has to be started respectively.
+
+__**Second Change request for Disk Replacement**__
+<file>
+Note : make a note of Jacksonville working hours that is 8 AM to 4 PM CST Monday to Friday the disk replacement has to be scheduled within  Jacksonville working hours.
+</file>
+IBM has to be notified 24 hours prior to the downtime window. 
+
+**Involved parties** would be UNIX team and Mary Curry.
+
+Inform Mary Curry are about the visit of IBM field engineer so she can arrange access to the server room.
+
+Once the field engineer is ready to replace the disk, he would call in UNIX admin 
+
+UNIX admin has to perform the below task to prep the faulty disk for removal. On the server console, type <code>diag</code> Press enter to continue
+
+  *Select **Task Selection** in the **FUNCTION SELECTION** window and hit enter
+    *Then select **Hot Plug Task** in **TASK SELECTION LIST** window
+      *Select **SCSI and SCSI RAID Hot Plug Manager** in Hot Plug Task window
+        *Select **Replace/Remove a Device Attached to an SCSI Hot Swap Enclosure Device**
+          *And choose the disk that you want to remove and hit enter
+            *After the field engineer replaces the disk, select **Configure Added/Replaced Devices**
+
+Communicate the success of disk replacement to the involved teams.
+
+
+ --- //[[kennedy.inampudi@driv.com|Kennedy]] 2021/02/17 13:01//
+

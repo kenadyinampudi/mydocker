@@ -1,0 +1,41 @@
+**Adding a Disk to an AIX HACMP Cluster**
+
+This document outlines the procedure for adding a disk to an AIX High Availability Cluster Multiprocessing (HACMP) cluster. This process involves expanding storage space within the cluster by requesting additional storage from the storage team and then configuring the newly allocated disk within the cluster environment.
+
+
+
+**Procedure:**
+
+1. **Request Storage Allocation:**
+   - Contact the storage team and provide them with the following information:
+     - Cluster name
+     - WWNs of all nodes within the cluster
+   - Request storage allocation for the new disk.
+
+2. **Discover and Configure Disk:**
+   - Log in to both primary and secondary nodes of the HACMP cluster.
+   - Open a terminal or console window and run the following command to configure the newly allocated disk:<code>cfgmgr</code>
+   - Confirm that the disk is recognized and available by running:<code>lspv</code>
+     
+3. **Adding the Disk:**
+   - On the primary node, execute the following command to open the System Management Interface Tool (SMIT) for HACMP:<code>smit hacmp
+     In the SMIT menu, navigate as follows:
+     - System Management (C-SPOC)
+     - Storage
+     - Volume Groups
+     - Set Characteristics of a Volume Group
+     - Add a Volume to a Volume Group
+     On the entry screen, select the appropriate Volume Group (VG) and the newly allocated disk. Press Enter to confirm the selection.</code>
+
+4. **Confirm Disk Addition:**
+   - Once the disk has been successfully added, exit the SMIT interface.
+   - Run the following command on the primary node to confirm HACMP-related information:<code>
+     smit hacmp
+   - Navigate to:
+     - Extended Configuration
+     - Discover HACMP-related Information from Configured Nodes
+   - Verify that the newly added disk is visible on all nodes within the cluster.</code>
+
+5. **Verify Disk Allocation:**
+   - To ensure proper allocation of the disk, run the following command on both the primary and secondary nodes:<code>lspv</code>
+   - Confirm that the disk is allocated to the correct Volume Group (VG).

@@ -1,0 +1,21 @@
+====== Fix RMC connections ======
+
+** Ref : IBM PMR  PMR 56031,122  **
+
+[[http://www-01.ibm.com/support/docview.wss?uid=isg3T1012915  ]]
+
+  * Login to the affected LPAR or VIOS as root.
+  * Check if csm.client fileset exists
+    * AIX 6.1 TL5 or lower<code>lslpp -l csm.client</code>
+    * AIX 6.1 TL6 or higher<code>lslpp -l rsct.core.rmc</code>This fileset needs to be 3.1.0.x level or higher 
+  * Check if all IPs and host IDs are trusted<code>/usr/sbin/rsct/bin/ctsvhbac</code>
+  * Login to the HMC as hscroot and check the Dcap value<code>lspartition -dlpar | grep -a2 <lparname></code>The Dcap value should be 'non-zero'<code><#37> Partition:<2*8205-E6C*102D67R, taprvio60e50.amer.int.tenneco.com, 10.32.50.71>
+       Active:<1>, OS:<AIX, 6.1, 6100-00-00-0000>, DCaps:<0x4f9f>, CmdCaps:<0x1b, 0x1b>, PinnedMem:<2333></code>
+
+  * If we found a negative answer to any of the above commands, execute these commands on the lpar. This fixed the problem on taprvio60 and 70.<code>odmdelete -o CuAt -q "name='cluster0'"
+/usr/sbin/rsct/install/bin/recfgct 
+/usr/sbin/rsct/bin/rmcctrl -p</code>
+  * Give it some time <code>sleep 240</code>
+  * Now run lsrsrc<code>lsrsrc IBM.MCP</code>If this returns resources, we are good.
+  * Login to HMC and check the Dcap value now<code>lspartition -dlpar | grep -a2 <lparname></code>The Dcap value should be 'non-zero'<code><#37> Partition:<2*8205-E6C*102D67R, taprvio60e50.amer.int.tenneco.com, 10.32.50.71>
+       Active:<1>, OS:<AIX, 6.1, 6100-00-00-0000>, DCaps:<0x4f9f>, CmdCaps:<0x1b, 0x1b>, PinnedMem:<2333></code>

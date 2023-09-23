@@ -1,0 +1,68 @@
+====== Customization for GPDM Test App servers ======
+
+  - Create groups and users accounts<code>
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,unispool -d /home/pltadm -c "SAP GPDM System Admin" -m -u 4142 pltadm
+echo "pltadm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,unispool -d /home/oraplp -c "Oracle GPDM System Admin" -m -u 4186 plpadm
+echo "plpadm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+
+sudo useradd -s /usr/bin/bash -g dba -d /home/oraplt -c "SAP GPDM System Admin" -m -u 107 oraplt
+echo "oraplt:DKK*],E-7Pwp?tqX" | sudo chpasswd
+
+sudo useradd -s /usr/bin/bash -g dba -d /home/oraplp -c "SAP GPDM System Admin" -m -u 108 oraplp
+echo "oraplp:DKK*],E-7Pwp?tqX" | sudo chpasswd
+
+sudo chage -M -1 pltadm
+sudo chage -M -1 plpadm
+sudo chage -M -1 unispool
+sudo chage -M -1 sapadm
+sudo chage -M -1 daaadm
+sudo chage -M -1 oraplt
+sudo chage -M -1 oraplp
+
+
+</code>
+  
+
+  - Create filesystems<code>sudo lvcreate -n oracle_PLT        -L 1024MB  datavg01
+sudo lvcreate -n usr_sap_PLT       -L 8192MB  datavg01
+sudo lvcreate -n usr_sap_PLT_SUM   -L 10240MB datavg01
+sudo lvcreate -n home_PLTadm       -L 512MB   datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/oracle_PLT
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_PLT
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_PLT_SUM
+sudo mkfs -t ext4 /dev/datavg01/home_PLTadm
+
+cat << EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-oracle_PLT         /oracle/PLT           ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_PLT        /usr/sap/PLT          ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_PLT_SUM    /usr/sap/PLT/SUM      ext4    defaults        1 2
+/dev/mapper/datavg01-home_PLTadm        /home/pltadm          ext4    defaults        1 2
+EOF
+
+sudo chown oraplt:dba     /oracle
+sudo chown oraplt:dba     /oracle/client
+sudo chown pltadm:sapsys  /usr/sap
+
+sudo mkdir -p /oracle/PLT        ; sudo mount /oracle/PLT          ; sudo chown oraplt:dba /oracle/PLT
+sudo mkdir -p /usr/sap/PLT       ; sudo mount /usr/sap/PLT         ; sudo chown pltadm:sapsys /usr/sap/PLT
+sudo mkdir -p /usr/sap/PLT/SUM   ; sudo mount /usr/sap/PLT/SUM     ; sudo chown pltadm:sapsys /usr/sap/PLT/SUM
+sudo mkdir -p /home/PLTadm       ; sudo mount /home/pltadm         ; sudo chown pltadm:sapsys /home/pltadm</code>
+
+  - Add NFS. First export the filesystems from the NFS server<code>cat << EOF | sudo tee -a  /etc/fstab
+qggpdb01:/sapmnt/PLT/exe	/sapmnt/PLT/exe  	nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qggpdb01:/sapmnt/PLT/profile	/sapmnt/PLT/profile	nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qggpdb01:/sapmnt/PLT/global	/sapmnt/PLT/global	nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pggpdb01:/usr/sap/trans		/usr/sap/trans		nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+qggpdb01:/sapcomm		/sapcomm		nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+EOF
+
+sudo mkdir -p /sapmnt/PLT/exe		;sudo mount /sapmnt/PLT/exe
+sudo mkdir -p /sapmnt/PLT/profile	;sudo mount /sapmnt/PLT/profile
+sudo mkdir -p /sapmnt/PLT/global	;sudo mount /sapmnt/PLT/global
+sudo mkdir -p /usr/sap/trans		;sudo mount /usr/sap/trans
+sudo mkdir -p /sapcomm			;sudo mount /sapcomm</code>
+
+   - If the system needs unispool, enable it<code>sudo systemctl enable unispool</code>  

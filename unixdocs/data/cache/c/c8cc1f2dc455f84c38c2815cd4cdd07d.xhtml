@@ -1,0 +1,82 @@
+
+<h1 class="sectionedit1" id="java_installation_for_sap_webdispatcher_on_ta2_app_server_systems">JAVA Installation For SAP Webdispatcher on TA2 App Server Systems</h1>
+<div class="level1">
+
+<p>
+ - Mount the /prod/images/Java/Java14_64 from pgnmsv01 to the server 
+</p>
+<pre class="code"> sudo mkdir -p /mnt/java ; sudo mount pgnmsv01:/prod/images/Java/Java14_64 /mnt/java </pre>
+
+<p>
+ - Change Directory to /mnt/java 
+</p>
+<pre class="code"> sudo cd /mnt/java </pre>
+
+<p>
+ Invoke smitty &lt;/code&gt; sudo smitty install_all &lt;/code&gt;Then select ”.”
+</p>
+<ul>
+<li class="level1"><div class="li"> SOFTWARE INSTALL - Press F4 and select the following <pre class="code"> Java14_64.license ALL </pre>
+
+<p>
+ and 
+</p>
+<pre class="code"> Java14_64.sdk   ALL </pre>
+</div>
+</li>
+<li class="level4"><div class="li"> PREVIEW only - should be set to no</div>
+</li>
+<li class="level4"><div class="li"> COMMIT software updates must be set to yes</div>
+</li>
+<li class="level4"><div class="li"> ACCEPT new license agreements? must be set to yes</div>
+</li>
+<li class="level4"><div class="li"> Then hit enter </div>
+</li>
+</ul>
+
+<p>
+ -  After installation completes update the .profile in root with the following entry 
+</p>
+<pre class="code"> sudo mv .profile .profile-OLD </pre>
+<pre class="code"> sudo vi .profile </pre>
+
+<p>
+ and add the following to the PATH vaitrable 
+</p>
+<pre class="code"> :/usr/java14_64/jre/bin </pre>
+
+<p>
+ -  Here is the environment documentation shoud the Basis Team question the java Version.  Note thsy have seversl environment vaitables set within their user SAP profiles that will result in slightly different that standatrd expectred output.  These environment variables are dcumented below. 
+</p>
+<pre class="code"> setenv PATH JAVA_HOME </pre>
+<pre class="code">setenv JAVA_HOME /usr/java14_64/jre </pre>
+<pre class="code"> setenv IBM_JAVA_OPTIONS &#039;-Xmx256M -Xj9&#039; </pre>
+
+<p>
+ If they have any questins please ask them to consult their documentation and set the appriporate environment vairables. 
+</p>
+
+<p>
+Below is an example from TA2 Application Server peerap01
+</p>
+<pre class="code">Without environemnt vaitables set 
+peerap01:ta2adm 52&gt; /usr/java14_64/jre/bin/java -version
+java version &quot;1.4.2&quot; 
+Java(TM) 2 Runtime Environment, Standard Edition (build 1.4.2)
+Classic VM (build 1.4.2, J2RE 1.4.2 IBM AIX 5L for PowerPC (64 bit JVM) build caix64142-20060824 (SR6) (JIT enabled: jitc))</pre>
+
+<p>
+After settiont environement variables
+</p>
+<pre class="code">peerap01:ta2adm 53&gt; setenv PATH JAVA_HOME
+peerap01:ta2adm 53&gt; setenv JAVA_HOME /usr/java14_64/jre
+peerap01:ta2adm 54&gt; setenv IBM_JAVA_OPTIONS &#039;-Xmx256M -Xj9&#039;
+peerap01:ta2adm 55&gt; /usr/java14_64/jre/bin/java -version
+java version &quot;1.4.2&quot;
+Java(TM) 2 Runtime Environment, Standard Edition (build 2.3)
+IBM J9 VM (build 2.3, J2RE 1.4.2 IBM J9 2.3 AIX ppc64-64 j9ap64142-20060824a (JIT enabled)
+J9VM - 20060823_07696_BHdSMr
+JIT  - 20060722_1500ifx1_r8
+GC   - 20060724_AA)</pre>
+
+</div>

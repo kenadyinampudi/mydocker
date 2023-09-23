@@ -1,0 +1,65 @@
+====== Some symmetrix commands used to clean up DMX-4 -- Mostly useless for future ======
+
+==== Basic symmetrix commands ====
+
+  - List all Symmetrix diskgroups<code>sudo symdisk -sid 39 list -by_diskgroup</code>
+  - List all ckd-3390 devices ( Mainframe )<code>sudo symdev -sid 39 -emulation ckd3390 list</code>
+  - List all FBA devices (Open systems )<code>sudo symdev -sid 39 -emulation ckd3390 list</code>
+  - List all symmir sessions on a Symmetrix<code>sudo symmir -sid 39 list</code>
+  - Cancel a STD -> BCV relation ship. Put the source target in a <code>sudo symmir -sid 39 -f ./filename cancel</code>
+  - How to check available size on a given diskgroup<code>sudo symdisk -sid 39 list -disk_group 1</code>Lists diskgroup with id "1" on SID "39"
+
+==== Creating LUNs on Symmetrix (for us DMX-4 ) commands ====
+
+  - Creating Raid 5 devices on DMX4 on a given diskgroup.
+    - Create this file<code>vi create.r5.devs.on.diskgroup3.txt</code>Add these content<code>create dev count=200,
+size=9207,
+emulation=FBA,
+config=RAID-5,
+data_member_count=3,
+disk_group=3,
+mvs_ssid=0022;</code>Then configure preview and commit<code>sudo symconfigure -sid 39 -f ./create.r5.devs.on.diskgroup3.txt preview</code>Commit<code>sudo symconfigure -sid 39 -f ./create.r5.devs.on.diskgroup3.txt commit</code>
+  - Creating Raid 5 metavolumes size 102GB.
+    - First of all, get a list of Raid 5 devices<code>sudo symdev -sid 39 -nomember -emulation fba list -noport | awk '{if ($NF=="8632") print $1}' > dmx4.fba.all.noport.luns</code>
+    - Then use this script to get the meta volumes created. Basically we need to concatenate 12 devices to make a 102GB LUN<code>cat dmx4.fba.all.noport.luns | awk '{print "form meta from dev "$1,"config=striped stripe_size=1920;";
+metaname=$1;
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+getline;
+print "add dev "$1,"to meta "metaname";";
+}' > dmx4.cr.102g.meta.txt</code>
+    - Configure it<code>sudo symconfigure -sid 39 -f ./dmx4.cr.102g.meta.txt preview</code>Commit<code>sudo symconfigure -sid 39 -f ./dmx4.cr.102g.meta.txt commit</code>
+
+==== Deleting LUNs from DMX4 ====
+
+  - List the masking database for the given LUNs<code>sudo symmaskdb -sid 39 list assignment -dev abcd,efgh</code>
+  - Remove the masking<code>sudo symmask -sid 39 -wwn <wwn_number> -dir <dir> -p <port> remove dev abcd,efgh</code>
+  - Write disable the devices<code>sudo symdev -sid <sid> write_disable <dev> -SA <FA> -p <port></code>
+  - Unmap the LUN from the FA ports.
+    - Create a configuration file<code>vi unmap.luns.txt</code>Add these<code>unmap dev <dev> from dir <FA>:<port>;</code>Add one line for each device.
+    - Preview<code>sudo symconfigure -sid <sid> -f ./unmap.luns.txt preview</code>Execute<code>sudo symconfigure -sid <sid> -f ./unmap.luns.txt commit</code>
+  - Refresh the FAs<code>sudo symmask -sid 39 refresh</code>
+  - Dissolve the volumes. Create this file<code>vi dissolve.luns.txt</code>Add this content for each meta lun<code>dissolve meta dev <dev>;</code>Preview<code>sudo symconfigure -sid 39 -f ./dissolve.luns.txt</code>
+  - At this state, cleanup is pretty much done. If you want to delete the devices, create the file<code>delete dev ${dev};</code>Preview and execute it.
+
+
+
+

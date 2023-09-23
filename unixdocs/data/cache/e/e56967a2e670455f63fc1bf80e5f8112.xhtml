@@ -1,0 +1,124 @@
+
+<h2 class="sectionedit1" id="sas_adapter_-_taprvio160">SAS ADAPTER - taprvio160</h2>
+<div class="level2">
+
+<p>
+Display SAS Adapters
+</p>
+<pre class="code"> lsdev -C  |grep sissas </pre>
+
+<p>
+Results should be
+</p>
+<pre class="code">root on taprvio160:/root $ lsdev -C  |grep sissas
+sissas0    Available 01-00       PCIe3 RAID SAS Adapter Quad-port 6Gb x8
+root on taprvio160:/root $ </pre>
+
+</div>
+<!-- EDIT1 SECTION "SAS ADAPTER - taprvio160" [1-283] -->
+<h2 class="sectionedit2" id="sas_adapter_-_taprvio161">SAS ADAPTER - taprvio161</h2>
+<div class="level2">
+
+<p>
+Display SAS Adapters
+</p>
+<pre class="code"> lsdev -C  |grep sissas </pre>
+
+<p>
+Results should be
+</p>
+<pre class="code">root on taprvio161:/root $ lsdev -C  |grep sissas
+sissas0    Available 01-00       PCIe3 RAID SAS Adapter Quad-port 6Gb x8
+root on taprvio161:/root $ </pre>
+
+</div>
+<!-- EDIT2 SECTION "SAS ADAPTER - taprvio161" [284-567] -->
+<h2 class="sectionedit3" id="sas_adapter_-_tapr1d01">SAS ADAPTER - tapr1d01</h2>
+<div class="level2">
+
+<p>
+Display SAS Adapters
+</p>
+<pre class="code"> lsdev -C  |grep sissas </pre>
+
+<p>
+Results should be
+</p>
+<pre class="code">tapr1d01:-TARGET-PTA-SERVER:/home/x1cxs952&gt; lsdev -C  |grep sissas
+sissas0    Available 01-00       PCIe3 RAID SAS Adapter Quad-port 6Gb x8
+sissas1    Available 05-00       PCIe3 RAID SAS Adapter Quad-port 6Gb x8 </pre>
+
+<p>
+Install Firmware on first port on each adapter 
+</p>
+
+</div>
+<!-- EDIT3 SECTION "SAS ADAPTER - tapr1d01" [568-958] -->
+<h2 class="sectionedit4" id="fireware_installatio_proceedures">FIREWARE INSTALLATIO PROCEEDURES</h2>
+<div class="level2">
+
+<p>
+5.1 Microcode Download Procedure-SAS Adapters for AIX
+</p>
+
+<p>
+Procedure
+</p>
+
+<p>
+ 1) It is advised, but not necessary to stop all applications.
+</p>
+
+<p>
+ 2) Enter diag
+</p>
+
+<p>
+ 3) Select the “Task Selection” from diagnostics menu.
+</p>
+
+<p>
+ 4) Select “Download Microcode” or “Microcode Tasks → Download Microcode”
+from “Task Selection” menu.
+</p>
+
+<p>
+ 5) Select all of the SAS Adapters/Controllers that need to be updated from
+the list of devices by pressing “Enter”“F7”.
+</p>
+
+<p>
+“Enter” to continue.
+</p>
+
+<p>
+ 7) Select ”/usr/lib/microcode”.
+</p>
+
+<p>
+“Enter”
+to continue.
+</p>
+
+<p>
+ 9) An “M”“Enter”.
+</p>
+
+<p>
+ 10) The following message will appear on the screen when download is
+completed: “…”
+</p>
+
+<p>
+ 11) Exit diagnostics.
+</p>
+
+<p>
+ 12) Verify the code level is <strong>14511900</strong> by typing “lscfg -vl sissas#” for each
+SAS device updated. &lt;Where # is the numbersissas device&gt;
+</p>
+<pre class="code"> &quot;lscfg -vl sissas0 </pre>
+<pre class="code"> &quot;lscfg -vl sissas1 </pre>
+
+</div>
+<!-- EDIT4 SECTION "FIREWARE INSTALLATIO PROCEEDURES" [959-] -->

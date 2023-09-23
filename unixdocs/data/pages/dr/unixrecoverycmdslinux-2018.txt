@@ -1,0 +1,59 @@
+====== NA - LDC - Disaster Recovery Test LINUX instructions (2018) ======
+
+===== Connectivity to DR ESXi farm =====
+
+  - VMWARE vSphere hostname and credentials<code>vSphere server  :  taste001  IP - 10.39.9.61
+User account    :  <AD Credentials>
+Password        :  <AD Credentials>
+WebAccess       :  https://taste001/vsphere-client/?csp</code>
+
+===== Restore of the Virtual Machines =====
+
+  - Data preservation will restore the VMs and handover to GIOS Unix Team
+
+===== Unix Team's activities =====
+
+  - Choose the Linux server, update the DR database for the server's **Reconfigure IP and start server and application** task to **In Progress.**
+  - Login to vSphere using fat client or web client. --> On the address space click and select “Hosts and Clusters”.
+  - On the left hand pane, select “DR site” --> click on the “DR site” -> click on "SAP server cluster".
+  - Select the VM --> click edit settings 
+    - Remove Ethernet Adapter.
+    - Reduce the memory by 25%
+    - Reduce the CPU by 25%
+    - Click OK once done.
+  - Power on the Virtual Machine --> Access console and login as root.
+  - Remove network configuration and shutdown<code>cd /etc/sysconfig/network-scripts/
+mv ifcfg-eth0* /root
+shutdown now</code>
+  - On the VSphere client select VM and click edit settings -> Add Ethernet Adapter with correct adapter type and VLAN ID.
+    - Adapter type=VMXNET3
+    - Select the correct VLAN for Linux VMs. The names are normally self explanatory.
+    - Click OK once done.
+  - Power on the VM.
+  - Login as root on the console.
+  - Check and document the newly added ethernet adapter<code>ifconfig -a</code>Make a note of the device name. In this case it is ens192.
+  - Configure IP address of the hostname<code>vi /etc/sysconfig/network-scripts/ifcfg-ens192</code>Add the following<code>DEVICE=ens192
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=<the IP address to which the hostname resolvs to i.e. paerap01h --> 10.39.11.X>
+NETMASK=255.255.255.0</code>Save the file and bring up the interface<code>ifup ens192</code>Ignore the error that shows up<code>dm-0: write same failed.Manually zeroing</code>Don't know what it is -- we will investigate this later.
+  - Configure the default gateway<code>echo "GATEWAY=10.39.11.1" > /etc/sysconfig/network</code>Also add to the current running kernel<code>route add -net 0.0.0.0 gw 10.39.11.1</code>
+  - Try ssh to production server using IP Address<code>ssh 10.0.48.12 <i.e. pgnmsv01></code>If this is successful **STOP** and escalate.
+  - Disable name resolution<code>mv resolv.conf /etc/resolv.conf.DR</code>
+  - Restart the system<code>systemctl reboot</code>
+  - Login to the DR-NIM server to continue with system re-configurations.
+    - Set variable specific to the system. First the servername<code>export hostname=<hostname></code>
+    - Install NIM server's public key into authorized_keys file.<code>sudo scp /root/.ssh/id_rsa.pub ${hostname}:/root/</code><code>sudo ssh ${hostname} "cat  /root/id_rsa.pub >> /root/.ssh/authorized_keys"</code> 
+    - install the DR hostfiles<code>sudo ssh ${hostname} "cp /etc/hosts /etc/hosts.copyforDR"</code>Now push the file<code>sudo scp /etc/hosts ${hostname}:/etc/hosts</code>
+    - Configure NTP in DR. Stop daemon<code>sudo ssh ${hostname} systemctl stop ntpd</code>Backup the config<code>sudo ssh ${hostname} cp /etc/ntp.conf /etc/ntp.conf.DRtest</code>Now push the NTP file<code>sudo scp /root/ntp.client.conf ${hostname}:/etc/ntp.conf</code>Start the daemons<code>sudo ssh ${hostname} systemctl restart ntpd</code>Set the correct time from NIM server<code>sudo ssh ${hostname} "date ; ntpdate -u nim ; date"</code>
+    - Turn off cron<code>sudo ssh ${hostname} systemctl stop crond.service</code><code>sudo ssh ${hostname} systemctl disable crond.service</code>Check if cron is still running<code>sudo ssh ${hostname} ps -ef | grep cron</code>
+    - Login to the server<code>sudo ssh ${hostname}</code>Change PS1 variable by login to the client. Make a backup copy<code>sudo cp /etc/profile /etc/profile.copyforDR</code>Then<code>sudo vi /etc/profile</code>Add this towards the end ( last line )<code>HOST=$(uname -n)
+PS1='DR test -- $HOST:$PWD>'</code>
+    - Perform a reboot<code>sudo systemctl reboot</code>
+
+** When in doubt, ask **
+
+{{:dr:whenindoubtask.jpg?400|}}
+
+** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremly careful ) **

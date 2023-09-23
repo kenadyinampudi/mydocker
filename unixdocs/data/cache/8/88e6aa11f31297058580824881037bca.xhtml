@@ -1,0 +1,31 @@
+
+<h1 class="sectionedit1" id="gis_upgrade_project">GIS upgrade project</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Java Installation - GIS needs a customized patched version of IBM Java. Here is the procedure</div>
+<ol>
+<li class="level2"><div class="li"> Copy the installations files from taitc118<pre class="code">mkdir -p /var/tmp/javapatches /var/tmp/javainstall/
+scp -r taitc118:/prod/images/Java/GISJava/ /var/tmp/javainstall/
+scp -r taitc118:/prod/images/Java/GISJava/fixes/  /var/tmp/javapatches/</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install <abbr title="Software Development Kit">SDK</abbr><pre class="code">/var/tmp/javainstall/Java6_64.sdk</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install SR8FP1 from taitc118<pre class="code">/var/tmp/javainstall/Java6_64.sdk.6.0.0.215.bff</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Apply the Floating Point fix utility tool to address security alert CVE-2010-4476<pre class="code">/usr/java6_64/bin/java -jar /var/tmp/javapatches/JavaUpdateInstaller.jar -install /var/tmp/javapatches/IZ94423_FIX_1.jar /usr/java6_64</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Test the installation<pre class="code">/usr/java6_64/bin/java -jar /var/tmp/javapatches/ParseDoubleTest.jar</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Cleanup the tempfiles<pre class="code">rm -rf /var/tmp/javapatches /var/tmp/javainstall</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

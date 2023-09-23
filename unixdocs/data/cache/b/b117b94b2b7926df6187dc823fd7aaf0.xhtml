@@ -1,0 +1,107 @@
+
+<h1 class="sectionedit1" id="configuring_unispool_to_systemd_rhel7">Configuring unispool to systemd/RHEL7</h1>
+<div class="level1">
+
+<p>
+<strong> For informational purposes only </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Objective is to enable unispool to be controlled by systemd. systemd replaced init in RHEL6 or 7.</div>
+</li>
+<li class="level1"><div class="li"> This is the correct way to implement a service in RHEL7 <a href="https://access.redhat.com/solutions/1163283" class="urlextern" title="https://access.redhat.com/solutions/1163283"  rel="nofollow">https://access.redhat.com/solutions/1163283</a></div>
+</li>
+</ul>
+
+<p>
+<img src="/lib/images/smileys/fixme.gif" class="icon" alt="FIXME" /> <strong>This is not tested yet, working with Danny Smeets</strong>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Configuring unispool to systemd/RHEL7" [1-364] -->
+<h2 class="sectionedit2" id="adding_unispool_to_systemd">Adding unispool to systemd</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create a generic start/stop script for unispool<pre class="code">sudo vi /usr/local/sbin/unispool.sh</pre>
+
+<p>
+paste this output it
+</p>
+<pre class="code">#!/bin/bash
+#
+# Custom script to startup unispool
+
+function start_unispool {
+/users/unispool/programs/unispool_start
+export MAINPID=$(ps -ef | grep /users/unispool/bin/main | grep -v grep | awk &#039;{print $2}&#039;)
+}
+
+function stop_unispool {
+/users/unispool/programs/unispool_stop
+}
+
+case ${1} in
+start)
+   start_unispool
+   ;;
+stop)
+   stop_unispool
+   ;;
+reload)
+   stop_unispool
+   start_unispool
+   ;;
+*)
+   echo &quot;Unknown &quot;
+   ;;
+esac</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make it executable<pre class="code">sudo chmod 755 /usr/local/sbin/unispool.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a config file for systemd/unispool<pre class="code">sudo vi /etc/systemd/system/unispool.service</pre>
+
+<p>
+Add this content to it
+</p>
+<pre class="code">[Unit]
+Description=Unispool management script
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/unispool.sh start
+ExecStop=/usr/local/sbin/unispool.sh stop
+ExecReload=/usr/local/sbin/unispool.sh reload
+User=unispool
+Group=unispool
+RemainAfterExit=yes
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At this time, we should be able to,</div>
+<ol>
+<li class="level2"><div class="li"> Start unispool<pre class="code">sudo systemctl start unispool</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Stop  unispool<pre class="code">sudo systemctl stop unispool</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Status of unispool<pre class="code">sudo systemctl status unispool</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart of unispool<pre class="code">sudo systemctl reload unispool</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Enable for automatic start/stop<pre class="code">sudo systemctl enable unispool</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Adding unispool to systemd" [365-] -->

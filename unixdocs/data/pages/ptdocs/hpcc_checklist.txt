@@ -1,0 +1,185 @@
+RedHat OS Configuration for HPC Cluster Nodes
+
+Updated: July 15, 2019
+
+| **Item** | **Comment** |
+| Install Redhat 7.5   | Make sure all patches are installed.        |
+| Register to Satellite | [[unix:registersatellite]] |
+| Install the developer group | <code>yum group install "Development tools"</code> |
+| Install Linux tooling | <code>yum install -y cockpit cockpit-ws insights-client
+systemctl enable --now cockpit.service
+systemctl enable --now cockpit.socket
+insights-client --register</code> |
+| Generate some ssh keys if necessary | ''ssh-keygen'' |
+| Make sure the headnode keys are copied. | (from headnode) ''ssh-copy-id'' | 
+| Disable firewall | ''systemctl stop firewalld'' \\ ''systemctl disable firewalld'' |
+| Change SELinux | ''vi /etc/selinux/config''  |
+| Latest NVidia Tesla driver      | [[unix:nvidia_install | New Install Instructions]] [[unix:old_nvidia_install | Old Install Instructions ]] Currently 440 located in /apps/nvidia-cuda10        |
+| Reboot the machine after the Nvidia driver install.   | The kernel modules do not start correctly when jobs are started\\  without a reboot.      
+| Setup exclusive mode for nvidia: sudo nvidia-smi -c 3 | Exclusive mode will stop sharing resources between jobs.\\ This would run a single job on each GPU.\\ **Make this option on system start up as it changes back after reboot.**      |
+| Setup persistence mode for nvidia: sudo nvidia-smi -pm 1         | Prevent the driver from releasing device state when not used.\\ **Make this option on system start up as it changes back after reboot.**         |
+| Mount /apps, /results, /lsf, /home and /archive from the location's shares. | * See table below |
+| Mount /archive (if available)   | For Sealings Systems nodes in the CDC only. Eng IS local team member to specify         |
+| First two disks (system Disks, smaller) RAID 1        | |
+| Separate physical volume (larger) for /data RAID 0 or NoRAID     | It should be at least 1TB        |
+| Separate physical volume (larger) for /scratch RAID 0 or NoRAID  | It should be at least 1TB        |
+| All users in a “users” group (GID=100)     | Please copy /etc/groups from a working machine to get the correct group ids for users.  |
+| For /data and /scratch, permissions should be 775, with group ownership of “users.”    | If the above is not set, we will need 777   |
+| LDAP set up ([[redhatldap | for Red Hat]])         | <cli>
+realm permit -g 'pt linux admins@pt'
+realm permit -g 'glkadvancedengineeringgroup@amer'
+realm permit -g 'hpccluster_pistons@pt'
+realm permit -g 'hpccluster_sealings_and_gaskets@pt'
+realm permit -g 'hpccluster_ignition@pt'
+realm permit -g 'hpccluster_bearings@pt'
+realm permit -g 'hpccluster_clean_air@pt'
+realm permit lsfadmin@pt
+realm permit huj00059@pt
+realm permit yaldol28
+realm permit zhangj51@pt
+realm permit zhaoj024@pt
+realm permit tothd021@pt
+realm permit sedlab46@pt
+realm permit zeling41@pt
+realm permit yaldol28@pt
+realm permit nickeb38@pt
+realm permit roessa78@pt
+realm permit yanga065@pt
+realm permit chowdf62@pt
+realm permit malghr10@pt
+realm permit mengl063@pt
+realm permit panj0044@pt
+realm permit wangk086@pt
+realm permit matsue82@pt
+realm permit jias0030@pt
+realm permit modolj18@pt
+realm permit liw00073@pt
+realm permit shenk023@pt
+realm permit meissj71@pt
+realm permit mks0646@amer
+realm permit houghn13@pt
+realm permit leedsn16@pt
+</cli>|
+| Set system time to correct local time      | timedatectl list-timezones; timedatectl set-timezone America/Detroit |
+| Disable Hyperthreading in BIOS  | |
+| [[unix:transparenthugepages | Disable hugepage]]. To check if disabled or not, use the command:  | Check with Eng IS local team member if this is desired in the respective use case ''
+cat /sys/kernel/mm/transparent_hugepage/enabled
+results: always madvise [never]''      |
+| Remove the wireless library ''wireless-regdb'' if it gets installed.        | Check with Eng IS local team member if this is desired in the respective use case       |
+| [[unix:mellanox | Install Mellanox driver]] (If hardware is available)    | Located in /apps/mlnx_drv/       |
+|  | Reload systemctl to pick up the new service.  ''systemctl daemon-reload'' |
+|  | NOTE: It will require a reboot after installation. **Please add the starting command for the InfiniBand after reboot otherwise the InfiniBand will not start. systemctl enable openibd**  **Systemctl start openibd**       |
+| Set SELINUX to permissive       | This is needed to avoid abaqus failures: /etc/selinux/config   ''SELINUX=permissive''   |
+
+| Install zip application         | Needed to zip files and send it to the results         |
+| Install Cockpit         | Allows viewing cluster performance at a glance         |
+| For Dell boxes, ensure racadm is installed | Allows access to DRAC in band. <code>
+  Go to https://support.dell.com
+  You can search for the hardware model or easily get the item by entering the service tag.
+  Select Drivers and Downloads
+  Select the Operating System of your Managed System
+  Expand Systems Management.
+  Locate the OpenManage Server Administrator Managed Node application 
+  Click Download File. (Or choose other formats) </code> |
+| Set userid\@server:\<full path\>| Change the .bashrcs to show user\@server:\<directory\> |
+| Enable sudo for lsfadmin        | \*\*Specification shown below. For cdcpillx141, 142, 143 and 144, sudo must contain the InfiniBand troubleshooting command highlighted in the list.       |
+| Copy /etc/lsf.sudoers and /etc/init.d/lsf from a working node to the new one| **\*\*If the machine requires LSF**         |
+
+
+=== Shnh pistons: ===
+  * shnhcnlx043:/archive/Piston /Pistons 
+  * shnhcnlx043:/lsf /lsf 
+  * shnhcnlx043:/results /results 
+  * shnhcnlx043:/home /home 
+  * shnhcnlx043:/apps /apps 
+  * **Shnh Sealings:**  
+  * shnhcnlx043:/archive/Sealing /Sealings 
+=== CDC: === 
+  * cdcpilns014.federalmogul.com:/results /results 
+  * cdcpilns014.federalmogul.com:/home /home 
+  * cdcpilns014.federalmogul.com:/archive /archive 
+  * cdcpilns014.federalmogul.com:/apps /apps 
+  * cdcpilns014.federalmogul.com:/lsf /lsf 
+ === NBRG LSF === 
+  * nbrgdelx019:/apps /headnode2-apps 
+  * nbrgdelx019:/home /headnode2-home 
+  * nbrgdelx019:/lsf /headnode2-lsf 
+  * nbrgdelx019:/results /headnode2-results 
+ === NBRG CFD === 
+  * nbrgdelx021:/home /home 
+  * nbrgdelx021:/results /results 
+  * nbrgdelx021:/apps /apps
+ === BRSC === 
+  * brscdelx022:/home /home 
+  * brscdelx022:/results /results 
+  * brscdelx022:/apps /apps
+\\ 
+\\   
+==== Sudo Configuration same as cdcpillx141:====
+<code>
+/bin/kill [1-9]\*
+/bin/kill -9 [1-9]\*
+/usr/bin/pkill -u [A-z]\*
+/usr/bin/pkill -9 -u [A-z]\*
+/sbin/service lsf start
+/sbin/service lsf stop
+/sbin/service lsf status
+/etc/init.d/lsf
+/usr/bin/systemctl \* lsf
+/usr/sbin/clear_cache.sh
+/lsf/LSF/bin/lsf-node-startup.sh
+/usr/sbin/getsensorinfo.sh
+/usr/sbin/ibnetdiscover
+/usr/sbin/ibstat
+/usr/sbin/ibhosts
+/usr/sbin/ibping
+/usr/bin/ibv_devinfo
+/usr/sbin/ibclearcounters
+/usr/sbin/ibdatacounters
+/usr/bin/systemctl \* openibd
+/usr/bin/systemctl \* opensmd
+/usr/bin/tail /var/log/\*
+/usr/bin/tail -f /var/log/\*
+/bin/cat /var/log/\*
+/bin/more /var/log/\*
+/bin/chown \* /apps
+/bin/chown \* /apps/\*
+/bin/chmod \* /apps
+/bin/chgrp \* /apps
+/bin/chgrp \* /apps/\*
+/bin/chmod \* /apps/\*
+/bin/mkdir /apps/\*
+/bin/rmdir /apps/\*
+/bin/rm /apps/\*
+/bin/rm -rf /apps/\*
+/usr/bin/vi /apps/\*
+/bin/chown \* /data
+/bin/chown \* /data/\*
+/bin/chgrp \* /data
+/bin/chgrp \* /data/\*
+/bin/chmod \* /data
+/bin/chmod \* /data/\*
+/bin/mkdir /data/\*
+/bin/rmdir /data/\*
+/bin/rm /data/\*
+/bin/rm -rf /data/\*
+/usr/bin/vi /data/\*
+/bin/chown \* /scratch
+/bin/chown \* /scratch/\*
+/bin/chgrp \* /scratch
+/bin/chgrp \* /scratch/\*
+/bin/chmod \* /scratch
+/bin/chmod \* /scratch/\*
+/bin/mkdir /scratch/\*
+/bin/rmdir /scratch/\*
+/bin/rm /scratch/\*
+/bin/rm -rf /scratch/\*
+/usr/bin/vi /scratch/\*
+/lsf/LSF/8.0/linux2.6-glibc2.3-x86_64/bin/lsadmin
+/lsf/LSF/10.1/linux3.10-glibc2.17-x86_64/bin/lsadmin
+/sbin/service mysql start
+/sbin/service mysql stop
+/sbin/service mysql status
+/usr/sbin/dmidecode
+/usr/bin/nvidia-smi
+</code>

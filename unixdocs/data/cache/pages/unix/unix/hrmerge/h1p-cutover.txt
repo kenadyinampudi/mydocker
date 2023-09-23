@@ -1,0 +1,23 @@
+====== H1P Cutover plan ======
+
+^No^Description^Who^Time^When^Comments^
+|1|Shutdown SAP and database on pehrdb01|Basis & DBA|30 mins | | |
+|2|Backup /usr/sap/trans & /sapmnt/H1P/global from pehrdb01|Data preservation|1 Hr | | |
+|3|Unmount and varyoff the VGs and delete disks from ODM on pehrdb01|Unix|30 mins | | |
+|4|Shutdown the OS on pehrdb01 and disable auto start|Unix|15 mins | | |
+|6|Remove the VIO disk mapping for pehrb01 and delete disks from teprvio1|Unix|15 mins | | |
+|8|Swing H1P LUNs from pehrdb01 to pehrdb99|SAN|30 mins | | |
+|9|Configure the disks on pehrdb99 and import VGs, mount filesystems|Unix|30 mins | | |
+|10|Configure the VIP 10.56.1.103 on pehrap99|Unix|5 mins | | |
+|11|Startup H1P database on pehrdb99 and validate|DBA|30 mins | | |
+|12|Restore /usr/sap/trans & /sapmnt/H1P/global from pehrdb01's backup and restore to pehrap99|Data Preservation|1 Hr | | |
+|13|Split CI & Startup H1P SAP instance|Basis|?? | | |
+|14|Functional testing|???|?? | | |
+
+
+^Team^Members^
+|Basis|Arthur|
+|DBA|Kempe|
+|Unix|Robert, Kapil|
+|SAN|Pawel, Kapil|
+|Data-Preservation|Pawel|

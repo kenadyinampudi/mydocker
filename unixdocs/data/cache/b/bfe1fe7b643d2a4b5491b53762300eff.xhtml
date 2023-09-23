@@ -1,0 +1,171 @@
+
+<h1 class="sectionedit1" id="build_a_vio_server">Build a VIO server</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Build a VIO server" [1-34] -->
+<h2 class="sectionedit2" id="create_lpar">Create LPAR</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create the VIOS partition(s)</div>
+<ol>
+<li class="level2"><div class="li"> IVM –&gt;  Insert the blade into the Blade Centre Chassis slot and verify that the Blade Centre Management module can see it. Lincolnshire has three Blade Centre Chassis,</div>
+<ol>
+<li class="level3"><div class="li"> <a href="http://tgprbld1" class="urlextern" title="http://tgprbld1"  rel="nofollow">Bladecentre 1</a></div>
+</li>
+<li class="level3"><div class="li"> <a href="http://tgprbld2" class="urlextern" title="http://tgprbld2"  rel="nofollow">Bladecentre 2</a></div>
+</li>
+<li class="level3"><div class="li"> <a href="http://tgprbld3" class="urlextern" title="http://tgprbld3"  rel="nofollow">Bladecenter 3</a></div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Standard Power frames (720/740/780 etc )</div>
+<ol>
+<li class="level3"><div class="li"> Create the VIOS partitions using Systems plan of manually. Documentation is beyond the scope of this note.</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> If you are planning to use <strong>VLAN tagging on a Blade VIO server </strong> please request the following setup<pre class="code">Switch configuration :-
+
+Please configure the switch ports as follows.
+
+Bladecentre2 - switch1 - port 7 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre2 - switch2 - port 7 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre2 - switch3 - port 7 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre2 - switch4 - port 7 - trunk , no native vlan, allowed VLANs 49,451</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Create LPAR" [35-1080] -->
+<h2 class="sectionedit3" id="configure_nim">Configure NIM</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:viosnimsetup" class="wikilink1" title="unix:viosnimsetup">If the NIM VIO resources are not available do it now</a></div>
+</li>
+<li class="level1"><div class="li"> Update the console database. Login to taitc118<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Make an entry similar to this
+</p>
+<pre class="code">taprvio3:blade-ibm:tgprbld1:1:root</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the respective NIM server and define the VIO server as a NIM client<pre class="code">sudo nim -o define -t standalone -a \
+platform=chrp -a if1=&quot;find_net &lt;vioservername&gt; 0&quot; -a netboot_kernel=mp &lt;viosservername&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare the NIM client(VIO server) for a NIM bosinst operation<pre class="code">sudo nim -o bos_inst -a source=mksysb -a spot=vios-2-2-2-2-spot -a \
+bosinst_data=vios-2-2-2-2-bosinst_data -a accept_licenses=yes -a \
+no_client_boot=yes -a mksysb=vios-2-2-2-2-mksysb &lt;vioservername&gt;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Configure NIM" [1081-1867] -->
+<h2 class="sectionedit4" id="install_vios_using_nim">Install VIOS using NIM</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to taitc118 and open a console session to the VIO server<pre class="code">sudo getconsole &lt;vioservername&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Power on the VIOS partition</div>
+<ol>
+<li class="level2"><div class="li"> IVM –&gt; From the Bladecentre Management <abbr title="Graphical User Interface">GUI</abbr> <a href="http://tgprbld1" class="urlextern" title="http://tgprbld1"  rel="nofollow">http://tgprbld1</a> power on the blade.</div>
+</li>
+<li class="level2"><div class="li"> Power frame –&gt; From the HMC</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> At the console, Interrupt the boot and get into SMS, configure network ISL as usual and point to the NIM server and perform a network boot.</div>
+</li>
+<li class="level1"><div class="li"> After the installation, the lpar will automatically restart.</div>
+</li>
+<li class="level1"><div class="li"> Login as padmin, set a password and then accept the license<pre class="code">license -accept</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On IVMs, perform the initial logical partition on an IVM<pre class="code">mkgencfg -o init</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Eliminate syslog messages<pre class="code">oem_setup_env</pre>
+<pre class="code">touch /tmp/syslog.out</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set root password<pre class="code">passwd root</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Install VIOS using NIM" [1868-2699] -->
+<h2 class="sectionedit5" id="configure_networking_on_vios">Configure Networking on VIOS</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Remove all the network configurations<pre class="code">oem_setup_env</pre>
+
+<p>
+detach the network config
+</p>
+<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+
+<p>
+Remove them from ODM
+</p>
+<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If you are building a <strong>VLAN tagged</strong> VIOS server follow this procedure</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:bladeviovlantagging" class="wikilink1" title="unix:bladeviovlantagging">VLAN Tagging on Blade VIO Server</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:bladeviovlantagging-frame" class="wikilink1" title="unix:bladeviovlantagging-frame">VLAN Tagging on dual VIOS</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:bladeviovlantagging-frame-dmz" class="wikilink1" title="unix:bladeviovlantagging-frame-dmz">VLAN Tagging on dual VIOS taprvio90-91 in the DMZ</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:bladeviovlantagging-vio140-141" class="wikilink1" title="unix:bladeviovlantagging-vio140-141">VLAN Tagging on dual VIOS taprvio140-141</a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If you are building a <strong>non-VLAN tagged</strong> VIOS server follow this procedure</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:bladevionovlantagging" class="wikilink1" title="unix:bladevionovlantagging">Configure networking on a VIO Server</a></div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Configure Networking on VIOS" [2700-3742] -->
+<h2 class="sectionedit6" id="further_configurations">Further configurations</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Increase paging space. Increase hd6 to be twice the size of memory.<pre class="code">chps -s 30 hd6
+swapoff /dev/paging00
+rmps paging00</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:upgrade-to-vios-2.2.2.3" class="wikilink1" title="unix:upgrade-to-vios-2.2.2.3">Update VIOS to the latest level - 2.2.2.3</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setuplpar2rrdvioivm" class="wikilink1" title="unix:setuplpar2rrdvioivm">Configure LPAR2RRD Client</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupsshkeysfornim" class="wikilink1" title="unix:setupsshkeysfornim">Setup SSH keys for NIM server</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps" class="wikilink1" title="unix:postinstallationsteps">Proceed to post install steps</a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Further configurations" [3743-] -->

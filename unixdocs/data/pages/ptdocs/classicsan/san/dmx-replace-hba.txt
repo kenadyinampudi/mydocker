@@ -1,0 +1,7 @@
+====== Replace a host HBA - updating masking DB ======
+
+  * Get a list of devices allowcated to the old WWN<code>sudo symmaskdb -sid 71 list devs -wwn {current wwn of fault adapter}  > /tmp/devs-current.txt</code>
+  * Replace the WWN in sym masking db<code>sudo symmask -sid 71 -wwn {current wwn of fault adapter} replace {wwn of new adapter}</code>
+  * Get a list of devices allocated to the new WWN<code>sudo symmaskdb -sid 71 list devs -wwn {current wwn of fault adapter} > /tmp/devs-new.txt</code>
+  * Check if they are the same<code>diff /tmp/devs-current.txt  /tmp/devs-new.txt</code>
+  * Refresh the config to all FAs<code>sudo symmask -sid 71 refresh</code>

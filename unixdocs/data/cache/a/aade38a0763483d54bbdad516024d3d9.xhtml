@@ -1,0 +1,125 @@
+
+<h1 class="sectionedit1" id="install_storage_array_specific_device_drivers_on_aix_vios">Install storage array specific device drivers on AIX/VIOS</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> NFS mount the source for packages</div>
+<ol>
+<li class="level2"><div class="li"> Lincolnshire<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount pgnmsv01:/prod/images/EMC /mnt/emc</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Interexion<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount penmsv01:/prod/images/EMC /mnt/emc</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove NAVIAGENT if any, from cloning perhaps ?<pre class="code">sudo rm /etc/log/HostIdFile.txt</pre>
+
+<p>
+Remove it
+</p>
+<pre class="code">sudo installp -u NAVIAGENT</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If any of the disks for this LPAR or VIOS are from <strong>EMC</strong> storage arrays, Perform the following steps.</div>
+<ol>
+<li class="level2"><div class="li"> Install NAVIAGENT<pre class="code">sudo installp -acX -d /mnt/emc/NAVIAGENT/NaviHostAgent-AIX-32-NA-en_US-6.29.6.0.35-1.lpp NAVIAGENT</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure the Navi agent</div>
+<ol>
+<li class="level3"><div class="li"> Interexion<pre class="code">sudo scp penmsv01:/prod/images/EMC/config/agent.config.int.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Edenkoben<pre class="code">sudo scp penmsv01:/prod/images/EMC/config/agent.config.ede.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Lincolnshire<pre class="code">sudo scp pgnmsv01:/prod/images/EMC/config/agent.config.ldc.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Monroe<pre class="code">sudo scp pgnmsv01:/prod/images/EMC/config/agent.config.mon.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Rybnik<pre class="code">sudo scp penmsv01:/prod/images/EMC/config/agent.config.ryb.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> GrassLake<pre class="code">sudo scp pgnmsv01:/prod/images/EMC/config/agent.config.glk.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> St Truiden<pre class="code">sudo scp penmsv01:/prod/images/EMC/config/agent.config.str.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Gliwice<pre class="code">sudo scp penmsv01:/prod/images/EMC/config/agent.config.glw.clariion /etc/Navisphere/agent.config</pre>
+
+<p>
+And start it
+</p>
+<pre class="code">sudo /etc/rc.agent start</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Install MPIO drivers for EMC Symmetrix / VMAX storage arrays<pre class="code">sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Once done, unmount nfs<pre class="code">sudo umount /mnt/emc</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Fix the buggy version of inq command<pre class="code">for file in /usr/lpp/EMC/CLARiiON/bin/inq.aix32_51 /usr/lpp/EMC/CLARiiON/bin/inq.aix64_51 /usr/lpp/EMC/Symmetrix/bin/inq.aix32_51 /usr/lpp/EMC/Symmetrix/bin/inq.aix64_51
+do
+   sudo cp /usr/local/scripts/inq.aix64_51 ${file}
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Delete all MPIO disks that you can, Ignore errors while deleting root disk<pre class="code">lsdev -Ccdisk | grep -i mpio | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Rediscover the disks<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Enable round robin for MPIO devices.<pre class="code">lsdev -Ccdisk | grep MPIO | grep -i EMC | awk &#039;{print $1}&#039; | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> A reboot is necessary, but we will not do that here as there is a final reboot coming up.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If the system is using <strong>Pure Storage</strong> disks, do nothing.</div>
+</li>
+</ol>
+
+</div>

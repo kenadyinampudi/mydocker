@@ -1,0 +1,15 @@
+====== Custom syslog configurations for DRiV ======
+
+^Type of log   ^LogServer^Logfile                              ^
+|sudo          |pcdcunxlxap04 |/prod/unixlog/sudo/secure.log        |
+|errpt-detailed|pcdcunxlxap04 |/prod/unixlog/errpt/errpt.log        |
+|errpt-readable|pcdcunxlxap04 |/prod/unixlog/errpt/errptreadable.log|
+===== Configuring an AIX host to send errpt entries to centralized syslog server =====
+
+  - Create a template<code>vi /var/tmp/tensyslogadd</code>Insert this template<code>errnotify:
+en_name="ten-central-log"
+en_persistenceflg = 1
+en_method = "logger -pnotice Msg from Error Log: $(errpt -a -l $1 ) ; logger -ttenerrpt $(errpt -l $1 | grep -v ^IDENTIFIER "</code>
+  - Add this to the ''errnotify'' class in ODM<code>sudo odmadd /var/tmp/tensyslogadd</code>Delete the template file<code>rm /var/tmp/tensyslogadd</code>
+  - Add this line to sysllog config so the error loges get shipped out.<code>sudo vi /etc/syslog.conf</code>Add this. **Do not add if there is already a similar line in the file**<code>*.notice           @unixlogs.driv.com</code>
+  - Restart syslogd<code>sudo refresh -s syslogd</code>

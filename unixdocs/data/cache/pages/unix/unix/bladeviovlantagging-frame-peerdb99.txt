@@ -1,0 +1,87 @@
+**Tasks to be performed first on the original (MMA) TA2 DB server - peerdb99**
+
+After the DB shutdown and failover to Standby do the following:
+
+Unmount NFS filesystems (/etc/exports does not exist on this server):
+<code>umount /oracle/TA2/sapbackup
+umount /sapmnt/TA2</code>
+
+Capture LVM pvids and VGs
+
+    lspv > lspv.peerdb99.original
+    scp lspv.peerdb99.original xeerdb99:/root/
+
+Unmount all non rootvg filesystems and export all volume groups:
+  
+    for i in origredovg mirrredovg datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08 binvg01
+    do
+    lsvg -l $i  | grep -v loglv | grep open | awk '{print $7}' | xargs -n1 umount
+    done
+    
+    check if everything unmounted and cleanup what was left
+    
+    Varyoff volume groups
+    
+    for i in origredovg mirrredovg datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08 binvg01
+    do
+    varyoffvg $i
+    done
+    
+Export volume groups
+    
+    for i in origredovg mirrredovg datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08 binvg01
+    do
+    exportvg $i
+    done
+    
+Disable SAN paging spaces for next reeboot
+
+    for i in paging00 paging01 paging02 paging03 paging04 paging05 paging06 paging07 paging08
+    do
+    chps -a n $i
+    swapoff /dev/$i
+    done
+    varyoffvg sanpagevg01
+    exportvg sanpagevg01
+
+Remove all SAN devices
+
+    lsdev -Ccdisk | grep power | awk '{print $1}' | while read line
+    do
+        sudo powermt remove dev=$line
+        sudo rmdev -dl $line
+    done
+    lsdev -Ccdisk | grep EMC | awk '{print $1}' | xargs -n1 sudo rmdev -dl
+        
+Unplug and label fiber cables from:
+  
+    fcs0             U7314.G30.060EFAA-P1-C5-T1  FC Adapter
+    fcs1             U7314.G30.060EFAA-P1-C5-T2  FC Adapter
+    fcs2             U789D.001.DQD472X-P1-C5-T1  FC Adapter
+    fcs3             U789D.001.DQD479N-P1-C5-T1  FC Adapter
+    
+Stop and disable cron
+<code>rmitab cron</code>
+  
+Disbale NFS to mount at boot
+<code>/oracle/TA2/sapbackup:
+        dev             = "/oracle/TA2/sapbackup"
+        vfs             = nfs
+        nodename        = teprbk01bck
+        mount           = true    <<<----change to false
+        options         = rw,rsize=32768,wsize=32768,hard,intr</code>
+
+<code>/sapmnt/TA2:
+        dev             = "/sapmnt/TA2"
+        vfs             = nfs
+        nodename        = tepr2d01bck
+        mount           = true
+        options         = rw,bg,soft,intr,sec=sys
+        account         = false</code>      
+
+    
+On the console (VIP's already removed by failover process) change host name and IP addresses on :
+  
+    en4 ---> 10.32.50.35 (xeerdb04)
+    en5 ---> 10.32.51.35 (xeerdb04bck)
+    

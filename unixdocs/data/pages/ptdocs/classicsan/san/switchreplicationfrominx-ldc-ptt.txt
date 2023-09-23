@@ -1,0 +1,80 @@
+====== Switch replication of H1P from INX --> LDC to INX --> PTT ======
+
+===== Perform an adhoc replication of HR volumes from LDC to CDC/PTT =====
+
+  - Collect all snapshots
+    - Connect to LDC Pure<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+    - Storage the latest snapshot in variables<code>aixsnapshot=$(${SSH2PURE} purepgroup list --snap 'inxpm20*ldcpm70*aix*' --notitle    | head -1 | awk '{print $1}' )
+vmwsnapshot=$(${SSH2PURE} purepgroup list --snap 'inxpm20*ldcpm70*vmware*' --notitle | head -1 | awk '{print $1}' )</code>
+    - Store all snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist ${aixsnapshot} --notitle >  snapshots.mp
+${SSH2PURE} purevol list --snap --pgrouplist ${vmwsnapshot} --notitle >> snapshots.mp</code>
+    - Copy snapshots to columes on LDCPM70<code>for snapshot in $(awk '{print $1}' snapshots.mp )
+do
+   volume=$(echo ${snapshot} | awk -F"." '{print $NF}' )
+   ${SSH2PURE} purevol copy ${snapshot} ${volume}
+done</code>
+    - Add the HR volumes to the protection group<code>volumes=$(awk '{print $1}' snapshots.mp | awk -F"." '{print $NF}' | tr "\n" "," | sed "s;,$;;g")</code>Add them<code>${SSH2PURE} purepgroup setattr --addvollist ${volumes} ldcpm70-taprpur001-imo-allvolumes</code>
+    - Perform an adhoc replication to CDC/PTT<code>${SSH2PURE} purepgroup snap --replicate --suffix hrfrominx ldcpm70-taprpur001-imo-allvolumes</code>
+    - Wait for this to complete before proceeding further.
+
+===== Setup replication from INX to CDC/PTT =====
+
+  - Connect to CDC/PTT Pure<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+  - Get connection keys and IP addresses<code>connkey=$(${SSH2PURE} purearray list --connection-key --notitle)
+repladdr=$(${SSH2PURE} purenetwork list --service replication | grep ^replbond | awk '{print $4}')
+mgmtaddr=$(${SSH2PURE} purenetwork list --service management | grep ^vir0 | awk '{print $4}' )</code>
+  - Connect INX array to CDC/PTT for replication<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@inxpm20v1"</code>
+  - Display the connection key, it needs to be entered interactively<code>echo ${connkey}</code>
+  - Connect the array for replication<code>${SSH2PURE} -t purearray connect --management-address ${mgmtaddr} --replication-address ${repladdr} --type replication --connection-key</code>When prompted, enter the connection key from the previous step
+  - Create protection group for INX to CDC/PTT replication<code>${SSH2PURE} purepgroup create --vollist ${volumes} --targetlist taprpur001 inxpm20v1-taprur001-allvolumes</code>
+  - Setup a schedule for protection group<code>${SSH2PURE} purepgroup schedule --replicate-frequency 1d inxpm20v1-taprur001-allvolumes</code>
+  - Enable replication schedule<code>${SSH2PURE} purepgroup enable inxpm20v1-taprur001-allvolumes --replicate</code>
+  - Allow permission for this protection group from CDC/PTT<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>Then allow<code>${SSH2PURE} purepgroup allow INXPM20V1:inxpm20v1-taprur001-allvolumes</code>
+
+===== Remove HR volumes from LDC M70 =====
+
+  - Connect to LDC array<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+  - Remove from protection group<code>for snapshot in $(awk '{print $1}' snapshots.mp )
+do
+   volumename=$(echo ${snapshot} | awk -F"." '{print $NF}' )
+   ${SSH2PURE} purepgroup setattr --remvollist ${volumename} ldcpm70-taprpur001-imo-allvolumes
+done</code>
+  - Remove hr volumes from LDCPM70<code>for snapshot in $(awk '{print $1}' snapshots.mp )
+do
+   volumename=$(echo ${snapshot} | awk -F"." '{print $NF}' )
+   ${SSH2PURE} purevol destroy ${volumename}
+done</code>
+
+===== Remove HR replication from INX to LDC and disconnect the array from replication =====
+
+  - Connecto to INX Pure<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@inxpm20v1"</code>
+  - Destroy protection groups<code>${SSH2PURE} purepgroup destroy inxpm20v1-ldcpm70v1-aix
+${SSH2PURE} purepgroup destroy inxpm20v1-ldcpm70v1-vmware</code>
+  - Remove INX->LDC array connections<code>${SSH2PURE} purearray disconnect LDCPM70V1</code>
+
+===== Connect LDC array to FDC array for replication =====
+
+  - Connect to FDC Pure<code>export SSH2PURE="ssh phlypans016.federalmogul.com"</code>
+  - Get connection keys and IPs for replication<code>connkey=$(${SSH2PURE} purearray list --connection-key --notitle)
+repladdr=$(${SSH2PURE} purenetwork list --service replication | grep ^replbond | awk '{print $4}')
+mgmtaddr=$(${SSH2PURE} purenetwork list --service management | grep ^vir0 | awk '{print $4}' )</code>
+  - Display the connection key<code>echo ${connkey}</code>
+  - Connect to LDC Pure<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+  - Connect the array<code>${SSH2PURE} -t purearray connect --management-address ${mgmtaddr} --replication-address ${repladdr} --type replication --connection-key</code>Enter the connection key when prompted.
+
+===== Setup replication from LDC to FDC -- AIX =====
+
+  - These AIX servers will be added to the replication.**Took from 2017 DR list **<code>paerdb99 paerap99 pgsndb01 pgsnap01 itcap001 pggpdb01 tepr2e01 peerdb98 peerap99 taitc103 tspr1d01 tspr1d02 pgaidb01 paap3p01 pahydb02 pagi3p01 paft3p01 pgscdb01 pgasdb01 taitc122 pgimdb01 pggtdb01 pgrmdb01 pggwdb01 pgbcdb99</code>
+  - Connect to LDC M70<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+  - Setup replication for Tenneco production from LDC to CDC<code>cat /dev/null > tenneco-drvolumes
+${SSH2PURE} purevol list > 1
+for host in paerdb99 paerap99 pgsndb01 pgsnap01 itcap001 pggpdb01 tepr2e01 peerdb98 peerap99 taitc103 tspr1d01 tspr1d02 pgaidb01 paap3p01 pahydb02 pagi3p01 paft3p01 pgscdb01 pgasdb01 taitc122 pgimdb01 pggtdb01 pgrmdb01 pggwdb01 pgbcdb99
+do
+   grep ${host}_ 1 >> tenneco-drvolumes
+done</code>
+  - Define volumes in a variable<code>volumes=$(cat tenneco-drvolumes | awk '{print $1}' | tr "\n" "," | sed "s;,$;;g")</code>
+  - Connect the array for replication<code>${SSH2PURE} purepgroup create --vollist ${volumes} --targetlist phlypans016 ldcpm70v1-phlypans016-prodaixvolumes</code>
+  - Setup replication schedule<code>${SSH2PURE} purepgroup schedule --replicate-frequency 1h ldcpm70v1-phlypans016-prodaixvolumes</code>
+  - Enable replication<code>${SSH2PURE} purepgroup enable ldcpm70v1-phlypans016-prodaixvolumes --replicate</code>
+  - Connect to FDC array<code>export SSH2PURE="ssh phlypans016.federalmogul.com"</code>
+  - Allow replication<code>${SSH2PURE} purepgroup allow LDCPM70V1:ldcpm70v1-phlypans016-prodaixvolumes</code>

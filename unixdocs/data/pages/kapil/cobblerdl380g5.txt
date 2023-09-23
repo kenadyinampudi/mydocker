@@ -1,0 +1,68 @@
+====== RHEL 7 on Barebone intel/HP DL380 ======
+
+===== Installation / Cobbler =====
+
+  - [[kapil:rhelinstallationdl380g5|RHEL 7 Installation on DL 380 G5]]
+
+===== SAN / Fiber channel etc =====
+
+  - ''systools'' package has tools that we could use to get the HBAs information<code>sudo yum -y install sysfsutils</code>
+  - Find out the HBA WWN
+    - Without using systools<code>cat /sys/class/fc_host/host?/port_name</code>
+    - Using systools<code>sudo systool -c fc_host -v | grep port_name</code>
+    - Find out the HBA name and the corresponding WWN<code>sudo systool -c fc_host -v | grep -e "Class Device =" \
+-e "port_name" | sed "s;\";;g" | awk '{printf $NF;getline;print $NF}' | sed "s;0x; ;g"</code>Or simply execute<code>/usr/local/scripts/listwwns</code>
+  - Discover new LUNs<code>for hba in $(ls /sys/class/fc_host)
+do
+   echo "- - -" | sudo tee -a /sys/class/scsi_host/${hba}/scan
+done</code>
+  - Install the multipath package<code>sudo yum -y install device-mapper-multipath</code>
+  - Enable<code>sudo systemctl enable multipathd</code>Start<code>sudo systemctl start multipathd</code>
+  - Enable multipath software and device driver(s)<code>sudo mpathconf --enable --with_multipathd y</code>
+  - List devices<code>sudo multipath -ll</code>Output would look like<code>mpathd (3600507680c800421e000000000000032) dm-8 IBM     ,2145
+size=101G features='1 queue_if_no_path' hwhandler='0' wp=rw
+|-+- policy='service-time 0' prio=50 status=active
+| |- 0:0:1:3 sdi 8:128 active ready running
+| `- 4:0:0:3 sdm 8:192 active ready running
+`-+- policy='service-time 0' prio=10 status=enabled
+  |- 0:0:0:3 sde 8:64  active ready running
+  `- 4:0:1:3 sdq 65:0  active ready running
+mpathc (3600507680c800421e000000000000031) dm-7 IBM     ,2145
+size=101G features='1 queue_if_no_path' hwhandler='0' wp=rw
+|-+- policy='service-time 0' prio=50 status=active
+| |- 0:0:0:2 sdd 8:48  active ready running
+| `- 4:0:1:2 sdp 8:240 active ready running
+`-+- policy='service-time 0' prio=10 status=enabled
+  |- 0:0:1:2 sdh 8:112 active ready running
+  `- 4:0:0:2 sdl 8:176 active ready running
+mpathb (3600507680c800421e000000000000030) dm-6 IBM     ,2145
+size=101G features='1 queue_if_no_path' hwhandler='0' wp=rw
+|-+- policy='service-time 0' prio=50 status=active
+| |- 0:0:1:1 sdg 8:96  active ready running
+| `- 4:0:0:1 sdk 8:160 active ready running
+`-+- policy='service-time 0' prio=10 status=enabled
+  |- 0:0:0:1 sdc 8:32  active ready running
+  `- 4:0:1:1 sdo 8:224 active ready running
+mpatha (3600507680c800421e00000000000002f) dm-5 IBM     ,2145
+size=101G features='1 queue_if_no_path' hwhandler='0' wp=rw
+|-+- policy='service-time 0' prio=50 status=active
+| |- 0:0:0:0 sdb 8:16  active ready running
+| `- 4:0:1:0 sdn 8:208 active ready running
+`-+- policy='service-time 0' prio=10 status=enabled
+  |- 0:0:1:0 sdf 8:80  active ready running
+  `- 4:0:0:0 sdj 8:144 active ready running</code>
+  - If you want to delete a device here, let's say mpathc
+    - List the configuration of mpathc<code>sudo multipath -ll mpathc</code><code>mpathc (3600507680c800421e000000000000031) dm-7 IBM     ,2145
+size=101G features='1 queue_if_no_path' hwhandler='0' wp=rw
+|-+- policy='service-time 0' prio=50 status=active
+| |- 0:0:0:2 sdd 8:48  active ready running
+| `- 4:0:1:2 sdp 8:240 active ready running
+`-+- policy='service-time 0' prio=10 status=enabled
+  |- 0:0:1:2 sdh 8:112 active ready running
+  `- 4:0:0:2 sdl 8:176 active ready running</code>
+    - Delete mpath device<code>sudo multipath -f mpathc</code>
+    - Then remove the children<code>for dev in sdd sdp sdh sdl
+do
+   echo "1" | sudo tee /sys/block/${dev}/device/delete
+done</code>
+  - Disable a single path<code>echo offline > /sys/block/sda/device/state.</code>Where ''sda'' is the device path to be disabled.

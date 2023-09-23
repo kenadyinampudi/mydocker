@@ -1,0 +1,109 @@
+====== IMO Project clones - DRiV - AIX build documentation -- for T0 ======
+
+  * In most cases , the DNS name and IP addresses are already secured.
+  * Until a proper firewall is in place, IMO builds are DNS disabled to prevent corruption to production.
+  * Build AIX systems on these frames 
+
+^HMC                          ^Frame                     ^
+|cdcvilhmc003.fmmotorparts.com|Powervm40-9040-MR9-78AAE7X|
+|cdcvilhmc003.fmmotorparts.com|Powervm39-9040-MR9-78AAE8X|
+|cdcvilhmc003.fmmotorparts.com|Powervm44-9009-42A-7823D20|
+|cdcvilhmc003.fmmotorparts.com|Powervm41-9009-42A-7823D40|
+|cdcvilhmc003.fmmotorparts.com|Powervm42-9009-42A-7823D50|
+|cdcvilhmc003.fmmotorparts.com|Powervm43-9009-42A-7823D30|
+
+
+===== Sizing guidelines =====
+
+  - Keep the same config as the source.
+  - Exceptions
+    - There is only one NIC instead of two.
+    - For now, configure another NIC from another subnet - to configure fake IP addresses. ( Until we have a real firewall )
+==== NIM installation Steps ====
+
+  - For ease of documentation, export variables for source and target systems<code>export srcsystem=<system_of_which_you_plan_to_use_mksysb_from>
+export tgtsystem=<system_which_you_plan_to_built></code>
+  - Copy the mksysb to a temp location and umcompress it<code>sudo cp /mksysb-images/bos.obj.${srcsystem}.gz /preupgrade/mksysb/
+cd /preupgrade/mksysb/ ; sudo gunzip bos.obj.${srcsystem}.gz</code>
+  - Define a mksysb resource<code>sudo nim -o define -t mksysb -a server=master -a location=/preupgrade/mksysb/bos.obj.${srcsystem} ${srcsystem}-mksysb</code>If NIM complains there is an existing resource with that name, please remove it<code>sudo nim -o remove ${srcsystem}-mksysb</code>
+  - Find out the OSLEVEL on the system that we plan to clone<code>ssh ${srcsystem} oslevel -s
+7100-05-02-1810	</code>
+  - Find out the correct Spot and LPPSRC for the above AIX release level. In this case they are,<code>710TL05-02_spot
+710TL05-02_lppsrc</code>Export them as variables<code>export lppsrc="710TL05-02_lppsrc"
+export spot="710TL05-02_spot"</code>
+  - Add systems to /etc/hosts file because the reverse lookups don't work.<code>host ${tgtsystem}.driv.com | awk '{print $NF"\t"$1}' | sed "s;.driv.com;;g" | sudo tee -a /etc/hosts</code>
+  - Define system on NIM<code>sudo nim -o define -t standalone -a platform=chrp -a if1="find_net ${tgtsystem} 0" -a netboot_kernel=mp ${tgtsystem}</code>
+  - Prepare for a NIM installation<code>sudo nim -o bos_inst \
+-a source=mksysb \
+-a spot=${spot} \
+-a lpp_source=${lppsrc} \
+-a no_client_boot=yes \
+-a script=postinstallcloneDRiV \
+-a mksysb=${srcsystem}-mksysb \
+${tgtsystem}</code>
+    - Change the bootp config to send traffic to 10.32.60/24 subnet<code>sudo ex -sc "/${tgtsystem}/s/10.0.48.12/10.32.60.60/|x" /etc/bootptab</code>
+  - Add the server to the console database **/prod/images/etc/unix_sys_console**<code>sudo vi /prod/images/etc/unix_sys_console</code>
+    - A regular lpar on a P Series frame<code>pgnmsv01:lpar-ibm:taitc051:pgnmsv01-9111-520-SN10B4F8D:pgnmsv01:2:hscroot</code>
+  - Power on the server to SMS from HMC.
+    - Find out the frame<code>export frame=$(grep -i ^${tgtsystem} /prod/images/etc/unix_sys_console | awk -F: '{print $4}' )</code>
+    - Power on <code>ssh cdcvilhmc003.fmmotorparts.com "chsysstate -r lpar -o on -b sms -m ${frame} -n ${tgtsystem}"</code>
+  - Open up a console session to the new server. On pgnmsv01<code>sudo getconsole ${tgtsystem}</code>
+  - At the console, setup Remote IPL as normal and perform a network boot.
+    - Details you need<code>Client IP : The IP address of the host you are building
+Server IP : 10.32.60.60
+Netmask   : 255.255.255.0
+Def Route : 10.128.40.1 (MP AIX systems), 10.32.60.1 (LDC Clones)</code>
+  - Wait for the installation to complete
+==== Tasks on first boot from console ====
+
+  - Login on console as root.
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>cfgmgr</code>
+  - Configure IP address.
+    - Configure the front end IP address on en0 interface<code>/usr/sbin/mktcpip -h <hostname> -a a.b.c.d -m 255.255.255.0 -i en0 -g a.b.c.d -A no -s</code>
+  - Once done, disconnect from the console, get back to NIM server and remove the temporary /etc/hosts entry<code>sudo cp /etc/hosts /etc/hosts.$(date +%m%d%Y)
+sudo ex -sc "/${tgtsystem}/d|x" /etc/hosts</code>
+==== Post installation tasks from NIM server ====
+
+  - Login to pgnmsv01 and define a variable pointing to the system you are building<code>export tgtsystem=<host_name></code>
+  - Disable DNS, push hosts file, NTP etc<code>sudo ssh ${tgtsystem}.driv.com rm /etc/resolv.conf
+sudo scp /prod/images/etc/hostsfile.imoclone.driv ${tgtsystem}.driv.com:/etc/hosts
+sudo scp /prod/images/etc/ntp.conf.aix.imoclone.driv ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com "chrctcp -S -a xntpd"
+sudo ssh ${tgtsystem}.driv.com "ntpdate -u cdcvildns001.fmmotorparts.com"</code>
+
+==== Post installation - generic tasks from the host ====
+
+  - Login to the host you are building<code>ssh ${tgtsystem}.driv.com</code>
+  - Disable cron jobs for application accounts<code>sudo ls -1 /var/spool/cron/crontabs \
+| egrep -v "^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$" | sudo tee -a /var/adm/cron/cron.deny</code>
+  - Enable cron<code>sudo mkitab cron:23456789:respawn:/usr/sbin/cron</code>
+  - Disable production VLANs using dummy VLAN tagged interfaces<code>for dummyvlan in 500 501 502 503 504 505
+do
+   sudo mkdev -t eth -a base_adapter=ent1 -a vlan_tag_id=${dummyvlan}
+done</code>Then discover new devices<code>sudo cfgmgr</code>Configure dummy IPs to production subnets<code>inum=2
+for IP in 10.0.48.22 10.0.49.21 10.32.50.23 10.32.51.31 10.32.6.44 10.56.1.121
+do
+   sudo chdev -l en${inum} -a netaddr=${IP} -a netmask=255.255.255.0 -a state=up
+   inum=$(echo "${inum} + 1" | bc )
+done</code>
+  - Setup alt_rootvg
+    - Look for another 138G device that is not allocated to any volume group<code>sudo /usr/local/scripts/lsvpcfg.sh</code>Create a alt_disk_copy<code>sudo alt_disk_copy -B -d hdiskX</code>
+  - Some systems are part of clusters. Let's change the automount and autovarryon values<code>lsvg | grep -v rootvg | xargs -n1 sudo chvg -a y
+
+for vg in $(lsvg | grep -v rootvg )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo chfs -A yes ${fs}
+      echo "Enabling ${vg} - ${fs} "
+   done
+done</code>

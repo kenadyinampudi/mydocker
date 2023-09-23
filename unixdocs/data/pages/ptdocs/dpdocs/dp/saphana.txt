@@ -1,0 +1,37 @@
+In LDC SAP HANA is being added to backup scope. We can only expect to see more of such SAP installation. Once the client was installed following [[dpdocs:dp:nix|this procedure]], we need to configure NBU for SAP hana.
+Assumptions / variables:
+  - Client name is dgsmha01h.amer.int.tenneco.com;
+  - Server name is taqa1d01
+  - Instance name SM2
+  * Create new file called node_names.txt in /usr/openv/netbackup/ext/db_ext/sap/. This file should contain all probable client names (appliance node), one name per line. DBA/BASIS should be able to provide details.<code>pawetkac on dgsmha01h:/usr/openv/netbackup/ext/db_ext/sap $ cat /usr/openv/netbackup/ext/db_ext/sap/node_names.txt
+dgsmha01h.amer.int.tenneco.com</code>
+  * Copy stanza utl file <code>sudo cp /usr/openv/netbackup/ext/db_ext/sap/scripts/sap_oracle/initSAP.utl /usr/sap/SM2/initSM2.utl</code>
+  * Create a SAP policy on master following ours standard along with schedules, ie. SAP_SM2_DGSMHA01H (so SAP -> policy type, SM2 -> instance name, DGSMHA01H -> hostname)
+  * Edit that file, so it will be looking like:<code>sudo grep -v ^# /usr/sap/SM2/initSM2.utl
+server taqa1d01
+client dgsmha01h.amer.int.tenneco.com
+policy SAP_SM2_DGSMHA01H
+schedule SAP_SM2_DGSMHA01H_SCHED</code>
+  * Make a soft link<code>sudo ln -s /usr/openv/netbackup/bin/hdbbackint_script /usr/sap/SM2/SYS/global/hdb/opt/hdbbackint</code> 
+If folder opt does not exist in /usr/sap/SM2/SYS/global/hdb/ create one<code>sudo mkdir /usr/sap/SM2/SYS/global/hdb/opt</code>
+  * Have DBA/BASIS team to add this parameter file /usr/sap/SM2/initSM2.utl to 
+  - Instance -> Configuration -> global.ini -> data_backup_parameter_file
+  - Instance -> Configuration -> global.ini -> log_backup_parameter_file
+  * To specify backup using the backint file, go to Instance->Configuration->global.ini-> log_backup_using_backint->SYSTEM = true 
+Having issues to get it working? Please look into "NetBackup admin guide for SAP" manual.
+
+<code>
+instance=xxx
+server=`grep SERVER /usr/openv/netbackup/bp.conf |awk '{print $NF}'|head -1`
+client=`grep CLIEN /usr/openv/netbackup/bp.conf |awk '{print $NF}'`
+shortname=`echo ${client} |awk -F. '{print  toupper($1)}'` 
+echo ${client} > /usr/openv/netbackup/ext/db_ext/sap/node_names.txt
+cat /usr/openv/netbackup/ext/db_ext/sap/node_names.txt
+
+sudo cp /usr/openv/netbackup/ext/db_ext/sap/scripts/sap_oracle/initSAP.utl /usr/sap/${instance}/init${instance}.utl
+
+echo "server ${server}" >> /usr/sap/${instance}/init${instance}.utl
+echo "client ${client}" >> /usr/sap/${instance}/init${instance}.utl
+echo "policy SAP_${instance}_${shortname}" >> /usr/sap/${instance}/init${instance}.utl
+echo "schedule SAP_${instance}_${shortname}_SCHED" >> /usr/sap/${instance}/init${instance}.utl
+</code>

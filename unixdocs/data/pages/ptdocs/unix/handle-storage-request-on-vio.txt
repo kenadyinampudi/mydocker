@@ -1,0 +1,23 @@
+====== Handle Storage request on taprvio17,18,19 (LPM Support)======
+== Whenever we get a request to add storage on the guests running on the 3 node VIO cluster perform the below steps: ==
+  - Request the disks on all the three VIO servers taprvio17,18,19
+  - Run cfgmgr on the VIO server on which the guest is running to identify the newly added disks.<code>
+    sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.before
+    sudo cfgmgr
+    sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.after
+    diff lsdiskcfg.out.before lsdiskcfg.out.after</code>
+  - Allocate pvid, set reservation policy and enable round_robin for the disks on that VIOS server.<code>
+    sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -a pv=yes -l hdisk</code>
+  - Now run cfgmgr on rest of the two VIO servers and enable reservation policy, round_robin for the newly added disks. (Verify the correct disks by looking at the pvid's) <code>
+    sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.before
+    sudo cfgmgr
+    sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.after
+    diff lsdiskcfg.out.before lsdiskcfg.out.after
+    sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk </code>
+  - Add the disks to the guest from the VIO server where it is present<code>
+    sudo lsvpcfg.sh > lsvpcfg.out.before
+    sudo cfgmgr
+    sudo lsvpcfg.sh > lsvpcfg.out.after
+    diff lsvpcfg.out.before lsvpcfg.out.after
+    sudo extendvg vgname hdiskx hdisky </code>
+  - Now login to the Webconsole of the VIO server on which the guest server is running and vaildate the migration of that guest to the rest of the two VIOS servers.

@@ -1,0 +1,223 @@
+
+<h1 class="sectionedit1" id="pure_storage_database_refresh_aix_-_generic_documentation">Pure Storage database refresh ( AIX ) - generic documentation</h1>
+<div class="level1">
+
+<p>
+<strong> Graciously provided by Kapil Koroth - Storage Team   Note:Storage Tasks left in for completeness </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Find out source and target databases, storage arrays and document them …</div>
+</li>
+</ol>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Source System</th><th class="col1 leftalign">Source SID     </th><th class="col2">Storage Array</th><th class="col3">Target System</th><th class="col4">Target SID</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">&lt;SRCDBSRVR&gt;  </td><td class="col1 leftalign">&lt;SRCSID&gt;       </td><td class="col2 leftalign">&lt;STGARRAY&gt;   </td><td class="col3 leftalign">&lt;TGTDBSRVR&gt;  </td><td class="col4 leftalign">&lt;TGTSID&gt;  </td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [261-402] -->
+</div>
+<!-- EDIT1 SECTION "Pure Storage database refresh ( AIX ) - generic documentation" [1-403] -->
+<h1 class="sectionedit3" id="snapshot_steps_schedule">Snapshot Steps &amp; Schedule</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to the storage management admin server<pre class="code">ssh pcdcstglxap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set a variable to store the <abbr title="Domain Name System">DNS</abbr> name to the array<pre class="code">export ARRAY=&quot;&lt;dns_name&gt;&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set a variable to store the hostname to the source DB server<pre class="code">export SRCDBSRVR=&quot;&lt;SRCDBSRVR&gt;&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set a variable to store the Protection Group Name<pre class="code">export PG=&quot;tmp-&lt;meaningful name&gt;&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Point the variable to connect to Pure<pre class="code">export SSH2PURE=&quot;ssh ${ARRAY}&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the Protection group<pre class="code">${SSH2PURE} purepgroup create --hostlist cdc-h-${SRCDBSRVR} ${PG}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot<pre class="code">${SSH2PURE} purepgroup snap --suffix crashconsist ${PG}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm to Unix team / <abbr title="Database Administrator">DBA</abbr> team that the snapshot is done.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Snapshot Steps & Schedule" [404-1170] -->
+<h1 class="sectionedit4" id="copy_snapshots_and_present_storage">Copy snapshots and present storage</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT4 SECTION "Copy snapshots and present storage" [1171-1220] -->
+<h1 class="sectionedit5" id="first_unix_tasks_begin_here">**FIRST UNIX TASKS BEGIN HERE**</h1>
+<div class="level1">
+
+<p>
+<strong> Unix tasks </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> The requirement is that <abbr title="Database Administrator">DBA</abbr> team need all filesystems mounted underneath <code>/oracle/&lt;SID&gt;</code> to be refreshed to QA systems.</div>
+</li>
+<li class="level1"><div class="li"> Unix needs to send us a list of source volumes that needs to copied and presented to target systems.</div>
+<ol>
+<li class="level2"><div class="li"> Execute these steps on all the source systems</div>
+<ol>
+<li class="level3"><div class="li"> Login to &lt;SRCDBSRVR&gt; and export this variable<pre class="code">export SID=&lt;SRCSID&gt;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> On each system, perform these steps<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.1
+&gt; vglist
+for fs in $(df -k | grep /oracle/${SID} | grep -v : | awk &#039;{print $NF}&#039; )
+do
+   echo &quot;Working on ${fs} &quot;
+   LV=$(df -k ${fs} | grep -v ^Filesystem | awk &#039;{print $1}&#039; | sed &quot;s;/dev/;;g&quot;)
+   lslv ${LV} | head -1 | awk &#039;{print $NF}&#039; &gt;&gt; vglist
+done
+
+for VG in $(cat vglist | sort -u )
+do
+   cat lsvpcfg.out.1 | grep ${VG}$
+done</pre>
+
+<p>
+Send this list to Storage team and ask them to present the snapshot to Target system(s)
+</p>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "**FIRST UNIX TASKS BEGIN HERE**" [1221-2180] -->
+<h1 class="sectionedit6" id="first_unix_tasks_end_here">**FIRST UNIX TASKS END HERE**</h1>
+<div class="level1">
+
+<p>
+<strong> Storage team tasks </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Login to storage jump server <code>pscsstglxap01</code></div>
+</li>
+<li class="level1"><div class="li"> Export these variables<pre class="code">export PG=&quot;tmp-&lt;meaningful name&gt;&quot;
+export suffix=&quot;crashconsist&quot;
+export SID=&lt;SRCSID&gt;
+export ARRAY=&lt;STGARRAY&gt;
+export TGTDBSRVR=&lt;TGTDBSRVR&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get a list of all volumes on the storage array<pre class="code">ssh ${ARRAY} purevol list --notitle &gt; ${ARRAY}.volumes</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Save the list of LUNs sent by Unix<pre class="code">vi ${SID}.devices</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out source volumes<pre class="code">awk -F: &#039;{print $3$4}&#039; ${SID}.devices | sed &quot;s;PURE-FLASH-;;g&quot;           &gt; ${SID}.devices.serial
+grep -wf ${SID}.devices.serial ${ARRAY}.volumes | awk &#039;{print $1}&#039;    &gt; ${SID}.devices.volumes</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define the next LUN number<pre class="code">export LUN=$(ssh ${ARRAY} purehost listobj --type vol cdc-h-${TGTDBSRVR} | sort | tail -1 | awk -F &quot;_&quot; &#039;{print $NF+1}&#039;)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy snapshots to volumes<pre class="code">export TGTVOLUMES=&quot;&quot;
+for volume in $(cat ${SID}.devices.volumes )
+do
+   ssh ${ARRAY} purevol copy ${PG}.${suffix}.${volume} cdc-h-${TGTDBSRVR}_${lun}
+   export LUN=$(echo &quot;${lun} +1&quot; | bc )
+   TGTVOLUMES=&quot;${TGTVOLUMES} cdc-h-${TGTDBSRVR}_${LUN}&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Present the volumes to QA systems</div>
+<ol>
+<li class="level2"><div class="li"> Check the volumes to make sure they aren&#039;t allocated to another host<pre class="code">export QUERY=$(echo ${TGTVOLUMES} | sed &quot;s; ;,;g&quot; | sed &quot;s;,$;;g&quot;)
+ssh ${ARRAY} purevol listobj --host ${QUERY}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Connect the new volumes to target host<pre class="code">ssh ${ARRAY} purevol connect --host cdc-h-${TGTDBSRVR} ${TGTVOLUMES}</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "**FIRST UNIX TASKS END HERE**" [2181-3718] -->
+<h1 class="sectionedit7" id="second_unix_tasks_begin_here">**SECOND  UNIX TASKS BEGIN HERE**</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to the target system<pre class="code">export SRCSID=PTA
+export TGTSID=FTA
+export SRCHOST=&lt;SRCHOST&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Dismount all filesystems that matches <code>/oracle/&lt;TGTSID&gt;</code><pre class="code">for fs in $(df -k | grep /oracle/${TGTSID} |grep -v : | awk &#039;{print $NF}&#039; | sort -r )
+do
+   echo &quot;Working on ${fs} .. &quot;
+   sudo umount ${fs}
+   sudo chfs -m /OLD${fs} ${fs}
+done   
+
+sudo lsvpcfg.sh &gt; lsvpcfg.out.1
+
+sudo cfgmgr
+
+sudo lsvpcfg.sh &gt; lsvpcfg.out.2
+
+scp ${SRCHOST}:vglist vglist
+
+ssh ${SRCHOST} lspv &gt; lspv.${SRCHOST}
+
+for VG in $(cat vglist | sort -u | sort )
+do
+   echo &quot;Working on ${VG} &quot;
+   grep -w ${VG} lspv.${SRCHOST} | awk &#039;{print $2}&#039; &gt; ${VG}.pvids
+   PVs=$(lspv | grep -wf ${VG}.pvids | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot; )
+   sudo recreatevg -y ${TGTSID}${VG} -Y cpy -L/cpy ${PVs}
+   for fs in $(lsvgfs ${TGTSID}${VG} | sort )
+   do
+      echo &quot;Working on ${TGTSID}${VG} - ${fs} &quot;
+      echo ${fs} | grep &quot;/oracle/${SRCSID}&quot; &gt; /dev/null 2&gt;&amp;1
+      if [ ${?} -eq 0 ]
+      then
+         sudo fsck -y ${fs}
+         newfs=$(echo ${fs} | sed -e &quot;s;/cpy;;g&quot; -e &quot;s;${SRCSID};${TGTSID};g&quot; )
+         sudo chfs -m ${newfs} ${fs}
+         sudo mount ${newfs}
+      fi
+   done
+done
+
+sudo ln -s /oracle/${TGTSID} /oracle/${SRCSID}</pre>
+
+<p>
+Handover to <abbr title="Database Administrator">DBA</abbr>
+</p>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "**SECOND  UNIX TASKS BEGIN HERE**" [3719-5002] -->
+<h1 class="sectionedit8" id="second_unix_tasks_begin_here1">**SECOND  UNIX TASKS BEGIN HERE**</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT8 SECTION "**SECOND  UNIX TASKS BEGIN HERE**" [5003-5052] -->
+<h1 class="sectionedit9" id="cleanup_tasks">Cleanup tasks</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Unix team to remove all unwanted filesystems and disks and send the list of volumes to Storage team.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT9 SECTION "Cleanup tasks" [5053-] -->

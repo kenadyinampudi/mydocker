@@ -1,0 +1,54 @@
+
+<h1 class="sectionedit1" id="netbackup_notes">Netbackup notes</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> List backup policies<pre class="code">sudo bppllist</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Most SAP related backup policies follow a naming standard <code>SAP_C11</code> <code>SAP_PTA</code> likewise</div>
+</li>
+<li class="level1"><div class="li"> List details of a policy in human readable format<pre class="code">sudo bppllist SAP_C11_FLASHCP -U</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List currently active jobs<pre class="code">bpdbjobs |grep Active</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cancel a backup job<pre class="code">sudo bpdbjobs -cancel &lt;id&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If you were to restore a backup for a given host, say SAP_TA2, this is how you do it.</div>
+<ol>
+<li class="level2"><div class="li"> Login to the media-server from which it was backed up, In this case it is, teprbk01.</div>
+</li>
+<li class="level2"><div class="li"> List the backups in the last 96 hours<pre class="code">sudo bpimagelist -policy SAP_TA2 -hoursago 96 -U</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> List in a different format<pre class="code">sudo bpimagelist -policy SAP_TA2 -hoursago 96 -idonly</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> To see what is backed up on each streams that you see on the above output<pre class="code">sudo bplist -C teprbk01 -t 17 -k SAP_TA2 -s 02/07/2016 16:23:12 -e 02/07/2016 16:23:12 -R /</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> To restore this on a different system,</div>
+<ol>
+<li class="level3"><div class="li"> First drop a file on the master server, taqa1d01 at this location<pre class="code">sudo touch /usr/openv/netbackup/db/altnames/No.Restrictions</pre>
+
+<p>
+This allows any client to be restored anywhere.
+</p>
+</div>
+</li>
+<li class="level3"><div class="li"> Login to the target system<pre class="code">sudo bprestore –B –L /tmp/ta2_progress_1st-stream.log –C teprbk01 –t 17 –p SAP_TA2 -s 02/07/2016 16:23:12 -e 02/07/2016 16:23:12 /oracle/</pre>
+
+<p>
+Execute this for each stream.
+</p>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

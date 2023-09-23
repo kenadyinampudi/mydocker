@@ -1,0 +1,88 @@
+
+<h1 class="sectionedit1" id="upgrade_to_rhel_7_12th_april_2017">Upgrade to RHEL 7 12th April 2017</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create change controls, business approvals and all the things of that sort.</div>
+</li>
+<li class="level1"><div class="li"> Shutdown applications.</div>
+</li>
+<li class="level1"><div class="li"> Plan with VMWARE team and perform a VMWARE snapshot</div>
+<ol>
+<li class="level2"><div class="li"> Shutdown the <abbr title="Operating System">OS</abbr></div>
+</li>
+<li class="level2"><div class="li"> Take a cold snapshot – Wintel</div>
+</li>
+<li class="level2"><div class="li"> Power the system back on</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the client</div>
+</li>
+<li class="level1"><div class="li"> Modify the local.repo file with the latest repository. First make a copy<pre class="code">sudo cp /etc/yum.repos.d/local.repo local.repo</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/yum.repos.d/local.repo
+[04-12-2017-rhel-7-server-rpms]
+name=04-12-2017-rhel-7-server-rpms
+baseurl=http://pablsv02/sources/04-12-2017/rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[04-12-2017-rhel-7-server-extras-rpms]
+name=04-12-2017-rhel-7-server-extras-rpms
+baseurl=http://pablsv02/sources/04-12-2017/rhel-7-server-extras-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[04-12-2017-rhel-7-server-optional-rpms]
+name=04-12-2017-rhel-7-server-optional-rpms
+baseurl=http://pablsv02/sources/04-12-2017/rhel-7-server-optional-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-tenneco-noarch]
+name=local-tenneco-noarch
+baseurl=http://pablsv02/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-tenneco-nbu]
+name=local-tenneco-nbu
+baseurl=http://pablsv02/sources/nbuclient/
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On SAP App servers modify the sap.repo with the latest repository.First make a copy<pre class="code">sudo cp /etc/yum.repos.d/sap.repo sap.repo</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/yum.repos.d/sap.repo
+[04-12-2017-rhel-sap-for-rhel-7-server-rpms]
+name=04-12-2017-rhel-sap-for-rhel-7-server-rpms
+baseurl=http://pablsv02/sources/04-12-2017/rhel-sap-for-rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the updates / patches.<pre class="code">sudo yum clean all
+sudo yum update</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server<pre class="code">sudo init 6</pre>
+</div>
+</li>
+</ol>
+
+</div>

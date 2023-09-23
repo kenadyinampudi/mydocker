@@ -1,0 +1,129 @@
+**PTA AIX Upgrade Unix team tasks:**
+
+  - 10:00 -- Create fresh mksysb for tapr1d01 -- Chris
+  - 13:00 -- Prep alt_disk_copy on all application servers+3rd party server -- Robert
+  - 14:00 -- Split mirror and create alt_disk_copy  on tapr1d01 and re-mirror -- Robert
+  - 21:00 -- Validate all blackouts (tapr1d01, paerap0[1234567], paap3p01, pagi3p01, pgscdb01, daerdb01, qaerap01, daap3p01, qaerdb01 ) -- Chris
+  - 22:00 -- Outage begins: Stop all apps -- Team
+  - 23:00 -- Split BCV cold backup (PTA) -- Kapil
+  - 23:00 -- Disable NFS mounts: 
+    - Technical step<code>Copy/etc/filesystems /etc/filesystems.02-14-2015
+remove all NFS entries that have mount=false
+change all NFS entries from mount=true to mount=false</code>
+    - paerap01,paerap02,paerap03 - Shukant
+    - paerap04,paerap05,paerap06 - Chris
+    - paerap07,paap3p01,tapr1d01 - Robert
+  - 23:20 - Unmount NFS from non-PTA clients:
+    - Kapil -- pagi3p01<code>paap3p01bck:/taedi61   167903232  21258628   88%  1445233    22% /taedi61
+paap3p01bck:/comm    58916864   9155984   85%    26771     2% /comm
+paap3p01bck:/taedi61   167903232  21258628   88%  1445233    22% /taedi/taedi61</code>
+    - Kapil -- pgscdb01<code>paap3p01:/comm/edi/out    58916864   9155900   85%    26774     2% /comm/edi/out</code>
+    - Robert -- daerap01<code>tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>
+    - Robert -- qaerap01<code>apsd01.na.ten:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>**May be change this alias to tapr1d01 ??**
+    - Robert -- daap3p01<code>apsd01.na.ten:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>**May be change this alias to tapr1d01 ??**
+    - Robert -- qaerdb01<code>tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>
+    - Robert -- daerdb01<code>tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>
+  - 23:30 - Reboot to alt_disk and back:
+    - paerap01,paerap02 - Shukant
+    - paerap03 paerap04 - Chris
+    - paap3p01,tapr1d01 - Robert
+  - 24:00 - [[unix:tlupgrade|OS TL Upgrade -- includes NTP and cleanup of /usr/sap]]
+    - tapr1d01 - Kapil
+    - paerap01, paerap02 - Shukant (Kapil will do /usr/sap filesystem change)
+    - paerap03, paerap04 - Chris
+    - paap3p01 - Robert
+  - 03:00 - After all done re-enable NFS:
+    - Non-PTA Systems: pagi3p01 - Kapil:<code>paap3p01bck:/taedi61   167903232  21258628   88%  1445233    22% /taedi61
+paap3p01bck:/comm    58916864   9155984   85%    26771     2% /comm
+paap3p01bck:/taedi61   167903232  21258628   88%  1445233    22% /taedi/taedi61</code>
+    - pgscdb01- Kapil:<code>paap3p01:/comm/edi/out    58916864   9155900   85%    26774     2% /comm/edi/out</code>
+    - daerap01-Robert:<code>tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>
+    - qaerap01 - Robert<code>apsd01.na.ten:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>**May be change this alias to tapr1d01 ??**
+    - daap3p01 - Robert<code>apsd01.na.ten:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>**May be change this alias to tapr1d01 ??**
+    - daerdb01 - Robert<code>tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>
+    - qaerdb01 - Robert<code>tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans</code>
+  - PTA systems - change all NFS mount=false to mount=true, mount manually, Install EMC ODM and reboot, check all filesystems:
+    - Instruction to install EMC ODM<code>sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc
+sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</code>
+    - tapr1d01 - Chris<code>taqa1d01:/oracle/PTA/sapbackup      655360    544936   17%       79     1% /oracle/PTA/sapbackup
+pgadap01:/sapmedia   592445440  68787016   89%  1264701     8% /sapmedia
+paap3p01:/comm    58916864   9143176   85%    26936     2% /comm</code>
+    - paerap01 - Chris<code>tapr1d01:/ADK   109576192  49311992   55%     1315     1% /ADK
+tapr1d01:/sapmnt/PTA/exe    12582912   6162636   52%   654669    30% /sapmnt/PTA/exe
+tapr1d01:/sapmnt/PTA/profile    12582912   6162636   52%   654669    30% /sapmnt/PTA/profile
+tapr1d01:/sapmnt/PTA/global    12582912   6162636   52%   654669    30% /sapmnt/PTA/global
+tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans
+tapr1d01:/taedi53      655360    627032    5%     1198     1% /taedi53
+tapr1d01:/taedi61      786432    294260   63%    14406    18% /taedi61
+pgadap01:/sapmedia   592445440  68787016   89%  1264701     8% /sapmedia
+paap3p01:/comm    58916864   9143176   85%    26936     2% /comm</code>
+      - After the reboot, configure TA Direct VIP on paerap01 - Chris
+        - Current configuration<code>paerap01:/root>ifconfig -a
+    en4: flags=1e084863,c0<UP,BROADCAST,NOTRAILERS,RUNNING,SIMPLEX,MULTICAST,GROUPRT,64BIT,CHECKSUM_OFFLOAD(ACTIVE),LARGESEND,CHAIN>
+        inet 10.0.48.8 netmask 0xffffff00 broadcast 10.0.48.255
+        inet 10.0.48.220 netmask 0xffffff00 broadcast 10.0.48.255
+         tcp_sendspace 131072 tcp_recvspace 65536 rfc1323 0
+    en5: flags=5e080863,c0<UP,BROADCAST,NOTRAILERS,RUNNING,SIMPLEX,MULTICAST,GROUPRT,64BIT,CHECKSUM_OFFLOAD(ACTIVE),PSEG,LARGESEND,CHAIN>
+        inet 10.0.49.8 netmask 0xffffff00 broadcast 10.0.49.255
+         tcp_sendspace 131072 tcp_recvspace 65536 rfc1323 0</code>
+        - Configure the VIP<code>sudo /root/cluster/alias01.sh</code>**Check the virtual IP is configured.**
+    - paerap02 - Chris<code>tapr1d01:/sapmnt/PTA/exe    12582912   6162636   52%   654669    30% /sapmnt/PTA/exe
+tapr1d01:/sapmnt/PTA/profile    12582912   6162636   52%   654669    30% /sapmnt/PTA/profile
+tapr1d01:/sapmnt/PTA/global    12582912   6162636   52%   654669    30% /sapmnt/PTA/global
+tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans
+tapr1d01:/taedi53      655360    627032    5%     1198     1% /taedi53
+tapr1d01:/taedi61      786432    294260   63%    14406    18% /taedi61
+tapr1d01:/ADK   109576192  49311992   55%     1315     1% /ADK
+pgadap01:/sapmedia           -         -    -         -     -  /sapmedia
+paap3p01:/comm    58916864   9143176   85%    26936     2% /comm</code>
+    - paerap03 - Chris<code>tapr1d01:/ADK   109576192  49311992   55%     1315     1% /ADK
+tapr1d01:/sapmnt/PTA/exe    12582912   6162636   52%   654669    30% /sapmnt/PTA/exe
+tapr1d01:/sapmnt/PTA/profile    12582912   6162636   52%   654669    30% /sapmnt/PTA/profile
+tapr1d01:/sapmnt/PTA/global    12582912   6162636   52%   654669    30% /sapmnt/PTA/global
+tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans
+tapr1d01:/taedi53      655360    627032    5%     1198     1% /taedi53
+tapr1d01:/taedi61      786432    294260   63%    14406    18% /taedi61
+pgadap01:/sapmedia           -         -    -         -     -  /sapmedia
+paap3p01:/comm    58916864   9143176   85%    26936     2% /comm</code>
+    - paerap04 - Shukant<code>tapr1d01:/ADK   109576192  49311992   55%     1315     1% /ADK
+tapr1d01:/sapmnt/PTA/exe    12582912   6162636   52%   654669    30% /sapmnt/PTA/exe
+tapr1d01:/sapmnt/PTA/profile    12582912   6162636   52%   654669    30% /sapmnt/PTA/profile
+tapr1d01:/sapmnt/PTA/global    12582912   6162636   52%   654669    30% /sapmnt/PTA/global
+tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans
+tapr1d01:/taedi53      655360    627032    5%     1198     1% /taedi53
+tapr1d01:/taedi61      786432    294260   63%    14406    18% /taedi61
+pgadap01:/sapmedia   592445440  68787016   89%  1264701     8% /sapmedia
+paap3p01:/comm    58916864   9143184   85%    26936     2% /comm</code>
+    - paerap05 - Shukant<code>tapr1d01:/ADK   109576192  49311992   55%     1315     1% /ADK
+tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans
+tapr1d01:/sapmnt/PTA/exe    12582912   6162624   52%   654672    30% /sapmnt/PTA/exe
+tapr1d01:/sapmnt/PTA/global    12582912   6162624   52%   654672    30% /sapmnt/PTA/global
+tapr1d01:/sapmnt/PTA/profile    12582912   6162624   52%   654672    30% /sapmnt/PTA/profile
+tapr1d01:/taedi61      786432    294260   63%    14406    18% /taedi61
+tapr1d01:/taedi53      655360    627032    5%     1198     1% /taedi53
+pgadap01:/sapmedia           -         -    -         -     -  /sapmedia
+paap3p01:/comm    58916864   9143188   85%    26936     2% /comm</code>
+    - paerap06 - Shukant<code>pgadap01:/sapmedia   592445440  68787016   89%  1264701     8% /sapmedia
+paap3p01:/comm    58916864   9143192   85%    26936     2% /comm
+tapr1d01:/ADK   109576192  49311992   55%     1315     1% /ADK
+tapr1d01:/taedi61      786432    294260   63%    14406    18% /taedi61
+tapr1d01:/taedi53      655360    627032    5%     1198     1% /taedi53
+tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans
+tapr1d01:/sapmnt/PTA/exe    12582912   6162624   52%   654672    30% /sapmnt/PTA/exe
+tapr1d01:/sapmnt/PTA/global    12582912   6162624   52%   654672    30% /sapmnt/PTA/global
+tapr1d01:/sapmnt/PTA/profile    12582912   6162624   52%   654672    30% /sapmnt/PTA/profile</code>
+    - paerap07 - Shukant<code>tapr1d01:/ADK   109576192  49311992   55%     1315     1% /ADK
+tapr1d01:/sapmnt/PTA/exe    12582912   6162624   52%   654672    30% /sapmnt/PTA/exe
+tapr1d01:/sapmnt/PTA/profile    12582912   6162624   52%   654672    30% /sapmnt/PTA/profile
+tapr1d01:/sapmnt/PTA/global    12582912   6162624   52%   654672    30% /sapmnt/PTA/global
+tapr1d01:/usr/sap/trans    60686336  28793668   53%   104914     2% /usr/sap/trans
+tapr1d01:/taedi53      655360    627032    5%     1198     1% /taedi53
+tapr1d01:/taedi61      786432    294260   63%    14406    18% /taedi61
+paap3p01:/comm    58916864   9143192   85%    26936     2% /comm</code>
+    - paap3p01 - Shukant<code>pagi3p01:/taedi   209715200  70917880   67%  3137589    15% /taedi
+tapr1d01:/sapmnt/PTA/global    12582912   6162624   52%   654672    30% /sapmnt/PTA/global
+tapr1d01:/sapmnt/PTA/profile    12582912   6162624   52%   654672    30% /sapmnt/PTA/profile
+tapr1d01:/sapmnt/PTA/exe    12582912   6162624   52%   654672    30% /sapmnt/PTA/exe
+tapr1d01:/ADK   109576192  49311992   55%     1315     1% /ADK</code>
+  - 03:30 Start all apps - Team
+  - 06:00 After all apps have been started remove blackouts and send Service Desk communications- Robert

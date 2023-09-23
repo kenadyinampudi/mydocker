@@ -1,0 +1,13 @@
+======  Mount the Data Domain device to NIM Server  ======
+##  Set Data Domain File System
+##
+  - Add the following lines to the /etc/filesystems <code> /data_domain:
+        dev             = "/backup/mksysb_images"
+        vfs             = nfs
+        nodename        = itc9000
+        mount           = true
+        options         = bg,soft,intr,retrans=2,rsize=32768,wsize=32768,proto=tcp,sec=sys
+        account         = false </code>
+
+  - Now execute the following command to set upDdata Domain for mounting <code> /usr/sbin/nfso -o nfs_use_reserved_ports=1 </code>
+  - Mount the device <code> mount /data_domain </code>

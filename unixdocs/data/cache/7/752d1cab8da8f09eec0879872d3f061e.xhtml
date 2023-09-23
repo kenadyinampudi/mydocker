@@ -1,0 +1,108 @@
+
+<h1 class="sectionedit1" id="standalone_nbu_home_made_appliance_or_hpcc_builds">Standalone NBU home made appliance or HPCC Builds</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Mount the virtual media on iLO Virtual Media</div>
+<ul>
+<li class="level2"><div class="li"> <strong>HP DL3</strong>*</div>
+<ul>
+<li class="level3"><div class="li"> Login to the iLO<pre class="code">ssh LAN@${shortname}rmb</pre>
+
+<p>
+Use the standard password for “<abbr title="Local Area Network">LAN</abbr>”.
+</p>
+</div>
+</li>
+<li class="level3"><div class="li"> Mount the Media.  Replace <code>HOSTNAME</code> with the actual hostname you are building.</div>
+<ul>
+<li class="level4"><div class="li"> <em class="u">MP/PS</em><pre class="code">vm cdrom insert http://pcdcunxlxap01.driv.com/servers/HOSTNAME.iso
+vm cdrom set connect</pre>
+
+<p>
+<em class="u">OR</em>
+</p>
+</div>
+</li>
+<li class="level4"><div class="li"> <em class="u">CA/PT</em><pre class="code">vm cdrom insert http://pablsv02.amer.int.tenneco.com/servers/HOSTNAME.iso
+vm cdrom set connect</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> <strong>DELL Power Edge</strong></div>
+<ul>
+<li class="level3"><div class="li"> Login to iDRAC<pre class="code">ssh root@$rac-{shortname}</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Disconnect any previous connections<pre class="code">racadm vmdisconnect</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Connect the media.  Replace <code>HOSTNAME</code> with the actual hostname you are building.</div>
+<ul>
+<li class="level4"><div class="li"> <em class="u">MP/PS</em><pre class="code">racadm remoteimage -c -l http://pcdcunxlxap01.driv.com/servers/HOSTNAME.iso</pre>
+
+<p>
+<em class="u">OR</em>
+</p>
+</div>
+</li>
+<li class="level4"><div class="li"> <em class="u">CA/PT</em><pre class="code">racadm remoteimage -c -l http://pablsv02.amer.int.tenneco.com/servers/HOSTNAME.iso</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> If you get an error in the racadm shell that the operations can&#039;t be performed, login to the iDRAC and make sure that the <abbr title="Domain Name System">DNS</abbr> is configured correctly in iDRAC settings.  </div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> <strong>Dell Power Edge Servers with PERC 750/755 Adapter</strong></div>
+<ul>
+<li class="level3"><div class="li"> PERC H750/755 Adapters have a particular problem with the LUN Numbering, which is described <a href="https://www.dell.com/support/manuals/en-us/perc-h755/perc11_ug/virtual-disk-numbering?guid=guid-3def7f06-fa45-401b-9757-9169a92fa24e&amp;lang=en-us" class="urlextern" title="https://www.dell.com/support/manuals/en-us/perc-h755/perc11_ug/virtual-disk-numbering?guid=guid-3def7f06-fa45-401b-9757-9169a92fa24e&amp;lang=en-us"  rel="nofollow">here</a>. This &#039;feature&#039; results in the Unix operating systems detecting the LUNS created last as the first device and hence, the DATA raid volume has to be created first and then the <abbr title="Operating System">OS</abbr> volume <strong>only</strong> for this type of adapter.</div>
+<ul>
+<li class="level4"><div class="li"> First, verify what adapter we have<pre class="code">racadm storage get controllers -o -p name,status</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> If the o/p shows H750/755 adapter, then confirm that the vdisks are created in the reverse order<pre class="code">racadm storage get vdisks -o -p layout,status</pre>
+
+<p>
+Sample O/p
+</p>
+<pre class="code">racadm&gt;&gt;racadm storage get vdisks -o -p layout,status
+Disk.Virtual.239:RAID.Slot.3-1
+   Layout                           = Raid-6
+   Status                           = Ok
+Disk.Virtual.238:RAID.Slot.3-1
+   Layout                           = Raid-1
+   Status                           = Ok
+racadm&gt;&gt;</pre>
+
+<p>
+ The disk with highest LUN ID - 239 is the disk which is created first and RAID1 with 238 is created last.  If not, then connect with the Wintel team and request them to implement the correct order for H750/755 Adapters.  
+</p>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> Login to the Remote Console <code><a href="https://HOSTNAMErmb" class="urlextern" title="https://HOSTNAMErmb"  rel="nofollow">https://HOSTNAMErmb</a></code> –&gt; Login with <abbr title="Local Area Network">LAN</abbr> –&gt; Remote console (Virtual Console is available in the Dashboard on Dell Servers)</div>
+</li>
+<li class="level2"><div class="li"> If starting Virtual console downloads a jlp file, the console is configured to open in java application and you won&#039;t be able to open it unless you have java installed.  In such case, Go to Configuration –&gt; Virtual Console and change the plugin Type to <strong>HTML5</strong></div>
+</li>
+<li class="level2"><div class="li"> Power on the server <code>Virtual Power</code></div>
+</li>
+<li class="level2"><div class="li"> When the system boots –&gt; At the BIOS screen –&gt; Press “F11” –&gt; Select the Virtual CDROM to boot from –&gt; Hit enter.</div>
+</li>
+<li class="level2"><div class="li"> At the grub menu, it will display the HOSTNAME –&gt; hit enter to start the installation.</div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat" class="wikilink1" title="unix:postinstallationsteps-redhat">Proceed to post install steps</a></div>
+</li>
+</ul>
+
+</div>

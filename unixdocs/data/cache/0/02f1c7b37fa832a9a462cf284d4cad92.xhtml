@@ -1,0 +1,251 @@
+
+<h1 class="sectionedit1" id="building_sles_vms">Building SLES VMs</h1>
+<div class="level1">
+
+<p>
+!!This is the first draft. There is lot of scope for both image build &amp; install automation!!
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Building SLES VMs" [1-127] -->
+<h2 class="sectionedit2" id="some_background_first">Some Background First</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> PT/CA VCenter is cdcpilvc005.pt.int.tenneco.com</div>
+</li>
+<li class="level1"><div class="li"> Access is typically given to your Tenneco AD ID in AMER domain</div>
+</li>
+<li class="level1"><div class="li"> Linux VMs, Templates should be placed under the Linux folders of the respective clusters.  Linux Team is only given access to create VMs that will reside in this folder</div>
+</li>
+<li class="level1"><div class="li"> Pick the right datastore. If you have large disk space requirements, you must get a datastore created with help from Storage/Wintel</div>
+</li>
+<li class="level1"><div class="li"> Get the Network VLAN added to the cluster as required.  </div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Some Background First" [128-651] -->
+<h2 class="sectionedit3" id="server_build_for_engineering">Server Build for Engineering</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT3 SECTION "Server Build for Engineering" [652-692] -->
+<h3 class="sectionedit4" id="datastore_mapping_for_ede">Datastore Mapping for EDE</h3>
+<div class="level3">
+<div class="table sectionedit5"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">LUN Serial                     </th><th class="col1 leftalign">LUN No         </th><th class="col2 leftalign">LUN Name                   </th><th class="col3 leftalign">Datastore             </th><th class="col4">Size </th><th class="col5">Purpose</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">37A8FED431FB45BD00011017</td><td class="col1 rightalign">	248</td><td class="col2 rightalign">	ede-v-deedec-ds07</td><td class="col3 rightalign">                   EDE-V-DEEDEC-DS07</td><td class="col4 centeralign">    4TB   </td><td class="col5"><abbr title="Operating System">OS</abbr> Disks (100G) &amp;<br/>
+Small FS (few 100G)</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">37A8FED431FB45BD00011018</td><td class="col1 rightalign">	247</td><td class="col2 rightalign">	ede-v-deedec-ds08</td><td class="col3 rightalign">                   EDE-V-DEEDEC-DS08</td><td class="col4 centeralign">    4TB   </td><td class="col5">2X1TB disks</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">37A8FED431FB45BD00011019</td><td class="col1 rightalign">	246</td><td class="col2 rightalign">	ede-v-deedec-ds09</td><td class="col3 rightalign">                   EDE-V-DEEDEC-DS09</td><td class="col4 centeralign">    4TB   </td><td class="col5">3X1TB disks</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">37A8FED431FB45BD0001101A</td><td class="col1 rightalign">	245</td><td class="col2 rightalign">	ede-v-deedec-ds10</td><td class="col3 rightalign">                   EDE-V-DEEDEC-DS10</td><td class="col4 centeralign">    4TB   </td><td class="col5">3X1TB disks</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">37A8FED431FB45BD0001101B</td><td class="col1 rightalign">	244</td><td class="col2 rightalign">	ede-v-deedec-ds11</td><td class="col3 rightalign">                   EDE-V-DEEDEC-DS11</td><td class="col4 centeralign">    4TB   </td><td class="col5">3X1TB disks</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">37A8FED431FB45BD0001101C</td><td class="col1 rightalign">	243</td><td class="col2 rightalign">	ede-v-deedec-ds12</td><td class="col3 rightalign">                   EDE-V-DEEDEC-DS12</td><td class="col4 centeralign">    4TB   </td><td class="col5">3X1TB disks</td>
+	</tr>
+</table></div>
+<!-- EDIT5 TABLE [730-1538] -->
+</div>
+<!-- EDIT4 SECTION "Datastore Mapping for EDE" [693-1539] -->
+<h3 class="sectionedit6" id="filesystem_requirement_for_ede">Filesystem requirement for EDE</h3>
+<div class="level3">
+<div class="table sectionedit7"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Purpose	</th><th class="col1 leftalign">Which Servers	</th><th class="col2 leftalign">Required<br/>
+Size	</th><th class="col3">Composition</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">Root VG	</td><td class="col1 leftalign">ALL            </td><td class="col2 leftalign">100GB	                </td><td class="col3 leftalign">100GB LUNs from EDE-V-DEEDEC-DS07   </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign">/data	        </td><td class="col1 leftalign">pedeenglxap01	</td><td class="col2 leftalign">8TB	                </td><td class="col3">8 X 1TB disks from DS08, DS09, DS10 </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0 leftalign">/data	        </td><td class="col1 leftalign">pedeenglxap02	</td><td class="col2 leftalign">6TB	                </td><td class="col3 leftalign">6 X 1TB disks from DS11, DS12       </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0 leftalign">/data	        </td><td class="col1">For the rest of <br/>
+servers</td><td class="col2 leftalign">100GB	</td><td class="col3 leftalign">100GB LUNs from EDE-V-DEEDEC-DS07   </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0 leftalign">Any small FS<br/>
+requirement in future        </td><td class="col1">Any</td><td class="col2 leftalign">&lt;500GB	</td><td class="col3 leftalign">from EDE-V-DEEDEC-DS07 or DS08   </td>
+	</tr>
+</table></div>
+<!-- EDIT7 TABLE [1582-2084] -->
+</div>
+<!-- EDIT6 SECTION "Filesystem requirement for EDE" [1540-2085] -->
+<h3 class="sectionedit8" id="creating_the_virtual_machines_from_template">Creating the Virtual Machines from Template</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Login to the VCenter - cdcpilvc005.pt.int.tenneco.com</div>
+</li>
+<li class="level1"><div class="li"> SLES templates (SLES12SP5TEMPLATE) available in DEEDEC &amp; PLRYBC clusters in Linux Folder</div>
+</li>
+<li class="level1"><div class="li"> Right Click the template and Select “New VM From this Template”</div>
+</li>
+<li class="level1"><div class="li"> Enter the Virtual Machine Name in UPPERCASE</div>
+<ul>
+<li class="level2"><div class="li"> Select “LOCATION” as the LINUX folder in the respective cluster</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> In the “Select the Computer Resource”, select the respective cluster, where you are building the VM</div>
+</li>
+<li class="level1"><div class="li"> In the “Select Storage”, make sure of the following</div>
+<ul>
+<li class="level2"><div class="li"> Select “Configure Per Disk”</div>
+</li>
+<li class="level2"><div class="li"> Select “Datastore”. For engineering server builds in EDE, it can be DS07</div>
+</li>
+<li class="level2"><div class="li"> Select “Disk Format” as “Thick Provision Lazy Zeroed”</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> In the “Select Clone Options”, Check “Customize this virtual machine&#039;s hardware”</div>
+</li>
+<li class="level1"><div class="li"> In the “Customize Hardware”</div>
+<ul>
+<li class="level2"><div class="li"> Select “Memory” as 8GB or as desired</div>
+</li>
+<li class="level2"><div class="li"> Add a new <abbr title="Small Computer System Interface">SCSI</abbr> Controller.  Add New Device –&gt; <abbr title="Small Computer System Interface">SCSI</abbr> Controller</div>
+</li>
+<li class="level2"><div class="li"> Add a new Hard disk.        Add New Device –&gt; Hard Disk. </div>
+</li>
+<li class="level2"><div class="li"> Give the size as required (typically 100GB) </div>
+</li>
+<li class="level2"><div class="li"> Add the new Hard disk to the newly added Controller.  (Virtual Device Node should be the newly created <abbr title="Small Computer System Interface">SCSI</abbr> Controller)</div>
+</li>
+<li class="level2"><div class="li"> Select “Network Adapter” as EDECDE-220 or RYBCDE-220</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Click on Finish</div>
+</li>
+<li class="level1"><div class="li"> Start the VM - Power ON</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT8 SECTION "Creating the Virtual Machines from Template" [2086-3387] -->
+<h3 class="sectionedit9" id="actions_from_the_console">Actions from the Console</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Press Ctrl + Alt + F2 to switch to a terminal console</div>
+</li>
+<li class="level1"><div class="li"> Login as root. Ask the Operations team for the Root password</div>
+</li>
+<li class="level1"><div class="li"> Execute Initialization script<pre class="code">./init.sh</pre>
+
+<p>
+ and input the following.  The script doesn&#039;t accept any defaults and all values must be keyed in (pressing enter won&#039;t work :), example is just example for now)
+</p>
+</div>
+<ul>
+<li class="level2"><div class="li"> IP ADDRESS</div>
+</li>
+<li class="level2"><div class="li"> SUBNET MASK</div>
+</li>
+<li class="level2"><div class="li"> GATEWAY</div>
+</li>
+<li class="level2"><div class="li"> HOSTNAME (should be in lowercase and full qualified domain name)</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Network will automatically restart. <strong>If it gives any error, try configuring it manually using the steps below, otherwise its not needed</strong></div>
+<ul>
+<li class="level2"><div class="li"> Update hostname.  For SELS, recommendation is to use FQDN<pre class="code">hostnamectl set-hostname dedeenglxdb01.emea.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Update IPADDR &amp; NETMASK as appropriate in <pre class="code">vi /etc/sysconfig/network/ifcfg-eth0</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Update Gateway IP in <pre class="code">vi /etc/sysconfig/network/ifroute-eth0</pre>
+
+<p>
+Sample
+</p>
+<pre class="code">default 10.58.2.1 eth0</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart Network <pre class="code">systemctl restart network</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT9 SECTION "Actions from the Console" [3388-4443] -->
+<h3 class="sectionedit10" id="actions_from_ssh_session">Actions from SSH session</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Login to the jump server - pgnmsv01 or pcdcunxaxap01 and then connect to the server being build</div>
+</li>
+<li class="level1"><div class="li"> Cleanup the build scripts<pre class="code">sudo rm ~root/init.sh ~root/build_cleanup.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create users and groups as required<pre class="code">sudo groupadd -g 275 engtm
+sudo useradd -u 5107 -g engtm -m -d /home/brunstof -c &quot;Bruno Stoffel&quot; brunstof
+sudo useradd -u 5349 -g engtm -m -d /home/thombent -c &quot;Thomas Bentz&quot; thombent
+sudo useradd -u 5350 -g engtm -m -d /home/tomaszcz -c &quot;Tomasz Szczepanek&quot; tomaszcz</pre>
+
+<p>
+Set password
+</p>
+<pre class="code">echo &quot;brunstof:sapQZO5iTxHNk&quot; | sudo chpasswd -e
+echo &quot;thombent:sapQZO5iTxHNk&quot; | sudo chpasswd -e
+echo &quot;tomaszcz:sapQZO5iTxHNk&quot; | sudo chpasswd -e</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <del>Rescan for the new devices &lt;code&gt;sudo rescan-scsi-bus.sh&lt;/code&gt;</del></div>
+</li>
+<li class="level1"><div class="li"> Validate <pre class="code">sudo fdisk -l |grep &quot;Disk /dev/sd&quot;</pre>
+
+<p>
+ Disk should have got detected.  Look for /dev/sdb
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the Filesystem<pre class="code">sudo vgcreate datavg /dev/sdb
+sudo lvcreate -L 99.9G -n datalv datavg
+sudo mkfs.xfs /dev/datavg/datalv
+
+echo &quot;# Data filesystems&quot;                                                                       | sudo tee -a /etc/fstab
+echo &quot;&quot;                                                                                         | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg-datalv           /data                    xfs    defaults        1 2&quot;  | sudo tee -a /etc/fstab
+
+sudo mkdir /data &amp;&amp; sudo mount /data &amp;&amp; sudo chgrp engtm /data</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Rapid7 Agent<pre class="code">sudo /opt/agent_installer.sh install_start --token  us:c58ccdc4-7f37-44ba-b13f-ede6b9decc76
+sudo rm -f /opt/agent_installer.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server. This is very important. Last time, the hostnames were not discovered correctly with SNMP discovery even after restarting a bunch of services.<pre class="code">sudo reboot</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create <a href="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=3ad014c9dbe353407785d12c5e9619d0&amp;sysparm_category=ed1dd647db3a909079a6a07c13961985&amp;catalog_id=e0d08b13c3330100c8b837659bba8fb4" class="urlextern" title="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=3ad014c9dbe353407785d12c5e9619d0&amp;sysparm_category=ed1dd647db3a909079a6a07c13961985&amp;catalog_id=e0d08b13c3330100c8b837659bba8fb4"  rel="nofollow">ticket</a> to the monitoring team. According to the new process, this doesn&#039;t cover Service NOW discovery</div>
+</li>
+<li class="level1"><div class="li"> Create <a href="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=5de49a51dba11f807785d12c5e9619f5" class="urlextern" title="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=5de49a51dba11f807785d12c5e9619f5"  rel="nofollow">a ticket</a> to discover the CI in CMDB</div>
+</li>
+<li class="level1"><div class="li"> Create ticket to the get the server backed up</div>
+</li>
+<li class="level1"><div class="li"> Once the server is discovered in CMDB, close the change ticket after relating all CIs to the change record and updating the CI as relevant.  </div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT10 SECTION "Actions from SSH session" [4444-] -->

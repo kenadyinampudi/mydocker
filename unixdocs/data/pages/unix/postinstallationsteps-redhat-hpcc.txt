@@ -1,0 +1,130 @@
+====== For HPCC Nodes ======
+
+===== Install libraries =====
+
+  * Some software libraries are needed for the HPCC to work correctly<code>sudo yum install libX11 nfs-utils redhat-lsb-core libXft.x86_64 mesa-libGL libSM cockpit -y </code>
+
+===== Configuring winbind =====
+  * Install the software needed to configure winbind<code>sudo yum install -y realmd oddjob oddjob-mkhomedir sssd samba-common-tools</code>
+  * Create a [[https://onetenneco.service-now.com/sp?id=sc_cat_item&sys_id=e0d11627db50a410a5506e9d1396191d&sysparm_category=ed1dd647db3a909079a6a07c13961985|ticket]] to the Wintel Team asking them for assistance to join the server to the domain.  This is what could be put in the ticket<code>Please help to add new Linux servers to domain.  The server join must be done from a Linux session, so kindly propose a time so we can do a screen sharing and let one of the Windows Team member input the credentials.
+
+The server to be joined to domain are:
+pnbrenglxap01
+pnbrenglxap02
+pnbrenglxap03
+pnbrenglxap04
+
+This is documented here.
+http://cdcpillx056.federalmogul.com:8040/doku.php?id=redhatldap#steps</code>
+  * During the session with the Wintel Team, enter the following command, where da-unni is the Admin ID for the Wintel Team member in the corresponding domain<code>realm join -U da-unni pt.int.tenneco.com</code> If you are joining to another domain, like apac.int.tenneco.com then the corresponding domain should be mentioned in the **realm join** command.  Please also highlight to the Wintel team member when you give the remote control that when they type the password, no characters (not even asterisk) will be displayed on the screen.  It take about a minute to complete the registration. No message is displayed.
+  * Check **/var/log/messages** and look for messages like below to confirm that the join was successful<code>Sep 12 07:44:31 pnbrenglxap02 realmd: * Successfully enrolled machine in realm
+Sep 12 07:44:31 pnbrenglxap02 realmd: * Successfully enrolled machine in realm
+Sep 12 07:44:31 pnbrenglxap02 realmd: * Successfully enrolled machine in realm</code>
+  * Overwrite /etc/sssd/sssd.conf with the following contents<code>
+[sssd]
+domains = pt.int.tenneco.com
+config_file_version = 2
+services = nss, pam
+default_domain_suffix = pt.int.tenneco.com
+full_name_format = %1$s
+
+[domain/pt.int.tenneco.com]
+ad_domain = pt.int.tenneco.com
+krb5_realm = PT.INT.TENNECO.COM
+realmd_tags = manages-system joined-with-samba
+cache_credentials = True
+id_provider = ad
+krb5_store_password_if_offline = True
+default_shell = /bin/bash
+ldap_id_mapping = True
+use_fully_qualified_names = True
+fallback_homedir = /home/%u
+access_provider = ad
+ldap_id_mapping = True
+ignore_group_members=True
+ldap_purge_cache_timeout = 0
+access_provider = simple
+simple_allow_groups = pt linux admins@pt, glkadvancedengineeringgroup@amer, hpccluster_pistons@pt, hpccluster_sealings_and_gaskets@pt, hpccluster_ignition@pt, hpccluster_bearings@pt, hpccluster_clean_air@pt
+simple_allow_users = lsfadmin@pt, huj00059@pt, yaldol28, zhangj51@pt, zhaoj024@pt, tothd021@pt, sedlab46@pt, zeling41@pt, yaldol28@pt, nickeb38@pt, roessa78@pt, yanga065@pt, chowdf62@pt, malghr10@pt, mengl063@pt, panj0044@pt, wangk086@pt, matsue82@pt, jias0030@pt, modolj18@pt, liw00073@pt, shenk023@pt, meissj71@pt, mks0646@amer, houghn13@pt, leedsn16@pt, winarb11@pt, kleinc36@pt, lindnc57@pt, sigelf98@pt, hauerf38@pt, hoppg095@pt, albreh88@pt, merzl037@pt, scherm84@pt, boehmr14@pt, bewers06@pt, wirthf71@pt, mesker21@pt, schyma22@pt, holzma47@pt, groott16@pt</code> Update the following sections based on each system or site 
+    * **simple_allow_groups**, **simple_allow_users** have to be updated with the AD IDs of who would need access to the server. 
+    * **domains** - pt.int.tenneco.com or apac.int.tenneco.com
+    * **default_domain_suffix** = pt.int.tenneco.com or apac.int.tenneco.com
+    * **[domain/pt.int.tenneco.com]** - as appropriate
+    * **ad_domain** = pt.int.tenneco.com or apac.int.tenneco.com
+    * **krb5_realm** = PT.INT.TENNECO.COM or APAC.INT.TENNECO.COM
+  * Update the /etc/nsswitch.conf to have the passwd & shadow services look up sssd first<code>passwd:     sss files
+shadow:     sss files</code>
+  * Restart the services<code>sudo systemctl stop sssd && sudo  rm -f /var/lib/sss/db/* &&  sudo systemctl start sssd</code>
+  * Validate that the winbind lookup works.<code>getent -s sss passwd lsfadmin</code>Expected o/op<code>[root@pnbrenglxap02 /var/log]# getent -s sss passwd lsfadmin
+lsfadmin:*:1247654788:1247600513:Lsfadmin:/home/lsfadmin:/bin/bash
+[root@pnbrenglxap02 /var/log]#</code>
+  * Install additional softwares that they need<code>sudo yum install nfs-utils redhat-lsb-core libX11 cockpit -y</code>
+  * Configure NFS filesystems as required.
+  * Configure /data & /scratch as required.  Some Background info is available [[changeeventplans:rhel_engineering_builds_disk|here]]
+  * Configure [[http://cdcpillx056.federalmogul.com:8040/doku.php?id=unix:transparenthugepages#red_hat|Transparent Huge Pages]]
+  * Disable Hyperthreading.  This can be done through the **iDRAC --> Configuration --> BIOS Settings --> Processor Settings --> Virtualization (Disabled)** Remember to click **twice** on Apply.  A reboot is required to affect this change.  From the OS, this can be validated by checking for 0, which means that the hyperthreading is disabled<code>[root@pnbrenglxap02 ~]# cat /sys/devices/system/cpu/smt/active
+0
+[root@pnbrenglxap02 ~]# </code> OR \check this using dmidecode command and make sure that the thread count and core count matches and this is when we know that the hyperthreading is disabled<code>[root@pnbrenglxap02 /var/log]# sudo dmidecode -t processor |grep Count
+        Core Count: 8
+        Thread Count: 8
+        Core Count: 8
+        Thread Count: 8
+[root@pnbrenglxap02 /var/log]#</code>
+
+===== Configure Active/Standby LAN =====
+  - Get the current IP Address and Subnet mask to be used in the bond configuration file<code>
+export IPADDRESS=$(host `hostname` |awk '{print $4}')
+export NETMASK=$(netstat -rn |awk '{print $3}' |grep ^255 |head -n 1)</code>
+  - Backup all the existing NIC config files to your home directory<code>cd /etc/sysconfig/network-scripts/
+for files in `ls ifcfg*`
+do
+cp -pr $files ~/${files}_$(date +'%Y_%m_%d')
+done</code>
+  - Generate the config files - em1 <code>
+cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-em1
+DEVICE=em1
+NAME=em1
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF</code>
+  - Generate the config files - em2 <code>
+cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-em2
+DEVICE=em2
+NAME=em2
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF</code>
+  - Generate the config files - bond0 <code>
+cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+NAME=bond0
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=$IPADDRESS
+NETMASK=$NETMASK
+USERCTL=no
+BONDING_OPTS="mode=active-backup miimon=100"
+EOF</code> OR Use this for LACP<code>cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+NAME=bond0
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=$IPADDRESS
+NETMASK=$NETMASK
+USERCTL=no
+BONDING_OPTS="mode=802.3ad miimon=100"
+EOF</code>
+
+  - Restart the network & validate. If you have not lost the connectivity, then the connection should be good<code>sudo systemctl restart network
+ifconfig bond0</code>
+
+
+

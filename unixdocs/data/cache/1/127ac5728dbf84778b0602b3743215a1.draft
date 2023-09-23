@@ -1,0 +1,71 @@
+a:6:{s:2:"id";s:29:"unix:install_powercli_desktop";s:6:"prefix";s:2687:"===== Installing PowerCLI on your desktop =====
+**If you don't want to install PowerCLI, you can still access it on the storage management server. Jump to the instructions [[unix:install_powercli_desktop#using_powercli_to_access_vcenter_from_linux_system#|here]]**
+  - From your desktop, click on the start menu and type powershell and then click on **Windows PowerShell** to open it.
+  - Install the PowerCLI module <code>Install-Module -Name VMware.PowerCLI -Scope CurrentUser</code>
+  - When prompted to install NuGet provider, type **Yes** to continue. <code>Do you want PowerShellGet to install and import the NuGet provider now?
+[Y] Yes  [N] No  [S] Suspend  [?] Help (default is "Y"): Yes </code>
+  - When prompted to install packages from PSGallery, type **Yes** to continue.  <code>Are you sure you want to install the modules from 'PSGallery'?
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"): Yes </code>
+  - If the PowerShell execution policy is **restricted**, you won't be able to import the module.  You can check that by running <code>get-executionpolicy</code>
+  - Change the powershell execution policy from Restricted to remotesigned. <code>set-executionpolicy remotesigned -Scope CurrentUser</code> and when prompted to confirm the change in execution policy type **Yes**.
+  - Import the VMWare Core Automation Module <code>Import-Module vmware.vimautomation.core </code>And we can safely ignore the warning about joining the VMware Customer Experience Improvement Program.
+  - Set the PowerCLI Configuration to accept invalid certificates.  This is needed if your vcenter doesn’t have a valid SSL certificate. <code>Set-PowerCLIConfiguration -InvalidCertificateAction Prompt </code>
+  - Try Connecting to the server (When prompted, given your username as **YOUR_AD_ID@DRIV.COM** & password) <code>Connect-VIServer cdcvilms156.driv.com </code> and you should get a message something similar to below <code>PS C:\WINDOWS\system32> Connect-VIServer cdcvilms156.driv.com
+
+Name                           Port  User
+----                           ----  ----
+cdcvilms156.driv.com           443   DRIV\x1naveka
+
+
+PS C:\WINDOWS\system32></code>
+  - Verify that you are connected & can run commands <code> Get-VMGuest -VM cdcvillx223</code> and you should see something like this <code>PS C:\WINDOWS\system32> Get-VMGuest -VM cdcvillx223
+
+State          IPAddress            OSFullName                                    
+-----          ---------            ----------                                    
+Running        {10.128.114.52}      SUSE Linux Enterprise 12 (64-bit)
+
+PS C:\WINDOWS\system32 </code>
+
+";s:4:"text";s:1456:"===== Using PowerCLI to access VCenter from your desktop on PowerShell =====
+
+Windows provides an integrated scripting environment for PowerShell called **Windows PowerShell ISE** and it is a very interactive and useful way to create, run and debug commands and scripts.  
+
+  - Click on the Start Menu on your desktop & Search for **Windows PowerShell**
+  - And, Select **Windows Powershell ISE** from the list.  ISE is interactive and provides various debugging options and is a great tool for exploring VMWare PowerCLI commands.  The only thing to be careful while running from the script window is to select only the commands you want to run and click on **Run Selection** rather than **Run**.  **Run** will execute all commands in the script, whereas the Run Selection only executes what we have selected.
+  - Connect to VCenter.  This can be run from the command prompt or from the script editor.<code>Connect-VIServer cdcvilms156.driv.com </code>  When running from the script editor, remember to select the commands that you want to run and press **F8** or click on **Run Selection**
+  - When prompted for certificates, you can click on **Accept Permanently** to not get this prompt again.
+  - In the **Specify Credential** window, supply your windows credential that you use to login to VCenter.  If connected, it should print the VCenter name and your username
+  - Verify that you can execute commands. <code>get-vm cdcvillx223</code>
+
+";s:6:"suffix";s:1340:"
+===== Using PowerCLI to access VCenter from Linux system =====
+
+  - Connect to the Storage Management server <code>ssh pcdcstglxap01 </code>
+  - Switch to sanmontr user <code> sudo su - sanmontr </code>
+  - Invoke the Powershell <code> pwsh </code> to get an output similar to below. <code> [x1naveka@pcdcstglxap01 ~]$ sudo su - sanmontr
+Last login: Fri May 21 09:42:03 CDT 2021 on pts/2
+[sanmontr@pcdcstglxap01 ~]$ pwsh
+PowerShell 7.1.3
+Copyright (c) Microsoft Corporation.
+
+https://aka.ms/powershell
+Type 'help' to get help.
+
+PS /prod/storageteam/sanmontr> </code>
+  - Login to the VCenter Server <code> connect-viserver cdcvilms156</code> and login using your windows AD ID & password.  Sample snip below <code>PS /prod/storageteam/sanmontr> connect-viserver cdcvilms156
+WARNING: Please consider joining the VMware Customer Experience Improvement Program, 
+so you can help us make PowerCLI a better product. You can join using the following command:
+
+Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $true
+
+Specify Credential
+Please specify server credential
+User: driv\x1naveka
+Password for user driv\x1naveka: ********
+
+
+Name                           Port  User
+----                           ----  ----
+cdcvilms156                    443   DRIV\x1naveka
+
+PS /prod/storageteam/sanmontr> </code>";s:4:"date";i:1621862889;s:6:"client";s:4:"root";}

@@ -1,0 +1,73 @@
+====== TGPRETL1 had to be migrated from taprvio3 to VIO cluster 40/41 ======
+
+  - List of disks to be migrated<code>0000aaca591d50df        altinst_rootvg
+0000aaca591d632d        rootvg
+00c9f3a063f80afd        datavg01
+00c9f3a063f990b2        datavg01
+00c9f3908c008a39        datavg01
+00c9f3908bf90964        datavg01
+00c9f3a063f68b89        datavg01
+0000aaca4a2df90a        datavg01
+0000aada54836619        datavg01
+0000aaca591fff00        datavg01
+0000aacae23b3df1        datavg01</code>Saved this file as /var/tmp/sourcedisks.tgpretl1 on taprvio40 and taprvio41
+  - Shutdown the LPAR
+  - Unmap the disks from taprvio3.
+    - Check first<code>lsdiskcfg | egrep "hdisk4|hdisk5|hdisk6|hdisk7|hdisk9|hdisk10|hdisk19|hdisk20|hdisk27|hdisk29|hdisk33"</code>   
+    - Unmap the disks from taprvio3<code>for disk in hdisk4 hdisk5 hdisk6 hdisk7 hdisk9 hdisk10 hdisk19 hdisk20 hdisk27 hdisk29 hdisk33
+do
+   rmvdev -vdev ${disk}
+done</code>
+  - Remove the disks from taprvio3<code>echo "hdisk4 hdisk5 hdisk6 hdisk7 hdisk9 hdisk10 hdisk19 hdisk20 hdisk27 hdisk29 hdisk33" | xargs -n1 rmdev -dl</code>
+  - Moon will swing the LUNs to taprvio40 and 41.
+  - On taprvio40, configure the disks
+    - Configure devices<code>cfgmgr
+cat /var/tmp/sourcedisks.tgpretl1 | awk '{print $1}' > /var/tmp/sourcedisks.tgpretl1.pvid
+lspv | grep -wf /var/tmp/sourcedisks.tgpretl1.pvid > /var/tmp/viodisks.tgpretl1</code>
+    - Make sure these disks are not in use(Impossible but still )<code>awk '{print $1}' /var/tmp/viodisks.tgpretl1 > /var/tmp/viodisks.tgpretl1.pvs
+lsdiskcfg | grep -f /var/tmp/viodisks.tgpretl1.pvs</code>
+    - Check if the devices are readable<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   echo ${dev} :: $(bootinfo -s ${dev} )
+done</code>
+    - Turn off reserve lock<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   chdev -l ${dev} -a reserve_policy=no_reserve
+done</code>
+  - On taprvio41, configure the disks
+    - Configure devices<code>cfgmgr
+cat /var/tmp/sourcedisks.tgpretl1 | awk '{print $1}' > /var/tmp/sourcedisks.tgpretl1.pvid
+lspv | grep -wf /var/tmp/sourcedisks.tgpretl1.pvid > /var/tmp/viodisks.tgpretl1</code>
+    - Make sure these disks are not in use(Impossible but still )<code>awk '{print $1}' /var/tmp/viodisks.tgpretl1 > /var/tmp/viodisks.tgpretl1.pvs
+lsdiskcfg | grep -f /var/tmp/viodisks.tgpretl1.pvs</code>
+    - Check if the devices are readable<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   echo ${dev} :: $(bootinfo -s ${dev} )
+done</code>
+    - Turn off reserve lock<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   chdev -l ${dev} -a reserve_policy=no_reserve
+done</code>
+  - On taprvio40, Map the devices<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs )
+do
+   mkvdev -vdev ${dev} -vadapter vhost5
+done</code>
+  - On taprvio41, Map the devices<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs )
+do
+   mkvdev -vdev ${dev} -vadapter vhost5
+done</code>
+  - Boot tgpretl1<code>ssh hscroot@taitc051
+chsysstate -r lpar -o on -b sms -m MES-Dev-QA-8205-E6B-SN1048EEP -n tgpretl1 -f tgpretl1</code>
+  - Access the console and do the rest.
+  - If the server has been moved from qa single VIO setup, perform the following step.
+    - Make a note of the pvid of alt_rootvg disk and remove the hdisks that belonged to alt_rootvg<code>alt_root_disk=$(lspv | grep alt_rootvg | awk '{print $2}' | sort -u)
+lspv | grep alt_rootvg | awk '{print $1}' | xargs -n1 rmdev -dl</code>
+    - Remove the alt_rootvg<code>alt_disk_install -X alt_rootvg</code>
+    - Run cfgmgr<code>cfgmgr</code>
+    - Create a alt_rootvg<code>alt_disk_copy -d $(lspv | grep ${alt_root_disk} | awk '{print $1}' )</code>
+    - Reboot the server<code>shutdown -Fr</code>
+    - Make a note of the pvid of old_rootvg disk and remove the hdisks that belonged to it<code>old_root_disk=$(lspv | grep old_rootvg | awk '{print $2}' | sort -u)
+lspv | grep old_rootvg | awk '{print $1}' | xargs -n1 rmdev -dl</code>
+    - Remove the old_rootvg<code>alt_disk_install -X old_rootvg</code>
+    - Run cfgmgr<code>cfgmgr</code>
+    - Create a alt_rootvg<code>alt_disk_copy -d $(lspv | grep ${old_root_disk} | awk '{print $1}' )</code>

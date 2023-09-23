@@ -1,0 +1,37 @@
+Since NBU release 7.x VRTS provided new tool to lookup NBU catalog for file searching. As a start date put last successful full backup of the given client.
+  * On a linux based master (ie all appliances in elevated mode) run the following in order to find all files matching media extensions<code>export media_files="mkv mov mpg avi mp3 m4v mpe mpeg rmvb vob ogg qt qtw wmv jpg jpeg 3gp 3g2 flv rm mts m2ts gifv webm yuv asf svi mxf"
+export client_name="taryb050.emea.int.tenneco.com taryb001.emea.int.tenneco.com"
+export start_date=2/1/2018
+mkdir search_backups_results
+cd search_backups_results
+for c in ${client_name} ; do
+for fileextension in ${media_files}; do echo ${fileextension} on ${c}; nbfindfile -c ${c} -p *.${fileextension} -s ${start_date} -l > ${fileextension}_${c}.txt ; done; done</code>
+  * For wintel based master server try with this<code>set media_files=mkv,mov,mpg,avi,mp3,m4v,mpe,mpeg,rmvb,vob,ogg,qt,qtw,wmv
+set client_name=taede100.emea.int.tenneco.com,taede101.emea.int.tenneco.com,taede102.emea.int.tenneco.com,taede104.emea.int.tenneco.com
+set start_date=2/1/2018
+set kb_min=100000
+mkdir search_backups_results
+cd search_backups_results
+for %c in (%client_name%) do (for %f in (%media_files%) do (nbfindfile -c %c -p *.%f -s %start_date% -l -kb_min %kb_min% > %f_%c.txt))</code> Results will be in files named after searched extension in the directory you did create search_backups_results - on wintel please use the wordpad to view these files. Of course you can play around with media_files as well client_name and start_date in order to match your query / interest. Also you can play around with [-kb_min min_size_kb] [-kb_max max_size_kb] for nbfindfile to narrow down your search, ie for files larger than 100MB:
+  * linux loop would looked like:<code>for fileextension in ${media_files}; do echo ${fileextension}; nbfindfile -c ${client_name} -p *.${fileextension} -s ${start_date} -kb_min 100000 -l > ${fileextension}.txt ; done</code>
+  * wintel loop would looke like:<code>for %f in (%media_files%) do (nbfindfile -c %client_name% -p *.%f -s %start_date% -l -kb_min 100000 > %f.txt)</code>
+Sample extensions you can use in your search:<code>image_files="bmp dib eps gif img jfif jpe jpeg jpg pcx png ps psd raw rif spiff tiff tif"
+compressed_files="ace arc arj bhx bz2 cab gz gzip hpk hqx jar lha lzx lzh pak pit rar sea sit sqz tgz uu uue z zip zoo 7z"</code>
+
+The evolved scirpt I ran on pe2<code>
+export media_files="mkv mov mpg avi mp3 m4v mpe mpeg rmvb vob ogg qt qtw wmv jpg jpeg 3gp 3g2 flv rm mts m2ts gifv webm yuv asf svi mxf"
+export client_name="clientname.emea.int.tenneco.com"
+export start_month=`date +%m`
+export start_year=`date +%Y`
+if [ ! -d search_backups_results ]; then
+        mkdir search_backups_results
+fi
+cd search_backups_results
+for c in ${client_name} ; do
+        export start_date=`bpimagelist -client $c -d ${start_month}/1/${start_year} -U -st full|head -3 |tail -1 |awk '{print $1}'`
+        for fileextension in ${media_files}; do
+                echo ${fileextension} on ${c}; nbfindfile -c ${c} -p *.${fileextension} -s ${start_date} -l > ${fileextension}_${c}.txt
+        done;
+done
+for i in *.txt; do cat ${i}|sort -nk4 -r |more ; done</code>
+

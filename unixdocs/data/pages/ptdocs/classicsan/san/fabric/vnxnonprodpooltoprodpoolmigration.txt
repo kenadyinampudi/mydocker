@@ -1,0 +1,20 @@
+====== Migrate LDC VNX NONPRODPOOL LUNs to PROD POOL ======
+
+  - Login to the CLI host pablsv01 and set user security for naviseccli<code>naviseccli -Scope 0 -AddUserSecurity -h ldcvnx53001spa -User sysadmin</code>Enter the password for sysadmin user when prompted
+  - Store the storage group as a shell variable<code>export storagegroup=<storage group name></code>
+  - List the LUN allocation for the given host/storage group<code>/usr/local/scripts/lsvnxstgpoolsz ${storagegroup} > ${storagegroup}.alloc.vnx.$(date +%m%d%Y)</code>Inspect visually.
+  - Create CLI for lun creation for migration
+    - Store the next available lun number to a shell variable<code>nextavailablelun=$(naviseccli -h ldcvnx53001spa lun -list | grep "LOGICAL UNIT NUMBER" \
+| awk '{print $NF}' | sort -n | tail -1 | awk '{print $1+1}')</code>
+    - For every lun in the nonprod-pool, create command to create the LUN and the migrate command, print the commands to STDOUT **Does not execute the commands**<code>cat ${storagegroup}.alloc.vnx.$(date +%m%d%Y) | grep "NONPROD-POOL" | while read line
+do
+   lun=$(echo ${line} | awk -F: '{print $3}' )
+   size=$(echo ${line} | awk -F: '{print $4}' )
+   echo "naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity ${size} -sq mb -poolName \"PROD-POOL\" -aa 1 -l ${nextavailablelun} -name ${storagegroup}_${nextavailablelun}"
+   echo "naviseccli -h ldcvnx53001spa migrate -start -source ${lun} -dest ${nextavailablelun} -rate medium"
+   nextavailablelun=$(echo "${nextavailablelun} + 1 " | bc )
+done</code>
+  - Validate the commands on STDOUT, execute 3 LUN creations followed by 3 migrations.
+  - View the progress<code>naviseccli -h ldcvnx53001spa migrate -list</code>
+  - Execute the rest of LUN creations and migrations as the first set finishes until all the LUNs are migrated.
+  - Once complete, send an email to GIOS STorage Team.

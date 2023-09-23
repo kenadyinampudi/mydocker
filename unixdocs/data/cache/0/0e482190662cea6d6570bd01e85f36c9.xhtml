@@ -1,0 +1,30 @@
+
+<h1 class="sectionedit1" id="perform_remote_restart_-_powervm">Perform Remote restart - PowerVM</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Add the reserved storage pool for all frames that wish to participate in the Remote Restart function</div>
+</li>
+<li class="level1"><div class="li"> Allocate a device that is atleast 120% of the Max memory profile to each lpar that needs remote restart functionality</div>
+</li>
+<li class="level1"><div class="li"> Commands are here <strong>document them neately later </strong><pre class="code">hscroot@tgprhmc6:~&gt; chsysstate -r lpar -o on -m Server-8284-22A-SN215D22V -n taprvio100
+hscroot@tgprhmc6:~&gt; chsysstate -r lpar -o on -m Server-8284-22A-SN215D22V -n taprvio101
+
+
+
+Example commands for remote restart operations:
+Remote Restart :
+rrstartlpar -m &lt;source managed system&gt; -t &lt;target managed system&gt; -o restart -p &lt;lpar name&gt; | --id &lt;lpar id&gt;
+rrstartlpar -m &lt;source managed system&gt; -t &lt;target managed system&gt; -o restart -p &lt;lpar name&gt; | --id &lt;lpar id&gt; [-- usecurrdata] [--force]
+Remote Restart Validate:
+rrstartlpar -m &lt;source managed system&gt; -t &lt;target managed system&gt; -o validate -p &lt;lpar name&gt; | --id &lt;lpar id&gt;
+Remote Restart Recover:
+rrstartlpar -m &lt;source managed system&gt; -t &lt;target managed system&gt; -o recover -p &lt;lpar name&gt; [--force]
+Remote Restart Abort:
+rrstartlpar -m &lt;source managed system&gt; -t &lt;target managed system&gt; -o cancel -p &lt;lpar name&gt; 
+Remote Restart Cleanup:
+rrstartlpar -m &lt;source managed system&gt;  -o cleanup -p &lt;lpar name&gt; | --id &lt;lpar id&gt; [--force]</pre>
+</div>
+</li>
+</ol>
+
+</div>

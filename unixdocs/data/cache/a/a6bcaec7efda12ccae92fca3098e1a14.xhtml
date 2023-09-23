@@ -1,0 +1,165 @@
+
+<h1 class="sectionedit1" id="secret_page_of_kapil">Secret Page of Kapil</h1>
+<div class="level1">
+
+<p>
+<strong> It is a sin to continue &amp; read. Close the browser, reboot your PC and erase your memory </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Change Passwords<pre class="code">Active Directory
+AMER\
+DRIV\
+FMMP\kapil.koroth
+
+Unix / Linux
+
+On pgnmsv01
+
+for host in $(cat /prod/images/etc/allhosts.tenneco)
+do
+   echo &quot;Working on ${host} &quot;
+   sudo ssh ${host} &#039;echo &quot;x1kxk630:sa8kpAuUeXSzU&quot; | sudo chpasswd -e&#039;
+   sudo ssh ${host} &#039;/usr/local/scripts/unlockuser x1kxk630&#039;
+done
+
+
+On pcdcunxaxap01
+
+for host in $(cat /prod/images/etc/allhosts.driv)
+do
+   echo &quot;Working on ${host} &quot;
+   sudo ssh ${host} &#039;echo &quot;x1kxk630:sa8kpAuUeXSzU&quot; | sudo chpasswd -e&#039;
+   sudo ssh ${host} &#039;/usr/local/scripts/unlockuser x1kxk630&#039;
+done
+
+Storage :-
+
+uscdcxswisan001.federalmogul.com	x1kxk630
+uscdcxswisan002.federalmogul.com	x1kxk630
+usfdcvswisan-001.federalmogul.com	x1kxk630
+usfdcvswisan-002.federalmogul.com	x1kxk630
+
+pureadmin setattr --password
+
+taprpur001.pt.int.tenneco.com		x1kxk630
+phlypans016.federalmogul.com		x1kxk630
+
+uscdcxswisan001				x1kxk630
+uscdcxswisan002				x1kxk630
+
+uscdcxswisan001				x1kxk630
+uscdcxswisan002				x1kxk630
+
+
+chhmcusr -t passwd -u x1kxk630
+
+https://cdcvilhmc003
+https://cdcvilhmc001
+https://tgprhmc7.pt.int.tenneco.com
+
+
+Vendor portal 
+
+https://pure1.purestorage.com
+https://www.dell.com/support/home/us/en/
+https://www.ibm.com/support</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> To create a CPU workload to fully utilize a single CPU<pre class="code">perl -e &#039;while (--$ARGV[0] and fork) {}; while () {}&#039; 1</pre>
+
+<p>
+Change the number <code>1</code> to <code>2</code> and you will load 2 CPUs.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> If you want to go through all the sudo logs for a specific pattern<pre class="code">function check_sudo_logs {
+export checkthis=&quot;${*}&quot;
+
+if [ &quot;hello${checkthis}&quot; = &quot;hello&quot; ]
+then
+   echo &quot;Usage :: ${FUNCNAME[0]} &lt;string_to_match_and_check&gt;&quot;
+   return 99
+fi
+
+dirname=/prod/unixlog/sudo
+
+for file in $(sudo ls ${dirname}/ )
+do
+   echo &quot;Working on ${file} &quot;
+   echo &quot;${file}&quot; | grep &quot;.gz&quot; &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -eq 0 ]
+   then
+      sudo zcat ${dirname}/${file} | grep -i &quot;${checkthis}&quot;
+   else
+      sudo cat  ${dirname}/${file} | grep -i &quot;${checkthis}&quot;
+   fi
+done
+}</pre>
+
+<p>
+Usage
+</p>
+<pre class="code">check_sudo_logs &lt;strings&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=kapil:netbackup" class="wikilink1" title="kapil:netbackup">Netbackup notes</a></div>
+</li>
+<li class="level1"><div class="li"> Notes Calendar link for attendance<pre class="code">Notes://TALAKDB1/862575EE004E996F/AAC7D56CA8FD884B852563BE00610639/4376688B2FE808B98625767F002C95A9|</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Share the current folder through http<pre class="code">python -m SimpleHTTPServer 8000</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Oracle average database response time<pre class="code">sudo su - &lt;oracle_owner&gt;
+set colsep &quot;|&quot;
+
+spool io_date.txt
+
+select to_char(sn.END_INTERVAL_TIME,&#039;YYYY-MM-DD HH24:MI:SS&#039;) &quot;End snapshot time&quot;,
+sum(after.PHYRDS+after.PHYWRTS-before.PHYWRTS-before.PHYRDS) &quot;number of IOs&quot;,
+trunc(10*sum(after.READTIM+after.WRITETIM-before.WRITETIM-before.READTIM)/ sum(1+after.PHYRDS+after.PHYWRTS-before.PHYWRTS-before.PHYRDS)) &quot;ave IO time (ms)&quot;,
+trunc((select value from v$parameter where name=&#039;db_block_size&#039;)* sum(after.PHYBLKRD+after.PHYBLKWRT-before.PHYBLKRD-before.PHYBLKWRT)/ sum(1+after.PHYRDS+after.PHYWRTS-before.PHYWRTS-before.PHYRDS)) &quot;ave IO size (bytes)&quot; from DBA_HIST_FILESTATXS before, DBA_HIST_FILESTATXS after,DBA_HIST_SNAPSHOT sn where after.file#=before.file# and after.snap_id=before.snap_id+1 and before.instance_number=after.instance_number and after.snap_id=sn.snap_id and after.instance_number=sn.instance_number group by to_char(sn.END_INTERVAL_TIME,&#039;YYYY-MM-DD HH24:MI:SS&#039;) order by to_char(sn.END_INTERVAL_TIME,&#039;YYYY-MM-DD HH24:MI:SS&#039;);
+spool off</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> vdbench configuration and examples</div>
+<ol>
+<li class="level2"><div class="li"> Configuration<pre class="code">histogram=(default,100u,200u,300u,400u,500u,600u,700u,800u,900u,1m,1100u,1200u,1300u,1400u,1500u,1600u,1700u,1800u,1900u,2m,2250u,2500u,2750u,3m,3250u,3500u,3750u,4m,4250u,4500u,4750u,5m,5250u,5500u,5750u,6m,6250u,6500u,6750u,7m,7250u,7500u,7750u,8m,8500u,9m,9500u,10m,10500u,11m,12m,13m,14m,15m,16m,17m,18m,19m,20m,30m,40m,50m)
+dedupratio=1
+dedupunit=4k
+compratio=3
+hd=default,user=root,shell=ssh,jvms=8
+hd=pocafasv01,system=pocafasv01
+hd=pocafasv02,system=pocafasv02
+hd=pocafasv03,system=pocafasv03
+hd=pocafasv04,system=pocafasv04
+sd=default,openflags=directio
+sd=sd1_pocafasv01,host=pocafasv01,lun=/dev/rhdisk1
+sd=sd2_pocafasv01,host=pocafasv01,lun=/dev/rhdisk2
+sd=sd3_pocafasv01,host=pocafasv01,lun=/dev/rhdisk106
+sd=sd4_pocafasv01,host=pocafasv01,lun=/dev/rhdisk108
+sd=sd1_pocafasv02,host=pocafasv02,lun=/dev/rhdisk4
+sd=sd2_pocafasv02,host=pocafasv02,lun=/dev/rhdisk5
+sd=sd3_pocafasv02,host=pocafasv02,lun=/dev/rhdisk6
+sd=sd4_pocafasv02,host=pocafasv02,lun=/dev/rhdisk7
+sd=sd1_pocafasv03,host=pocafasv03,lun=/dev/rhdisk2
+sd=sd2_pocafasv03,host=pocafasv03,lun=/dev/rhdisk6
+sd=sd3_pocafasv03,host=pocafasv03,lun=/dev/rhdisk7
+sd=sd4_pocafasv03,host=pocafasv03,lun=/dev/rhdisk8
+sd=sd1_pocafasv04,host=pocafasv04,lun=/dev/rhdisk4
+sd=sd2_pocafasv04,host=pocafasv04,lun=/dev/rhdisk5
+sd=sd3_pocafasv04,host=pocafasv04,lun=/dev/rhdisk6
+sd=sd4_pocafasv04,host=pocafasv04,lun=/dev/rhdisk8
+wd=wd_default,sd=*
+rd=default,iorate=max,interval=1,warmup=5,elapsed=1200,pause=0,maxdata=10t
+rd=small,wd=wd_default,forxfersize=(16k),forrdpct=(90),forseekpct=100,forthreads=8</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Example run<pre class="code">./vdbench -f tenneco/ibm-cleanup-final.conf</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

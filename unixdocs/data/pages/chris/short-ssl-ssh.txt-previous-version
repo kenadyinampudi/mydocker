@@ -1,0 +1,21 @@
+===== Update OpenSSL and OpenSSH ======
+<code>  scp -r /usr/local/update {hostname}:/usr/local/ </code>
+    
+<code> cd /usr/local/update </code> <code> ./backup-ssh-ssl.sh </code>
+
+<code> ls -liatR  </code> 
+<code>mkdir -p /mnt/aixupdates </code>
+
+<code> mount pgnmsv01:/prod/images/service-packs/LATEST-SSL-SSH /mnt/aixupdates </code>  <code> cd /mnt/aixupdates; ls </code> 
+    - Remove extra language file sets <code>geninstall -e '/var/adm/ras/install_all_updates.log' -u -I " -J -w" -Z 'openssh.man.en_US openssh.msg.CA_ES openssh.msg.CS_CZ openssh.msg.DE_DE openssh.msg.EN_US openssh.msg.ES_ES openssh.msg.FR_FR openssh.msg.HU_HU openssh.msg.IT_IT openssh.msg.JA_JP openssh.msg.Ja_JP openssh.msg.KO_KR openssh.msg.PL_PL openssh.msg.PT_BR openssh.msg.RU_RU openssh.msg.SK_SK openssh.msg.ZH_CN openssh.msg.ZH_TW openssh.msg.Zh_CN openssh.msg.Zh_TW openssh.msg.ca_ES openssh.msg.cs_CZ openssh.msg.de_DE openssh.msg.en_US openssh.msg.es_ES openssh.msg.fr_FR openssh.msg.hu_HU openssh.msg.it_IT openssh.msg.ja_JP openssh.msg.ko_KR openssh.msg.pl_PL openssh.msg.pt_BR openssh.msg.ru_RU openssh.msg.sk_SK openssh.msg.zh_CN openssh.msg.zh_TW'</code>
+    - Install the SSL update first <code>installp -aXYd OpenSSL/VRMF-1.0.2.1300_1.0.2m/openssl-1.0.2.1300 openssl</code> 
+    - Install the iFix for ssl <code> emgr -e OpenSSL/VRMF-1.0.2.1300_1.0.2m/iFix/openssl_fix25/102m_ifix.180105.epkg.Z</code> 
+    - Install the SSH update x <code>installp -aXYd OpenSSH/VRMF-7.5.102.1100/OpenSSH_7.5.102.1100 openssh </code>
+    -Execute the following commands to add the  DSA patch to the sshd_config file <code>echo "" | tee -a /etc/ssh/sshd_config
+echo "#If you are stuck with DSA keys, you can re-enable support locally" | tee -a /etc/ssh/sshd_config
+echo "PubkeyAcceptedKeyTypes=+ssh-dss"  | tee -a  /etc/ssh/sshd_config
+</code>
+    -Execute the following command to add the  DSA patch to the ssh_config file <code> echo "PubkeyAcceptedKeyTypes=+ssh-dss"  | tee -a  /etc/ssh/ssh_config </code>
+    - Restart SSH to activate the update and the changes to the sshd_config file <code> stopsrc -s sshd </code> <code> startsrc -s sshd </code> 
+  - Unmount the file system <code> cd; umount /mnt/aixupdates</code>
+  - On the NIM Server, remove the exported lppsource file system from the exports list  <code> /usr/sbin/rmnfsexp -d '/prod/images/service-packs/LATEST-SSL-SSH' '-B' </code>

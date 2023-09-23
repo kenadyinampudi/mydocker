@@ -1,0 +1,9 @@
+a:2:{s:7:"current";a:8:{s:4:"date";a:2:{s:7:"created";i:1556305391;s:8:"modified";i:1556305391;}s:7:"creator";s:4:"Root";s:4:"user";s:4:"root";s:11:"last_change";a:7:{s:4:"date";i:1556305391;s:2:"ip";s:12:"10.32.40.100";s:4:"type";s:1:"C";s:2:"id";s:33:"changeeventplans:april27migration";s:4:"user";s:4:"root";s:3:"sum";s:7:"created";s:5:"extra";s:0:"";}s:5:"title";s:24:"April 27th Storage tasks";s:11:"description";a:2:{s:15:"tableofcontents";a:3:{i:0;a:4:{s:3:"hid";s:24:"april_27th_storage_tasks";s:5:"title";s:24:"April 27th Storage tasks";s:4:"type";s:2:"ul";s:5:"level";i:1;}i:1;a:4:{s:3:"hid";s:27:"prior_to_the_outage_windows";s:5:"title";s:27:"Prior to the outage windows";s:4:"type";s:2:"ul";s:5:"level";i:2;}i:2;a:4:{s:3:"hid";s:40:"during_the_outage_after_all_vms_are_down";s:5:"title";s:41:"During the outage after all VMs are down.";s:4:"type";s:2:"ul";s:5:"level";i:2;}}s:8:"abstract";s:486:"Prior to the outage windows
+
+	*  Login to pgunap01
+	*  Execute a replication in advance
+export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"
+export suffix=$(date +%b%d%Y%H%M)
+export wintel_luns="wintel_esx_wave3_009 wintel_esx_wave3_010 wintel_esx_wave3_011 wintel_esx_wave3_012 wintel_esx_wave3_014 wintel_esx_wave3_015"
+${SSH2PURE} purepgroup setattr --addvollist ${wintel_luns} autobahn-ldc-cdc-ptt
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt";}s:8:"internal";a:2:{s:5:"cache";b:1;s:3:"toc";b:1;}s:8:"relation";a:1:{s:10:"firstimage";s:0:"";}}s:10:"persistent";a:4:{s:4:"date";a:1:{s:7:"created";i:1556305391;}s:7:"creator";s:4:"Root";s:4:"user";s:4:"root";s:11:"last_change";a:7:{s:4:"date";i:1556305391;s:2:"ip";s:12:"10.32.40.100";s:4:"type";s:1:"C";s:2:"id";s:33:"changeeventplans:april27migration";s:4:"user";s:4:"root";s:3:"sum";s:7:"created";s:5:"extra";s:0:"";}}}

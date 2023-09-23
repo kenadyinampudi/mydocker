@@ -1,0 +1,103 @@
+
+<h1 class="sectionedit1" id="how_to_download_latest_redhat_patches">How to download latest Redhat patches</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "How to download latest Redhat patches" [1-53] -->
+<h3 class="sectionedit2" id="subscribbe_to_rhel_7_subscription">Subscribbe to RHEL 7 subscription</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the build server<pre class="code">ssh pablsv02</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a directory that denotes today&#039;s date<pre class="code">sudo mkdir -p /var/www/html/sources/04-12-2017</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At this time, the subscription while having an issue, you have to follow the below tasks</div>
+<ol>
+<li class="level2"><div class="li"> Unregister from Redhat portal<pre class="code">sudo subscription-manager unregister</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Register to the Redhat portal<pre class="code">sudo subscription-manager register --username tenauto</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Subscribe to one of the Redhat subscriptions<pre class="code">sudo subscription-manager subscribe --pool=8a85f9815828568c01582c22416e5b84</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Refresh the subscription<pre class="code">sudo subscription-manager refresh</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Attach to the subscription<pre class="code">sudo subscription-manager attach</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Download RHEL7 repository<pre class="code">sudo reposync -p /var/www/html/sources/04-12-2017 -r rhel-7-server-rpms -l</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> This step will create this directory with all Redhat packages<pre class="code">/var/www/html/sources/04-12-2017/rhel-7-server-rpms</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a repository<pre class="code">sudo createrepo /var/www/html/sources/04-12-2017/rhel-7-server-rpms</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Download RHEL7 extras repository<pre class="code">sudo reposync -p /var/www/html/sources/04-12-2017 -r rhel-7-server-extras-rpms -l</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> This step will create this directory with all Redhat packages<pre class="code">/var/www/html/sources/04-12-2017/rhel-7-server-extras-rpms</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a repository<pre class="code">sudo createrepo /var/www/html/sources/04-12-2017/rhel-7-server-extras-rpms</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Download RHEL7 optional repository<pre class="code">sudo reposync -p /var/www/html/sources/04-12-2017 -r rhel-7-server-optional-rpms -l</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> This step will create this directory with all Redhat packages<pre class="code">/var/www/html/sources/04-12-2017/rhel-7-server-optional-rpms</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a repository<pre class="code">sudo createrepo /var/www/html/sources/04-12-2017/rhel-7-server-optional-rpms</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> At this time, the subscription while having an issue, you have to follow the below tasks</div>
+<ol>
+<li class="level2"><div class="li"> Unregister from Redhat portal<pre class="code">sudo subscription-manager unregister</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Register to the Redhat portal<pre class="code">sudo subscription-manager register --username tenauto</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Subscribe to one of the Redhat subscriptions<pre class="code">sudo subscription-manager subscribe --pool=8a85f981584fc77301585015801802fe</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Refresh the subscription<pre class="code">sudo subscription-manager refresh</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Attach to the subscription<pre class="code">sudo subscription-manager attach</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Download SAP for RHEL7 repository<pre class="code">sudo reposync -p /var/www/html/sources/04-12-2017 -r rhel-sap-for-rhel-7-server-rpms -l</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> This step will create this directory with all Redhat packages<pre class="code">/var/www/html/sources/04-12-2017/rhel-sap-for-rhel-7-server-rpms</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a repository<pre class="code">sudo createrepo /var/www/html/sources/04-12-2017/rhel-sap-for-rhel-7-server-rpms</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Go ahead and create a new patching document for 04-12-2017</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Subscribbe to RHEL 7 subscription" [54-] -->

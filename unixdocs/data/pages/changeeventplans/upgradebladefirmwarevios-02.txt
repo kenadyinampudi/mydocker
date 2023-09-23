@@ -1,0 +1,173 @@
+====== Detailed technical plan for Change control - 04-06-2013 ======
+
+===== Shutdown applications and lpars =====
+
+** 4/5 - Friday 4 PM **
+
+  * Take pahrap01 out of the logon group for NA HR. (Make sure the CI has enough memory)
+
+** 4/6 - Saturday 9 AM **
+
+  * Shutdown SAP on qeerap01 deerap01 taitc108 pasmap01 and pahrap01    -     Raoul Serra
+  * Shutdown EDI/Gentran on tedv2e01,qaap3p01,dagi3p01,daap3p01         -     Vikram
+  * Shutdown Oracle Forms on pafoap02 and dafoap01                      -     Moon Do
+  * Disable NFS on all guests<code>for host in dafoap01 qeerap01 deerap01 taitc108 pasmap01 pahrap01 tedv2e01 qaap3p01 dagi3p01 daap3p01 pafoap02
+do
+   sudo ssh ${host} cp /etc/filesystems /etc/filesystems.OLD
+   sudo ssh ${host} "grep -v -p nfs /etc/filesystems > /var/tmp/filesystems.new"
+   sudo ssh ${host} "cp /var/tmp/filesystems.new /etc/filesystems"
+   sudo ssh ${host} "mv /etc/exports /etc/exports.old"
+done</code>   
+  * Shutdown and de-activate lpars<code>for host in dafoap01 qeerap01 deerap01 taitc108 pasmap01 pahrap01 tedv2e01 qaap3p01 dagi3p01 daap3p01 pafoap02
+do
+   echo "sudo ssh -t ${host} shutdown -F &"
+done</code>Execute the resulting commands from taitc118. Or may be from the console ...
+
+===== Test VLAN tagging on one of the blades =====
+
+** Configure switch-ports and perform DNS changes for taprvio6 (Network Team - Mike) **
+
+  * taprvio6 - Bladecentre1 - blade 5<code>Bladecentre1 - switch1 - port 5 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre1 - switch2 - port 5 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre1 - switch3 - port 5 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre1 - switch4 - port 5 - trunk , no native vlan, allowed VLANs 49,451</code>
+  * Delete the following DNS entries<code>taprvio6.amer.int.tenneco.com     10.0.48.138
+taprvio6bck.amer.int.tenneco.com     10.0.49.137</code>
+  * Allocate new DNS name<code>taprvio6.amer.int.tenneco.com      10.0.4.X</code>
+
+** Implement VLAN tagging and test network **
+
+  * [[changeeventplans:taprvio6-vlan|Implement VLAN tagging on taprvio6]]
+  * Configure network on taprvio6's VIOCs<code>dafoap01    -     48, 49</code>
+  * Bringup dafoap01 and configure IPs
+    * Cleanup IP stack on dafoap01 as root<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>Run cfgmgr<code>cfgmgr</code>
+    * Configure IPs<code>/usr/sbin/mktcpip -h'dafoap01' -a'10.0.48.173' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.173 -a netmask=255.255.255.0 -a state=up</code>
+    * Do a ping test on dafoap01<code>for ip in 10.0.48.1 10.0.49.1
+do
+   ping -c1 ${ip}
+done</code>
+  * Shutdown dafoap01<code>sudo shutdown -F</code>
+
+** If everything looks good, go ahead with the Big Bang switch changes and DNS changes **
+===== Configure switch-ports and perform DNS changes (Network Team - Mike) =====
+
+  * taprvio7 - Bladecentre2 - blade 6<code>Bladecentre2 - switch1 - port 6 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre2 - switch2 - port 6 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre2 - switch3 - port 6 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre2 - switch4 - port 6 - trunk , no native vlan, allowed VLANs 49,451</code>
+  * taprvio8 - Bladecentre2 - blade 8<code>Bladecentre2 - switch1 - port 8 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre2 - switch2 - port 8 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre2 - switch3 - port 8 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre2 - switch4 - port 8 - trunk , no native vlan, allowed VLANs 49,451</code>
+  * taprvio15 - Bladecentre2 - blade 10<code>Bladecentre2 - switch1 - port 10 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre2 - switch2 - port 10 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre2 - switch3 - port 10 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre2 - switch4 - port 10 - trunk , no native vlan, allowed VLANs 49,451</code>
+  * taprvio17 - Bladecentre2 - blade 13<code>Bladecentre2 - switch1 - port 13 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre2 - switch2 - port 13 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre2 - switch3 - port 13 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre2 - switch4 - port 13 - trunk , no native vlan, allowed VLANs 49,451</code>
+  * Delete the following DNS entries<code>taprvio7.amer.int.tenneco.com        10.32.50.139
+taprvio7bck.amer.int.tenneco.com     10.32.51.133
+taprvio8.amer.int.tenneco.com        10.0.48.140
+taprvio8bck.amer.int.tenneco.com     10.0.49.139
+taprvio15.amer.int.tenneco.com       10.0.48.45
+taprvio15bck.amer.int.tenneco.com    10.0.49.45
+taprvio17.amer.int.tenneco.com       10.0.48.77</code>
+  * Allocate these new DNS names<code>taprvio7.amer.int.tenneco.com      10.0.4.X
+taprvio8.amer.int.tenneco.com      10.0.4.X
+taprvio15.amer.int.tenneco.com     10.0.4.X
+taprvio17.amer.int.tenneco.com     10.0.4.X</code>
+
+===== Upgrade firmware on Blades =====
+
+  * Upgrade firmware on taprvio6 as padmin.<code>ldfware -file /usr/sys/inst.images/blade_microcode/ibm_fw_bios_ea350.136.074_anyos_ppc64.img</code>
+  * Upgrade firmware on taprvio7 as padmin.<code>ldfware -file /usr/sys/inst.images/blade_microcode/ibm_fw_bios_ea350.136.074_anyos_ppc64.img</code>
+  * Upgrade firmware on taprvio8 as padmin.<code>ldfware -file /usr/sys/inst.images/blade_microcode/ibm_fw_bios_ea350.136.074_anyos_ppc64.img</code>
+  * Upgrade firmware on taprvio15 as padmin.<code>ldfware -file /usr/sys/inst.images/blade_microcode/ibm_fw_bios_ea350.136.074_anyos_ppc64.img</code>
+  * Upgrade firmware on taprvio17 as padmin.<code>ldfware -file /usr/sys/inst.images/blade-microcode/ibm_fw_bios_aa730.087.035_anyos_ppc64.img</code>
+
+===== Upgrade VIOS on Blades =====
+
+  * From each VIOS server's console execute the following commands as padmin.<code>updateios -commit
+updateios -accept -dev /bkpmksb/VIOS_2.2.2.1-FP26</code>
+  * Reboot all VIOS servers as padmin<code>shutdown -restart -force</code>
+
+===== Upgrade memory (RAM) on these blades =====
+
+  * taprvio6
+  * taprvio15
+
+===== Implement VLAN tagging on VIOS servers =====
+
+  * [[changeeventplans:taprvio7-vlan|Implement VLAN tagging on taprvio7]]
+  * [[changeeventplans:taprvio8-vlan|Implement VLAN tagging on taprvio8]]
+  * [[changeeventplans:taprvio15-vlan|Implement VLAN tagging on taprvio15]]
+  * [[changeeventplans:taprvio17-vlan|Implement VLAN tagging on taprvio17]]
+  * Reboot all the VIOS servers<code>shutdown -restart -force</code>
+  * Install EMC ODM on all VIOS servers as root<code>sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc
+sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</code>
+  * Reboot the servers<code>sudo shutdown -Fr</code>
+===== Bring up all the lpars =====
+
+  * Configure network on all the VIOCs<code>qeerap01    -     450, 451
+qeerap01    -     450, 451
+deerap01    -     450, 451
+taitc108    -     48, 49
+pasmap01    -     48, 49
+pahrap01    -     48, 49
+tedv2e01    -     450, 451
+qaap3p01    -     48, 49
+dagi3p01    -     48, 49
+daap3p01    -     48, 49
+pafoap02    -     48, 49</code>
+  * Activate all the guests and configure IPs on them
+    * qeerap01 <codde></code><code>/usr/sbin/mktcpip -h'qeerap01' -a'10.32.50.37' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'eu.ten' -g'10.32.50.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.32.51.37 -a netmask=255.255.255.0 -a state=up</code>
+    * deerap01<code>/usr/sbin/mktcpip -h'deerap01' -a'10.32.50.36' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'eu.ten' -g'10.32.50.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.32.51.36 -a netmask=255.255.255.0 -a state=up</code>
+    * taitc108<code>/usr/sbin/mktcpip -h'taitc108' -a'10.0.48.51' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.51 -a netmask=255.255.255.0 -a state=up</code>
+    * pasmap01<code>/usr/sbin/mktcpip -h'pasmap01' -a'10.0.48.103' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.27 -a netmask=255.255.255.0 -a state=up</code>
+    * pahrap01<code>/usr/sbin/mktcpip -h'pahrap01' -a'10.0.48.10' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.10 -a netmask=255.255.255.0 -a state=up</code>
+    * tedv2e01<code>/usr/sbin/mktcpip -h'tedv2e01' -a'10.32.50.152' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'eu.ten' -g'10.32.50.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.32.51.152 -a netmask=255.255.255.0 -a state=up</code>
+    * qaap3p01<code>/usr/sbin/mktcpip -h'qaap3p01' -a'10.0.48.121' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.31 -a netmask=255.255.255.0 -a state=up</code>
+    * dagi3p01<code>/usr/sbin/mktcpip -h'dagi3p01' -a'10.0.48.191' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.28 -a netmask=255.255.255.0 -a state=up</code>
+    * daap3p01<code>/usr/sbin/mktcpip -h'daap3p01' -a'10.0.48.198' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.40 -a netmask=255.255.255.0 -a state=up</code>
+    * dafoap01<code>/usr/sbin/mktcpip -h'dafoap01' -a'10.0.48.173' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.173 -a netmask=255.255.255.0 -a state=up</code>
+    * pafoap02<code>/usr/sbin/mktcpip -h'pafoap02' -a'10.0.48.177' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>bck<code>chdev -l en1 -a netaddr=10.0.49.177 -a netmask=255.255.255.0 -a state=up</code>
+===== Enable NFS mounts and reboot the servers =====
+
+  * Do a ping test from taitc118<code>for host in qeerap01 deerap01 taitc108 pasmap01 pahrap01 tedv2e01 qaap3p01 dagi3p01 daap3p01 dafoap01 pafoap02
+do
+   ping -c 1 ${host} 
+   ping -c 1 ${host}bck
+done</code>
+  * On each lpar, enable NFS<code>for host in qeerap01 deerap01 taitc108 pasmap01 pahrap01 tedv2e01 qaap3p01 dagi3p01 daap3p01 dafoap01 pafoap02
+do
+   sudo ssh ${host} cp /etc/filesystems.OLD /etc/filesystems
+   sudo ssh ${host} mv /etc/exports.old /etc/exports
+done</code>Mount the NFS filesystems<code>grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | xargs -n1 sudo mount</code>Check with df<code>df -k | grep :</code>
+  * Reboot all servers<code>for host in qeerap01 deerap01 taitc108 pasmap01 pahrap01 tedv2e01 qaap3p01 dagi3p01 daap3p01 dafoap01 pafoap02
+do
+   echo "sudo ssh ${host} shutdown -Fr &"
+done</code>
+
+===== Startup the LPARs and applications =====
+
+  * Startup SAP on qeerap01 deerap01 taitc108 pasmap01 and pahrap01    -     Raoul Serra
+  * Startup EDI/Gentran on tedv2e01,qaap3p01,dagi3p01,daap3p01         -     Vikram
+  * Startup Oracle Forms on pafoap02 and dafoap01                      -     Moon Do
+
+===== Functional testing for Production apps =====
+
+  * Call Time Smith for HR PTB
+  * Call Brad Vail for Oracle forms
+
+===== Cleanup =====
+
+  * Delete the installation files from all VIOS servers.<code>sudo rm -rf /bkpmksb/VIOS_2.2.2.1-FP26/
+sudo rm -rf /usr/sys/inst.images/blade_microcode</code>

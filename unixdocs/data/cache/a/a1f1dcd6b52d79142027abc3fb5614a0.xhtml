@@ -1,0 +1,176 @@
+
+<h1 class="sectionedit1" id="migrate_pafoap01_server_to_power_8_frame">Migrate pafoap01 server to Power 8 Frame</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Build a server on power 8 frame xpgscdb1 using pafoap01 mksysb</div>
+<ul>
+<li class="level2"><div class="li"> Do the round robin to the root disk<pre class="code">sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdiskx</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Perform NTP sync<pre class="code">date
+sudo ntpdate -d pgntpap01.amer.int.tenneco.com
+date</pre>
+</div>
+<ul>
+<li class="level3"><div class="li"> If it is synced then leave it as it is and if it is not synced then do this.<pre class="code">sudo ntpdate -u pgntpap01.amer.int.tenneco.com</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Steps to be performed during the migration/outage on pafoap01 server.</div>
+<ul>
+<li class="level2"><div class="li"> Stop the application running on the server by Moon do.</div>
+</li>
+<li class="level2"><div class="li"> Login to the pafoap01 and check the number of disks present other then rootvg.<pre class="code">sudo lsvpcfg.sh</pre>
+
+<p>
+output
+</p>
+<pre class="code">hdisk5:00ce6b85f8304ba1: : :34526::datavg01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmount the filesystems belongs to datavg01<pre class="code">sudo umount /oraforms</pre>
+
+<p>
+If it doesn&#039;t unmount then check which user is using the hdisk
+</p>
+<pre class="code">sudo fuser -u /oraforms</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Varryoff and export the vg<pre class="code">sudo varyoffvg datavg01</pre>
+<pre class="code">sudo exportvg datavg01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Delete the disk from pafoap01<pre class="code">sudo rmdev -dl hdisk5</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Shutdown the pafoap01 server<pre class="code">sudo shutdown -F</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+
+<h4 id="login_to_vio_servers">Login to VIO servers</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> Login to taprvio50 and do lsdiskcfg<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out
+grep -i pafoap01 lsdiskcfg.out</pre>
+
+<p>
+we just need datavg01 disks to be deleted.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmap the disks<pre class="code">sudo su - padmin
+rmvdev -vdev hdisk207</pre>
+
+<p>
+delete the disk now
+</p>
+<pre class="code">sudo rmdev -dl hdisk207</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to taprvio51 and do lsdiskcfg<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out
+grep -i pafoap01 lsdiskcfg.out</pre>
+
+<p>
+we just need datavg01 disks to be deleted.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmap the disks<pre class="code">sudo su - padmin
+rmvdev -vdev hdisk192</pre>
+
+<p>
+delete the disk now
+</p>
+<pre class="code">sudo rmdev -dl hdisk192</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h4 id="ask_storage_team_to_swing_the_disks_from_vio50_51_pafoap01_to_xpgscdb1_server">Ask storage team to swing the disks from vio50/51 (pafoap01) to xpgscdb1 server</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> Once disk is available login to xpgscdb1<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.out.before
+sudo cfgmgr
+sudo lsvpcfg.sh &gt; lsvpcfg.out.after
+diff lsvpcfg.out.before lsvpcfg.out.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the roundrobin and  reserve_policy<pre class="code">sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl hdiskx</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import the datavg01<pre class="code">sudo importvg -y datavg01 00ce6b85f8304ba1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the filesystem after importing vg<pre class="code">lsvgfs datavg01 | sort | xargs -n1 sudo mount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a entry for NFS and add the below entry in /etc/filesystem<pre class="code">sudo cp -p /etc/filesystems /etc/filesystems.$(date +%Y%m%d)
+sudo vi /etc/filessytems</pre>
+
+<p>
+Add this config
+</p>
+<pre class="code">/oracle/DFOR/forms:
+        dev             = &quot;/oracle/DFOR/forms&quot;
+        vfs             = nfs
+        nodename        = pafodb01
+        mount           = true
+        options         = bg,soft,intr,sec=sys
+        account         = false</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h4 id="change_the_ip_addr_and_the_hostname_from_the_console">Change the IP addr and the hostname from the console</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> Login to xpgscdb1 throug console<pre class="code">sudo getconsole xpgscdb1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the hostname and IP<pre class="code">/usr/sbin/mktcpip -h pafoap01 -a 10.0.48.174 -m 255.255.255.0 -i en0 -g 10.0.48.1 -A no -s</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set backup IP<pre class="code">chdev -l en1 -a netaddr=10.0.49.174 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> DO ping test on pafoap01<pre class="code">for ip in 10.0.48.1 10.0.49.1
+do
+   ping -c1 ${ip}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reconfigure NFS exports<pre class="code">sudo cp -p /etc/exports /etc/exports.$(date +%Y%m%d)</pre>
+
+<p>
+ADD the below lines in /etc/exports
+</p>
+<pre class="code">/usr/sap/trans -sec=sys:krb5p:krb5i:krb5:dh,rw
+exportfs -a</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown the pafoap01 server<pre class="code">sudo shutdown -F</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure to do the changes in the unix_sysconsole  and the profile name of the lapr</div>
+</li>
+<li class="level1"><div class="li"> Activate the lpar</div>
+</li>
+<li class="level1"><div class="li"> Start the app from Moon do</div>
+</li>
+<li class="level1"><div class="li"> unmap the old bootdisks from vio50/51 and make note of pvid</div>
+</li>
+</ul>
+
+</div>

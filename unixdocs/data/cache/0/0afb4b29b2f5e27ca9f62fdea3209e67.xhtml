@@ -1,0 +1,120 @@
+
+<h1 class="sectionedit1" id="engineering_build_disk_configuration">Engineering Build Disk Configuration</h1>
+<div class="level1">
+
+<p>
+This document was prepared during the build of pnbrenglxap0[1-4]
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Engineering Build Disk Configuration" [1-118] -->
+<h2 class="sectionedit2" id="hardware_that_was_ordered">Hardware that was ordered</h2>
+<div class="level2">
+
+<p>
+The server was ordered with 4 Hard disks.  2 of them were 900GB SSD Disks and another 2 SAS HDDs of 1.1TB each. 
+</p>
+<pre class="code">racadm&gt;&gt;racadm storage get pdisks
+Disk.Bay.0:Enclosure.Internal.0-1:RAID.SL.3-1
+Disk.Bay.1:Enclosure.Internal.0-1:RAID.SL.3-1
+Disk.Bay.2:Enclosure.Internal.0-1:RAID.SL.3-1
+Disk.Bay.3:Enclosure.Internal.0-1:RAID.SL.3-1
+racadm&gt;&gt;
+racadm&gt;&gt;racadm storage get pdisks -o -p name,size
+Disk.Bay.0:Enclosure.Internal.0-1:RAID.SL.3-1
+   Name                             = Solid State Disk 0:1:0
+   Size                             = 893.750 GB
+Disk.Bay.1:Enclosure.Internal.0-1:RAID.SL.3-1
+   Name                             = Solid State Disk 0:1:1
+   Size                             = 893.750 GB
+Disk.Bay.2:Enclosure.Internal.0-1:RAID.SL.3-1
+   Name                             = Physical Disk 0:1:2
+   Size                             = 1117.250 GB
+Disk.Bay.3:Enclosure.Internal.0-1:RAID.SL.3-1
+   Name                             = Physical Disk 0:1:3
+   Size                             = 1117.250 GB
+racadm&gt;&gt;</pre>
+
+</div>
+<!-- EDIT2 SECTION "Hardware that was ordered" [119-1189] -->
+<h2 class="sectionedit3" id="how_is_it_configured">How is it configured</h2>
+<div class="level2">
+
+<p>
+The SSD disks were configured in RAID1 to be used as root disks and the other disks were configured in individual RAID0 volumes.  <em class="u">Remember to create the first ROOT RAID1 volume as the first virtual disk.  This could be different for different types of <abbr title="Redundant Array of Inexpensive Disks">RAID</abbr> controller.  This server had PERC H355 controller and hence ROOT Disk must be created first to get the lowest target ID</em>
+</p>
+<pre class="code">racadm&gt;&gt;racadm storage get vdisks -o -p name,layout,size,mediatype,status
+Disk.Virtual.0:RAID.SL.3-1
+   Name                             = ROOT
+   Layout                           = Raid-1
+   Size                             = 893.750 GB
+   MediaType                        = SSD
+   Status                           = Ok
+Disk.Virtual.1:RAID.SL.3-1
+   Name                             = DATA
+   Layout                           = Raid-0
+   Size                             = 1117.250 GB
+   MediaType                        = HDD
+   Status                           = Ok
+Disk.Virtual.2:RAID.SL.3-1
+   Name                             = SCRATCH
+   Layout                           = Raid-0
+   Size                             = 1117.250 GB
+   MediaType                        = HDD
+   Status                           = Ok
+racadm&gt;&gt;</pre>
+
+</div>
+<!-- EDIT3 SECTION "How is it configured" [1190-2445] -->
+<h2 class="sectionedit4" id="why_are_they_configured_such">Why are they configured such?</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> ROOT disks needs redundancy and must be configured with some mirroring (either software or hardware) to ensure smooth operation and to avoid a single point of failure. </div>
+</li>
+<li class="level1"><div class="li"> DATA &amp; SCRATCH disks could have been left outside of the <abbr title="Redundant Array of Inexpensive Disks">RAID</abbr> control and presented as straight RAW disks to the Operating system.  This option was ruled out because if we don&#039;t configure them as <abbr title="Redundant Array of Inexpensive Disks">RAID</abbr> disk, then they were getting a higher priority (lower) target ID than the root volume and the automatic installation process would start installing the <abbr title="Operating System">OS</abbr> to one of the bigger HDD disks. </div>
+</li>
+<li class="level1"><div class="li"> Why then DATA &amp; SCRATCH not in a single <abbr title="Redundant Array of Inexpensive Disks">RAID</abbr> volume - The Engineering team needs two filesystems - /data &amp; /scratch each of 1.1TB in size. If we configure DATA &amp; SCRATCH in a single <abbr title="Redundant Array of Inexpensive Disks">RAID</abbr> volume, the <abbr title="Operating System">OS</abbr> will see it as one disk.  Creating a filesystem on top of a VG restricting the physical extents to just one disk is a bit tricky and there is a high probability that one disk failure could demand a rebuild of the whole <abbr title="Redundant Array of Inexpensive Disks">RAID</abbr> volume there by resulting in data loss for both filesystems. If we separate it in two different <abbr title="Redundant Array of Inexpensive Disks">RAID</abbr> volumes and two different volume groups, a single point of failure will only be limited to one filesystem.   </div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Why are they configured such?" [2446-3696] -->
+<h2 class="sectionedit5" id="disks_pvs_vgs_lvs_filesystem">Disks, PVs, VGs, LVs &amp; Filesystem</h2>
+<div class="level2">
+
+<p>
+Commands used to mount the filesystems
+</p>
+<pre class="code">#Remove labels created during installation
+sudo parted /dev/sdb mklabel gpt
+sudo parted /dev/sdc mklabel gpt
+sudo wipefs -a /dev/sdb
+sudo wipefs -a /dev/sdc
+#Create PVs
+sudo pvcreate /dev/sdb
+sudo pvcreate /dev/sdc
+#Create VGs
+sudo vgcreate datavg /dev/sdb
+sudo vgcreate scratchvg /dev/sdc
+#Create LVs
+sudo lvcreate -l 286015 -n lvdata datavg
+sudo lvcreate -l 286015 -n lvscratch scratchvg
+#Create Filesystems
+sudo mkfs.xfs /dev/scratchvg/lvscratch
+sudo mkfs.xfs /dev/datavg/lvdata
+#Create Mountpoints
+sudo mkdir /data
+sudo mkdir /scratch
+sudo chmod 111 /data
+sudo chmod 111 /scratch
+#Update /etc/fstab
+/dev/mapper/datavg-lvdata /data xfs rw,seclabel,relatime 0 0
+/dev/mapper/scratchvg-lvscratch /scratch xfs rw,seclabel,relatime       0 0
+#Mount the filesystem
+sudo mount /data
+sudo mount /scratch
+#Change the permissions
+sudo chmod 777 /data &amp;&amp; sudo chmod 777 /scratch</pre>
+
+</div>
+<!-- EDIT5 SECTION "Disks, PVs, VGs, LVs & Filesystem" [3697-] -->

@@ -1,0 +1,102 @@
+
+<h1 class="sectionedit1" id="start_stop_uuma_application">Start / Stop UUMA Application</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Logon to pcdcunxlxap03 as root</div>
+</li>
+<li class="level1"><div class="li"> Start UUMA<pre class="code">cd /opt/tomcat7/bin
+./deployuuma</pre>
+</div>
+</li>
+</ul>
+<pre class="code">If it gets a connection error, SEVERE: Could not contact localhost:8005. Tomcat may not be running.
+Dec 22, 2014 3:15:37 PM org.apache.catalina.startup.Catalina stopServer
+SEVERE: Catalina.stop:
+java.net.ConnectException: Connection refused
+at java.net.PlainSocketImpl.socketConnect(Native Method) IGNORE IT</pre>
+<ul>
+<li class="level1"><div class="li"> Check UUMA website, login and see if it works fine. <a href="http://pcdcunxlxap03.driv.com:8080/uuma/faces/Page1.jsp" class="urlextern" title="http://pcdcunxlxap03.driv.com:8080/uuma/faces/Page1.jsp"  rel="nofollow">http://pcdcunxlxap03.driv.com:8080/uuma/faces/Page1.jsp</a></div>
+</li>
+<li class="level1"><div class="li"> Start background processes<pre class="code">sudo su - oracle
+cd /home/oracle/uuma
+./start_uumad.sh</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "Start / Stop UUMA Application" [1-677] -->
+<h2 class="sectionedit2" id="check_if_uuma_password_change_is_working">Check if UUMA Password Change is Working</h2>
+<div class="level2">
+
+<p>
+Log on to the Oracle database 
+</p>
+<pre class="code">sudo su - oracle</pre>
+<pre class="code">cd /home/oracle/uuma</pre>
+<pre class="code">sqlplus UUADMN/uuma@UUMA</pre>
+<pre class="code">select count(*) from cmd_pwd_reset;</pre>
+
+<p>
+The output will look similar to the following
+</p>
+<pre class="code">  COUNT(*)
+----------
+        35
+
+SQL&gt;</pre>
+
+<p>
+execute the select command 
+</p>
+<pre class="code">select count(*) from cmd_pwd_reset;</pre>
+
+<p>
+ multiple times. You should see the count go down.
+To exit the Oracle <abbr title="Structured Query Language">SQL</abbr> type 
+</p>
+<pre class="code">quit;</pre>
+
+<p>
+ at the sql command line. 
+If the count decreases then there is not issue and you are done.
+</p>
+<ol>
+<li class="level1"><div class="li">Additional comnds to check user adds, mods, deletes etc. <pre class="code">select count(*) from cmd_add_grp;</pre>
+<pre class="code">select count(*) from cmd_add_user_2_grp;</pre>
+<pre class="code">select count(*) from cmd_pwd_reset;</pre>
+<pre class="code">select count(*) from cmd_user_del;</pre>
+<pre class="code">select count(*) from cmd_user_mod;</pre>
+<pre class="code">select count(*) from cmd_user_add;</pre>
+</div>
+</li>
+</ol>
+
+<p>
+If the count does not decrease you need to do the following.
+list all UUMA processes running
+</p>
+<pre class="code"> ps -aef | grep uuma</pre>
+
+<p>
+Once you have the list from above.  Terminate all the UUMA processes
+</p>
+<pre class="code"> kill -9 {PID from list above}</pre>
+
+<p>
+ for all processes. 
+Check to make sure that all UUMA processes have been terminated 
+</p>
+<pre class="code">ps -aef | grep uuma</pre>
+
+<p>
+ There should be no uuma processes.
+</p>
+
+<p>
+Now restart the UUMA application.
+</p>
+<pre class="code">./start_uumad.sh</pre>
+
+</div>
+<!-- EDIT2 SECTION "Check if UUMA Password Change is Working" [678-] -->

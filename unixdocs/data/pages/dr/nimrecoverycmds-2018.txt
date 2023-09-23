@@ -1,0 +1,165 @@
+====== Configure NIM server ======
+
+  - If not existing, create ssh keys.<code>sudo su -</code>Create keys<code>ssh-keygen -t rsa</code>Make a note of public keys and add it to post install script below.
+  - Define DR post install script on the NIM server.<code>sudo mkdir -p /prod/nim/resources/scripts</code>Open vi editor<code>sudo vi /prod/nim/resources/scripts/postinstall.DR</code>Insert the following code<code>#!/usr/bin/ksh
+# Backup important config files on the system
+for file in /etc/filesystems /etc/exports /etc/hosts /etc/resolv.conf
+do
+  cp ${file} ${file}.copyforDR
+done
+
+cat /dev/null > /var/tmp/filesystems.modified
+for fs in $(lsvgfs rootvg)
+do
+   grep -p ${fs}: /etc/filesystems >> /var/tmp/filesystems.modified
+done
+
+grep -p proc /etc/filesystems >> /var/tmp/filesystems.modified
+
+cp /var/tmp/filesystems.modified /etc/filesystems
+
+mv /etc/resolv.conf /etc/resolv.conf.OLD
+
+# If a successful copy had been made, rename the exports file to prevent long boot times.
+
+[[ -f /etc/exports.copyforDR ]] && mv /etc/exports /etc/exports.OLDD
+
+# Disable CRON
+rmitab cron
+
+
+# Configure AIO on AIX 5.3
+oslevel | grep ^"5.3" > /dev/null 2>&1
+if [ ${?} -eq 0 ]
+then
+   chdev -l aio0 -a autoconfig=available
+   mkdev -l aio0
+fi
+
+# Add public key from NBU appliance-1 to each Unix server
+
+cat << EOF >> /root/.ssh/authorized_keys
+ssh-rsa AAAB3NzaC1yc2EAAAABIwAAAQEAv8EzRJC/7X2mIkpnVFasEI6zNdwb28hu9LtE7oxBSxc6k3fKeIa0x6DmXA+U246Livk33Q4KrbPJvm1OfS52/tGQH7Y6mX8HZVWqOa3EiWccEZ7cTRYVN3im7aMR4iAfalDMQxuss7871lhi04n4RSyi4B31oJQsM6/rmA8No8IyA0i7dHHIp1uMSSf6jTwUNXXI7uNxiqM4Yh/gwbOL7GDE3boVBVjgFDupy9xSdYME9y7m3Ibi25bK8LnY5cL4I+sjsX4DVAUP/ZE/9580frEa7hec33N+mcRHuPCQIrmY/W16YPosDiQiZx9qtn6101PWGB6HYnoNj/aRQq6xiQ== SYM1105173
+EOF
+# Add public key from NBU appliance-2 to each Unix server
+
+cat << EOF >> /root/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAwdPWNm48MXVRr4M0dw3E/vGR5w4vnbZp96sOoJG8WVK46JaY97E18yNIp3K2WT669C6WG7xGetS732FkWAy9fqIleigCxZskeyabscPyZjbJ+3b1dfnNogcnmyuJjYIxPA4tEn/g2Ek9OPKwOIPWtq19mEl92mY1GUKlX0iJBkfzQ1Se60kR6Z8ixPimS83f+7YTIfZjTT34ZcJ7xJfyg835aK1ds325MH7W5hdfstUOYBQHG/Yh8vhOBMENL/TEyNthvxSOgYzfKcf+oGVyfYGVbN6T4Q4NX4Okr4oWIsuioQCobrSmcNAC3PrjJ6LZDKoOZQfF+bcr8Gq2XhFDQ== SYM1105044
+EOF
+
+# Add public keys from DR NIM server for automatic login.
+# Add the keys here.
+#
+
+cat << EOF >> /root/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNjdXlekSuP0UKN5VgfLdRpkmor06fKzeEFTMFeD9Y276I2tzcoUe4HNMvgPdZoNrZjB9Zjp189olMlVG/rrzfREmRLDinVO7LMg9cvaMMhEbK5WM2OHBC+CK2F7/b3ylVzPqtTNA2IQp0UOTStDiXG8wO9waiYki9FhtOe9rOcZta1ilzhbJV5/fA30dql1nYJK50flVJEAzCMUXauvV5Td2sFBk42w02vHBUUWeCd2kSrQbsmx7dKDjDY4dob0xolfoQ/7pWB8sUnGsOWIs2JlhvkOCQclqQf2lTOB7dTAsQYYc6y+DHctd2uisJ45ab3EubM5OqcI2ZFyufeESF root@localhost
+EOF
+
+# Add steps to automate /etc/hosts file to 
+#
+#
+
+# Configure NTP
+#
+#
+stopsrc -s xntpd
+mv /etc/ntp.conf /etc/ntp.conf.DRtest
+
+cat << EOF >> /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+EOF
+
+chrctcp -S -a xntpd
+
+ntpdate -u nim
+
+# Remove netbackup software
+# 
+# 
+
+installp -u SYMCnbclt SYMCnbjava SYMCnbjre SYMCnbclt SYMCnbjava SYMCnbjre
+
+# Configure iocp0
+#
+#
+
+chdev -l iocp0 -a autoconfig=available
+mkdev -l iocp0
+
+# Create the root mirror script
+#
+#
+
+cat << EOF > /root/mirror.sh
+mirrorvg -c2 rootvg
+for disk in $(lspv | grep rootvg | awk '{print $1}')
+do
+   sudo bosboot -ad /dev/${disk}
+done
+rootdisks=$(lspv | grep rootvg | awk '{print $1}' | tr "\n" " " )
+bootlist -m normal ${rootdisks}
+EOF
+
+chmod 755 /root/mirror.sh
+
+# Make /usr/openv -- 6GB
+#
+#
+chfs -a size=6G /usr/openv
+
+# Change itocroot password to abc1234 using post install script
+#
+#
+
+echo "itocroot:ka95aLbJ7WER6" | chpasswd -e
+pwdadm -c itocroot
+
+##### WORK TO DO ######
+
+# Modify /etc/exports creation here
+#
+#</code>
+  - Define it as a resource now<code>sudo nim -o define -t script -a server=master -a location=/prod/nim/resources/scripts/postinstall.DR postinstallDR</code>
+  - Copy the mksysbs from data domain<code>for mksysb in $(ls <mount_point_of_datadomain>)
+do
+   cp <datadomain>/${mksysb} /prod/nim/resources/mksysb/${mksysb}
+done</code>
+  - Unzip mksysb files<code>cd /prod/nim/resources/mksysb
+for mksysb in $(ls )
+do
+   gunzip ${mksysb}
+done</code>
+  - Define the mksysb resources<code>for file in $(ls -1 /prod/nim/resources/mksysb | grep "bos.obj" )
+do
+   host=$(echo ${file} | sed "s;bos.obj.;;g")
+   nim -o define -t mksysb -a server=master -a location=/prod/nim/resources/mksysb/${file} ${host}-mksysb
+done</code>
+  - Install the latest hosts file on NIM server<code>cp /etc/hosts /etc/hosts.copyforDR</code><code>sudo vi /etc/hosts</code>Paste these in there [[dr:2018-host-file-v2|DR hosts file - 2018 DR test]]
+  - Define the DR network NIM resource
+    - 10.39.11/24 network<code>sudo nim -o define -t ent -a net_addr=10.39.11.0 -a snm=255.255.255.0 -a routing1="default 10.39.11.1" ent-10-39-11-0</code>
+    - 10.39.1/24 network**Probably not required**<code>sudo nim -o define -t ent -a net_addr=10.39.1.0 -a snm=255.255.255.0 -a routing1="default 10.39.1.1" ent-10-39-1-0</code>
+  - Define the hosts on NIM server<code>for file in $(ls /prod/nim/resources/mksysb )
+do
+   host=$(echo ${file} | sed "s;bos.obj.;;g")
+   nim -o define -t standalone -a platform=chrp -a if1="find_net ${host} 0" -a netboot_kernel=mp ${host}
+done</code>
+  - Create NTP server on NIM server
+    - Edit config file<code>mv /etc/ntp.conf /etc/ntp.conf.copyforDR</code><code>vi /etc/ntp.conf</code>Add these lines - replacing everything else<code>server 127.127.1.0
+fudge 127.127.1.0 stratum 9
+driftfile /etc/ntp.drift
+tracefile /etc/ntp.trace</code>
+    - Create a client NTP.conf file<code>rm /root/ntp.client.conf
+cat << EOF >> /root/ntp.client.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+EOF</code>
+  - Start NTP daemons<code>chrctcp -S -a xntpd</code>
+
+** When in doubt, ask **
+
+{{:dr:whenindoubtask.jpg?400|}}
+
+** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremely careful ) **

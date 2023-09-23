@@ -1,0 +1,54 @@
+====== Creating policies in CDC NBU domain ======
+** While being on master server you need to prefix each NBU command or script created by me with sudo word - this will elevate you to privileged user. Without sudo command will fail. **
+Please login via ssh to master server with your user ID <code>ssh userID@pcdcbkplxms01.driv.com</code> or use putty to do the same. In /usr/openv/netbackup/bin there are two scripts I did create:<code>/usr/openv/netbackup/bin/mk_policy_db.sh
+/usr/openv/netbackup/bin/mk_policy.sh</code>The very first one is to create SAP or RMAN based policies. Second on is creating either STD or WIN policy. Both script do expect certain switches to be passed over to them. Scirpt based on the passed hostname is putting the backup to proper SLP. If given hostname do starts with P - it takes Platinum SLP which his replicated to hot site. If hostname do start either on Q or D - SLP is Gold and only local backups are being made - client names starting with different letters can't be passed - outcome not tested.<code>sudo /usr/openv/netbackup/bin/mk_policy_db.sh
+This is script to create policy via cmd
+it requries such parameters
+- 1 policy type (RMAN or SAP)
+- 2 instance name
+- 3 hostname fqdn
+- 4 hardware (Windows-x86, PC, vmx-11, RS6000, NDMP, Linux, VMware, Windows-x64)
+- 5 os (AIX6, RedHat2.6.32,  Windows2003, Windows2008, Windows2012, windows7Server6, winNetStandardG, winNetEnterpris, Virtual_Machine)
+- 6 storage server 01 or 02
+
+example command /usr/openv/netbackup/bin/mk_policy_db.sh SAP Instance_name pcdcxxxx.driv.com RS6000 AIX6 01
+/usr/openv/netbackup/bin/mk_policy_db.sh script expects 6 parameters: you passed only 0</code><code>sudo /usr/openv/netbackup/bin/mk_policy.sh
+This is script to create policy via cmd
+it requries such parameters
+- 1 policy type (WIN or STD)
+- 2 hostname
+- 3 hardware (Windows-x86, PC, vmx-11, RS6000, NDMP, Linux, VMware, Windows-x64)
+- 4 os (AIX6, RedHat2.6.32, Windows2003, Windows2008, Windows2012, windows7Server6, winNetStandardG, winNetEnterpris, Virtual_Machine)
+- 5 weekend day backups to occur on (Saturday or Sunday)
+- 6 Start hour in seconds from midnight format if not passed 64800 (18:00  hours) is assumed (optional)
+- 7 Duration in seconds for backup window if not passed 14400 seconds (4 hours) is assumed(optional)
+
+example command /usr/openv/netbackup/bin/mk_policy.sh STD pcdcnbuaxms01.driv.com RS6000 AIX6 02 Saturday 64800 14400
+/usr/openv/netbackup/bin/mk_policy.sh script expects 5 parameters: you passed only 0</code>
+
+
+====== CDC ======
+In CDC there is already build:
+  * NBU master server pcdcbkplxms01.driv.com with IP 10.128.30.20/24
+  * NBU 5230 media server was only mounted in rack and waiting for me - to this one was connected 49 TB disk shelf totaling to ca. 125 TB (old ldcnbu5230amd), IP: 10.130.40.73/27 gateway .65, its IPMI interface is available at 10.128.140.21/24 gateway 10.128.140.1 
+  * Other NBU 5230 will be moved later on once it will be freed - foreseen details IP: 10.130.40.72/27 gateway .65 (old ldcnbu5230bmd), IPMI should be 10.128.140.20/24 gateway 10.128.140.1
+  * IP	Names for all <code>
+10.130.40.70 	pfdcnbulxbk01
+10.130.40.71 	pfdcnbulxbk02
+10.130.40.72 	pcdcnbulxbk01
+10.130.40.73 	pcdcnbulxbk02
+10.98.20.16	pfdcnbulxbk01ipmi
+10.98.20.17	pfdcnbulxbk02ipmi
+10.128.140.20	pcdcnbulxbk01ipmi
+10.128.140.21	pcdcnbulxbk02ipmi</code>
+
+====== FDC ======
+In FDC both NBU 5230 appliances from Sterling Forest were mounted and IP only now - awaiting master server in FDC - virtual one as in CDC
+  * NBU master server - To be build
+  * NBU 5230 media server 10.130.40.70/27 gateway .65 (old ibmnbu5230amd), IMPI 10.98.20.16/24 gateway 10.98.20.1 - this one is having new 49TB disk shelf - totaling to ca. 75 TB - WAS IMAGED with NBU 3.1.1 on 6/20/2019 from taitc009. Waiting for the Master Server being seutp.
+  * NBU 5230 media server 10.130.40.71/27 gateway .65 (old ibmnbu5230ams), IMPI 10.98.20.17/24 gateway 10.98.20.1
+
+Here are live pictures of these appliances in new locations:
+{{:dp:nbu_cdc_10.130.40.73.jpg?direct&400 |10.130.40.73}}
+{{ :dp:nbu_fcd_10.130.40.70.jpg?direct&400 |10.130.40.70}}
+{{:dp:nbu_fdc_10.130.40.71.jpg?direct&400 |10.130.40.71}}

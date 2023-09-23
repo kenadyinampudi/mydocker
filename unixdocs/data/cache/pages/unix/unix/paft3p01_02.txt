@@ -1,0 +1,19 @@
+====== The Following procedure outlines steps to setup secure ftp account on paft3p01/02 ======
+
+  - Create UNIX account via the Entitlement Request
+  - Once the account has been created do the following:
+    - set new password - use complex passwords
+    - remove ADMCHG from /etc/security/passwd file<code>pwdadm -c <usrname></code>
+    - Add maxage = 0 and rlogin = false to the user section in /etc/security/user file<code>chuser maxage=0 <username></code><code>chuser rlogin='false' <username></code>
+    - change user shell:<code>usermod -s /usr/sbin/sftp-server <username></code>
+    - change primary group: <code>usermod -g taedigrp <username></code>
+    - change user home directory<code>usermod -d /secftp_home/<username> -m <username></code>
+    - create in and out subdirectories inside the home dir
+    - change ownership and permissions:<code>chown -R <username>:taedigrp <username></code><code>chmod -R 775 <username></code>
+  - As root, configure the forwarder script that picks up files from $HOME/out directory and moves them to /taedi61/gentran/fil0/ for EDI processing
+    - <code>cd /taedi61/gentran/fwder/</code><code>cp advanftp-fwd.sh <username>-fwd.sh</code><code>chmod 755 <username>-fwd.sh</code>
+    - vi <username>-fwd.sh and change line#5 OWNER=<username> and line#8 PATTERN=myfile* (whatever patter to look for)
+    - Add the following line to /etc/inittab:
+      - <username>:23456789:respawn:/taedi61/gentran/fwder/<username>-fwd.sh
+    - Refresh init process<code>init q</code><code>init Q</code>
+  - Repeat the same steps on the failover system paft3p02.tenneco.com except do not start the <username>-fwd.sh script as the script only runs on primary.

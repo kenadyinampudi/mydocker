@@ -1,0 +1,121 @@
+====== Customize an AIX server as an app server for SAP TA2 ======
+
+  - [[unix:buildaixserver|Build the server using a mksysb of an existing TA2 app server]]
+  - Create the erappvg on the 34Gig LUN<code>mkvg -s 128 -B -y erappvg01 hdisk0</code>
+  - Create these logical volumes<code>mklv -t jfs2 -y lv02 erappvg01 8
+mklv -t jfs2 -y lv03 erappvg01 3
+mklv -t jfs2 -y lv04 erappvg01 4
+mklv -t jfs2 -y lv05 erappvg01 8
+mklv -t jfs2 -y lv06 erappvg01 8
+mklv -t jfs2 -y lv07 erappvg01 3
+mklv -t jfs2 -y lv08 erappvg01 8
+mklv -t jfs2 -y lv10 erappvg01 8
+mklv -t jfs2 -y lv11 erappvg01 104
+mklv -t jfs2 -y lv12 erappvg01 3
+mklv -t jfs2 -y lv13 erappvg01 40</code>
+  - Create these filesystems on them<code>crfs -v jfs2 -A yes -t no -d lv02 -m /application/CA
+crfs -v jfs2 -A yes -t no -d lv03 -m /esm
+crfs -v jfs2 -A yes -t no -d lv04 -m /opt/errm/profiler
+crfs -v jfs2 -A yes -t no -d lv05 -m /oracle/TA2
+crfs -v jfs2 -A yes -t no -d lv06 -m /oracle/client
+crfs -v jfs2 -A yes -t no -d lv07 -m /stats
+crfs -v jfs2 -A yes -t no -d lv08 -m /users/unispool
+crfs -v jfs2 -A yes -t no -d lv10 -m /usr/openv
+crfs -v jfs2 -A yes -t no -d lv11 -m /usr/sap/TA2
+crfs -v jfs2 -A yes -t no -d lv12 -m /var/adm/perfmgr
+crfs -v jfs2 -A yes -t no -d lv13 -m /var/avamar</code>
+  - Mount them<code>mount /application/CA
+mount /esm
+mount /opt/errm/profiler
+mount /oracle/TA2
+mount /oracle/client
+mount /stats
+mount /users/unispool
+mount /usr/openv
+mount /usr/sap/TA2
+mount /var/adm/perfmgr
+mount /var/avamar</code>
+  - Set permissions and ownerships<code>chown root:sys /application/CA
+chmod u=rwx,g=rwx,o=rx /application/CA
+chown root:system /esm
+chmod u=rwx,g=rx,o=rx /esm
+chown root:system /opt/errm/profiler
+chmod u=rwx,g=rx,o=rx /opt/errm/profiler
+chown ta2adm:sapsys /oracle/TA2
+chmod u=rwx,g=rwx,o=rwx /oracle/TA2
+chown ta2adm:sapsys /oracle/client
+chmod u=rwx,g=rs,o=rx /oracle/client
+chown sys:sys /stats
+chmod u=rwx,g=rx,o=rx /stats
+chown unispool:unispool /users/unispool
+chmod u=rwx,g=rx,o=rx /users/unispool
+chown root:bin /usr/openv
+chmod u=rwx,g=rx,o=rx /usr/openv
+chown ta2adm:sapsys /usr/sap/TA2
+chmod u=rwx,g=rwx,o=rx /usr/sap/TA2
+chown sys:sys /var/adm/perfmgr
+chmod u=rwx,g=rx,o=rx /var/adm/perfmgr
+chown root:system /var/avamar
+chmod u=rwx,g=rx,o=rx /var/avamar</code>
+  - Setup these NFS mounts<code>/sapmnt/TA2:
+        dev             = "/sapmnt/TA2"
+        vfs             = nfs
+        nodename        = TEPR2D01bck
+        mount           = true
+        options         = rw,bg,soft,intr,vers=3,proto=tcp
+        account         = false
+
+/sapcomm:
+        dev             = "/sapcomm"
+        vfs             = nfs
+        nodename        = TEPR2D01bck
+        mount           = true
+        options         = rw,bg,soft,intr,vers=3,proto=tcp
+        account         = false
+
+/usr/sap/trans:
+        dev             = "/usr/sap/trans"
+        vfs             = nfs
+        nodename        = TEPR2D01bck
+        mount           = true
+        options         = rw,bg,soft,intr,vers=3,proto=tcp
+        account         = false
+
+/FDSTLIB:
+        dev             = "/FDSTLIB"
+        vfs             = nfs
+        nodename        = TEPR2D01bck
+        mount           = true
+        options         = rw,bg,soft,intr,vers=3,proto=tcp
+        account         = false
+
+/sapmnt/TA2/global/docwh:
+        dev             = "/sapmnt/TA2/global/docwh"
+        vfs             = nfs
+        nodename        = TEPR2D01bck
+        mount           = true
+        options         = rw,bg,soft,intr,vers=3,proto=tcp
+        account         = false
+
+/patches:
+        dev             = "/patches"
+        vfs             = nfs
+        nodename        = TEPR2D01bck
+        mount           = false
+        options         = rw,bg,soft,intr,vers=3,proto=tcp
+        account         = false
+
+/export_dir:
+        dev             = "/export_dir"
+        vfs             = nfs
+        nodename        = tepr2d01bck
+        mount           = false
+        options         = rw,bg,soft,intr,vers=3,proto=tcp
+
+/sapmedia:
+        dev             = "/sapmedia"
+        vfs             = nfs
+        nodename        = pgadap01
+        mount           = true
+        options         = bg,soft,intr,sec=sys
+        account         = false</code>

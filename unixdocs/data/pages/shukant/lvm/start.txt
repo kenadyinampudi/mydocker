@@ -1,0 +1,57 @@
+====== Logical Volume Manager ( AIX ) ======
+
+Volume Manager is a software / kernel extension to manage disk drives. LVM, aka 'Logical Volume Manager' is a generic name used by many operating system vendors such as IBM AIX, HPUX and Linux.
+
+===== Logical Volume Manager Basics =====
+
+Logical volume manager has the following components.
+
+**Physical Volume (PV)**
+
+A physical volume is a disk or a LUN (Logical Unit from a storage arrray ). It represents physical media where data can be written to.
+
+**Volume Group(VG)**
+
+A VG is a group of PVs.
+
+**Physical Partitions(PP)**
+
+  * As we add a PV to a VG, LVM slices the PV in to equally sized partitions called PP.
+
+**Logical Volume(LV)**
+
+  * A group of PPs make a Logical volume. PPs may not be from the same PV but they have to be from the same VG. 
+  * LV can be used to create filesystems, paging spaces or system dump destinations. In some implementations, applications may use them raw.
+
+**Logical Partition(LP)**
+
+  * A logical volume is made of PPs. LP is a virtual pointer to one or more(mirroring) PPs.
+  * On a regular LV, one LP is mapped to one PP.
+  * On a mirrored LV, one LP is mapped to two or three PPs.
+
+===== Logical Volume Manager Commands =====
+
+  - List disks visible to AIX operating system<code>lsdev -Ccdisk</code>
+  - List Physical volumes<code>lspv</code>
+  - List volume groups<code>lsvg</code>
+  - List logical volumes in a VG<code>lsvg -l <vgname></code>
+  - Prepare a disk for LVM<code>sudo chdev -a pv=yes -l <hdiskXX></code>
+  - Create a normal VG<code>sudo mkvg -y <vgname> -s <ppsize in MB> <hdiskXX, hdiskYY></code>
+  - Create a Big VG(can accomodate 1024 PVs<code>sudo mkvg -B -y <vgname> -s <ppsize in MB> <hdiskXX, hdiskYY></code>
+  - Create a LV
+    - Unmirrored<code>sudo mklv -t <type> -y <lvname> <vg name> <number of LPs></code>
+    - Mirrored<code>sudo mklv -c 2 -t <type> -y <lvname> <vg name> <number of LPs></code>
+  - Create a filesystem
+    - On a predefined Logical Volume<code>sudo crfs -vjfs2 -d <lv name> -A yes -t no -m <mountpoint></code>
+    - AIX gives you a short cut to create the logical volume and filesystem in one step.<code>sudo crfs -vjfs2 -g <vg name> -A yes -t no -m <mountpoint> -a size=2048G</code>
+  - Mount a filesystem<code>sudo mount <mount point></code>
+
+** Mirroring **
+
+Mirroring in simple words maps one LP to multiple PPs. 
+Each PP contains a copy of data that is stored on the LP to which it is mapped to.
+By now, you would have figured out we mirror logical volumes i.e. the LPs that makes the specific logical volume(LV).
+
+** LVM Basics - block diagram **
+
+{{:shukant:lvm:lvm.jpg|}}

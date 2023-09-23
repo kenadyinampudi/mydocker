@@ -1,0 +1,50 @@
+====== Secret Page of Kapil ======
+
+** It is a sin to continue & read. Close the browser, reboot your PC and erase your memory **
+
+  - [[kapil:netbackup|Netbackup notes]]
+
+
+  - Notes Calendar link for attendance<code>Notes://TALAKDB1/862575EE004E996F/AAC7D56CA8FD884B852563BE00610639/4376688B2FE808B98625767F002C95A9|</code>
+  - Share the current folder through http<code>python -m SimpleHTTPServer 8000</code>
+  - Oracle average database response time<code>sudo su - <oracle_owner>
+set colsep "|"
+
+spool io_date.txt
+
+select to_char(sn.END_INTERVAL_TIME,'YYYY-MM-DD HH24:MI:SS') "End snapshot time",
+sum(after.PHYRDS+after.PHYWRTS-before.PHYWRTS-before.PHYRDS) "number of IOs",
+trunc(10*sum(after.READTIM+after.WRITETIM-before.WRITETIM-before.READTIM)/ sum(1+after.PHYRDS+after.PHYWRTS-before.PHYWRTS-before.PHYRDS)) "ave IO time (ms)",
+trunc((select value from v$parameter where name='db_block_size')* sum(after.PHYBLKRD+after.PHYBLKWRT-before.PHYBLKRD-before.PHYBLKWRT)/ sum(1+after.PHYRDS+after.PHYWRTS-before.PHYWRTS-before.PHYRDS)) "ave IO size (bytes)" from DBA_HIST_FILESTATXS before, DBA_HIST_FILESTATXS after,DBA_HIST_SNAPSHOT sn where after.file#=before.file# and after.snap_id=before.snap_id+1 and before.instance_number=after.instance_number and after.snap_id=sn.snap_id and after.instance_number=sn.instance_number group by to_char(sn.END_INTERVAL_TIME,'YYYY-MM-DD HH24:MI:SS') order by to_char(sn.END_INTERVAL_TIME,'YYYY-MM-DD HH24:MI:SS');
+spool off</code>
+  - vdbench configuration and examples
+    - Configuration<code>histogram=(default,100u,200u,300u,400u,500u,600u,700u,800u,900u,1m,1100u,1200u,1300u,1400u,1500u,1600u,1700u,1800u,1900u,2m,2250u,2500u,2750u,3m,3250u,3500u,3750u,4m,4250u,4500u,4750u,5m,5250u,5500u,5750u,6m,6250u,6500u,6750u,7m,7250u,7500u,7750u,8m,8500u,9m,9500u,10m,10500u,11m,12m,13m,14m,15m,16m,17m,18m,19m,20m,30m,40m,50m)
+dedupratio=1
+dedupunit=4k
+compratio=3
+hd=default,user=root,shell=ssh,jvms=8
+hd=pocafasv01,system=pocafasv01
+hd=pocafasv02,system=pocafasv02
+hd=pocafasv03,system=pocafasv03
+hd=pocafasv04,system=pocafasv04
+sd=default,openflags=directio
+sd=sd1_pocafasv01,host=pocafasv01,lun=/dev/rhdisk1
+sd=sd2_pocafasv01,host=pocafasv01,lun=/dev/rhdisk2
+sd=sd3_pocafasv01,host=pocafasv01,lun=/dev/rhdisk106
+sd=sd4_pocafasv01,host=pocafasv01,lun=/dev/rhdisk108
+sd=sd1_pocafasv02,host=pocafasv02,lun=/dev/rhdisk4
+sd=sd2_pocafasv02,host=pocafasv02,lun=/dev/rhdisk5
+sd=sd3_pocafasv02,host=pocafasv02,lun=/dev/rhdisk6
+sd=sd4_pocafasv02,host=pocafasv02,lun=/dev/rhdisk7
+sd=sd1_pocafasv03,host=pocafasv03,lun=/dev/rhdisk2
+sd=sd2_pocafasv03,host=pocafasv03,lun=/dev/rhdisk6
+sd=sd3_pocafasv03,host=pocafasv03,lun=/dev/rhdisk7
+sd=sd4_pocafasv03,host=pocafasv03,lun=/dev/rhdisk8
+sd=sd1_pocafasv04,host=pocafasv04,lun=/dev/rhdisk4
+sd=sd2_pocafasv04,host=pocafasv04,lun=/dev/rhdisk5
+sd=sd3_pocafasv04,host=pocafasv04,lun=/dev/rhdisk6
+sd=sd4_pocafasv04,host=pocafasv04,lun=/dev/rhdisk8
+wd=wd_default,sd=*
+rd=default,iorate=max,interval=1,warmup=5,elapsed=1200,pause=0,maxdata=10t
+rd=small,wd=wd_default,forxfersize=(16k),forrdpct=(90),forseekpct=100,forthreads=8</code>
+    - Example run<code>./vdbench -f tenneco/ibm-cleanup-final.conf</code>

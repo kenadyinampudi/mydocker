@@ -1,0 +1,69 @@
+
+<h1 class="sectionedit1" id="fix_rmc_connections">Fix RMC connections</h1>
+<div class="level1">
+
+<p>
+<strong> Ref : IBM PMR  PMR 56031,122  </strong>
+</p>
+
+<p>
+<a href="http://www-01.ibm.com/support/docview.wss?uid=isg3T1012915" class="urlextern" title="http://www-01.ibm.com/support/docview.wss?uid=isg3T1012915"  rel="nofollow">http://www-01.ibm.com/support/docview.wss?uid=isg3T1012915</a>
+</p>
+<ul>
+<li class="level1"><div class="li"> Login to the affected LPAR or VIOS as root.</div>
+</li>
+<li class="level1"><div class="li"> Check if csm.client fileset exists</div>
+<ul>
+<li class="level2"><div class="li"> AIX 6.1 TL5 or lower<pre class="code">lslpp -l csm.client</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> AIX 6.1 TL6 or higher<pre class="code">lslpp -l rsct.core.rmc</pre>
+
+<p>
+This fileset needs to be 3.1.0.x level or higher 
+</p>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Check if all IPs and host IDs are trusted<pre class="code">/usr/sbin/rsct/bin/ctsvhbac</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the HMC as hscroot and check the Dcap value<pre class="code">lspartition -dlpar | grep -a2 &lt;lparname&gt;</pre>
+
+<p>
+The Dcap value should be &#039;non-zero&#039;
+</p>
+<pre class="code">&lt;#37&gt; Partition:&lt;2*8205-E6C*102D67R, taprvio60e50.amer.int.tenneco.com, 10.32.50.71&gt;
+       Active:&lt;1&gt;, OS:&lt;AIX, 6.1, 6100-00-00-0000&gt;, DCaps:&lt;0x4f9f&gt;, CmdCaps:&lt;0x1b, 0x1b&gt;, PinnedMem:&lt;2333&gt;</pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> If we found a negative answer to any of the above commands, execute these commands on the lpar. This fixed the problem on taprvio60 and 70.<pre class="code">odmdelete -o CuAt -q &quot;name=&#039;cluster0&#039;&quot;
+/usr/sbin/rsct/install/bin/recfgct 
+/usr/sbin/rsct/bin/rmcctrl -p</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Give it some time <pre class="code">sleep 240</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now run lsrsrc<pre class="code">lsrsrc IBM.MCP</pre>
+
+<p>
+If this returns resources, we are good.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to HMC and check the Dcap value now<pre class="code">lspartition -dlpar | grep -a2 &lt;lparname&gt;</pre>
+
+<p>
+The Dcap value should be &#039;non-zero&#039;
+</p>
+<pre class="code">&lt;#37&gt; Partition:&lt;2*8205-E6C*102D67R, taprvio60e50.amer.int.tenneco.com, 10.32.50.71&gt;
+       Active:&lt;1&gt;, OS:&lt;AIX, 6.1, 6100-00-00-0000&gt;, DCaps:&lt;0x4f9f&gt;, CmdCaps:&lt;0x1b, 0x1b&gt;, PinnedMem:&lt;2333&gt;</pre>
+</div>
+</li>
+</ul>
+
+</div>

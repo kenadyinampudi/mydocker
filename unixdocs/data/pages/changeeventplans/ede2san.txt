@@ -1,0 +1,21 @@
+====Location: Edenkoben====
+**  Date: March 22, 2014 (Saturday)
+Start Time: 08:00 CET
+End Time:   20:00 CET**
+  * Shutdown MaxDB and HTTPD applications for CDB and SDB - BASIS/DBA
+  * Shutdown Unix system - Robert Bieniek
+  * Install fiber adapters in the server - Robert Bieniek
+  * Install  and connect fiber cables - Robert Bieniek
+  * Connect to SAN and allocate SAN storage - Pawel Tkaczyk / Kapil Koroth
+  * Migrate 1.7T of data from the external SAS disk enclosure to SAN storage - Robert Bieniek
+<code>extendvg datavg01 hdisk20 hdisk21 hdisk22 hdisk23 hdisk24 hdisk25</code>
+<code>mirrorvg -c3 datavg01 hdisk20 hdisk21 hdisk22 hdisk23 hdisk24 hdisk25</code>
+<code>splitvg -y datavg02 -c 3 -i datavg01</code>
+<code>lsvg -l datavg01 | grep sapdata | awk '{print $7}' | xargs -n1 umount</code>
+<code>varyoffvg datavg01</code>
+<code>lspv | grep datavg01 | awk '{print $1} | xargs -n1 rmdev -dl</code>
+<code>exportvg datavg01</code>
+<code>lsvg -l datavg02 | grep sapdata | awk '{print $7}' | xargs -n1 mount</code>
+  * Disconnect SAS disk enclosure from the Atlas system and pack it for transport to Rybnik - Robert Bieniek
+  * Start MaxDB and HTTPD application - BASIS/DBA
+  * Functional testing - Axel Doerr

@@ -1,0 +1,90 @@
+====== Transparent Huge Pages ======
+
+===== SUSE =====
+<markdown>
+###To display if THP Transparent Huge Pages
+
+`cat /sys/kernel/mm/*transparent_hugepage/enabled  `  
+`[always] madvise never`
+
+This shows that it is enabled
+
+
+###How to Disable THP as normal user
+
+`echo never | sudo tee /sys/kernel/mm/*transparent_hugepage/enabled`
+
+###How to Disable THP as root
+
+`echo never > /sys/kernel/mm/*transparent_hugepage/enabled`
+
+###Now you see that it is disabled
+
+`cat /sys/kernel/mm/*transparent_hugepage/enabled`  
+`always madvise [never]`
+
+### To make permenant on reboot add to /etc/rc.d/boot.local
+
+`echo "echo never > /sys/kernel/mm/*transparent_hugepage/enabled" >> /etc/rc.d/boot.local`
+
+!!! note "The wild card wasn't working with SLES 12 ... remove it to have it work."
+ 
+SLES 12 only
+
+`echo "echo never > /sys/kernel/mm/transparent_hugepage/enabled" >> /etc/rc.d/boot.local`
+
+
+
+### Another way to make it permenant on reboot is to add this to the /etc/rc.d/boot.local
+
+```
+if test -f /sys/kernel/mm/transparent_hugepage/enabled; then
+   echo never > /sys/kernel/mm/transparent_hugepage/enabled
+fi
+if test -f /sys/kernel/mm/transparent_hugepage/defrag; then
+   echo never > /sys/kernel/mm/transparent_hugepage/defrag
+fi
+```
+
+### You can also look in /proc/meminfo file
+
+If this shows a value greater than 0 then you need to reset as shown above
+and reboot.		
+
+```
+AnonHugePages:  59398144 kB    
+HugePages_Total:       0	
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+```
+</markdown>
+===== Red Hat =====
+[[https://access.redhat.com/solutions/1320153]] \\
+
+Create a customized tuned profile with disabled THP
+With this resolution we will create a customized version of the currently running profile. The customized version will disable THP. \\
+\\
+  * Find out which profile is active, create a copy. In the following example we currently use the throughput-performance profile:<cli prompt="#"># tuned-adm active
+    Current active profile: throughput-performance
+</cli>
+  * To create customized profile, create a new directory in /etc/tuned directory with desired profile name. <cli prompt="#"># mkdir /etc/tuned/myprofile-nothp
+</cli>
+  * Then create a new tuned.conf file for myprofile-nothp, and insert the new tuning info:<cli prompt="#"># vi /etc/tuned/myprofile-nothp/tuned.conf 
+[main]
+include= throughput-performance
+
+[vm]
+transparent_hugepages=never
+</cli>
+  * Make the script executable:<cli prompt="#"># chmod +x /etc/tuned/myprofile-nothp/tuned.conf 
+</cli>
+  * Enable myprofile like so:<cli prompt="#"># tuned-adm profile myprofile-nothp
+</cli>
+  * This change will immediately take effect and persist reboots.
+  * To verify if THP are disabled or not, run below command:<cli prompt="#"># cat /sys/kernel/mm/transparent_hugepage/enabled
+ 
+always madvise [never]
+</cli>
+

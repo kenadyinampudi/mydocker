@@ -1,0 +1,28 @@
+
+<h1 class="sectionedit1" id="aix_lvm_notes">AIX LVM Notes</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Create a volume group <pre class="code">mkvg -B -s 256 -y &lt;vgname&gt; disk1 .....</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a logical volume <pre class="code">mklv -tjfs2 -y &lt;lvname&gt; &lt;vgname&gt; &lt;no_of_pps&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a filesystem <pre class="code">crfs -v jfs2 -A yes -t no -d &lt;lvname&gt; -m &lt;mountpoint&gt; </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import a Volume Group <pre class="code">importvg -n -y &lt;vgname&gt; disk ....</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export a Volume Group <pre class="code">vgexport &lt;vgname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Migrate a PV <pre class="code">migatepv &lt;sourcepv&gt; &lt;destinpv1&gt; &lt;destinpv2&gt; .....</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Migrate a LP <pre class="code">migratelp &lt;sourcedisk&gt;:&lt;source_lpno&gt; &lt;destin_disk&gt;:&lt;destin_pp&gt;</pre>
+</div>
+</li>
+</ul>
+
+</div>

@@ -1,0 +1,82 @@
+====== EE9 Data refresh documentation ======
+
+^Source System  ^Source DC ^Target System  ^Target DC|
+|cdcpillx041	|CDC/PTCA  |acdcee9lxdb01  |CDC/MPPS|
+
+==== VMware steps ====
+
+  - Login to MPPS vCenter using PowerCLI<code>Connect-VIServer -server cdcvilms156.driv.com</code>
+  - Rescan for new devices 'NON-PROD-LINUX2'<code>Get-Cluster NON-PROD-LINUX2 | Get-VMHost | Get-VMHostStorage -RescanAllHba</code>
+  - Setup ESXCLI<code>$esxcli = Get-EsxCli -VMHost cdcvilvm183.driv.com</code>
+  - Re-signature duplicated datastores<code>$vmfsname = "PROD-SUSE1-PT-010"
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+$vmfsname = "PROD-SUSE1-PT-251"
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)</code>
+  - Check if all the datastores have been re-signatured<code>get-datastore | Select-Object name |grep PROD-SUSE1-PT | grep snap</code> You will get the default Names of the data stores, rename them using the below syntax.
+  - Rename datastores to their final names<code>Get-DataStore -Name snap-******-PROD-SUSE1-PT-010 | Set-DataStore -Name CDC-PURE-APOLLO-EE9DATA10
+Get-DataStore -Name snap-******-PROD-SUSE1-PT-251 | Set-DataStore -Name CDC-PURE-APOLLO-EE9DATA251</code>
+  - Rescan for new devices and VMFS on ''NON-PROD-LINUX2''<code>Get-Cluster NON-PROD-LINUX2 | Get-VMHost | Get-VMHostStorage -RescanAllHba -RescanVmfs</code>
+  - Connect disks to Virtual Machine<code>New-HardDisk -vm acdcee9lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EE9DATA10] CDCPILLX041/CDCPILLX041_2.vmdk"
+New-HardDisk -vm acdcee9lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EE9DATA251] CDCPILLX041/CDCPILLX041_3.vmdk"
+New-HardDisk -vm acdcee9lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EE9DATA10] CDCPILLX041/CDCPILLX041_11.vmdk"
+New-HardDisk -vm acdcee9lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EE9DATA10] CDCPILLX041/CDCPILLX041_4.vmdk"
+New-HardDisk -vm acdcee9lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EE9DATA10] CDCPILLX041/CDCPILLX041_8.vmdk"
+New-HardDisk -vm acdcee9lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EE9DATA10] CDCPILLX041/CDCPILLX041_13.vmdk"
+New-HardDisk -vm acdcee9lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EE9DATA10] CDCPILLX041/CDCPILLX041_12.vmdk"
+New-HardDisk -vm acdcee9lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EE9DATA251] CDCPILLX041/CDCPILLX041_1.vmdk"</code>
+==== Unix Steps ====
+
+  - Login to ''acdcee9lxdb01''
+  - Rescan for new devices<code>for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk '{print $9}' )
+do
+   echo "- - -" | sudo tee ${dir}/scan
+done</code>
+  - Check if all disks are available<code>sudo /sbin/pvs</code>
+  - Activate the volume groups<code>echo "ixosvg oravg sapcivg saplogvg sapvg" | xargs -n1 sudo /sbin/vgchange -a y  </code>
+  - Put the fstab for application filesystems, fsck and mount the filesystems<code>sudo cp /etc/fstab /etc/fstab.rootvgonly
+sudo vi /etc/fstab</code>Enter the following filesystems<code>/dev/oravg/oracle2lv                       /oracle                  ext3   acl,user_xattr                  1  2
+/dev/oravg/oraclelv                        /oracle/EE9              ext3   user_xattr                      1  2
+/dev/oravg/orabinlv                        /oracle/EE9/112_64       ext3   acl,user_xattr                  1  2
+/dev/oravg/orbin12lv                       /oracle/EE9/12102        ext3   acl,user_xattr 		   1  2
+/dev/oravg/orbin19lv                       /oracle/EE9/19.0.0       ext3   acl,user_xattr 		   1  2
+/dev/oravg/sapreorglv                      /oracle/EE9/sapreorg     ext3   acl,user_xattr                  1  2
+/dev/oravg/oraclilv                        /oracle/client           ext3   acl,user_xattr                  1  2
+/dev/oravg/abap4lv                         /abap4                   ext3   acl,user_xattr                  1  2
+/dev/oravg/smddaalv                        /usr/sap/DAA             ext3   acl,user_xattr                  1  2
+/dev/oravg/hostctrllv                      /usr/sap/hostctrl        ext3   acl,user_xattr                  1  2
+/dev/oravg/orastagelv                      /oracle/stage/112_64     ext3   acl,user_xattr                  1  2
+/dev/oravg/orastagelv                      /oracle/stage/112_64     ext3   acl,user_xattr                  1  2
+/dev/sapcivg/sapmntlv                      /sapmnt/EE9              ext3   acl,user_xattr                  1  2
+/dev/sapcivg/sapusrlv                      /usr/sap/EE9             ext3   acl,user_xattr                  1  2
+/dev/saplogvg/oramirrlva                   /oracle/EE9/mirrlogA     ext3   acl,user_xattr                  1  2
+/dev/saplogvg/oramirrlvb                   /oracle/EE9/mirrlogB     ext3   acl,user_xattr                  1  2
+/dev/saplogvg/oraloglva                    /oracle/EE9/origlogA     ext3   acl,user_xattr                  1  2
+/dev/saplogvg/oraloglvb                    /oracle/EE9/origlogB     ext3   acl,user_xattr                  1  2
+/dev/saplogvg/oraarchlv                    /oracle/EE9/oraarch      ext3   acl,user_xattr                  1  2
+/dev/sapvg/sapdata1lv                      /oracle/EE9/sapdata1     ext3   acl,user_xattr                  1  2
+/dev/sapvg/sapdata2lv                      /oracle/EE9/sapdata2     ext3   acl,user_xattr                  1  2
+/dev/sapvg/sapdata3lv                      /oracle/EE9/sapdata3     ext3   acl,user_xattr                  1  2
+/dev/sapvg/sapdata4lv                      /oracle/EE9/sapdata4     ext3   acl,user_xattr                  1  2
+/dev/sapvg/sapdata5lv                      /oracle/EE9/sapdata5     ext3   acl,user_xattr                  1  2
+/dev/sapvg/publiclv                        /public                  ext3   acl,user_xattr                  1  2
+/dev/sapvg/gifcolv                         /GIFCO                   ext3   acl,user_xattr                  1  2
+/dev/oravg/agentlv                         /oemagent                ext3   acl,user_xattr                  1  2
+/dev/ixosvg/ixoslv                         /ixos/archive/share/EE9  ext3   acl,user_xattr                  1  2
+/dev/sapcivg/saptranslv                    /usr/sap/trans           ext3   acl,user_xattr                  1  2
+</code>
+  - FSCK and mount the filesystems<code>for fs in /dev/oravg/oracle2lv /dev/oravg/oraclelv /dev/oravg/orabinlv /dev/oravg/orbin12lv /dev/oravg/orbin19lv \
+/dev/oravg/sapreorglv /dev/oravg/oraclilv /dev/oravg/abap4lv /dev/oravg/smddaalv /dev/oravg/hostctrllv /dev/oravg/orastagelv \
+/dev/oravg/orastagelv /dev/sapcivg/sapmntlv /dev/sapcivg/sapusrlv /dev/saplogvg/oramirrlva /dev/saplogvg/oramirrlvb \
+/dev/saplogvg/oraloglva /dev/saplogvg/oraloglvb /dev/saplogvg/oraarchlv /dev/sapvg/sapdata1lv /dev/sapvg/sapdata2lv \
+/dev/sapvg/sapdata3lv /dev/sapvg/sapdata4lv /dev/sapvg/sapdata5lv /dev/sapvg/publiclv /dev/sapvg/gifcolv /dev/oravg/agentlv \
+/dev/ixosvg/ixoslv /dev/sapcivg/saptranslv
+do
+   sudo /usr/sbin/fsck -y ${fs}
+   sudo /usr/bin/mount ${fs}
+done</code>
+  - NFS /usr/sap/trans is coming from Dev server here

@@ -1,0 +1,30 @@
+====== ES1 Restore ======
+
+  - [[unix:install_powercli_desktop|Install PowerCLI on your desktop if not already installed or use the Storage Teams Jumpbox - pcdcstglxap01 ]]
+  - Request the Storage Team to present the snapshots of the datastores.  When you request, please give the following details.
+    - CI Server Name (in this case cdcvillx222)
+    - DB Server Name (in this case cdcvillx223)
+    - Day when the snapshot was taken
+    - To which VMWare cluster this snapshot should be presented (eg: NON-PROD-LINUX-2)
+  - Storage Team will typically give us the Name of the Disk & serial Number. Sample below <code>Name                                                   Serial
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-000     451CEEAA321E480801E6D3AC
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-001     451CEEAA321E480801E6D3AD
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-002     451CEEAA321E480801E6D3AE
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-003     451CEEAA321E480801E6D3AF
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-004     451CEEAA321E480801E6D419
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-005     451CEEAA321E480801E6D41A
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-006     451CEEAA321E480801E6D41B
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-007     451CEEAA321E480801E6D41C
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-008     451CEEAA321E480801E6D41D
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-009     451CEEAA321E480801E6D41E
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-010     451CEEAA321E480801E6D41F
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-011     451CEEAA321E480801E6D420
+</code>
+  - [[unix:powercli_resignature_rename|Scan and present the Snapshot disks to the cluster]]
+  - Create a new VM for CI & DB each & lets call them NEW_CDCVILLX222 & NEW_CDCVILLX223. Currently done from GUI.  CLI not explored.  Please make sure of the following
+      - Pick the Datastore corresponding to the primary datastore (000/001) for storing the VMX
+      - Compatibility of the VM should match with the source system (eg: ESXI 6.7 or later)
+      - OS details should match with the source system (Linux & SLES12)
+      - Disk controller type should match (SCSI Controller - LSI Logic/VmWare)
+      - Same number of SCSI Controllers as in the source. 
+  - Present the Disk.  Inorder to present the disk, one should know how it is configured on the source system.  Check that using [[unix:powercli_disk_info|Get Disk Details of a VM using PowerCLI]].  SCSI ID on the source system should match with the SCSI ID on the target system which should match with the vmdk and the datastore name

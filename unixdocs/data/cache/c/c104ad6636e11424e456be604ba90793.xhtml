@@ -1,0 +1,124 @@
+
+<h1 class="sectionedit1" id="patching_process_aix">Patching process AIX</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Find out the current TL<pre class="code">oslevel -s</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Preserve a copy of rootvg</div>
+<ol>
+<li class="level2"><div class="li"> On a SAN booting system, perform an alt_disk_copy to the alt_rootvg<pre class="code">sudo alt_disk_copy -B -d hdiskX</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> On a mirrored rootvg system do this,</div>
+<ol>
+<li class="level3"><div class="li"> Unmirror the VG<pre class="code">sudo unmirrorvg rootvg hdiskX</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Remove the disk from rootvg<pre class="code">sudo reducevg rootvg hdiskX</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Clear the VGDA<pre class="code">sudo chpv -c hdiskX</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Set the bootlist to boot from the remaining disk<pre class="code">sudo bootlist -m normal hdiskY</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Perform an alt_disk_copy to the alt_rootvg<pre class="code">sudo alt_disk_copy -B -d hdiskX</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Disable the alt_disk_copy script<pre class="code">sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure that NIM server has a latest copy of mksysb<pre class="code">sudo ls -l /mksysb-images</pre>
+
+<p>
+Outside of Lincolnshire systems, check the script to find the target.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to NIM server (taitc118) export the TL filesystem<pre class="code">sudo exportfs -i /prod/images/lppsrc/710TL03-02</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> NFS mount the lppsrc location<pre class="code">sudo mkdir -p /mnt/aixupdates
+sudo mount taitc118:/prod/images/lppsrc/710TL03-02 /mnt/aixupdates</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a preview upgrade<pre class="code">cd /mnt/aixupdates
+sudo install_all_updates -d . -c -p -r -V -Y</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If no errors found, perform the upgrade<pre class="code">cd /mnt/aixupdates
+sudo install_all_updates -d . -c -r -V -Y</pre>
+
+<p>
+More details on the arguments
+</p>
+</div>
+<ul>
+<li class="level2"><div class="li"> d  —&gt; Location</div>
+</li>
+<li class="level2"><div class="li"> c  —&gt; Commit the updates</div>
+</li>
+<li class="level2"><div class="li"> p  —&gt; Preview</div>
+</li>
+<li class="level2"><div class="li"> r  —&gt; Update rpms as well</div>
+</li>
+<li class="level2"><div class="li"> V  —&gt; Verbose output</div>
+</li>
+<li class="level2"><div class="li"> Y  —&gt; Accept license agreements</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> For the smitty lovers,</div>
+<ol>
+<li class="level3"><div class="li"> Invoke smitty<pre class="code">sudo smitty update_all</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> After the upgrade has successfully completed, reboot the server to complete the upgrade<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Once the server has successfully rebooted login and check to see that the upgrade oompleted successfully <pre class="code">oslevel -s </pre>
+
+<p>
+ Verify against the expected results. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the /etc/sendmail/mail/sedndmsil.cf configuraton file for to see if the Smart mailer Relay “DS” has changed.<pre class="code">sudo grep DS /etc/mail/sendmail.cf</pre>
+
+<p>
+If the DS entry is blank then check the copy created when you performed the Configuation Backup in Step 2 above. Update the DS entry in the current /etc/sendmail/mail/sendmail.cf file. Do NOT Overlay the current sendmail.cf file as it is compiled for the new version of sendmail.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that the <abbr title="Secure Shell">SSH</abbr> host keys are not overwritten. Login to taitc118 switch user to root. <pre class="code"> sudo su - root</pre>
+
+<p>
+now ssh to the server you just upgraded.  
+</p>
+<pre class="code"> sudo ssh {server name here}</pre>
+
+<p>
+ If you are logged on to the server then the <abbr title="Secure Shell">SSH</abbr> Key files are intact. If the ssh fails to connect then you need to reset the ssh hey files. In the /tmp/Pre_Upgrade/aix_upgrade directory you set up in Step 2 above a script to copy the ssh keys was created when you ran the save_env.sh script The script is copy-etcssh-keys.sh.  To copy the ssh key files 
+</p>
+<pre class="code">cd /tmp/Pre_upgrade/aix_upgrade</pre>
+<pre class="code">sudo ./copy-etcssh-keys.sh</pre>
+
+<p>
+ Retry the ssh from taitc118.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure the TL has been  upgraded<pre class="code">oslevel -s</pre>
+</div>
+</li>
+</ol>
+
+</div>

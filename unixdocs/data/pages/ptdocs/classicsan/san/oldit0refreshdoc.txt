@@ -1,0 +1,112 @@
+
+====== IT0 refresh using Symmetrix ======
+ 
+
+Business at times ask us to create a copy of TA2 database to IT0. We perform it using symclone. Here are the instructions.
+
+TA2 --> peerdb99
+
+IT0 --> qeerdb01 (It's hostname is tedv2d01)
+
+** A day in advance, please check and make sure the pairing file is correct**
+
+  * Login to teprbk01 or taitc118 as the CLI host.
+  * Check and make sure the pairing file is correct. They have a syntax like this<code>ABCD STUV
+EFGH WXYZ</code>Where ABCD and EFGH are source LUNs (TA2 DB) , STUV and WXYZ are target LUNs(IT0 DB)
+  * Check and document existing symclone sessions in the DMX4 array<code>sudo symclone -sid 39 list | grep Copied | awk '{print $1,$3}'</code>Now carefully examine each device pair and make sure that the source and target are still TA2 and IT0. If not, terminate those sessions.<code>sudo symclone -sid 39 -f <filename> terminate</code>
+  * Get a list of data devices on TA2<code>ssh peerdb99 sudo /usr/local/scripts/lsvpcfg.sh | grep datavg | awk -F: '{print $4}' > /var/tmp/TA2.source.luns</code>
+  * Get a list of data devices on IT0<code>ssh tedv2d01 sudo /usr/local/scripts/lsvpcfg.sh | grep datavg | awk -F: '{print $4}' > /var/tmp/IT0.target.luns</code>
+  * Get a list of existing cloning pairs<code>sudo symclone -sid 39 list | grep Copied | awk '{print $1,$3}' > /var/tmp/DMX4.existing.clones</code>
+
+  * Login to teprbk01 and check the status<code>sudo symclone –sid 39 –f /admin/refresh/IT0_refresh_MMDDYY.clone query</code>
+
+
+  * Copy the pairing file to ''teprbk01:/admin/backups/IT0_refresh_MMDDYY.clone ''
+  * 
+  * Login to teprbk01 and check the status<code>sudo symclone –sid 39 –f /admin/refresh/IT0_refresh_MMDDYY.clone query</code>
+  * If any of the LUNs are already in a Clone relationship, Investigate and fix that first.
+
+** During the IT0 refresh **
+
+  * Shutdown IT0 SAP instance including database.<code>ps -ef | grep ora</code>Make sure nothing comes up
+  * Make a note of the disks that makes up IT0<code>lspv | grep datavg0[1-7] > /var/tmp/deletethesedisks</code>
+  * Unmount the data filesystems on IT0<code>for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07
+do
+   for fs in $(sudo lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -cuk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] && echo "Unable to umount ${fs} "
+      fi         
+   done
+   lsvg -l ${vg} | grep -i open > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      echo "warning :: ${vg} requires manual intervention "
+   else
+      sudo varyoffvg ${vg}
+      sudo exportvg ${vg}
+   fi
+done</code>
+  * Define the LUNs so that AIX stops complaining about it<code>cat /var/tmp/deletethesedisks | xargs -n1 sudo rmdev -l</code>
+  * Login to teprbk01 and start the clone operation.
+    * Check if there is anexisting relationship<code>sudo symclone –sid 39 –f /admin/refresh/IT0_refresh_MMDDYY.clone query</code>If one exists, terminate it - it is clean this way<code>sudo symclone –sid 39 –f /admin/refresh/IT0_refresh_MMDDYY.clone terminate</code>Now create one with precopy<code>sudo symclone –sid 39 –f /admin/refresh/IT0_refresh_MMDDYY.clone create -precopy</code>
+  * Check the status now<code>sudo symclone –sid 39 –f /admin/refresh/IT0_refresh_MMDDYY.clone query</code>All the LUN pairs are in ''Precopy''at this time
+  * Contact the DBA to put the TA2 table-spaces in ''begin-backup-mode''.
+  * Once the table-spaces are in ''begin-backup-mode'', Activate the clone.<code>sudo symclone –sid 39 –f IT0_refresh_MMDDYY.clone activate</code>
+  * Watch the progress of the clone session<code>sudo symclone –sid 39 –f IT0_refresh_MMDDYY.clone query</code>
+  * Contact the DBA to put the TA2 table-spaces in ''end-backup-mode''.
+  * On qeerdb01/tedv2d01, configure the luns.<code>sudo cfgmgr
+sudo powermt check
+sudo powermt config</code>
+  * Login to peerdb99(TA2 DB) and get a list of pvids<code>ssh peerdb99 "lspv" > /var/tmp/peerdb99.pvids</code>
+  * Import the VGs<code>for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07
+do
+   pvid=$(grep -w ${vg} /var/tmp/peerdb99.pvids | head -1 | awk '{print $2}' )
+   sudo importvg -y ${vg} ${pvid}
+done</code>
+  * Change the mount point of all filesystems from TA2 to IT0<code>for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      newfs=$(echo ${fs} | sed "s;TA2;IT0;g" )
+      sudo chfs -m ${newfs} ${fs}
+   done
+done</code>
+  * Run fsck on each filesystem<code>for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo fsck -y ${fs} &
+   done
+done</code>
+  * Mount all filesystems and fix permissions<code>for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mount ${fs}
+      if [ ${?} -eq 0 ]
+      then
+         sudo chown -R orait0:dba ${fs}
+      else
+         echo "Unable to mount ${fs} - please fix and don't forget to change the permissions using chown -R orait0:dba ${fs}"
+      fi         
+   done
+done</code>
+  * Handover IT0 to DBA team.
+
+** In case of when the cloning generates a performance issue, please terminate the cloning session **
+
+  * Login to teprbk01 and stop the clone<code>sudo symclone –sid 39 –f /admin/refresh/IT0_refresh_MMDDYY.clone terminate</code>
+    * To forcefully terminate the cloning session<code>sudo symclone –sid 39 –f IT0_refresh_MMDDYY.clone terminate -symforce</code>
+
+
+** Sometimes we may need to clone chunk by chunk **
+
+  * Split the pairing file into 2 or more as required.
+  * In a loop create clone sessions and wait for each to reach 80% before the second set is started<code>sudo symclone -sid 39 -f IT0_refresh_MMDDYY_grp1.clone create -precopy -diff
+sudo symclone –sid 39 –f IT0_refresh_MMDDYY_grp1.clone query</code>
+  * Once all sub-group clone finished, Contact DBA and change the TA2 backup mode, and split the clone session.

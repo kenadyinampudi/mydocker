@@ -1,0 +1,157 @@
+====== TA2 Storage Migration from DMX4 to V9000 ======
+
+===== Export redo & datavg storage from peerdb99 / peerdb98 =====
+
+** peerdb99 **
+
+  - Take a snapshot of currently allocated disks and VGs<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Unmount filesystems from peerdb99<code>for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08 origredovg mirrredovg
+do
+   echo "$(date)   ::   Working on ${vg} "
+   for fs in $(lsvgfs ${vg} )
+   do
+      echo "$(date)   ::   Unmounting ${vg} - ${fs} "
+      sudo umount ${fs}
+   done
+   echo "$(date)   ::      varyoff off & exporting ${vg} "
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+done</code>No error checking - do it manually if it fails.
+  - Remove the datavgs and redovgs LUNs from peerdb99.<code>egrep "datavg01|datavg02|datavg03|datavg04|datavg05|datavg06\
+|datavg07|datavg08|origredovg|mirrredovg" lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - Unmask the DMX4 storage from peerdb99.<code>sudo symmask -sid 39 -wwn 10000090fa563c0a -dir 8b -p 1 remove dev <list of devices>
+sudo symmask -sid 39 -wwn 10000090fa563dce -dir 9b -p 1 remove dev <list of devices>
+sudo symmask -sid 39 -wwn 10000090fa726c38 -dir 7c -p 0 remove dev <list of devices>
+sudo symmask -sid 39 -wwn 10000090fa72a7a0 -dir 10c -p 0 remove dev <list of devices></code>List of DMX4 devices<code>0992,0997,099A,099D,09A1,09A6,09A9,09AD,09B2,09B5,09BA,09BD,09C1,09C5,09C9,09CD,09D1,09D5,09D8,09DD,09E0,09E5,09E8,09EB,09EF\
+,09F4,09F7,09FB,0A00,0A03,0A08,0A0B,0A0F,0A13,0A17,0A1B,0A1F,0A23,0A26,0A2B,0A2E,0A33,0A36,0A39,0A3D,0A42,0A45,0A49,0A4E,0A51,0A56,0A59\
+,0A5D,0A61,0A65,0A69,0A6D,0A71,0A74,0A79,0A7C,0A81,0A84,0A87,0A8B,0A90,0A93,0A97,0A9C,0A9F,0AA4,0AA7,0AAB,0AAF,0AB3,0AB7,0ABB,0ABF,0AC2\
+,0AC7,0ACA,0ACF,0AD2,0AD5,0AD9,0ADE,0AE1,0AE5,0AEA,0AED,0AF2,0AF5,0AF9,0AFD,0B01,0B05,0B09,0B0D,0B10,0B15,0B18,0B1D,0B20,0B23,0B27,0B2C\
+,0B2F,0B33,0B38,0B3B,0B40,0B43,0B47,0B4B,0B4F,0B53,0B57,0B5B,0B5E,0B63,0B66,0B6B,0B6E,0B71,0B75,0B7A,0B7D,0B81,0B86,0B89,0B8E,0B91,0B95\
+,0B99,0B9D,0BA1,0BA5,0BA9,0BAC,0BB1,0BB4,0BB9,0BBC,0BBF,0BC3,0BC8,0BCB,0BCF,0BD4,0BD7,0885,0889,088D,0891,0895,0899,089D,08A5,08A8,08AD\
+,08B0,08B3,0BEB,0BDC,08BC,08BF,08C3,08C8,08CB,08D0,08D3,08D7,08DB,087D,0881,08DF,08E3,08E7,08EB,08EE,08F3,08F6,08FB,08FE,0901,0925,0929\
+,092D,0931,0935,0939,093C,0941,0944,1486,148A,148E,1492,1496,149A,149E,14A2,14A6,14AA,14AE,14B2,14B6,14BA,0BE7,0C93,0C96,0C9B,1592,1596\
+,159A,159E,15A2,15A6,15AA,15AE,15B2,15B6,15BA,15BE,15C2,15C6,15CA,15CE,15D2,15D6,15DA,15DE,15E2,15E6,15EA,15EE,15F2,15F6,15FA,15FE,1602\
+,1606,160A,160E,1612,1616,161A,161E,1622,1ACA,1ACE,1AD2,1AD6,1ADA,1ADE,1AE2,1AE6,1AEA,1AEE,1AF2,1AF6,1AFA,153A,153E,1542,1546,154A,154E\
+,1552,1556,155A,155E,1562,1566,156A,156E,1572,1576,157A,157E,1582,1586,158A,14C2,14C6,14CA,14CE,14D2,14D6,14F6,14FA,14FE,1502,1CC6,1CCA\
+,1CCE,1CD2,1CD6,1CDA,1CDE,1CE2,1CE6,1CEA,1CEE,1CF2,1CF6,1CFA,0851,0855,0859,085D,0871,0875,0879,08A0,0BEF,0BF3,0BF7,0BFA,0BFF,0C02,0C07\
+,0C0A,0C0D,0C11,0C31,0C39,0C41,0C48,0C9E,0CA6,0CAD,0CB5,0CBE,0CC6,0CCD,0CD5,1426,142A,142E,1432,1436,143A,143E,1442,1446,144A,1CBA,1CBE\
+,1CC2,1D06,1D0A,1D0E,1D12,1D16,144E,1452,1456,145A,145E,1462,1466,146A,146E,1472,1506,1532,1536,158E,1D1A,1D1E,1D22,1D26,0831,0835,0839\
+,083D,0949,094C,094F,1B12,1B16,0C16,0C19,0C1D,0C22,0C25,0C2A,14DA,14DE,14E2,14E6,14EA,14EE,0C2D,14F2,150A,150E,1512,1516,151A,151E,1522\
+,1526,152A,152E</code>And then refresh the FAs<code>sudo symmask -sid 39 refresh</code>
+  - Unmask the V9000 storage ( redovg & mirrvg ) from peerdb99<code>ssh ldcv9ac2vip1 rmvdiskhostmap -host peerdb99 peerdb99_007
+ssh ldcv9ac2vip1 rmvdiskhostmap -host peerdb99 peerdb99_008
+ssh ldcv9ac2vip1 rmvdiskhostmap -host peerdb99 peerdb99_009
+ssh ldcv9ac2vip1 rmvdiskhostmap -host peerdb99 peerdb99_010</code>
+
+** peerdb98 **
+
+  - Take a snapshot of currently allocated disks and VGs<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Unmount filesystems & export the VGs<code>for vg in v9datavg01 v9datavg02 v9datavg03 origredovg mirrredovg
+do
+   echo "$(date)   ::   Working on ${vg} "
+   for fs in $(lsvgfs ${vg} )
+   do
+      echo "$(date)   ::   Unmounting ${vg} - ${fs} "
+      sudo umount ${fs}
+   done
+   echo "$(date)   ::      varyoff & exporting ${vg} "
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+done</code>No error checking - do it manually if it fails.
+  - Remove the V9000 storage from peerdb98<code>egrep "v9datavg01|v9datavg02|v9datavg03|origredovg|mirrredovg" lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - Unmask V9000 storage from peerdb98<code>for LUN in ta2dbdata_001 ta2dbdata_002 ta2dbdata_003 ta2dbdata_004 ta2dbdata_005 ta2dbdata_006 ta2dbdata_007 ta2dbdata_008 ta2dbdata_009 \
+ta2dbdata_010 ta2dbdata_011 ta2dbdata_012 ta2dbdata_013 ta2dbdata_014 ta2dbdata_015 ta2dbdata_016 ta2dbdata_017 ta2dbdata_018 ta2dbdata_019 \
+ta2dbdata_020 ta2dbdata_021 ta2dbdata_022 ta2dbdata_023 ta2dbdata_024 ta2dbdata_025 ta2dbdata_026 ta2dbdata_027 peerdb98_001 peerdb98_002
+do
+   echo "$(date)   ::   Removing ${LUN} from peerdb98 .."
+   ssh ldcv9ac2vip1 rmvdiskhostmap -host peerdb98 ${LUN}
+done</code>
+
+===== Swap storage between peerdb99 / peerdb98 =====
+
+  - Mask V9000 storage to peerdb99<code>for LUN in ta2dbdata_001 ta2dbdata_002 ta2dbdata_003 ta2dbdata_004 ta2dbdata_005 ta2dbdata_006 ta2dbdata_007 ta2dbdata_008 ta2dbdata_009 \
+ta2dbdata_010 ta2dbdata_011 ta2dbdata_012 ta2dbdata_013 ta2dbdata_014 ta2dbdata_015 ta2dbdata_016 ta2dbdata_017 ta2dbdata_018 ta2dbdata_019 \
+ta2dbdata_020 ta2dbdata_021 ta2dbdata_022 ta2dbdata_023 ta2dbdata_024 ta2dbdata_025 ta2dbdata_026 ta2dbdata_027 peerdb98_001 peerdb98_002
+do
+   echo "$(date)   ::   Adding ${LUN} to peerdb99 .."
+   ssh ldcv9ac2vip1 mkvdiskhostmap -host peerdb99 ${LUN}
+done</code>
+  - Mask DMX4/V9000 LUNs to peerdb98<code>sudo symmask -sid 39 -wwn 10000000C97D8D6C -dir 8c -p 0 add devs <list_of_devices>
+sudo symmask -sid 39 -wwn 10000000C998458C -dir 9c -p 0 add devs <list_of_devices></code>**Use list of devices mentioned above**And then refresh the FAs<code>sudo symmask -sid 39 refresh</code>
+  - Mask V9000 storage ( redovgs ) to peerdb98<code>ssh ldcv9ac2vip1 mkvdiskhostmap -host peerdb98 peerdb99_007
+ssh ldcv9ac2vip1 mkvdiskhostmap -host peerdb98 peerdb99_008
+ssh ldcv9ac2vip1 mkvdiskhostmap -host peerdb98 peerdb99_009
+ssh ldcv9ac2vip1 mkvdiskhostmap -host peerdb98 peerdb99_010</code>
+
+===== Discover new devices on peerdb99 =====
+
+  - Document the current list of LUNs<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Run cfgmgr<code>sudo cfgmgr</code>
+  - Document the current list of LUNs<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.3</code>
+  - Run this CLI<code>diff lsvpcfg.out.2 lsvpcfg.out.3 | grep ">" | awk '{print $2}' | awk -F: '{print $1}' \
+| xargs -n1 sudo chdev -a reserve_policy=no_reserve -a algorithm=round_robin -l </code>
+
+===== Import Volume groups and mount filesystems on peerdb99 =====
+
+  - Copy the disk to LUN map from peerdb98<code>scp peerdb98:lsvpcfg.out.1 lsvpcfg.out.1.peerdb98</code>Why ? I don't know
+  - Import VGs
+    - origredovg<code>sudo importvg -y origredovg 00c9f3907a0fdcf6</code>
+    - mirrredovg<code>sudo importvg -y mirrredovg 00c9f3907a101d7a</code>
+    - v9datavg01<code>sudo importvg -y datavg01 00c9f3908d94c539</code>
+    - v9datavg02<code>sudo importvg -y datavg02 00c9f3908d94cb03</code>
+    - v9datavg03<code>sudo importvg -y datavg03 00c9f3908d94d145</code>
+  - Mount the filesystems<code>for vg in origredovg mirrredovg datavg01 datavg02 datavg03
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mount ${fs}
+   done
+done</code>
+
+===== Open database TA2 on peerdb99 and validate =====
+
+  - DBA team to open the database, change the role and make sure the database is healthy and good.
+  - Run statistics
+
+===== Discover new devices on peerdb98 =====
+
+  - Document the current list of LUNs<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Run cfgmgr<code>sudo cfgmgr</code>
+  - Document the current list of LUNs<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.3</code>
+  - Run this CLI<code>diff lsvpcfg.out.2 lsvpcfg.out.3 | grep ">" | awk '{print $2}' | awk -F: '{print $1}' \
+| xargs -n1 sudo chdev -a reserve_policy=no_reserve -a algorithm=round_robin -l </code>
+
+===== Import Volume groups and mount filesystems on peerdb99 =====
+
+  - Copy the disk to LUN map from peerdb99<code>scp peerdb99:lsvpcfg.out.1 lsvpcfg.out.1.peerdb99</code>Why ? I don't know
+  - Import VGs
+    - mirrredovg<code>sudo importvg -y mirrredovg 00c9f3a0998da516</code>
+    - origredovg<code>sudo importvg -y origredovg 00c9f3a0999f2648</code>
+    - datavg01<code>sudo importvg -y datavg01 00c9f3a064879663</code>
+    - datavg02<code>sudo importvg -y datavg02 00c9f3a06a1eb640</code>
+    - datavg03<code>sudo importvg -y datavg03 00c9f3a06a21f557</code>
+    - datavg04<code>sudo importvg -y datavg04 00c9f3a06a60462e</code>
+    - datavg05<code>sudo importvg -y datavg05 00c9f3a064929b4a</code>
+    - datavg06<code>sudo importvg -y datavg06 00c9f3a0a43955b7</code>
+    - datavg07<code>sudo importvg -y datavg07 00c9f3a033ce4ef5</code>
+    - datavg08<code>sudo importvg -y datavg08 00c9f3a0d6968e37</code>
+  - Mount the filesystems<code>for vg in origredovg mirrredovg datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mount ${fs}
+   done
+done</code>
+
+===== Open database TA2 on peerdb98, validate and re-establish dataguard relationship =====
+
+  - DBA team to open the database, change the role and make sure the database is healthy and Dataguard configuration is correct.
+
+===== Some cleanup after we are done with the work successfully =====
+
+  - Rename these volumes<code>ssh ldcv9ac2vip1 chvdisk -name peerdb99_011 peerdb98_001
+ssh ldcv9ac2vip1 chvdisk -name peerdb99_012 peerdb98_002
+ssh ldcv9ac2vip1 chvdisk -name peerdb98_003 peerdb99_007
+ssh ldcv9ac2vip1 chvdisk -name peerdb98_004 peerdb99_008
+ssh ldcv9ac2vip1 chvdisk -name peerdb98_005 peerdb99_009
+ssh ldcv9ac2vip1 chvdisk -name peerdb98_006 peerdb99_010</code>

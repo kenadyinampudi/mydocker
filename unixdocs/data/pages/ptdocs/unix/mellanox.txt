@@ -1,0 +1,30 @@
+====== Installing Mellanox Drivers ======
+Mellanox drivers need to be compiled and installed.  RHEL offers some prebuilt packages, but they are not used in our installation.
+
+==== Steps: ====
+yum install gcc-gfortran
+  * Get Mellanox drivers from /apps/IS_ENG_ADMINS/mlnx_drv/MLNX_OFED_LINUX-5.0-2.1.8.0-rhel7.5-x86_64.tgz
+  * Copy to /tmp 
+  * Unzip
+  * Install prerequisites. \\ ''yum install createrepo gtk2 atk cairo tcl tcsh tk'' \\ ''yum install gcc-gfortran python-devel redhat-rpm-config rpm-build kernel-devel-3.10.0-1127.el7.x86_64 gcc''
+  * Run the install script.  This will take quite a while, about 20-30 minutes.\\ ''./mlnxofedinstall --add-kernel-support'' (The --add-kernel-support is necessary)
+  * You will probably get this message, but it's not an error.  <code> The firmware for this device is not distributed inside Mellanox driver: 83:00.0 (PSID: DEL1090001019)
+To obtain firmware for this device, please contact your HW vendor. </code>
+  * Redo the initramfs. \\  ''dracut -f''
+  * Run ''/etc/init.d/openibd restart'' and check for "ok"
+  * Reboot
+  * Check for the drivers in the "extra" folder using  ''modinfo mlx4_core | head'' <code>
+[root@cdcpillx142 mlnx_drv]# modinfo mlx4_core | head
+filename:       /lib/modules/3.10.0-862.14.4.el7.x86_64/extra/mlnx-ofa_kernel/drivers/net/ethernet/mellanox/mlx4/mlx4_core.ko
+version:        5.0-2.1.8
+license:        Dual BSD/GPL
+description:    Mellanox ConnectX HCA low-level driver
+author:         Roland Dreier
+retpoline:      Y
+rhelversion:    7.5
+srcversion:     94C59ECBDD9921FAA8DB318
+alias:          pci:v000015B3d00001010sv*sd*bc*sc*i*
+alias:          pci:v000015B3d0000100Fsv*sd*bc*sc*i*
+</code>
+
+

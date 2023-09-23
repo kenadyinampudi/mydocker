@@ -1,0 +1,50 @@
+====== Defragmenting Raid Groups on Clariion storage arrays. ======
+\\ 
+To be able to create LUNs raid group do need contigunous free space, if we will remove some LUNs from RG it can be defragmented.\\ 
+To check if defrag is needed you can use GUI or CLI.\\ 
+====== GUI steps are: ======
+\\ 
+https://emc--c.na5.visual.force.com/apex/KB_HowTo?id=kA0700000004Q7G
+\\ 
+Defragmenting compresses gaps on a RAID group that may have been caused by destroying and creating LUNs, and provides more contiguous free space across the disks.\\ 
+\\ 
+Follow the steps to Defragment a RAID group with Unisphere Manager:\\ 
+\\ 
+    Determine the amount of usable space on a RAID group.\\ 
+    In the systems drop-down list on the menu bar, select a storage system.\\ 
+    Select Storage > Storage Configuration > Storage Pools > RAID Groups.\\ 
+    Open the RAID Group Properties dialog box by doing one of the following:\\ 
+\\ 
+    Double-click the RAID group icon that you want to defragment.\\ 
+    Right-click the icon for the RAID group that you want to defragment, and select Properties.\\ 
+    Select the RAID group that you want to defragment and click Properties.\\ 
+\\ 
+    Click Partitions.\\ 
+    Click Defragment, and then click Yes to continue with the defragmentation.\\ 
+    Click OK to close the dialog box.\\ 
+\\ 
+Notes 	Defragmentation is not supported on RAID 6 groups.\\ 
+\\
+
+====== CLI stpes are here ======
+\\
+''/nas/sbin/naviseccli -h spa getrg 10 -lusc -ucap \\ 
+RaidGroup ID:                              10\\ 
+Free contiguous group of unbound segments: 643565056\\ 
+Free Capacity (Blocks,non-contiguous):     958137856\\ ''
+
+If group is not fragmented the two above values will be equal, ie:\\ 
+''/nas/sbin/naviseccli -h spa getrg 15 -lusc -ucap\\ 
+RaidGroup ID:                              15\\ 
+Free contiguous group of unbound segments: 2381763584\\
+Free Capacity (Blocks,non-contiguous):     2381763584\\ ''
+
+To start defrag execute this command\\ 
+//naviseccli -h spa chgrg 10 -defrag\\ //
+To check progress use this one\\ 
+///nas/sbin/naviseccli -h spa getrg 10 -prcntdf\\ 
+RaidGroup ID:                              10\\ 
+Percent defragmented:                      46\\ 
+//
+
+{{:san:rg_defragmented.docx|Screen shots from the Edenkoben array -- Thanks Pawel}}

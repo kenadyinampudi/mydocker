@@ -1,0 +1,145 @@
+====== Using Satellite to do an automated installation ======
+This is most useful for remote sites where the LAN connection is really prohibitive for just mounting an OS install disk.
+
+This is a fiddily process.  If you start getting strange errors and can't work around them, I suggest just deleting the host within Satellite and trying again from the beginning.  Sometimes it will not update itself properly after an initial mistake, even if you'ce corrected things.
+
+=== Satellite Prep ===
+  * Make sure the Location exists.
+    * Administer -> Locations
+    * Add country if necessary.
+      * "New Location"
+      * No parent
+      * Name is two letter country code
+      * Description is whatever
+      * Submit
+    * Add Site code
+      * Admin -> Locations -> Click "New Location"
+      * Select Country as Parent
+      * Name is 4 letter site code
+      * Description is whatever
+      * Submit
+    * Configure site
+      * Select the site (Will probably already be selected for you)
+      * Click on "Capsules" & Add everything
+      * Click on "Provisioning Templates" and add everything
+      * Click on "Partition Tables" and add everything
+      * Click on "Domains" and add only those domains appropriate for that site
+      * Click on "Organizations" and add all
+      * Submit
+  * Add a Subnet if necessary
+    * Infrastructure -> Subnets -> Create Subnet
+      * Add name.\\ Use "Site_Linux" to indicate the subnet.
+      * **Description** is whatever makes sense.
+      * **Network Address** is the subnet address.  (ends with .0 for /24, so ''x.x.x.0'')
+      * **Network Prefix** is the CIDR number, usually "25" at the sites.
+      * **Network Mask** should fill in automatically once the prefix is set.
+      * **Gateway Address** is the gateway for the subnet. (usually ''x.x.x.1'')
+      * **Primary DNS** should be the IP of the closest DC server.
+        * [[finddccontrollers:how_to_find_current_dc_controllers]]
+      * **Secondary DNS** should be the IP of the Infoblox (like 134.238.106.252)
+      * **VLAN ID** is whatever makes sense.  It's not used
+      * **Boot mode** needs to be static
+    * Click "Remote Execution" tab
+      * Select all
+    * Click "Domains"
+      * Select the appropriate domain for the site
+    * Click "Capsules"
+      * Change all dropdowns to "cdcpillx205"
+    * Click "Locations"
+      * Select the country and site for this site.
+    * Under "Organizations"
+      * Add "Tenneco"
+    * Click **Submit**
+==== Create Host Group ====
+* Within Satellite, make sure a host group is defined for the server site.\\ A host group is essentially a set of default values for a host.
+    * Go to "Configure" -> "Host Groups" and click "Create Host Group"
+    * Under the "Host Group" tab
+      * **Name** is the first 6 letters of the hostname, so "CDCPIL"
+      * **Description** is whatever you want
+      * **Lifecycle Environment** should be Tenneco/Library for now
+      * **Content View** should be "RHEL 8.2 Base"
+      * **Content Source** is "Tenneco/CDCPILLX205"
+    * Under "Network"
+      * **Domain** -> Select the domain appropriate for the site
+      * **IPv4 Subnet** -> Select the subnet for the site
+    * Under "Operating System"
+      * **Architecture** -> Should be "x86_64"
+      * **Operating System** should be "RedHat 8.2"
+      * **Synced Content** should be "Red_Hat_Enterprise_Linux_8_for_x86_64_-_BaseOS_KickStart_8_2"
+      * **Partition Table** should be "Dell PT LVM 100G"
+      * **Root Password** should be standard password.
+    * Under "Parameters"
+      * Add Parameter "disable-firewall", Boolean, "true"
+      * Add Parameter "enable-epel", Boolean, "false"
+      * Add Parameter "ntp-server", String, "time.aspa.int.tenneco.com"
+      * Add Parameter "selinux-mode", String, "permissive"
+      * 
+    * Under "Location"
+      * Select the country and site to add to the "Selected items"
+    * Under "Organizations"
+      * Add "Tenneco"
+    * Under "Activation Keys"
+      * Add "eerbody" as a default
+==== Building a new server with Satellite. ====
+  - Click the "Hosts" -> "Create Host" button.
+  - Give it the short name of the server
+  - Organization is Tenneco
+  - Location is the Site code
+  - Host group is whatever is appropriate for the site
+  - Everything else should populate automatically based on the host group settings
+
+== Click on "Interfaces" ==
+
+
+  - Edit the existing interface
+  - Fill in the MAC address from the DRAC or from vCenter
+  - Leave "Device Identifier" blank.  (Putting anything here will cause the server to not build)
+  - Domain should match the server's FQDN
+  - The IPv4 Subnet should be limited to subnets relevant to the domain.  If you don't see your subnet, add it.
+  - "IPv4 Address" is the IP address associated with the name of the server.
+  - Click OK
+ 
+== Click on "Operating System" ==
+  - Just double-check the values.  They should all be filled in as part of the host group.
+  - Architecture is "x86_64"
+  - Operating system is your desired level, RedHat 8.2 for example.
+  - The "Synced Content" should automatically populate.  If it does not, set the "Architecture" to i386, then start at step 1 again.
+  - "Partition Table" should usually be the "PT LVM 100".
+  - "PXE Loader" should already be filled in with "PXELinux BIOS".
+  - "Custom Partition Table" is blank
+  - "Root Password" is the root password to use.  This is a mandatory field.
+  - Click "Submit" and you should be dropped into a view of the host.
+
+== Add Paramters Unique to this Host ==
+  * Under "Parameters", fill out the following:
+    * Add the following parameters:
+      * ''driverdisk'' with a value of ''nfs:172.16.33.51/dell/drivers''
+      * ''diskdest'' with the value of the disk path obtained Below, without the "/dev/", so something like ''disk/by-path/pci-0000:1a:00.0-scsi-0:2:0:0''
+
+==== Getting the Disk Path Value ====
+  - The value for "diskdest" will be wrong at first, because we don't know what the PCI address of the virtual drive is at first.
+  - Download the "Full Host 'shorthostname' Disk"
+  - Boot the server from the disk
+    - The install will fail at first, dropping you at an error screen
+  - "Hit "Ctrl-B", then "2" to get to the command line
+  - ''ls /dev/disk/by-path'' and figure out the path to the virtual drive.  
+    - This could be lots of things, so investigate the options presented.
+  - Save the value you obtained somewhere
+  - Go back into Satellite
+  - Go to "Hosts" -> "All Hosts"
+  - Find the server you just built
+  - "Cancel Build" to cancel the existing build
+  - "Edit" to change your values
+  - Go to "Parameters"
+  - Edit the "diskdest" with the value you just found out
+  - Click "Submit"
+  - Click "Build" to build the server again \\ You can click OK on the warning
+  - Download the "Full Host 'shortname' Disk"
+  - Boot the server from the new disk and the install should proceed.
+==== Get Bootable CD ====
+
+  - The button at the top should say "Cancel build" ... this indicates the build was successful and is waiting.  On the left, the "Build" field should have a green checkmark and say "Pending Installation"
+  - Click the down arrow next to "Boot Disk" at the top right.  
+  - Select the "Full Host 'shortname' image" to download a 60-70mb image which will load everything from the network.  
+  
+  This assumes the network settings are correct and that the InfoBlox at 134.238.106.252 is reachable from the subnet assigned to the server.

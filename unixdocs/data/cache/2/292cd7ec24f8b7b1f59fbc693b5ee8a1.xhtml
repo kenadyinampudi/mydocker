@@ -1,0 +1,295 @@
+
+<h1 class="sectionedit1" id="apollo_clone_build_-_aix">Apollo Clone build - AIX</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Apollo Clone build - AIX" [1-40] -->
+<h3 class="sectionedit2" id="storage_allocation">Storage allocation</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Wait for storage allocation</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Storage allocation" [41-103] -->
+<h3 class="sectionedit3" id="setup_console_database">Setup console database</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Export a variable to store the system name<pre class="code">export hmc=cdcvilhmc003
+export tgtsystem=name_of_the_system</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the system to console database</div>
+<ol>
+<li class="level2"><div class="li"> The manual way<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Add an entry similar to this
+</p>
+<pre class="code">pcdcna3axap01.driv.com:lpar-ibm:cdcvilhmc003.fmmotorparts.com:Powervm42-9009-42A-7823D50:pcdcna3axap01::tauxrpt</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Little bit of automation</div>
+<ol>
+<li class="level3"><div class="li"> Export this function<pre class="code">function create_unixconsole {
+export hmc=$1
+export lpar=$2
+for frame in $(ssh ${hmc} lssyscfg -r sys -F name )
+do
+   ssh ${hmc} lssyscfg -r lpar -m ${frame} -F name,lpar_id | grep ^${lpar} &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -eq 0 ]
+   then
+      lpar_id=$(ssh ${hmc} lssyscfg -r lpar -m ${frame} --filter lpar_names=${lpar} -F lpar_id )
+      echo ${lpar}:lpar-ibm:${hmc}:${frame}:${lpar}:${lpar_id}:tauxrpt
+   fi
+done
+}</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Prepare the output<pre class="code">create_unixconsole ${hmc} ${tgtsystem} | sudo tee -a /prod/images/etc/unix_sys_console</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Setup console database" [104-1137] -->
+<h3 class="sectionedit4" id="power_on_the_lpar_and_change_the_hostname_and_remove_network_configs">Power on the LPAR and change the hostname and remove Network configs</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Power on the system to SMS</div>
+<ol>
+<li class="level2"><div class="li"> Find our the Frame and HMC, store them in variables<pre class="code">export frame=$(grep -i ^${tgtsystem} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $4}&#039; )
+export hmc=$(grep -i ^${tgtsystem} /prod/images/etc/unix_sys_console | awk -F: &#039;{print $3}&#039; )</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Power on the lpar<pre class="code">ssh ${hmc} &quot;chsysstate -r lpar -o on -b sms -m ${frame} -n ${tgtsystem}&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Access console and look for boot devices and boot from one of the Bootable disks<pre class="code">sudo /usr/local/scripts/getconsole ${tgtsystem}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login as root on the console</div>
+</li>
+<li class="level1"><div class="li"> First change the hostname to avoid any further confusions and accidentally doing harm to production<pre class="code"> chdev -l inet0 -a hostname=&lt;new_host_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Completely remove network configuration.</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interface<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Power on the LPAR and change the hostname and remove Network configs" [1138-2386] -->
+<h3 class="sectionedit5" id="remove_monitoring_cron_and_clean_nfs">Remove monitoring, cron and clean NFS</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Remove cron<pre class="code">rmitab cron</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable NFS exports<pre class="code">[[ -f /etc/exports ]] &amp;&amp; mv /etc/exports /etc/exports.apolloclone</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure fiber channel HBAs<pre class="code">for FSCSI in $(lscfg | grep fscsi | awk &#039;{print $2}&#039; )
+do
+   chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set the boot list<pre class="code">lspv | grep -w rootvg | awk &#039;{print $1}&#039; | xargs -n1 sudo bootlist -m normal</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable <abbr title="Domain Name System">DNS</abbr><pre class="code">mv /etc/resolv.conf /etc/resolv.conf.$(date +%Y%m%d)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove NFS filesystems</div>
+<ol>
+<li class="level2"><div class="li"> Make a backup of filesystems<pre class="code">cp /etc/filesystems /etc/filesystems.$(date +%Y%m%d)</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove NFS filesystems<pre class="code">for NFS in $(grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; )
+do
+   rmnfsmnt -f ${NFS}
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Shutdown the server<pre class="code">shutdown -F</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Remove monitoring, cron and clean NFS" [2387-3255] -->
+<h3 class="sectionedit6" id="add_the_nics_and_boot_the_system">Add the NICs and boot the system</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Access HMC <abbr title="Graphical User Interface">GUI</abbr> and add NIC(s)</div>
+</li>
+<li class="level1"><div class="li"> Add two virtual NICs. </div>
+<ol>
+<li class="level2"><div class="li"> First one to be on VLAN 761</div>
+</li>
+<li class="level2"><div class="li"> Second one on VLAN 762</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Once done – Start the lpar.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Add the NICs and boot the system" [3256-3457] -->
+<h3 class="sectionedit7" id="access_console_and_configure_network_interfaces">Access console and configure network interfaces.</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Connect to console<pre class="code">sudo getconsole &lt;system name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure front end IP address.</div>
+<ol>
+<li class="level2"><div class="li"> Configure the front end IP address on en0 interface<pre class="code">/usr/sbin/mktcpip -h &lt;hostname&gt; -a a.b.c.d -m 255.255.255.0 -i en0 -g a.b.c.d -A no -s</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure a fake IP address on the second NIC<pre class="code">sudo chdev -l en1 -a netaddr=&lt;fake ip address&gt; -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup MPIO devices in the ODM<pre class="code">lsdev -Cc disk | grep -i defined | awk &#039;{print $1}&#039; | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Access console and configure network interfaces." [3458-4068] -->
+<h3 class="sectionedit8" id="post_installation_tasks_from_nim_server">Post installation tasks from NIM server</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to pcdcunxaxap01 and define a variable pointing to the system you are building<pre class="code">export tgtsystem=&lt;host_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Apolo hosts file<pre class="code">sudo scp /prod/images/etc/hosts.apollo.clones ${tgtsystem}:/etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable NTP<pre class="code">sudo scp /prod/images/etc/ntp.conf.aix.apollo ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com &quot;chrctcp -S -a xntpd&quot;
+sudo ssh ${tgtsystem}.driv.com &quot;ntpdate -u plddntplxap02&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT8 SECTION "Post installation tasks from NIM server" [4069-4581] -->
+<h3 class="sectionedit9" id="post_installation_-_generic_tasks_from_the_host">Post installation - generic tasks from the host</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the host you are building<pre class="code">ssh ${tgtsystem}.driv.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Adjust .information file<pre class="code">sudo ex -sc &quot;/mksysbhost/s/pgnmsv01/pcdcunxaxap01/|x&quot; /var/adm/.information
+sudo ex -sc &quot;/location/s/Lincolnshire/Elk Grove - CDC - DRiV/|x&quot; /var/adm/.information</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove cron jobs for application accounts<pre class="code">for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v &quot;^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$&quot;)
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Put static routes to prevent talking back to the source systems<pre class="code">sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,134.238.142.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.135.48.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,134.238.106.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.114.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,134.238.148.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.44.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.81.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.45.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.80.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.135.2.0,192.168.1.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Additional static routes requested<pre class="code">sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.0.48.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.10.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.13.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.47.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.128.73.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.129.24.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.131.23.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.131.24.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.135.49.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.135.52.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.135.56.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.217.32.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.26.24.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.3.124.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.32.50.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.32.52.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.32.8.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.34.69.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.36.208.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.58.148.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.58.20.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.72.107.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,10.76.148.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,134.238.101.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,134.238.107.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,134.238.125.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,134.238.143.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,134.238.150.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,153.2.72.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,153.2.73.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,155.56.96.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,157.133.26.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,172.27.74.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,192.55.165.0,192.168.1.1
+sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,-static,37.209.24.0,192.168.1.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron<pre class="code">sudo mkitab cron:23456789:respawn:/usr/sbin/cron</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Setup alt_rootvg</div>
+<ol>
+<li class="level2"><div class="li"> Look for another 138G device that is not allocated to any volume group<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove existing alt_disk and Create a new alt_disk_copy<pre class="code">sudo alt_disk_install -X altinst_rootvg
+sudo alt_disk_copy -B -d hdiskX</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Change hard coded hostnames from herald<pre class="code">sudo chsec -f /etc/security/login.cfg -s /dev/console -a herald=&quot;&quot;
+sudo chsec -f /etc/security/login.cfg -s default -a herald=&quot;&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On Central instance where NFS exports were disabled, please enable them by inspecting <code>/etc/export.apolloclone</code></div>
+</li>
+<li class="level1"><div class="li"> Perform a final reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT9 SECTION "Post installation - generic tasks from the host" [4582-] -->

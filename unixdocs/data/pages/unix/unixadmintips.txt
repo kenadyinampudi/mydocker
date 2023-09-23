@@ -1,0 +1,30 @@
+====== Unix Admin notes ======
+
+  * Mount an iso file as a filesystem (Since AIX 6.1 TL4 - I guess )
+    * If it does not exist, create the loopback device<code>sudo mkdev -c loopback -s node -t loopback</code>
+    * Mount an iso<code>sudo loopmount -i /prod/images/cds/SLES-10-SP1-x86_64-DVD1.iso -l loop0 -o "-V cdrfs -o ro" -m /cdrom</code>
+    * Unmount an iso<code>sudo loopumount -l loop0 -m /cdrom</code>
+  * Get to a unix servers console. Login to pcdcunxaxap01<code>sudo getconsole <hostname></code>
+  * Unlock user and reset failed login count <code>sudo chsec -f /etc/security/lastlog -a "unsuccessful_login_count=0" -s <username>
+sudo chuser "account_locked=false" <username></code>
+  * Reset user password <code>sudo pwdadm <username></code>
+  * Run a command on all servers. Login to pcdcunxaxap01
+    * Using for loop<code>for host in $(cat /prod/images/etc/unix_sys_console | grep -v ^# | grep -v ^$ | awk -F: '{print $1}')
+do
+   ssh -o 'Batchmode=yes' -o 'ConnectTimeout=10' ${host} uname -n
+   echo "Command executed on all servers "
+done</code>
+    * Using shmux<code>cat /prod/images/etc/allhosts.tenneco | /usr/local/bin/shmux -B -M 999 -C 3600s -S all -r ssh -c "uname -a" -</code>
+  * Disable/Enable all printers on a given host<code>for printer in $(grep : /etc/qconfig |grep -v "^*" |  grep -v "@" | sed "s;:;;g")
+do
+   echo "Resetting ${printer} "
+   sudo disable ${printer}
+   date
+   sudo enable ${printer}
+done</code>
+  * Restore a single file from mksysb<code>restore -xqdf <mksysbfilename> ./etc/motd</code>The restore is relative
+  * Usage rsync :: To copy /abc/def from serverA to serverB
+    * Option 1
+      * login to serverA<code>rsync -avv /abc/def/ serverB:/abc/def/</code>
+    * Option 2
+      * login to serverB<code>rsync -avv serverA:/abc/def/ /abc/def/</code>

@@ -1,0 +1,28 @@
+====== HMC Backup Data ======
+
+
+==== CLI ====
+Backing up HMC console data is most easily done from the command line.\\ 
+  bkconsdata -r nfs -h <destination> -l "/<exportname>" -d "<directoryunderexport>" -i perfmon
+  
+In Philly, a share has been set up on the FlashBlade to save the data.\\ 
+  bkconsdata -r nfs -h 172.16.33.51 -l "/hmc_backup" -d phlypahmc010 -i perfmon
+  bkconsdata -r nfs -h 172.16.33.51 -l "/hmc_backup" -d phlypahmc011 -i perfmon
+
+In CDC, a share has been set up on the Flashblade there\\
+  bkconsdata -r nfs -h 10.131.12.22 -l "/hmc_backup" -d cdcpilhmc010 -i perfmon
+  bkconsdata -r nfs -h 10.131.12.22 -l "/hmc_backup" -d tgprhmc7 -i perfmon
+  
+Note, the backups can take upwards of three hours if there is a lot of LPARs on the HMC.\\ 
+\\ 
+In the examples above, you would find the data for tgprhmc listed under NFS share \\ 
+  10.131.12.22:/hmc_backup/tgprhmc7/HMCBackup_<date&time>.tgz
+
+PHLYPAHMC010 would be in
+  172.16.33.51:/hmc_backup/phlypahmc010/HMCBackup_<date&time>.tgz
+==== GUI ====
+This can also be done from the GUI.
+Use "HMC Management" => "Console Management" in the tree, then "Backup Management Console Data"\\ 
+Check the box to include performance data.\\ 
+Use "172.16.33.51" as the server name, and "/hmc_backup" as the resource.\\ 
+Remember to include the leading slash in the resource field.

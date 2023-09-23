@@ -1,0 +1,20 @@
+====== Decommission storage array ======
+
+  - Make sure no I/O is going through the storage array.
+  - Remove all zones and host registrations
+  - Remove the storage array from ServiceNow
+  - Remove storage array from the database<code>ssh pgunap01
+sudo vi /prod/storageteam/etc/allstgarrays</code>
+  - Remove storage array from Inventory''https://storagedocs/doku.php?id=san:sanstorageinventory''
+  - Send request to Network team / Wintel team to remove and reclaim DNS names for<code>SPA
+SPB
+Control station(s)</code>
+  - Erase data from storage array.
+    - For clariion<code>export SP=<hostname of SPA></code>
+    - Get list of disks in the format<code>naviseccli -h ${SP} getdisk | grep ^"Bus " | awk '{print $2"_"$4"_"$6}' > alldisks.toremove</code>
+    - Start the data erasure<code>for disk in $(cat alldisks.toremove)
+do
+   echo "Started zeroing process for ${disk} "
+   naviseccli -h ${SP} zerodisk -messner ${disk} start
+done</code>
+    - For other storage arrays -- use vendor procedure.

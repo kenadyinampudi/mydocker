@@ -1,0 +1,8 @@
+====== Configure syslog-ng ======
+
+** Forwarding syslog-ng messages to remove log server **
+
+  - Do this<code>sudo vi /etc/syslog-ng/syslog-ng.conf</code>Add this<code>destination unixlog { udp("pablsv01" port(514)); };
+filter sudologs {facility(authpriv);};
+log { source(src); filter(sudologs); destination(unixlog); };</code>
+  - Restart syslog-ng<code>sudo /etc/init.d/syslog restart</code>

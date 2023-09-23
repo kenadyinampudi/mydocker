@@ -1,0 +1,33 @@
+
+<h1 class="sectionedit1" id="aix_mpio_-_how_to_check_if_round_robin_is_enabled_and_working">AIX MPIO - How to check if round robin is enabled and working</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> To check the device attributes, we would<pre class="code">lsattr -El hdisk9 -a algorithm -a reserve_policy
+algorithm      round_robin Algorithm      True
+reserve_policy no_reserve  Reserve Policy True</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> But that doesn&#039;t really mean if the attributes are active. It just means that the ODM attributes are correct.</div>
+<ol>
+<li class="level3"><div class="li"> In order to find out the real story,<pre class="code">echo &quot;scsidisk hdiskX&quot; | sudo kdb | egrep &quot;algorithm|reserve_lock&quot;</pre>
+
+<p>
+You would see something like this
+</p>
+<pre class="code">uchar algorithm = 0x0;
+uchar  reserve_lock       = 0x0;</pre>
+
+<p>
+Here
+</p>
+<pre class="code">algorithm    0x0 -- Means round_robin is  on,   0x1 -- Means it is single path
+reserve_lock 0x0 -- Means reserve_lock is  off, 0x1 -- Means reserve lock is turned on</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

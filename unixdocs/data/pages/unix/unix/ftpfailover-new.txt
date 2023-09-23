@@ -1,0 +1,67 @@
+====== FTP Server fail-over documentation ======
+
+Unix team support the FTP servers for incomming FTP and SFTP traffic. This FTP solution is implemented on a cluster of 2 AIX servers
+
+  * paft3p01 ---> Primary ( 170.64.0.68 ) implemented via VIP
+  * paft3p02 ---> Host (170.64.0.69) - System on Machine Serial Number: 214BB7V
+  * paft3p03 ---> Host (170.64.0.xx) - System on Machine Serial Number: 06C17A2
+
+Users come in via regular ftp and sftp to Primary server - VIP=170.64.0.68
+
+The failover is based on the same principle as TA2, C11, H1P application CI where disks are presented to both systems and VIP floats.
+
+
+** Fail-over documentation **
+
+Should a hardware maintenance or operating system upgrade require a downtime on the primary server, the service can be failed over to secondary by "Re-ip"ing the hosts.
+
+  - Open a console session to both the servers from taitc118<code>sudo getconsole paft3p01
+sudo getconsole paft3p02</code>
+  - Backup SSH keys from both the servers
+    * paft3p01<code>sudo tar cf /var/tmp/paft3p01.ssh.keys.tar /etc/ssh/ssh_host*
+sudo scp /var/tmp/paft3p01.ssh.keys.tar taitc118:/preupgrade/reports/
+sudo scp /var/tmp/paft3p01.ssh.keys.tar paft3p02:/var/tmp/
+sudo rm /var/tmp/paft3p01.ssh.keys.tar</code>
+    * paft3p02<code>sudo tar cf /var/tmp/paft3p02.ssh.keys.tar /etc/ssh/ssh_host*
+sudo scp /var/tmp/paft3p02.ssh.keys.tar taitc118:/preupgrade/reports/
+sudo scp /var/tmp/paft3p02.ssh.keys.tar paft3p01:/var/tmp/
+sudo rm /var/tmp/paft3p02.ssh.keys.tar</code>
+  - Shutdown FTP and SFTP daemons on paft3p01.
+    * At the console execute these commands<code>sudo cp /etc/inetd.conf /etc/inetd.conf.$(date +%m%d%y)
+sudo perl -i -p -e 's/^mailbox_lm/#mailbox_lm/' /etc/inetd.conf
+sudo refresh -s inetd
+sudo stopsrc -s sshd</code>
+    * Disable the FTP daemons<code>cp -p /etc/inittab /etc/inittab.$(date +%m%d%y) 
+grep fwder /etc/inittab | sed "s;respawn;off;g" | xargs -n1 echo sudo chitab</code>Execute the commands one at a time.
+  - Disable the refresh job on paft3p02. Comment this script<code>01 * * * * /usr/local/bin/backup.ksh 1>/dev/null 2>&1</code>
+  - Perform last sync. Run this script on paft3p02<code>sudo /usr/local/bin/backup.ksh</code>
+  - Remove the NFS mount and refresh process on paft3p02<code>sudo umount /taedi61-ftpserv1
+sudo crontab -e</code>
+  - Disable the outbond FTP / Shutdown FTP server gentran instance - EDI Apps team
+  - Backup hosts file on both the servers<code>sudo cp /etc/hosts /etc/hosts.$(date +%m%d%y)</code>
+  - Detach interfaces
+    * On paft3p01's console<code>sudo ifconfig en4 down detach</code>
+    * On paft3p02's console<code>sudo ifconfig en6 down detach</code>
+  - Re-ip the interfaces
+    * On paft3p01's console, Change IP, hostname, make changes in /etc/hosts and reboot<code>sudo /usr/sbin/mktcpip -h'paft3p02' -a'170.64.0.69' -m'255.255.255.192' -i'en4' \
+-n'10.32.8.53' -d'tenneco.com' -g'170.64.0.65' -A'no' -t'N/A' -s''
+sudo vi /etc/hosts
+sudo tar xvf /var/tmp/paft3p02.ssh.keys.tar
+sudo rm /var/tmp/paft3p02.ssh.keys.tar
+sudo shutdown -Fr</code>
+    * On paft3p02's console, Change IP, make changes in /etc/hosts and reboot<code>sudo /usr/sbin/mktcpip -h'paft3p01' -a'170.64.0.68' -m'255.255.255.192' -i'en6' \
+-n'10.32.8.53' -d'tenneco.com' -g'170.64.0.65' -A'no' -t'N/A' -s''
+sudo vi /etc/hosts
+sudo tar xvf /var/tmp/paft3p01.ssh.keys.tar
+sudo rm /var/tmp/paft3p01.ssh.keys.tar
+sudo shutdown -Fr</code>
+  - Startup Gentran instance on FTP server - paft3p01 - EDI Apps team has their own procedures
+  - Start perimeter server on new FTP server - EDI Apps team has their own procedures
+  - Enable FTP service and SFTP on paft3p01<code>sudo perl -i -p -e 's/^#mailbox_lm/mailbox_lm/' /etc/inetd.conf
+sudo refresh -s inetd</code>
+  - Enable FTP daemons<code>cp -p /etc/inittab /etc/inittab.$(date +%m%d%y)
+grep fwder /etc/inittab | sed "s;off;respawn;g" | xargs -n1 echo sudo chitab</code>**Execute the resulting commands one at a time carefully.**
+  - Enable refresh process on paft3p02<code>sudo mount /taedi61-ftpserv1
+sudo crontab -e</code>Un-comment this script<code>#01 * * * * /usr/local/bin/backup.ksh 1>/dev/null 2>&1</code>
+  - Change the lpar name on the managed system from HMC
+  - Update the information on the console database @ taitc118 <code>sudo vi /prod/images/etc/unix_sys_console</code>

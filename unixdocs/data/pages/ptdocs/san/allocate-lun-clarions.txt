@@ -1,0 +1,47 @@
+====  Adding more disk to a File Storage Pool ====
+
+
+
+~filestorage
+Storage  -> LUNs  ->  Create  
+Choose the filestorage pool.
+Choose a filesize (Up for grabs ... maybe 1TB?)
+Choose "Name" to manually name the LUNs.
+Filename should be something like "File_<arrayname>"
+The starting LUN should be whatever the next number in the range of already assigend disks
+The resulting Disks will be created.  The dialog should show disks with names of "File_<arrayname>_<LUN>"  (The undersscore is added automatically.)
+
+Hosts -> Storage Groups  ->  ~filestorage 
+With "~filestorage" highlighted, click "Connect Luns"
+In the new popup, expand the "SPA" and "SPB" tree items.  You should see the newly created LUNs.
+Select the newly created LUNs and click "Add".
+They should now be visible in the bottom of the dialog box.  (They should be the only disks listed without a number in the "Host Lun ID" column, because they are not yet allocated.
+A summary dialog will appear.  Double-check that the proposed operation matches what you intended.  Click "Yes" if it matches.
+
+Give it a few minutes to finish adding the disks to the pool.
+
+Next, have the pool discover the newly assigned disks.
+Storage  ->  Storage Configuration  -> Storage Pools for File
+In the bottom right corner under the "File Storage" section, click the "Rescan Storage Systems" Link.
+Click "OK".  This is non-disruptive.  
+
+Give it a few minutes to finish scanning.
+The Storage Pool for the file data should eventually show the added disk.
+It will show as potential MB at first.
+<code>
+[nasadmin@glkvnx5400cs0 ~]$ nas_pool -size FILE-POOL
+id           = 59
+name         = FILE-POOL
+used_mb      = 42803231
+avail_mb     = 1269548
+total_mb     = 44072779
+potential_mb = 0
+
+[nasadmin@glkvnx5400cs0 ~]$ nas_pool -size FILE-POOL
+id           = 59
+name         = FILE-POOL
+used_mb      = 42803231
+avail_mb     = 1269548
+total_mb     = 44072779
+potential_mb = 4194300
+</code>

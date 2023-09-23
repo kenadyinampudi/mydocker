@@ -1,0 +1,107 @@
+
+<h1 class="sectionedit1" id="redhat_server_post_installation_work">Redhat Server Post installation work</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Redhat Server Post installation work" [1-52] -->
+<h3 class="sectionedit2" id="steps_from_the_server_that_is_being_built">Steps from the server that is being built</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the ADMIN server</div>
+<ol>
+<li class="level2"><div class="li"> For DRiV<pre class="code">ssh pcdcunxaxap01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> For Tenneco<pre class="code">ssh pgnmsv01</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the server (as root) you just built<pre class="code">sudo ssh &lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupresolv.conf" class="wikilink1" title="unix:setupresolv.conf">A basic North American resolv.conf is installed, for specific sites in NA and EU, please click the link</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:timezone" class="wikilink1" title="unix:timezone">Setup correct timezone for servers please click the link</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupntp#redhat" class="wikilink1" title="unix:setupntp">For NA servers NTP is already configured, for European servers please click the link</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:createinformationfile#linux" class="wikilink1" title="unix:createinformationfile">Update the information file</a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Steps from the server that is being built" [53-703] -->
+<h3 class="sectionedit3" id="steps_from_the_master_server">Steps from the Master server</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> For DRiV - Login to pcdcunxaxap01<pre class="code">ssh pcdcunxaxap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> For Legacy Tenneco - Login to pgnmsv01<pre class="code">ssh pgnmsv01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy <abbr title="Secure Shell">SSH</abbr> keys, sudoers, uuma and such<pre class="code">sudo /prod/images/scripts/config_tenneco_linux &lt;servername&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:lpar2rrd-os-agent#installing_lpar2rrd_agent_-_rhel" class="wikilink1" title="unix:lpar2rrd-os-agent">Setup lpar2rrd agent</a></div>
+</li>
+<li class="level1"><div class="li"> Send ticket for netbackup</div>
+</li>
+<li class="level1"><div class="li"> Send ticket for Monitoring</div>
+</li>
+<li class="level1"><div class="li"> Send a ticket to “GIOS Operations - Entitlement” to add the systems.</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-sap" class="wikilink1" title="unix:postinstallationsteps-redhat-sap">For SAP servers - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-omi" class="wikilink1" title="unix:postinstallationsteps-redhat-omi">For OMI servers - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-network" class="wikilink1" title="unix:postinstallationsteps-redhat-network">For Network Monitoring servers - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-splunk" class="wikilink1" title="unix:postinstallationsteps-redhat-splunk">For Security servers - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> Shutdown the VM<pre class="code">ssh ${server_tenneco}</pre>
+
+<p>
+Shutdown
+</p>
+<pre class="code">sudo init 0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the installation CDROM</div>
+<ol>
+<li class="level2"><div class="li"> On VMWARE based systems<pre class="code">Edit settings on the vSphere client and remove the isofile mapping to Virtual CDROM
+Make it client device</pre>
+
+<p>
+Once done –&gt; Power on the VM
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> On standalone NBU home made appliances<pre class="code">ssh LAN@${server_tenneco}rmb</pre>
+
+<p>
+Eject the CDROM
+</p>
+<pre class="code">vm cdrom eject</pre>
+
+<p>
+Exit from iLO
+</p>
+<pre class="code">exit</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:rhelpatching#installing_patches_on_clients" class="wikilink1" title="unix:rhelpatching">Patch the server to the latest version of RHEL6 or RHEL7</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-nbu" class="wikilink1" title="unix:postinstallationsteps-redhat-nbu">For Netbackup home made appliances - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> After the installation check the kickstart logs to make sure there were no errors<pre class="code">sudo more /root/ks-pre.log
+sudo more /root/ks-post.log</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Steps from the Master server" [704-] -->

@@ -1,0 +1,43 @@
+====== pagi3p01 work to do ======
+
+  - Document information<code>Fabric A
+
+c0507606cf0c008a	ldcds5300a1		14	vmax_0301_2g0
+c0507606cf0c0090	ldcds5300a1		71	vmax_0301_2g0</code>
+  - Cleanup old information - Fabric A<code>cfgremove "fab_a_act_config","pagi3p01_4d0014__vmax_0301_2g1"
+zonedelete pagi3p01_4d0014__vmax_0301_2g1
+alidelete "pagi3p01_4d0014"
+
+alicreate "pagi3p01_0c008a","c0:50:76:06:cf:0c:00:8a"
+alicreate "pagi3p01_0c0090","c0:50:76:06:cf:0c:00:90"
+
+zonecreate "pagi3p01_0c008a__vmax_0301_2g0","pagi3p01_0c008a;vmax_0301_2g0"
+zonecreate "pagi3p01_0c0090__vmax_0301_2g0","pagi3p01_0c0090;vmax_0301_2g0"
+
+cfgadd "fab_a_act_config","pagi3p01_0c008a__vmax_0301_2g0;pagi3p01_0c0090__vmax_0301_2g0"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+  - Document information<code>Fabric B
+
+c0507606cf0c008c	ldcds5300b1		14	vmax_0301_3g0
+c0507606cf0c008e	ldcds5300b1		71	vmax_0301_3g0</code>
+  - Cleanup old config - Fabric B<code>cfgremove "fab_b_act_config","pagi3p01_4d0016__vmax_0301_3g1"
+zonedelete "pagi3p01_4d0016__vmax_0301_3g1"
+alidelete "pagi3p01_4d0016"
+
+alicreate "pagi3p01_0c008c","c0:50:76:06:cf:0c:00:8c"
+alicreate "pagi3p01_0c008e","c0:50:76:06:cf:0c:00:8e"
+
+zonecreate "pagi3p01_0c008c__vmax_0301_3g0","pagi3p01_0c008c;vmax_0301_3g0"
+zonecreate "pagi3p01_0c008e__vmax_0301_3g0","pagi3p01_0c008e;vmax_0301_3g0"
+
+cfgadd "fab_b_act_config","pagi3p01_0c008c__vmax_0301_3g0;pagi3p01_0c008e__vmax_0301_3g0"
+cfgsave
+cfgenable "fab_b_act_config"</code>
+  - Update the VMAX configuration<code>sudo symaccess -sid 0301 -name pahydb01_IG -type initiator -wwn c0507606cf0c008a add
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator -wwn c0507606cf0c0090 add
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator -wwn c0507606cf0c008c add
+sudo symaccess -sid 0301 -name pahydb01_IG -type initiator -wwn c0507606cf0c008e add
+
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator -wwn c0507607f34d0014 remove
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator -wwn c0507607f34d0016 remove</code>

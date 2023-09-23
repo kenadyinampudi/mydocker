@@ -1,0 +1,62 @@
+====== Configuring unispool to systemd/RHEL7 ======
+
+** For informational purposes only **
+
+  * Objective is to enable unispool to be controlled by systemd. systemd replaced init in RHEL6 or 7.
+  * This is the correct way to implement a service in RHEL7 [[https://access.redhat.com/solutions/1163283]]
+
+
+FIXME **This is not tested yet, working with Danny Smeets**
+===== Adding unispool to systemd =====
+
+  - Create a generic start/stop script for unispool<code>sudo vi /usr/local/sbin/unispool.sh</code>paste this output it<code>#!/bin/bash
+#
+# Custom script to startup unispool
+
+function start_unispool {
+/users/unispool/programs/unispool_start
+export MAINPID=$(ps -ef | grep /users/unispool/bin/main | grep -v grep | awk '{print $2}')
+}
+
+function stop_unispool {
+/users/unispool/programs/unispool_stop
+}
+
+case ${1} in
+start)
+   start_unispool
+   ;;
+stop)
+   stop_unispool
+   ;;
+reload)
+   stop_unispool
+   start_unispool
+   ;;
+*)
+   echo "Unknown "
+   ;;
+esac</code>
+  - Make it executable<code>sudo chmod 755 /usr/local/sbin/unispool.sh</code>
+  - Create a config file for systemd/unispool<code>sudo vi /etc/systemd/system/unispool.service</code>Add this content to it<code>[Unit]
+Description=Unispool management script
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/unispool.sh start
+ExecStop=/usr/local/sbin/unispool.sh stop
+ExecReload=/usr/local/sbin/unispool.sh reload
+User=unispool
+Group=unispool
+RemainAfterExit=yes
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target</code>
+  - At this time, we should be able to,
+    - Start unispool<code>sudo systemctl start unispool</code>
+    - Stop  unispool<code>sudo systemctl stop unispool</code>
+    - Status of unispool<code>sudo systemctl status unispool</code>
+    - Restart of unispool<code>sudo systemctl reload unispool</code>
+    - Enable for automatic start/stop<code>sudo systemctl enable unispool</code>

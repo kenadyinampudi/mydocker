@@ -1,0 +1,109 @@
+<code>1.	Get c-shell to users (see mail below) default shell for all Basis users.			Done
+2.	Swap Space needs to be 24 GB	
+3.	Extend /USR/SAP/CTA/SUM to 10GB									Done
+4.	I would like to call the installer via ctaadm with  a sudo command : /usr/sap/CTA/SUM/sapinst
+5.	Limits for <sid>adm userid’s are not correct (descriptor needs to be adjusted)
+
+Required:
+Output	Properties
+Cputime	unlimited
+Filesize	unlimited
+datasize	unlimited
+stacksize	8192 KB
+coredumpsize	unlimited
+descriptors	8192
+memoryuse	unlimited
+
+X windows emulation for Linux		Done
+
+
+What should be the boot disk size of RHEL for SAP.
+
+Hello Kapil, Vasu
+
+There are 2 more items:
+
+The swap space  needs to be 2*Memory
+Default shell for SAP related userid’s (and maybe alsof or sapbasis members) should be c-shell
+
+Could you first focus on getting the X-11 issue resolved.
+(you would need to be able to get VNC or an X-terminal emulator working).
+I think a good reference is in here: http://unix.stackexchange.com/questions/111519/ssh-returns-message-x11-forwarding-request-failed-on-channel-1
+It has also a specific setting for REL 7.
+
+For future swap space references if one would setup a server with a lot of memory 
+1.1.	Check swap space
+Check memory size and Swap space size
+grep MemTotal /proc/meminfo: 
+grep SwapTotal /proc/meminfo
+Phys Memory (RAM)   Swap-Space
+< 32 GByte                2 x RAM
+  32 -   63 GByte         64 GByte
+  64 -  127 GByte         96 GByte
+128 -  255 GByte        128 GByte
+256 -  511 GByte        160 GByte
+512 - 1023 GByte        192 GByte
+1024 - 2047 GByte        224 GByte
+2048 - 4095 GByte        256 GByte
+4096 - 8191 GByte        288 GByte
+> 8192 GByte             320 GByte
+
+
+
+
+syslocation Server Room
+syscontact Sysadmin (giosunix@tenneco.com)
+
+rocommunity oicu812 10.32.8.187 
+trapsink   10.32.8.187   oicu812
+trap2sink  10.32.8.187   oicu812
+
+
+All on taprvio50/51
+
+
+deerdb99		c11datavg01		12
+deerdb99		datavg01		3
+deerap99		nfsvg01			1
+deerap99		nfsvg02			1
+
+Fabric A :-
+
+ zone:  taprvio50_9c8959__dmx4_3339_7b1
+                taprvio50_9c8959; dmx4_3339_7b1		10:00:00:00:c9:9c:89:59
+
+ zone:  taprvio51_a5e5ff__dmx4_3339_7b1
+                taprvio51_a5e5ff; dmx4_3339_7b1		10:00:00:00:c9:a5:e5:ff
+Fabric B :- 
+
+ zone:  taprvio50_a5f031__dmx4_3339_10b1
+                taprvio50_a5f031; dmx4_3339_10b1	10:00:00:00:c9:a5:f0:31	
+ zone:  taprvio51_9d1001__dmx4_3339_10b1
+                taprvio51_9d1001; dmx4_3339_10b1	10:00:00:00:c9:9d:10:01
+
+
+PORT="7B:1 10B:1"
+LUN="0035F 0036B 00377 00383 0038F 0039B 003A7 003B3 003BF 003CB 003D7 003E3 003EF 003FB 00407 00413 0041F"
+STARTLUNID=005
+
+for luns in $LUN ;
+do
+        for ports in $PORT ;
+        do
+                echo "map dev $luns to dir $ports target=0 lun=$STARTLUNID;"
+        done
+STARTLUNID=`echo "obase=16;ibase=16;$STARTLUNID+1"|bc`
+done
+
+
+sudo symmask -sid 39 -wwn 10000000c99c8959 -dir 7B -p 1 add devs 0035F,0036B,00377,00383,0038F,0039B,003A7,003B3,003BF,003CB,003D7,003E3,003EF,003FB,00407,00413,0041F
+sudo symmask -sid 39 -wwn 10000000c9a5e5ff -dir 7B -p 1 add devs 0035F,0036B,00377,00383,0038F,0039B,003A7,003B3,003BF,003CB,003D7,003E3,003EF,003FB,00407,00413,0041F
+sudo symmask -sid 39 -wwn 10000000c9a5f031 -dir 10B -p 1 add devs 0035F,0036B,00377,00383,0038F,0039B,003A7,003B3,003BF,003CB,003D7,003E3,003EF,003FB,00407,00413,004
+
+
+
+
+
+
+
+</code>

@@ -1,0 +1,283 @@
+
+<h1 class="sectionedit1" id="imo_project_clones_-_driv_-_rhel_build_documentation_--_mock_build_-_cloned_vm">IMO Project clones - DRiV - RHEL build documentation -- Mock build - cloned VM</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> In most cases , the <abbr title="Domain Name System">DNS</abbr> name and IP addresses are already secured.</div>
+</li>
+<li class="level1"><div class="li"> Firewall is in place, there is no need for host level network isolations.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "IMO Project clones - DRiV - RHEL build documentation -- Mock build - cloned VM" [1-244] -->
+<h2 class="sectionedit2" id="build_the_vm">Build the VM</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Most builds are clones of systems from Legacy Tenneco.</div>
+</li>
+<li class="level1"><div class="li"> Email the Wintel project resource to build a clone in the FMMP vCenter</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Build the VM" [245-405] -->
+<h2 class="sectionedit3" id="setup_console_database">Setup console database</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the DRiV NIM server <code>pcdcunxaxap01</code></div>
+</li>
+<li class="level1"><div class="li"> Export a variable to store the system and vCenter hostname</div>
+<ol>
+<li class="level2"><div class="li"> Legacy FMMP vCenter<pre class="code">export vcenter=cdcvilms156.fmmp.fmmotorparts.com</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> DRiV vCenter<pre class="code">export vcenter=egdcilms010.driv.com</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Export a variable pointing to the hostname to be built<pre class="code">export tgtsystem=name_of_the_system</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the system to console database<pre class="code">echo &quot;${tgtsystem}:std-vmware-vsphere:${vcenter}:ADACCOUNT&quot; | sudo tee -a /prod/images/etc/unix_sys_console</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Setup console database" [406-976] -->
+<h2 class="sectionedit4" id="power_on_the_vm_and_change_the_hostname_and_remove_network_configs">Power on the VM and change the hostname and remove Network configs</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to vCenter <code>cdcvilms156.fmmp.fmmotorparts.com</code></div>
+<ol>
+<li class="level2"><div class="li"> Select the VM → Edit settings and remove the NIC.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Power on the VM and access console, login as root.</div>
+</li>
+<li class="level1"><div class="li"> Change hostname<pre class="code">hostname &lt;new_host_name&gt;
+echo &quot;new_host_name&quot; &gt; /etc/hostname</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove network definitions<pre class="code">rm -i /etc/sysconfig/network-scripts/ifcfg-e*</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Power on the VM and change the hostname and remove Network configs" [977-1411] -->
+<h3 class="sectionedit5" id="remove_monitoring_and_cron_and_clean_nfs">Remove monitoring and cron and clean NFS</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Remove openview software<pre class="code">/opt/OV/bin/OpC/install/oasetup.sh -remove</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable crond<pre class="code">systemctl disable crond</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown the server<pre class="code">init 0</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Remove monitoring and cron and clean NFS" [1412-1646] -->
+<h3 class="sectionedit6" id="add_the_nics_and_boot_the_system">Add the NICs and boot the system</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:driv:infrastructureservices" class="wikilink1" title="unix:driv:infrastructureservices">Subnets are documented here</a></div>
+</li>
+<li class="level1"><div class="li"> Access vCenter and NIC(s)</div>
+<ol>
+<li class="level2"><div class="li"> First NIC should be the one on which the hostname&#039;s IP resolves to.</div>
+</li>
+<li class="level2"><div class="li"> Once done – Power on the VM</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Add the NICs and boot the system" [1647-1899] -->
+<h3 class="sectionedit7" id="access_console_and_configure_network_interfaces">Access console and configure network interfaces.</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login as root and temporarily assign IP address</div>
+<ol>
+<li class="level2"><div class="li"> List the interfaces<pre class="code">ip link show</pre>
+
+<p>
+You should see something like this
+</p>
+<pre class="code">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: ens224: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether 00:50:56:98:42:78 brd ff:ff:ff:ff:ff:ff
+3: ens225: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether 00:50:56:98:42:78 brd ff:ff:ff:ff:ff:ff</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> The second interface “ens224” is the primary NIC</div>
+</li>
+<li class="level2"><div class="li"> Configure IP address<pre class="code">ifconfig ens224 a.b.c.d netmask 255.255.255.0 up</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure gateway<pre class="code">route add -net 0.0.0.0 gw a.b.c.1</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Access console and configure network interfaces." [1900-2777] -->
+<h3 class="sectionedit8" id="tasks_from_the_nim_server">Tasks from the NIM server</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to DRiV NIM server pcdcunxaxap01 and define a variable pointing to the system you are building<pre class="code">export tgtsystem=&lt;host_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a hosts file<pre class="code">echo &quot;127.0.0.1               loopback localhost&quot; &gt; hostsfile.${tgtsystem}
+host ${tgtsystem} | awk &#039;{print $3&quot;\t&quot;$1,$1&quot;d&quot;}&#039; | sed &quot;s;.driv.comd;;g&quot; | sed &quot;s;,;;g&quot; &gt;&gt; hostsfile.${tgtsystem}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the hosts file<pre class="code">sudo scp hostsfile.${tgtsystem} ${tgtsystem}:/etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable <abbr title="Domain Name System">DNS</abbr>, NTP<pre class="code">sudo scp /prod/images/etc/resolv.conf.driv ${tgtsystem}:/etc/resolv.conf
+sudo scp /prod/images/etc/ntp.conf.rhel.driv ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com &quot;ntpdate -u cdcvildns001.fmmotorparts.com&quot;
+sudo ssh ${tgtsystem}.driv.com &quot;systemctl restart ntpd&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT8 SECTION "Tasks from the NIM server" [2778-3594] -->
+<h3 class="sectionedit9" id="post_installation_-_generic_tasks_from_the_host">Post installation - generic tasks from the host</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the host<pre class="code">ssh ${tgtsystem}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the primary interface<pre class="code">my_ip=$(grep $(uname -n) /etc/hosts | awk &#039;{print $1}&#039; )
+my_iface=$(sudo ip link show | grep ^2: | awk &#039;{print $2}&#039;  | sed &quot;s;:;;g&quot;)
+my_network=$(echo ${my_ip} | awk -F &quot;.&quot; &#039;{print $1&quot;.&quot;$2&quot;.&quot;$3&quot;.0&quot;}&#039;)
+echo &quot;DEVICE=${my_iface}&quot;        | sudo tee    /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;BOOTPROTO=static&quot;          | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;IPADDR=${my_ip}&quot;           | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;NETMASK=255.255.255.0&quot;     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;NETWORK=${my_network}&quot;     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo &quot;ONBOOT=yes&quot;                | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure default gateway<pre class="code">echo ${my_ip} | awk -F &quot;.&quot; &#039;{print &quot;GATEWAY=&quot;$1&quot;.&quot;$2&quot;.&quot;$3&quot;.1&quot; }&#039; | sudo tee /etc/sysconfig/network</pre>
+
+<p>
+Restart network services
+</p>
+<pre class="code">sudo systemctl restart network</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove cron jobs for application accounts<pre class="code">for file in $(sudo ls -1 /var/spool/cron/ | egrep -v &quot;^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$&quot;)
+do
+   sudo rm -i /var/spool/cron/${file} # Remove the -i if you are confident
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron<pre class="code">sudo systemctl enable crond</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Review the checklist and perform whatever work is needed, NFS mounts etc.</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:imoaixbuildclonefordriv-networkisolated-accenturebasisusers-rhel" class="wikilink1" title="unix:imoaixbuildclonefordriv-networkisolated-accenturebasisusers-rhel">If requested, create Accenture Basis accounts</a></div>
+</li>
+<li class="level2"><div class="li"> In most cases, you will need to configure virtual IPs</div>
+<ol>
+<li class="level3"><div class="li"> Export a variable to automate<pre class="code">virtual_ip=&quot;e.f.g.h&quot;</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Create the configuration<pre class="code">my_iface=$(sudo ip link show | grep ^2: | awk &#039;{print $2}&#039;  | sed &quot;s;:;;g&quot;)
+echo &quot;DEVICE=${my_iface}:0&quot;        | sudo tee    /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0
+echo &quot;BOOTPROTO=static&quot;            | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0
+echo &quot;IPADDR=${virtual_ip}&quot;        | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0
+echo &quot;NETMASK=255.255.255.0&quot;       | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0
+echo &quot;ONBOOT=yes&quot;                  | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}:0</pre>
+
+<p>
+Bring up the interface
+</p>
+<pre class="code">sudo ifup ${my_iface}:0 ; sudo systemctl restart network</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Reconfigure syslog<pre class="code">sudo cp /etc/rsyslog.conf /etc/rsyslog.conf.$(date +%M%d%Y)
+sudo sed -i &#039;/pglgsv01/d&#039; /etc/rsyslog.conf
+sudo sed -i &#039;/pcdcunxlxap04/d&#039; /etc/rsyslog.conf
+echo &quot;*.*         @unixlogs.driv.com&quot; | sudo tee -a /etc/rsyslog.conf
+sudo systemctl restart rsyslog</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> NFS mounts </div>
+<ol>
+<li class="level3"><div class="li"> Remove all NFS mounts from fstab<pre class="code">sudo cp /etc/fstab /etc/fstab.$(date +%m%d%Y)
+cat /etc/fstab | grep -v nfs &gt; 1
+sudo cp 1 /etc/fstab</pre>
+
+<p>
+Check fstab
+</p>
+<pre class="code">cat /etc/fstab</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Add any NFS mounts requested. A sample entry is here<pre class="code">qaerdb01:/sapmnt/FTA/exe /sapmnt/FTA/exe nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp</pre>
+
+<p>
+Add this to /etc/fstab and mount each filesystem
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> NFS exports</div>
+<ol>
+<li class="level3"><div class="li"> Add any NFS exports requested<pre class="code">sudo vi /etc/exports</pre>
+
+<p>
+A sample entry would be
+</p>
+<pre class="code">/sapmnt/PS1 pcdcps1axdb01(rw,no_root_squash)</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create solarwinds account for monitoring<pre class="code">sudo useradd -K PASS_MAX_DAYS=-1 -g users -d /home/solwinds -c &quot;Solarwinds - ssh monitoring account&quot; -m -u 6851 solwinds
+echo &quot;solwinds:sa3qlTY77TwFs&quot; | sudo chpasswd -e
+sudo chage -I -1 -m 0 -M 99999 -E -1 solwinds
+sudo usermod -U solwinds
+sudo passwd -u solwinds</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update local repositories to point to the cobbler at DRiV<pre class="code">[[ -f /etc/yum.repos.d/local.repo   ]]   &amp;&amp; sudo sed -i &#039;s/pablsv02/pcdcunxlxap01/&#039; /etc/yum.repos.d/local.repo
+[[ -f /etc/yum.repos.d/sap.repo     ]]   &amp;&amp; sudo sed -i &#039;s/pablsv02/pcdcunxlxap01/&#039; /etc/yum.repos.d/sap.repo
+[[ -f /etc/yum.repos.d/saphana.repo ]]   &amp;&amp; sudo sed -i &#039;s/pablsv02/pcdcunxlxap01/&#039; /etc/yum.repos.d/saphana.repo</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:lpar2rrd-os-agent#installing_lpar2rrd_agent_-_rhel" class="wikilink1" title="unix:lpar2rrd-os-agent">Setup lpar2rrd agent</a></div>
+</li>
+<li class="level1"><div class="li"> Perform a final reboot<pre class="code">sudo init 6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send an email to John Ziegler and Koushik to setup monitoring.</div>
+</li>
+<li class="level1"><div class="li"> Send an email to giosdatapres@tenneco.com to setup backups.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT9 SECTION "Post installation - generic tasks from the host" [3595-] -->

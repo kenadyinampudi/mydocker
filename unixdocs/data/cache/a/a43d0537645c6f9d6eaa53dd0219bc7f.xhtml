@@ -1,0 +1,64 @@
+
+<h2 class="sectionedit1" id="ta2_failover">TA2 Failover</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> peerdb99 is the primary database</div>
+</li>
+<li class="level1"><div class="li"> peerdb98 is the dataguard standby.</div>
+</li>
+<li class="level1"><div class="li"> peerap99 is the primary CI / NFS server host</div>
+</li>
+<li class="level1"><div class="li"> peerap98 is the failover CI / NFS server host</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "TA2 Failover" [1-202] -->
+<h3 class="sectionedit2" id="database_failover_from_peerdb99_to_peerdb98">Database Failover from peerdb99 to peerdb98</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Shutdown SAP application ( TA2 ). - Basis</div>
+</li>
+<li class="level1"><div class="li"> Shutdown / deactivate the primary TA2 database on peerdb99. - <abbr title="Database Administrator">DBA</abbr></div>
+</li>
+<li class="level1"><div class="li"> confirm from <abbr title="Database Administrator">DBA</abbr> that datbases are in sync and we are ready to perform the failover.</div>
+</li>
+<li class="level1"><div class="li"> Login to peerdb99</div>
+</li>
+<li class="level1"><div class="li"> Deconfigure the VIPs<pre class="code">cd /root/cluster
+ksh ./del-alias99.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to peerdb98</div>
+</li>
+<li class="level1"><div class="li"> Configure the VIPs<pre class="code">cd /root/cluster
+ksh ./alias98.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Inform <abbr title="Database Administrator">DBA</abbr> that the VIP has been configured.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Database Failover from peerdb99 to peerdb98" [203-700] -->
+<h3 class="sectionedit3" id="ci_nfs_server_failover_from_peerap99_to_peerap98">CI / NFS Server failover from peerap99 to peerap98</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to peerap99</div>
+</li>
+<li class="level1"><div class="li"> Deconfigure VIPs and unexport NFS<pre class="code">cd /root/cluster
+ksh ./umount99.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to peerap98</div>
+</li>
+<li class="level1"><div class="li"> Configure the VIPs and export the NFS<pre class="code">cd /root/cluster
+ksh ./mount98.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Inform the Basis person that the CI VIPs are now failed over.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "CI / NFS Server failover from peerap99 to peerap98" [701-] -->

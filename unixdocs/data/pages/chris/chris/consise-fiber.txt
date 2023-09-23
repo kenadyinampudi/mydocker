@@ -1,0 +1,36 @@
+====== AIX initial configuration of SAN connected systems ======
+
+  - Configure FC SCSI attributes<code>for FSCSI in $(lscfg | grep fscsi | awk '{print $2}' )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</code>
+
+===== Storage Array specific device drivers since all servers are built on pure this section is abbreviated=====
+    - Check if pure ODM has been installed.<code>lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte</code>You should see this if ODM i
+s installed<code> Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  devices.fcp.disk.pure.flasharray.mpio.rte
+                             1.0.0.4  COMMITTED  AIX MPIO Support for PURE
+                                                 Flash Arrays(New Install)</code>If Pure ODM is not installed, you would find somethin
+g like this<code>lslpp: 0504-132  Fileset devices.fcp.disk.pure.flasharray.mpio.rte not installed.</code>
+      - If Pure ODM is not installed, install it now.
+
+
+  - What type of operating system is this ?
+    - AIX
+      - What type of disks are we using on this LPAR ?
+          -If the system is using Pure Storage disks, do nothing
+          -If the system is NOT using Pure Storage disks, install the proper device drivers
+        - vSCSI 
+          - Do not install any device drivers
+        - NPIV
+	- If the system is using Pure Storage disks, do nothing
+        - If the system is NOT using Pure Storage disks, install the proper device drivers
+    - VIOS
+      - What type of I/O virtualization are we planning to use on this frame/VIOS ?
+        - vSCSI 
+          - If the system is using Pure Storage disks, do nothing
+          - If the system is NOT using Pure Storage disks, install the proper device drivers
+        - NPIV
+          - Do not install any device drivers

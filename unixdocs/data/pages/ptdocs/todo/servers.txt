@@ -1,0 +1,32 @@
+====== TODO: Servers ======
+We really need a way of getting new things into IMS.\\
+What about the existing CMDB in ServiceNow?  Are we getting access to that?  What's the timeframe for that?\\ 
+When do we envision the handover of machines?  Even if the legal separation is delayed, we can still work on a operational segmentation.\\
+We need to determine if we are going to maintain their existing set of monitoring.  \\
+Is there a map of the resources and what talks to what?\\
+This may be a thing that needs to be worked out.  It fits in with the discussion about what we plan on keeping.\\
+ 
+== Monitoring I know about ==
+ * LPAR2RRD
+   * Do current servers need to be moved over to our LPAR2RRD version?
+   * Does our version actually have the current stuff in there?
+   * What about the SAN2RRD?
+   * Currently, every system gets the client for this installed.  Do we continue the practice?
+ * CFG2HTML
+    * This is another local install.  It's a small script which grabs a ton of info about the system and saves it off to a file on the UNIXDOCS server (Their NIM server)
+ * SYSLOG
+    * They have a syslog server which is currently slurping up everything.  
+    * This needs to be analyzed to see what is getting processed.  
+    * We might want to coopt this to maintain the current processing process.
+    * What about the silly ELK/Spleunk server?  Is that something that we are interested in maintaining?
+ * Blackout process
+    * They have a thing where they put servers into "Blackout".
+    * What does this actually mean?  There's a thing where they block users, but's that a simple /etc/nologin file that you touch.  (Delete to cancel)
+    * It feels like there's more to it than just that.
+    * This might be an integrated part of ServiceNow
+ * ServiceNow
+    * There's some tight integration with ServiceNow.  I know for sure that errpt is daily dumped out to their ticketing system for processing.
+    * In some respects, this feels like needless busy work, but that's from a salaried perspective.  If I was T&M, I would want something generating work for me.
+    * I think we are sticking with ServiceNow for ticketing ... So are we going to commit ourselves to the same kind of SLA for this?  Right now, the group is really anti-ticketing, but the users in CleanAir will be very much pro-ticketing.
+    * There's a huge backlog of tickets that needs to be cleared.
+    * We need to capture whatever current work is outstanding.

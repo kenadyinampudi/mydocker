@@ -1,0 +1,124 @@
+
+<h1 class="sectionedit1" id="install_sysinter">Install sysinter</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Install sysinter" [1-32] -->
+<h2 class="sectionedit2" id="aix_vios">AIX &amp; VIOS</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the master server pcdcunxaxap01 and set a variable<pre class="code">export server_driv=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make this directory<pre class="code">ssh ${server_driv} sudo mkdir -p /usr/local/bin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter.aix5 ${server_driv}:/usr/local/bin/sysinter.aix5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Backup /etc/services and /etc/inetd.conf</div>
+</li>
+</ol>
+<pre class="code"> sudo ssh ${targethost} cp -p /etc/services /etc/services-$(date +%Y%m%d-%H:%M:%S)</pre>
+<pre class="code"> sudo ssh ${targethost} cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y%m%d-%H:%M:%S)</pre>
+<ol>
+<li class="level1"><div class="li"> Then do this<pre class="code">ssh ${server_driv} &#039;sudo echo &quot;sysinter                40035/tcp&quot; &gt;&gt; /etc/services&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">ssh ${server_driv} &#039;sudo echo &quot;sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5&quot; &gt;&gt; /etc/inetd.conf&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now restart inetd<pre class="code">ssh ${server_driv} sudo refresh -s inetd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If AIX, Add the system to UUMA<pre class="code">sudo ssh pcdcunxlxap03 &quot;echo ${targethost} &gt;&gt; /home/oracle/uuma/hosts.txt&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "AIX & VIOS" [33-1086] -->
+<h2 class="sectionedit3" id="red_hat_linux">Red Hat Linux</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the master server pcdcunxaxap01 and set a variable<pre class="code">export server_driv=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make this directory<pre class="code">sudo ssh ${server_driv} mkdir -p /usr/local/bin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter.redhat ${server_driv}:/usr/local/bin/sysinter.redhat</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">sudo ssh ${server_driv} &#039;echo &quot;sysinter                40035/tcp&quot; | tee -a /etc/services&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter-xinetd ${server_driv}:/etc/xinetd.d/sysinter-xinetd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now restart inetd</div>
+<ol>
+<li class="level2"><div class="li"> For RHEL6<pre class="code">sudo ssh ${server_driv} service xinetd reload</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> For RHEL7<pre class="code">sudo ssh ${server_driv} systemctl reload xinetd</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add the system to UUMA<pre class="code">sudo ssh pcdcunxlxap03 &quot;echo ${targethost} &gt;&gt; /home/oracle/uuma/hosts.txt&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Red Hat Linux" [1087-1981] -->
+<h2 class="sectionedit4" id="suse_linux">SUSE Linux</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the master server pcdcunxaxap01 and set a variable<pre class="code">export server_suse=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if the directory exists<pre class="code">sudo ssh ${server_suse} ls -ld /usr/local/bin</pre>
+
+<p>
+ if exists go to step 4.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Make this directory<pre class="code">sudo ssh ${server_suse} mkdir -p /usr/local/bin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter.suse ${server_suse}:/usr/local/bin/sysinter.suse</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if the port 40035 is free to be used<pre class="code">sudo ssh ${server_suse} grep 40035 /etc/services</pre>
+
+<p>
+Stop! if the port is already allocated.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">sudo ssh ${server_suse} &#039;echo &quot;sysinter                40035/tcp&quot; | tee -a /etc/services&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter-xinetd.suse ${server_suse}:/etc/xinetd.d/sysinter-xinetd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now restart inetd</div>
+<ol>
+<li class="level2"><div class="li"> For SUSE Linux 11 <pre class="code">sudo ssh ${server_suse} service xinetd reload</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> For SUSE Linux 12 <pre class="code">sudo ssh ${server_suse} systemctl reload xinetd</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Add the system to UUMA<pre class="code">sudo ssh pcdcunxlxap03 &quot;echo ${server_suse} &gt;&gt; /home/oracle/uuma/hosts.txt&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "SUSE Linux" [1982-] -->

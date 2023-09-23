@@ -1,0 +1,28 @@
+====== Enable NFS and reboot cloned servers at MP ======
+
+  - This is a Unix team task. Login to "pgnmsv01"
+  - Enable NFS<code>for host in dreiap99 dreidb99 ereiap99 ereidb99 drenap99 drendb99 erenap99 erendb99 drgtdb01 drsndb01 drsrdb01 drhgap99 drhgdb99 prhgap99 prhgdb99 prgtdb01 prsndb01 prsrdb01 prenap99 prendb99 xrenap99 xrendb99 preiap99 preidb99 xreiap99 xreidb99
+do
+   thishost=${host}.fmmotorparts.com
+   nfsfilesystems=$(ssh ${thishost} grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | tr "\n" " " )
+   for nfsfs in ${nfsfilesystems}
+   do
+      ssh ${thishost} "sudo /usr/local/scripts/manage_auto_mount_nfs enable ${nfsfs} "
+      echo "${thishost} -- ${nfsfs} automount enabled"
+   done
+done</code>
+  - Verify no connectivity to production subnets and reboot servers
+  - On each server perform the following steps<code>for prodnetwork in 10.0.48.1 10.0.49.1 10.32.50.1 10.32.51.1 10.32.6.1 10.56.1.1
+do
+   ping -c1 ${prodnetwork} > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      echo "Error  ::  System is able to ping ${prodnetwork} -- Please check and fix "
+   else
+      echo "Good   ::  System is unable to ping ${prodnetwork} "
+   fi
+done</code>
+    - Shukant<code>dreiap99 dreidb99 ereiap99 ereidb99 drenap99 drendb99</code> 
+    - Vasu<code>erenap99 erendb99 drgtdb01 drsndb01 drsrdb01 drhgap99</code>
+    - Naveej<code>drhgdb99 prhgap99 prhgdb99 prgtdb01 prsndb01 prsrdb01</code>
+    - Sumit<code>prenap99 prendb99 xrenap99 xrendb99 preiap99 preidb99 xreiap99 xreidb99</code>

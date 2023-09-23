@@ -1,0 +1,39 @@
+====== Check for an open port on a server from the outside ======
+Sometimes you need to check for an open port on a server.\\ 
+"Open" in this instance means a service is listening on your chosen port and is reachable from the outside world.\\
+This is good for verifying if a particular service is up and running or if a given port is available in a pinch.\\ 
+
+This not conclusive.  Maybe the service using that port just happens to be down.  But this makes for some quick and dirty diagnostic testing. \\
+\\ 
+\\
+We will be using netcat (sometimes nc).  CDCPILLX055 already has it.\\
+
+  cdcpillx055:~ # nc -z <server> <port>
+  cdcpillx055:~ # echo $?
+
+The "-z" means send zero bytes ... basically just check for the port.\\ 
+The "echo $?" afterwards is to get the return code of the command.\\
+
+  * "0" means the port was reachable on that server.
+  * "1" means the port was closed on that server.
+  * A hung attempt means there's probably a firewall blocking connections.
+
+Here's a real life example.
+
+SSH is open on this server.
+  cdcpillx055-new:~ # nc -z 170.64.0.139 22
+  cdcpillx055-new:~ # echo $?
+  0
+
+Telnet is closed on this server.
+  cdcpillx055-new:~ # nc -z 170.64.0.139 23
+  cdcpillx055-new:~ # echo $?
+  1
+
+Netbackup is blocked for whatever reason.
+
+  cdcpillx055-new:~ # nc -z 170.64.0.139 1556
+  
+  ^C
+
+

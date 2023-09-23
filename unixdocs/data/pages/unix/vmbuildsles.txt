@@ -1,0 +1,98 @@
+====== Building SLES VMs ======
+
+!!This is the first draft. There is lot of scope for both image build & install automation!!
+
+===== Some Background First =====
+  * PT/CA VCenter is cdcpilvc005.pt.int.tenneco.com
+  * Access is typically given to your Tenneco AD ID in AMER domain
+  * Linux VMs, Templates should be placed under the Linux folders of the respective clusters.  Linux Team is only given access to create VMs that will reside in this folder
+  * Pick the right datastore. If you have large disk space requirements, you must get a datastore created with help from Storage/Wintel
+  * Get the Network VLAN added to the cluster as required.  
+
+===== Server Build for Engineering =====
+==== Datastore Mapping for EDE ====
+
+^LUN Serial                     ^LUN No         ^LUN Name                   ^Datastore             ^Size ^Purpose|
+|37A8FED431FB45BD00011017|	248|	ede-v-deedec-ds07|                   EDE-V-DEEDEC-DS07|    4TB   |OS Disks (100G) &\\ Small FS (few 100G)|
+|37A8FED431FB45BD00011018|	247|	ede-v-deedec-ds08|                   EDE-V-DEEDEC-DS08|    4TB   |2X1TB disks|
+|37A8FED431FB45BD00011019|	246|	ede-v-deedec-ds09|                   EDE-V-DEEDEC-DS09|    4TB   |3X1TB disks|
+|37A8FED431FB45BD0001101A|	245|	ede-v-deedec-ds10|                   EDE-V-DEEDEC-DS10|    4TB   |3X1TB disks|
+|37A8FED431FB45BD0001101B|	244|	ede-v-deedec-ds11|                   EDE-V-DEEDEC-DS11|    4TB   |3X1TB disks|
+|37A8FED431FB45BD0001101C|	243|	ede-v-deedec-ds12|                   EDE-V-DEEDEC-DS12|    4TB   |3X1TB disks|
+
+==== Filesystem requirement for EDE ====
+
+^Purpose	^Which Servers	^Required\\ Size	^Composition|
+|Root VG	|ALL            |100GB	                |100GB LUNs from EDE-V-DEEDEC-DS07   |
+|/data	        |pedeenglxap01	|8TB	                |8 X 1TB disks from DS08, DS09, DS10 |
+|/data	        |pedeenglxap02	|6TB	                |6 X 1TB disks from DS11, DS12       |
+|/data	        |For the rest of \\ servers|100GB	|100GB LUNs from EDE-V-DEEDEC-DS07   |
+|Any small FS\\ requirement in future        |Any|<500GB	|from EDE-V-DEEDEC-DS07 or DS08   |
+
+==== Creating the Virtual Machines from Template ====
+  * Login to the VCenter - cdcpilvc005.pt.int.tenneco.com
+  * SLES templates (SLES12SP5TEMPLATE) available in DEEDEC & PLRYBC clusters in Linux Folder
+  * Right Click the template and Select "New VM From this Template"
+  * Enter the Virtual Machine Name in UPPERCASE
+    * Select "LOCATION" as the LINUX folder in the respective cluster
+  * In the "Select the Computer Resource", select the respective cluster, where you are building the VM
+  * In the "Select Storage", make sure of the following
+    * Select "Configure Per Disk"
+    * Select "Datastore". For engineering server builds in EDE, it can be DS07
+    * Select "Disk Format" as "Thick Provision Lazy Zeroed"
+  * In the "Select Clone Options", Check "Customize this virtual machine's hardware"
+  * In the "Customize Hardware"
+    * Select "Memory" as 8GB or as desired
+    * Add a new SCSI Controller.  Add New Device --> SCSI Controller
+    * Add a new Hard disk.        Add New Device --> Hard Disk. 
+    * Give the size as required (typically 100GB) 
+    * Add the new Hard disk to the newly added Controller.  (Virtual Device Node should be the newly created SCSI Controller)
+    * Select "Network Adapter" as EDECDE-220 or RYBCDE-220
+  * Click on Finish
+  * Start the VM - Power ON
+==== Actions from the Console ====
+  * Press Ctrl + Alt + F2 to switch to a terminal console
+  * Login as root. Ask the Operations team for the Root password
+  * Execute Initialization script<code>./init.sh</code> and input the following.  The script doesn't accept any defaults and all values must be keyed in (pressing enter won't work :), example is just example for now)
+    * IP ADDRESS
+    * SUBNET MASK
+    * GATEWAY
+    * HOSTNAME (should be in lowercase and full qualified domain name)
+  * Network will automatically restart. **If it gives any error, try configuring it manually using the steps below, otherwise its not needed**
+    * Update hostname.  For SELS, recommendation is to use FQDN<code>hostnamectl set-hostname dedeenglxdb01.emea.int.tenneco.com</code>
+    * Update IPADDR & NETMASK as appropriate in <code>vi /etc/sysconfig/network/ifcfg-eth0</code>
+    * Update Gateway IP in <code>vi /etc/sysconfig/network/ifroute-eth0</code>Sample<code>default 10.58.2.1 eth0</code>
+    * Restart Network <code>systemctl restart network</code>
+
+
+
+==== Actions from SSH session ====
+  * Login to the jump server - pgnmsv01 or pcdcunxaxap01 and then connect to the server being build
+  * Cleanup the build scripts<code>sudo rm ~root/init.sh ~root/build_cleanup.sh</code>
+  * Create users and groups as required<code>sudo groupadd -g 275 engtm
+sudo useradd -u 5107 -g engtm -m -d /home/brunstof -c "Bruno Stoffel" brunstof
+sudo useradd -u 5349 -g engtm -m -d /home/thombent -c "Thomas Bentz" thombent
+sudo useradd -u 5350 -g engtm -m -d /home/tomaszcz -c "Tomasz Szczepanek" tomaszcz</code>Set password<code>echo "brunstof:sapQZO5iTxHNk" | sudo chpasswd -e
+echo "thombent:sapQZO5iTxHNk" | sudo chpasswd -e
+echo "tomaszcz:sapQZO5iTxHNk" | sudo chpasswd -e</code>
+  * <del>Rescan for the new devices <code>sudo rescan-scsi-bus.sh</code></del>
+  * Validate <code>sudo fdisk -l |grep "Disk /dev/sd"</code> Disk should have got detected.  Look for /dev/sdb
+  * Create the Filesystem<code>sudo vgcreate datavg /dev/sdb
+sudo lvcreate -L 99.9G -n datalv datavg
+sudo mkfs.xfs /dev/datavg/datalv
+
+echo "# Data filesystems"                                                                       | sudo tee -a /etc/fstab
+echo ""                                                                                         | sudo tee -a /etc/fstab
+echo "/dev/mapper/datavg-datalv           /data                    xfs    defaults        1 2"  | sudo tee -a /etc/fstab
+
+sudo mkdir /data && sudo mount /data && sudo chgrp engtm /data</code>
+  * Install Rapid7 Agent<code>sudo /opt/agent_installer.sh install_start --token  us:c58ccdc4-7f37-44ba-b13f-ede6b9decc76
+sudo rm -f /opt/agent_installer.sh</code>
+  * Reboot the server. This is very important. Last time, the hostnames were not discovered correctly with SNMP discovery even after restarting a bunch of services.<code>sudo reboot</code>
+  * Create [[https://onetenneco.service-now.com/sp?id=sc_cat_item&sys_id=3ad014c9dbe353407785d12c5e9619d0&sysparm_category=ed1dd647db3a909079a6a07c13961985&catalog_id=e0d08b13c3330100c8b837659bba8fb4|ticket]] to the monitoring team. According to the new process, this doesn't cover Service NOW discovery
+  * Create [[https://onetenneco.service-now.com/sp?id=sc_cat_item&sys_id=5de49a51dba11f807785d12c5e9619f5|a ticket]] to discover the CI in CMDB
+  * Create ticket to the get the server backed up
+  * Once the server is discovered in CMDB, close the change ticket after relating all CIs to the change record and updating the CI as relevant.  
+
+
+  

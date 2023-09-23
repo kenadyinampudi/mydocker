@@ -1,0 +1,34 @@
+====== Installing patches on HPUX ======
+
+**Do not use the console to install patches - the console messages will messup the window. Always patch from a ssh session **
+
+HPUX standard patch bundles are divided into 3 sets.
+
+  * QPK1131
+  * HWEnable11i
+  * FEATURE11i
+
+** Installing QPK1131 or Quality Pack **
+
+  * [[unix:backupconfig-hpux|Perform configuration backup]]
+  * Download the patch bundle from HP's website. This needs an HP passport login account.
+  * Download the patches and store it in a central location. At tenneco, we store it under 'taitc118:/prod/images/hpux'
+  * From taitc118, either nfs mount OR scp the file to the target server<code>cd /prod/images/hpux
+scp hpux_11.31_01140520.tgz taitc114:/opt/oracle</code>
+  * Logon to the server on it's console.<code>telnet taitc114-gsp</code>Login as Admin.  **Do not use the console to install patches - the console messages will messup the window. Always patch from a ssh session **
+  * Unzip and untar the patches<code>cd /opt/oracle
+gunzip hpux_11.31_01140520.tgz
+tar xf hpux_11.31_01140520.tar</code>
+  * Perform a sanity reboot - This is to make sure that the server is working okay as of now. These servers are rebooted very rarely, hence it is a good idea to reboot it once.<code>shutdown -r -y now</code>
+  * Create the patch depot<code>cd /opt/oracle
+./create_depot_hpux.11.31</code>
+  * Install the patches<code>export LC_ALL=C.en_US
+swinstall -s /opt/oracle/depot</code>
+    * At the menu, use 'space bar' to select all the bundles listed. 
+    * Then hit "m" to mark them for installation.
+    * Hit 'tab' to get to the menus
+      * Select Actions
+        * Select Install
+          * Hit 'OK' to install the patches.
+  * Phew ....
+  * After the system has come back up, cleanup the temporary location in this example ''/opt/oracle''

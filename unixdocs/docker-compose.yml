@@ -1,0 +1,20 @@
+---
+version: "3"
+services:
+  dokuwiki:
+    image: lscr.io/linuxserver/dokuwiki:2020-07-29-ls123
+    container_name: unixdocs
+    environment:
+      - PUID=11021
+      - PGID=11021
+      - TZ=Etc/UTC
+    volumes:
+      - ./data:/config/dokuwiki/data/
+    ports:
+      - 8040:80
+    restart: unless-stopped
+volumes:
+  dokuwiki_conf:
+  dokuwiki_plugins:
+  dokuwiki_tpl:
+  dokuwiki_data:

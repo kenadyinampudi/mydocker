@@ -1,0 +1,90 @@
+====== FTA refresh 2016 - 09 - 15 - Technical steps ======
+
+  - Wait for Basis & DBAs to shutdown FTA application and database.
+  - Handover system to Chris for OS upgrade.
+  - Delete the Old datavg LUNs from FTA system
+    - Login to qaerdb01
+    - Take a snapshot of all disks<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>
+    - Unmount filesystems & export the VGs & delete the disks<code>for vg in datavg01 datavg02 datavg03 datavg04
+do
+   echo "Working on ${vg} ..."
+   lsvgfs ${vg} | xargs -n1 sudo umount
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+   grep -w ${vg} lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl
+done</code>
+  - Perform the split of PTA LUNs
+    - Login to pgunap01
+    - Remove the old LUNs from qaerdb01 and add to NewFTA SG<code>sudo symaccess -sid 0301 -name qaerdb01_SG -type storage remove dev 1A5D,1A5E,1A5F,1A60,1A61,1A62,1A63,1A64,1A65,1A66,1A67,1AC7,1AC8,1AE6,1361,1362,1363,1364,1365,1366
+sudo symaccess -sid 0301 -name qaerdb01_SG -type storage remove dev 1367,1368,1369,136A,136B,136C,136D,136E,136F,1370,1371,1372,1373,1374,1375,1376,1377,1378,1379,137A
+sudo symaccess -sid 0301 -name qaerdb01_SG -type storage remove dev 137B,137C,137D,137E,137F,1380,1381,1382,1383,1384,1385,1386,1387,1388,1389,138A,138B,138C,138D,138E
+sudo symaccess -sid 0301 -name qaerdb01_SG -type storage remove dev 138F,1390,138E,138F,1390</code>
+    - Remove the new LUNs from NewFTA SG<code>sudo symaccess -sid 0301 -name NewFTA -type storage remove dev 00954,00955,00956,00957,00958,00959,0095A,0095B,0095C,0095D,0095E,0095F,00960,00961,00962,00963,00964
+sudo symaccess -sid 0301 -name NewFTA -type storage remove dev 00965,00966,00967,00968,00969,0096A,0096B,0096C,0096D,0096E,0096F,00970,00971,00972,00973,00974,00975
+sudo symaccess -sid 0301 -name NewFTA -type storage remove dev 00976,00977,00978,00979,0097A,0097B,0097C,0097D,0097E,0097F,00980,00981,00982,00983,00984,00985,00986
+sudo symaccess -sid 0301 -name NewFTA -type storage remove dev 00987,00988,00989,0098A,0098B,0098C,0098D,0098E,0098F,00990,00991,00992,00993,00994,00995,00996,00997
+sudo symaccess -sid 0301 -name NewFTA -type storage remove dev 00998,00999,0099A</code>
+    - Add the new FTA LUNs to qaerdb01<code>sudo symaccess -sid 0301 -name qaerdb01_SG -type storage add devs 00954,00955,00956,00957,00958,00959,0095A,0095B,0095C,0095D,0095E,0095F,00960,00961,00962,00963,00964
+sudo symaccess -sid 0301 -name qaerdb01_SG -type storage add devs 00965,00966,00967,00968,00969,0096A,0096B,0096C,0096D,0096E,0096F,00970,00971,00972,00973,00974,00975
+sudo symaccess -sid 0301 -name qaerdb01_SG -type storage add devs 00976,00977,00978,00979,0097A,0097B,0097C,0097D,0097E,0097F,00980,00981,00982,00983,00984,00985,00986
+sudo symaccess -sid 0301 -name qaerdb01_SG -type storage add devs 00987,00988,00989,0098A,0098B,0098C,0098D,0098E,0098F,00990,00991,00992,00993,00994,00995,00996,00997
+sudo symaccess -sid 0301 -name qaerdb01_SG -type storage add devs 00998,00999,0099A</code>
+    - Ask DBA to put PTA on hot backup mode.
+    - Split the symclone<code>sudo symclone -sid 0301 -f /home/x1kxk630/ftarefresh.2016Aug15/split/FTA.refresh.txt split -consistent</code>
+  - Configure the disks on qaerdb01
+    - Login to qaerdb01<code>ssh qaerdb01</code>
+    - cfgmgr<code>sudo lsvpcfg.sh > lsvpcfg.out.2
+sudo cfgmgr
+sudo lsvpcfg.sh > lsvpcfg.out.3
+diff lsvpcfg.out.2 lsvpcfg.out.3 | grep ">" | awk '{print $2} '| awk -F: '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l</code>
+    - Get pvids from PTA system<code>ssh tapr1d01 "lspv" > /var/tmp/tapr1d01.pvids</code>
+    - Re-create the VGs<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   grep -w ${vg} /var/tmp/tapr1d01.pvids | awk '{print $2}' > ${vg}.pvids
+   echo "Recreating ${vg} .."
+   pvs=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   echo "sudo recreatevg -L/ -Y/ -y ${vg} ${pvs}"
+done</code>Execute the commands in the output.
+    - Change the mount point of all filesystems from PTA to FTA<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(sudo lsvgfs ${vg} )
+   do
+      newfs=$(echo ${fs} | sed "s;PTA;FTA;g" )
+      sudo chfs -m ${newfs} ${fs}
+   done
+done</code>
+    - Run fsck on each filesystem<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo fsck -y ${fs}
+   done
+done</code>
+    - Mount all filesystems and fix permissions<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mount ${fs}
+      if [ ${?} -eq 0 ]
+      then
+         sudo chown -R orafta:dba ${fs}
+      else
+         echo "Unable to mount ${fs} - please fix and don't forget to change the permissions using chown -R orafta:dba ${fs}"
+      fi         
+   done
+done</code>
+  - Check & terminate the cloning process.
+    - Check if all devices are copied.<code>sudo symclone -sid 0301 -f /home/x1kxk630/ftarefresh.2016Aug15/split/FTA.refresh.txt query</code>
+    - If all of them are in the state of ''Copied'', terminate the cloning session.<code>sudo symclone -sid 0301 -f /home/x1kxk630/ftarefresh.2016Aug15/split/FTA.refresh.txt terminate</code>
+  - Make a note to remove & reclaim the old FTA LUNs now on NewFTA
+  - Add additional storage to FTA system to meet these size requirements<code>Hello Robert, 
+  
+Below are some requirements for FTA Upgrade on host qaerdb01. 
+  
+  
+1)     We need to have below space (mountpoints). 
+  
+/oracle -> Need additional free space of 12GB, to accommodate oracle software under /oracle/stage. 
+/oracle/FTA/oraarch -> This mount point is currently of size 43GB. It needs to be increased to 80GB during time of upgrade, later can be resized to original. This is needed because more archives generates during the Upgrade phases. 
+/usr/sap/FTA -> Need addition of 150GB of space for storing SUM directory of Upgrade & patches. 
+/oracle/FTA/sapdata17 -> New mount point to be created with size 200 GB to store new release tablespace. </code>

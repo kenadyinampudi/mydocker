@@ -1,0 +1,86 @@
+There are times that we are in need to copy files to NBU appliance. This can be achieved via at least two ways: Secure copy or CIFS copy. 
+In order to use secure copy on your PC please download the following file pscp.exe from [[https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html|here]]. Below you will find two examples for both methods:
+  * Secure copy (file to copy S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip)
+  - Login to NBU appliance via ssh console as admin;
+  - Elevate to CLISH - which will force disabling "Symantec Data Center Security Server";
+  - Once being in CLISH copy the file/s to this appliance from your PC.
+  - Open CMD prompt on your PC <code>Start/run/cmd</code>
+  - Change working directory to the one where file to upload is being kept<code>cd /d E:\DataPres_share\BIOS</code>
+  - List the file (to make sure you are in proper dir)<code>E:\DataPres_share\BIOS>dir
+ Volume in drive E is Data
+ Volume Serial Number is 9E29-92F1
+
+ Directory of E:\DataPres_share\BIOS
+
+07/24/2017  02:43 AM    <DIR>          .
+07/24/2017  02:43 AM    <DIR>          ..
+05/16/2016  04:21 AM         1,610,453 Flashing 5030 and 5230 Appliance BIOS.docx
+07/05/2017  04:49 AM         5,109,922 flashupdt-V13.1-B9.i386-170704092045.rpm
+07/05/2017  04:50 AM        23,391,747 S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip
+               3 File(s)     30,112,122 bytes
+               2 Dir(s)  163,713,323,008 bytes free
+
+E:\DataPres_share\BIOS></code>
+  - Copy the file to NBU appliance ie GLK one - of course the pscp.exe file needs to be in path environmnetal variable<code>E:\DataPres_share\BIOS>pscp S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip admin@glknbu5230ams:/tmp
+The server's host key is not cached in the registry. You
+have no guarantee that the server is the computer you
+think it is.
+The server's rsa2 key fingerprint is:
+ssh-rsa 2048 95:20:b2:85:fe:ea:0e:2a:84:69:af:82:76:12:d9:fd
+If you trust this host, enter "y" to add the key to
+PuTTY's cache and carry on connecting.
+If you want to carry on connecting just once, without
+adding the key to the cache, enter "n".
+If you do not trust this host, press Return to abandon the
+connection.
+Store key in cache? (y/n) y
+admin@glknbu5230ams's password:
+S2600GZ_BIOS02060005_ME02 | 22843 kB | 335.9 kB/s | ETA: 00:00:00 | 100%
+
+E:\DataPres_share\BIOS></code>
+  - So the file was copied to glnbu5230ams to /tmp folder, using admin user ID account, let's check this out from this appliance CLISH<code>glknbu5230ams:/home/maintenance # ls -lart /tmp/S*
+-rw-r--r-- 1 admin admin 23391747 Jul 24 03:23 /tmp/S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip
+glknbu5230ams:/home/maintenance #</code>
+  - So we did succeed with this.
+  * CIFS copy
+  - Open SSH session with NBU appliance and go to the Manage/Software menu content from which execute command share open<code>glknbu5230ams.Software> Share Open
+The CIFS share \\glknbu5230ams\incoming_patches
+and the NFS share glknbu5230ams:/inst/patch/incoming have been opened on this appliance.
+glknbu5230ams.Software></code>
+  - Now from the PC map the share to a drive letter using CMD prompt, ie (hint sometimes ours well know password is not accepted, then you need to provide standard one)<code>E:\DataPres_share\BIOS>net use x: \\glknbu5230ams\incoming_patches /user:admin
+Enter the password for 'admin' to connect to 'glknbu5230ams':
+The command completed successfully.</code>
+  - Now using GUI or CLI copy the file from PC to X: drive<code>E:\DataPres_share\BIOS>copy S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip x:\
+        1 file(s) copied.
+
+E:\DataPres_share\BIOS></code>
+  - Disconnect the drive from your PC<code>E:\DataPres_share\BIOS>net use x: /delete
+x: was deleted successfully.
+
+
+E:\DataPres_share\BIOS></code>
+  - Close that share<code>glknbu5230ams.Software> Share Close
+Software update shares closed successfully.
+glknbu5230ams.Software></code>
+  - Elevate to CLISH and go to /inst/patch/incoming - to check the file presence<code>glknbu5230ams:/home/maintenance # cd /inst/patch/incoming
+glknbu5230ams:/inst/patch/incoming # ls -la
+total 22880
+drwxrwxrwx 2 root  root      4096 Jul 24 03:31 .
+drwxr-xr-x 5 root  root      4096 Sep 28  2014 ..
+-rwxr--r-- 1 admin admin 23391747 Jul  5 05:50 S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip
+glknbu5230ams:/inst/patch/incoming #</code>
+  - Move that file off this location to tmp - do not leave there a files which are not packages (.rpm), ie.:<code>glknbu5230ams:/inst/patch/incoming # mkdir /tmp/bios
+glknbu5230ams:/inst/patch/incoming # mv S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip /tmp/bios/
+glknbu5230ams:/inst/patch/incoming # ls -la
+total 8
+drwxrwxrwx 2 root root 4096 Jul 24 03:35 .
+drwxr-xr-x 5 root root 4096 Sep 28  2014 ..
+glknbu5230ams:/inst/patch/incoming # cd /tmp/bios/
+glknbu5230ams:/tmp/bios # ls -la
+total 22872
+drwxr-xr-x   2 root  root      4096 Jul 24 03:35 .
+drwxrwxrwt. 21 root  root     20480 Jul 24 03:35 ..
+-rwxr--r--   1 admin admin 23391747 Jul  5 05:50 S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip
+glknbu5230ams:/tmp/bios #</code>
+
+That's all.... enjoy.

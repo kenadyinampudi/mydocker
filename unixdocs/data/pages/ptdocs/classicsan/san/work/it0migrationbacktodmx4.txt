@@ -1,0 +1,69 @@
+====== Migrate IT0 datavgs back to DMX4 ======
+
+==== Clean up old VGs ====
+
+  - Remove the old DMX4 VGs<code>sudo cp /etc/filesystems /etc/filesystems.$(date +%m%d%Y)
+echo "datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08" | xargs -n1 sudo exportvg</code>
+
+==== Add LUNs to VGs for migration ====
+
+  - vmxdatavg01<code>sudo extendvg -f vmxdatavg01 hdisk9 hdisk10 hdisk11 hdisk12 hdisk13 hdisk14 hdisk15 hdisk16 hdisk17 hdisk18 hdisk19 hdisk20 \
+hdisk21 hdisk22 hdisk23 hdisk24 hdisk25 hdisk26 hdisk27 hdisk28 hdisk29 hdisk30 hdisk31 hdisk32 hdisk33 hdisk34 hdisk35 \
+hdisk36 hdisk37 hdisk38 hdisk39 hdisk40 hdisk41 hdisk42 hdisk43 hdisk44 hdisk45 hdisk46 hdisk47 hdisk48 hdisk49 hdisk50 \
+hdisk51 hdisk52 hdisk53 hdisk54 hdisk55 hdisk56 hdisk57 hdisk58</code>
+  - vmxdatavg02<code>sudo extendvg -f vmxdatavg02 hdisk59 hdisk60 hdisk61 hdisk62 hdisk63 hdisk64 hdisk65 hdisk66 hdisk67 hdisk68 hdisk69 hdisk70 hdisk71 hdisk72 \
+hdisk73 hdisk74 hdisk75 hdisk76 hdisk77 hdisk78 hdisk79 hdisk80 hdisk81 hdisk82 hdisk83 hdisk84 hdisk85 hdisk86 \
+hdisk87 hdisk88 hdisk89 hdisk90 hdisk91 hdisk92 hdisk93 hdisk94</code>
+  - vmxdatavg03<code>sudo extendvg -f vmxdatavg03 hdisk95 hdisk96 hdisk97 hdisk98 hdisk99 hdisk100 hdisk101 hdisk102 hdisk103 hdisk104 hdisk105 hdisk106 hdisk107 \
+hdisk108 hdisk109 hdisk110 hdisk111 hdisk112 hdisk113 hdisk114 hdisk115 hdisk116 hdisk117 hdisk118 hdisk119 \
+hdisk120 hdisk121 hdisk122 hdisk123 hdisk124 hdisk125 hdisk126 hdisk127 hdisk128 hdisk129 hdisk130 hdisk131 \
+hdisk132 hdisk133 hdisk134</code>
+  - vmxdatavg04<code>sudo extendvg -f vmxdatavg04 hdisk135 hdisk136 hdisk137 hdisk138 hdisk139 hdisk140 hdisk141 hdisk142 hdisk143 hdisk144 hdisk145 hdisk146 hdisk147 \
+hdisk148 hdisk149 hdisk150 hdisk151 hdisk152 hdisk153 hdisk154 hdisk155 hdisk156 hdisk157 hdisk158 hdisk166 hdisk167 \
+hdisk168 hdisk169 hdisk170 hdisk171 hdisk172 hdisk173 hdisk174 hdisk175 hdisk176 hdisk177 hdisk178 hdisk179 hdisk180 hdisk181</code>
+  - vmxdatavg05<code>sudo extendvg -f vmxdatavg05 hdisk182 hdisk183 hdisk184 hdisk185 hdisk186 hdisk187 hdisk188 hdisk189 hdisk190 hdisk191 hdisk192 hdisk193 hdisk194 hdisk195 \
+hdisk196 hdisk197 hdisk198 hdisk199 hdisk200 hdisk201 hdisk202 hdisk203 hdisk205 hdisk206 hdisk207 hdisk208 hdisk209 hdisk210 \
+hdisk211 hdisk212 hdisk213 hdisk214 hdisk215 hdisk216 hdisk217 hdisk218 hdisk219 hdisk220 hdisk221 hdisk222 hdisk223 hdisk224 \
+hdisk225 hdisk226 hdisk227 hdisk228 hdisk229 </code>
+  - vmxdatavg06<code>sudo extendvg -f vmxdatavg06 hdisk230 hdisk231 hdisk232 hdisk233 hdisk234 hdisk235 hdisk236 hdisk237 hdisk238 hdisk239 hdisk240 hdisk241 hdisk242 hdisk243 \
+hdisk244 hdisk245 hdisk246 hdisk247 hdisk248 hdisk249 hdisk250 hdisk251 hdisk252 hdisk253 hdisk254 hdisk255 hdisk256 hdisk257 \
+hdisk258 hdisk259 hdisk260 hdisk261 hdisk262 hdisk263 hdisk264 hdisk265 hdisk266 hdisk267 hdisk268 hdisk269 hdisk270 hdisk271 \
+hdisk272 hdisk273 hdisk274 hdisk275 hdisk276 hdisk277 hdisk278 hdisk283 hdisk284 hdisk285 hdisk286 hdisk287 hdisk288 hdisk289 \
+hdisk290 hdisk291 hdisk292 hdisk293 hdisk294 </code>
+  - vmxdatavg07<code>sudo extendvg -f vmxdatavg07 hdisk295 hdisk296 hdisk297 hdisk298 hdisk299 hdisk300 hdisk301 hdisk302 hdisk303 hdisk304 hdisk305 hdisk306 hdisk307 \
+hdisk308 hdisk309 hdisk310 hdisk311 hdisk312 hdisk313 hdisk314 hdisk315 hdisk316 hdisk317 hdisk318 hdisk319 hdisk320 \
+hdisk321 hdisk322 hdisk323 hdisk324 hdisk325 hdisk326</code>
+  - vmxdatavg08<code>sudo extendvg -f vmxdatavg08 hdisk327 hdisk328 hdisk329 hdisk330 hdisk331 hdisk332 hdisk333 hdisk334 hdisk335 hdisk336 hdisk337 hdisk338 hdisk339 hdisk340 \
+hdisk341 hdisk434 hdisk435 hdisk436 hdisk437 hdisk438 hdisk439 hdisk440 hdisk441</code>
+
+==== Perform the migration ====
+
+  - Run this script on tedv2d01<code>home_dir=/home/x1kxk630/it0migratetodmx4
+lockfile=${home_dir}/DO_NOT_MIGRATE
+logfile=${home_dir}/IT0-migration.log
+
+for vg in $(awk '{print $NF}' ${home_dir}/vmaxdisks | sort -u )
+do
+   for vmaxdisk in $(grep -w ${vg} ${home_dir}/vmaxdisks | awk '{print $1}' )
+   do
+      targetdisks=$(grep -w ${vg} ${home_dir}/migrationmap | awk '{print $1}' | tr "\n" " " )
+      while [ -f ${lockfile} ]
+      do
+         echo "$(date) :: Lock file present - sleeping for 5 minutes" | tee -a ${logfile} 
+         sleep 300
+      done         
+      echo "$(date) :: Migrating VMAX device ${vmaxdisk} to DMX4 devices ${targetdisks}" | tee -a ${logfile} 
+      sudo migratepv ${vmaxdisk} ${targetdisks}
+      if [ ${?} -ne 0 ]
+      then
+         echo "$(date) :: Something went wrong migrating VMAX device ${vmaxdisk} to DMX4 devices ${targetdisks} " | tee -a ${logfile}
+      fi
+   done
+done </code>
+==== Cancel the migration ====
+
+  - Create the lock file<code>touch /home/x1kxk630/it0migratetodmx4/DO_NOT_MIGRATE</code>
+
+==== Monitor the migration ====
+
+  - Check the logfile <code>sudo tail -f /home/x1kxk630/it0migratetodmx4/IT0-migration.log</code>

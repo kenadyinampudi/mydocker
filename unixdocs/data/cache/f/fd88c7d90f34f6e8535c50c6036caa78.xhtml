@@ -1,0 +1,54 @@
+
+<h1 class="sectionedit1" id="web_dispatcher_setup">Web dispatcher setup</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create the user<pre class="code">sudo useradd -s /usr/bin/csh -g sapsys -G sapinst -d /home/dw1adm -c &quot;Web dispatcher account - dev&quot; -m -u 4533 dw1adm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the following filesystems<pre class="code">sudo lvcreate -n sapmnt_DW1 -L 1G datavg01
+sudo lvcreate -n usr_sap_DW1 -L 2G datavg01</pre>
+
+<p>
+Create filesystems
+</p>
+<pre class="code">sudo mkfs -t ext4 /dev/datavg01/sapmnt_DW1
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_DW1</pre>
+
+<p>
+Add to fstab
+</p>
+<pre class="code">echo &quot;/dev/mapper/datavg01-sapmnt_DW1   /sapmnt/DW1                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_DW1   /usr/sap/DW1                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab</pre>
+
+<p>
+Create mount points and mount them
+</p>
+<pre class="code">sudo mkdir -p /sapmnt/DW1
+sudo mkdir -p /usr/sap/DW1
+sudo mount /sapmnt/DW1
+sudo mount /usr/sap/DW1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set the correct permissions and ownership<pre class="code">sudo chown dw1adm:sapsys /home/dw1adm /usr/sap/DW1 /sapmnt/DW1
+sudo chmod 700 /home/dw1adm
+sudo chmod 751 /usr/sap/DW1
+sudo chmod 755 /sapmnt/DW1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set ulimit for dw1adm user<pre class="code">sudo vi /etc/security/limits.conf</pre>
+
+<p>
+Add this to the end
+</p>
+<pre class="code">#for dw1adm user
+@dw1adm     hard    filesize     -1
+@dw1adm     hard    datasize     -1
+@dw1adm     hard    stacksize     8192
+@dw1adm     hard    coredumpsize     -1
+@dw1adm     hard    descriptors     8192
+@dw1adm     hard    memoryuse     -1</pre>
+</div>
+</li>
+</ol>
+
+</div>

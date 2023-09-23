@@ -1,0 +1,137 @@
+====== Restore instructions for backups taken using Pure Storage snapshots ======
+
+^Instance Name^Server Name^Test Server Name^Oracle id^Group^
+|IT0          |tedv2d01   |pocafasv01      |orait0   |dba  |
+|FTA          |qaerdb01   |pocafasv01      |orafta   |dba  |
+
+===== Define variables depending on the system we are working against =====
+
+  - Login to the admin server<code>ssh pgunap01</code>
+  - Define some variables for ease of use
+    - If doing IT0 refresh<code>export INSTANCE="IT0"
+export SRCHOST="tedv2d01"
+export ARRAY="ldcpm70v1"
+export TESTHOST="pocafasv01"
+export ORAUID=301</code>
+    - If doing FTA refresh<code>export INSTANCE="FTA"
+export SRCHOST="qaerdb01"
+export ARRAY="ldcpm70v1"
+export TESTHOST="pocafasv01"
+export ORAUID=1082</code>
+    - If doing H1D refresh<code>export INSTANCE="H1D"
+export SRCHOST="dehrdb99"
+export ARRAY="inxpm20v1"
+export TESTHOST="pocpuresv01"
+export ORAUID="3210"</code>
+    - If doing H1T refresh<code>export INSTANCE="H1T"
+export SRCHOST="qehrdb01"
+export ARRAY="inxpm20v1"
+export TESTHOST="pocpuresv01"
+export ORAUID="211"</code>
+  - export some additional variables<code>export ADMHOST="pgunap01"
+export PGRP="${INSTANCE}DAILYBKP"
+export SSH2PURE="sudo -u sanmontr ssh pureuser@${ARRAY}"
+export ORAOWNER="ora$(echo ${INSTANCE} | tr '[A-Z]' '[a-z]')"</code>
+  - Get the disk to vg map from source system<code>ssh ${SRCHOST} "sudo /usr/local/scripts/lsvpcfg.sh" > lsvpcfg.out.${SRCHOST}</code>Copy to target system<code>scp lsvpcfg.out.${SRCHOST} ${TESTHOST}:lsvpcfg.out.recovery</code>
+
+===== Create user and group on TEST SERVER =====
+
+  - Create Database group <code>ssh ${TESTHOST} "sudo mkgroup id=201 dba"</code>
+  - Create Oracle DB Owner<code>ssh ${TESTHOST} "sudo mkuser id=${ORAUID} pgrp=dba groups=dba home=/oracle/${INSTANCE} shell=/bin/csh gecos=\"SAP Database Administrator\" ${ORAOWNER}"</code>
+
+===== Copy snapshots to volumes and allocate to the test system =====
+
+  - Logout from the TEST HOST back in to to pgunap01
+  - List the available snapshots<code>${SSH2PURE} purepgroup list --snap ${PGRP}</code>The output should be like<code>Name            Source       Created                
+IT0DAILYBKP.23  IT0DAILYBKP  2017-12-12 22:00:00 CST
+IT0DAILYBKP.22  IT0DAILYBKP  2017-12-11 22:00:00 CST
+IT0DAILYBKP.21  IT0DAILYBKP  2017-12-10 22:00:00 CST
+IT0DAILYBKP.20  IT0DAILYBKP  2017-12-09 22:00:00 CST
+IT0DAILYBKP.19  IT0DAILYBKP  2017-12-08 22:00:00 CST
+IT0DAILYBKP.18  IT0DAILYBKP  2017-12-07 22:00:00 CST
+IT0DAILYBKP.17  IT0DAILYBKP  2017-12-06 22:00:00 CST
+IT0DAILYBKP.16  IT0DAILYBKP  2017-12-05 22:00:00 CST
+IT0DAILYBKP.15  IT0DAILYBKP  2017-12-04 22:00:00 CST
+IT0DAILYBKP.14  IT0DAILYBKP  2017-12-03 22:00:00 CST</code>
+  - Pick the last snapshot to restore to<code>export SNAP="IT0DAILYBKP.20"</code>
+  - List snapshot volumes<code>${SSH2PURE} purevol list --snap --pgrouplist ${SNAP}</code>The output should be like<code>IT0DAILYBKP.22.it0dbdata_001  512G  it0dbdata_001  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADA
+IT0DAILYBKP.22.it0dbdata_002  512G  it0dbdata_002  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADB
+IT0DAILYBKP.22.it0dbdata_003  512G  it0dbdata_003  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADC
+IT0DAILYBKP.22.it0dbdata_004  512G  it0dbdata_004  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADD
+....
+lines deleted
+....
+IT0DAILYBKP.22.it0dbdata_037  512G  it0dbdata_037  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AFE
+IT0DAILYBKP.22.it0dbdata_038  512G  it0dbdata_038  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AFF
+IT0DAILYBKP.22.tedv2d01_001   138G  tedv2d01_001   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD1
+IT0DAILYBKP.22.tedv2d01_002   138G  tedv2d01_002   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD2
+IT0DAILYBKP.22.tedv2d01_003   102G  tedv2d01_003   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD7
+....
+lines deleted
+....
+IT0DAILYBKP.22.tedv2d01_007   102G  tedv2d01_007   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD3
+IT0DAILYBKP.22.tedv2d01_008   34G   tedv2d01_008   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD9
+IT0DAILYBKP.22.tedv2d01_009   34G   tedv2d01_009   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD8</code>
+  - Copy the snapshots to target volumes
+    - Export a start number for volume<code>export vol_no=300</code>
+    - Store the snapshot volumes in a variable<code>export snapshots=$(${SSH2PURE} purevol list --snap --pgrouplist ${SNAP} --notitle | grep -v 138G | awk '{print $1}' | tr "\n" " ")</code>
+    - Copy the snapshots to volumes<code>target_vols=""
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${TESTHOST}_${vol_no}
+   target_vols="${target_vols} ${TESTHOST}_${vol_no}"
+   vol_no=$((vol_no+1))
+done</code>
+    - Preserve the target volumes in a file<code>echo ${target_vols} > ${INSTANCE}.poc.volumes</code>
+  - Connect the volumes to TEST host<code>${SSH2PURE} purevol connect --host ${TESTHOST} ${target_vols}</code>
+
+===== Mount the filesystems and handover to DBA team =====
+
+  - Login to the target host<code>ssh ${TESTHOST}</code>
+  - Take a snapshot of the existing disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Discover new devices<code>sudo cfgmgr</code>
+  - Take a snapshot of the new disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Recreate the VGs and change the PVIDs<code>cat lsvpcfg.out.recovery | grep hdisk | grep -v rootvg > diskmap</code>
+  - fsck and mount them<code>for VG in $(awk -F: '{print $NF}' diskmap | sort -u )
+do
+   echo "$(date) :: Working on ${VG}"
+   grep ":${VG}$" diskmap | awk -F: '{print $2}' > ${VG}.pvids
+   disks=$(lspv | grep -wf ${VG}.pvids | awk '{print $1}' | tr "\n" " " )
+   echo "$(date) :: Working on ${VG} -- recreatevg in progress"
+   sudo recreatevg -Y/ -L/ -y ${VG} ${disks}
+   for fs in $(lsvgfs ${VG} | sort )
+   do
+   echo "$(date) :: Working on ${VG} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>
+  - Handover the system  to DBA for recovery.
+  - DBA to recover DB on pocafasv01.
+  - DBA to shutdown the DB and hand it over to Unix/Storage team.
+
+===== Cleanup the test volumes =====
+
+  - Login to admin server ''pgunap01''<code>ssh pgunap01</code>
+  - [[#Define variables depending on the system we are working against]]
+  - Remove fs, vg and devices from the target host.<code>ssh ${TESTHOST}</code><code>for VG in $(lsvg | grep -v rootvg | sort -r )
+do
+   echo "$(date) -- Working on ${VG} "
+   disks=$(lspv | grep -w ${VG} | awk '{print $1}' | tr "\n" " " )
+   for fs in $(lsvgfs ${VG} | sort -r )
+   do
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -uck ${fs}
+         sudo umount ${fs}
+      fi   
+   done      
+   sudo varyoffvg ${VG}
+   sudo exportvg ${VG}
+   echo ${disks} | xargs -n1 sudo rmdev -dl
+done</code>
+  - Disconnect from target host<code>exit</code>
+  - Disconnect the volumes<code>${SSH2PURE} purevol disconnect --host ${TESTHOST} $(cat ${INSTANCE}.poc.volumes ) 
+${SSH2PURE} purevol destroy $(cat ${INSTANCE}.poc.volumes )</code>

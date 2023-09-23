@@ -1,0 +1,63 @@
+
+<h1 class="sectionedit1" id="install_ibm_licensed_program_product_license_meter_tool_ilmt_n_aix_servers">Install IBM Licensed Program Product License Meter Tool ILMT n AIX Servers.</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Login to the target server and create the following directory if ti does not already exist. <pre class="code"> sudo mkdir -p /etc/opt/BESClient </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the soure for the License Tool <pre class="code"> sudo mkdir -p /mnt/ilmt ; sudo mount taitc118:/prod/images/ilmt /mnt/ilmt </pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Change directory to the latest vesion. <pre class="code"> sudo cd /mot/ilmt/latest </pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Install the applicaton <pre class="code"> sudo installp -agqYXd  ./BESAgent-9.2.1.48.ppc64_aix61.pkg BESClient </pre>
+
+<p>
+ The results should look like this 
+</p>
+<pre class="code">	Installation Summary
+	--------------------
+	Name                        Level           Part        Event       Result
+	-------------------------------------------------------------------------------
+	BESClient                   9.2.1.48        USR         APPLY       SUCCESS
+	BESClient                   9.2.1.48        ROOT        APPLY       SUCCESS </pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Copy the config file to the location. <pre class="code"> sudo cp -p actionsite.afxm /etc/opt/BESClient/actionsite.afxm </pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Start the License Tool Client <pre class="code"> sudo /etc/rc.d/rc2.d/SBESClientd start </pre>
+
+<p>
+ Server will reteun the following 
+</p>
+<pre class="code"> Starting IBM Endpoint Manager: BESClient </pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Confirm the application has started sucessfully <pre class="code"> sudo ps -aef | grep -v grep | grep BESClient </pre>
+
+<p>
+ If applicatio has started successfully the results should look someting like this 
+</p>
+<pre class="code"> root  5898376        1   7 13:44:39      -  0:59 /opt/BESClient/bin/BESClient </pre>
+</div>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Let Rob Michuda know you have installed the software on the server so he can start the monitoring process.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "Install IBM Licensed Program Product License Meter Tool ILMT n AIX Servers." [2-] -->

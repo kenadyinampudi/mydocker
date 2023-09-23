@@ -1,0 +1,58 @@
+
+<h1 class="sectionedit1" id="bad_request_error_while_connecting_to_idrac_through_web">BAD Request error while connecting to iDRAC through web</h1>
+<div class="level1">
+
+<p>
+On some Dell Hardware, especially the ones with a iDRAC firmware version newer than 5.10.00.00, you might encounter an error while connecting to iDRAC using the fully qualified domain name. The technical explanation from Dell is.
+</p>
+<hr />
+
+<p>
+If the <abbr title="Hyper Text Transfer Protocol">HTTP</abbr> / HTTPS host header check is activated (more secure), iDRAC can be accessed via the IPv4 / IPv6 address, the RAC name and / or the defined Idrac FQDN (DNSRacName. <abbr title="Domain Name System">DNS</abbr> domain name). If the end user accesses with host names that Idrac may not know (e.g. a manual <abbr title="Domain Name System">DNS</abbr> of entries added in <abbr title="Domain Name System">DNS</abbr> records), the firmware version of the iDRAC8 firmware 2.81.81.81 has introduced a new attribute ” ManualDNSEntry”. This new setting can be updated with up to 4 IP addresses / hostnames / FQDNs to provide an allow list of host headers. This ensures that incoming requests are not discarded if the <abbr title="Hyper Text Transfer Protocol">HTTP</abbr> / HTTPS host header contains one of the entries in the “ManualDNSEntry” setting.
+</p>
+<hr />
+
+</div>
+<!-- EDIT1 SECTION "BAD Request error while connecting to iDRAC through web" [1-998] -->
+<h1 class="sectionedit2" id="screenshot_before_applying_the_workaround">Screenshot before applying the workaround:</h1>
+<div class="level1">
+
+<p>
+<a href="/lib/exe/detail.php?id=unix%3Aidrac_browser_bad_request&amp;media=unix:pasted:20230125-093214.png" class="media" title="unix:pasted:20230125-093214.png"><img src="/lib/exe/fetch.php?media=unix:pasted:20230125-093214.png" class="media" alt="" /></a>
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Screenshot before applying the workaround:" [999-1093] -->
+<h1 class="sectionedit3" id="there_are_two_workarounds">There are two workarounds</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT3 SECTION "There are two workarounds" [1094-1133] -->
+<h2 class="sectionedit4" id="fix_1_-_with_access_to_unix_shell">Fix 1 - with access to Unix Shell</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Login to the Unix shell and disable the security check as we already have <abbr title="Domain Name System">DNS</abbr> entries for all remote consoles<pre class="code">sudo /opt/dell/srvadmin/sbin/racadm set idrac.webserver.HostHeaderCheck 0</pre>
+
+<p>
+SAMPLE OUTPUT:
+</p>
+<pre class="code">x1naveka on cvtnbuhmams:/home/x1naveka $ sudo /opt/dell/srvadmin/sbin/racadm set idrac.webserver.HostHeaderCheck 0
+[Key=idrac.Embedded.1#WebServer.1]
+Object value modified successfully
+
+x1naveka on cvtnbuhmams:/home/x1naveka $</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Fix 1 - with access to Unix Shell" [1134-1633] -->
+<h2 class="sectionedit5" id="fix_2_-_no_access_to_unix_shell">Fix 2 - no access to Unix Shell</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> In case, one doesn&#039;t have access to the Unix shell, the workaround will be to use the IP address of the iDRAC instead of the hostname. The IP address can be fetched using the host or nslookup commands. </div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT5 SECTION "Fix 2 - no access to Unix Shell" [1634-] -->

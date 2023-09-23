@@ -1,0 +1,146 @@
+
+<h1 class="sectionedit1" id="disable_fake_ips_enable_dns_and_reboot_driv_servers">Disable fake IPs, enable DNS and reboot DRiV servers</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Enforce firewall rules          — &gt; Network Team</div>
+</li>
+<li class="level1"><div class="li"> Shutdown all Applications.      — &gt; Basis, apps teams</div>
+</li>
+<li class="level1"><div class="li"> Enable <abbr title="Domain Name System">DNS</abbr> on all DRiV servers. — &gt; Unix Team</div>
+<ol>
+<li class="level2"><div class="li"> Login to DRiV NIM server<pre class="code">for host in $(cat /prod/images/etc/allhosts.driv)
+do
+   sudo scp /prod/images/etc/resolv.conf.driv ${host}:/etc/resolv.conf
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform hosts file, remove fake IPs and test firewall on AIX servers<pre class="code">for host in $(sudo cat /root/firewallchange/aix.$(whoami))
+do
+   sudo scp /prod/images/etc/ntp.conf.aix.imoclone.driv ${host}:/etc/ntp.conf
+   ssh ${host} 
+done</pre>
+
+<p>
+On each server do the following
+</p>
+<pre class="code"># Fix hosts file
+
+sudo cp /etc/hosts /etc/hosts.enabledns
+echo &quot;127.0.0.1               loopback localhost&quot;                                                    &gt;  hosts.new
+host $(uname -n) | sed -e &quot;s;,;;g&quot; -e &quot;s;.driv.com;;g&quot; | awk &#039;{print $3&quot;     &quot;$1&quot;.driv.com     &quot;$1}&#039; &gt;&gt; hosts.new
+sudo cp hosts.new /etc/hosts
+
+# Remove Fake NICs
+
+ifconfig -a | sudo tee -a /root/ifconfiga
+
+for NIC in $(ifconfig -a | grep ^en[1-9] | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot; )
+do
+   sudo ifconfig ${NIC} down detach
+done
+
+for network in 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1
+do
+   sudo rmdev -dl en${network}
+   sudo rmdev -dl et${network}
+   sudo rmdev -dl ent${network}
+done
+
+# Test firewall connectivity - Both of these should fail
+
+telnet 10.0.48.213 1527
+telnet 10.32.50.64 1527
+
+# Update time and restart NTP daemons
+
+sudo stopsrc -s xntpd
+sudo ntpdate -u cdcvildns001.fmmotorparts.com
+sudo chrctcp -S -a xntpd
+sudo ntpdate -q cdcvildns001.fmmotorparts.com
+
+# Reboot the server
+
+sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform hosts file, remove fake IPs and test firewall on RHEL servers<pre class="code">for host in $(sudo cat /root/firewallchange/linux.$(whoami))
+do
+   sudo scp /prod/images/etc/ntp.conf.rhel.driv ${host}:/etc/ntp.conf
+   ssh ${host} 
+done</pre>
+
+<p>
+On each server do the following
+</p>
+<pre class="code"># Fix hosts file
+
+sudo cp /etc/hosts /etc/hosts.enabledns
+
+echo &quot;127.0.0.1               loopback localhost&quot; &gt;  hosts.new
+grep $(uname -n) /etc/hosts                       &gt;&gt; hosts.new
+
+sudo cp hosts.new /etc/hosts
+
+# Remove Fake NICs
+
+for NIC in $(ifconfig -a | grep -e ^en -e ^eth | grep .6..: | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot; )
+do
+   sudo ifdown ${NIC}
+done
+
+sudo rsync -avv /etc/sysconfig/network-scripts/ /root/network-scripts/
+
+for NICCFG in $(ls /etc/sysconfig/network-scripts/ifcfg-en*.6?? /etc/sysconfig/network-scripts/ifcfg-eth*.6??)
+do
+   sudo rm ${NICCFG}
+done
+
+# Test firewall connectivity - Both of these should fail
+
+sudo yum -y install telnet
+
+telnet 10.0.48.213 1527
+telnet 10.32.50.64 1527
+
+# Update time and restart NTP daemons
+
+sudo systemctl stop ntpd
+sudo ntpdate -u cdcvildns001.fmmotorparts.com
+sudo systemctl enable ntpd
+sudo systemctl start ntpd
+sudo ntpdate -q cdcvildns001.fmmotorparts.com
+
+# Reboot the server
+
+sudo init 6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> After all systems have been rebooted, Make sure all NFS have been mounted.<pre class="code">for host in $(cat /prod/images/etc/allhosts.driv)
+do
+   ssh ${host}
+done</pre>
+
+<p>
+Execute these on each system and make sure there are no errors
+</p>
+<pre class="code">[[ &quot;$(uname)&quot; = &quot;AIX&quot; ]] &amp;&amp; nfss=$(grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; | tr &quot;\n&quot; &quot; &quot;) || nfss=$(grep nfs /etc/fstab | awk &#039;{print $2}&#039; | tr &quot;\n&quot; &quot; &quot;)
+
+for nfs in ${nfss}
+do
+   echo &quot;Check :: NFS filesystem - ${nfs} ..&quot;
+   mountedas=$(df -k ${nfs} | grep -v ^File | awk &#039;{print $NF}&#039; )
+   if [ &quot;${nfs}&quot; = &quot;${mountedas}&quot; ]
+   then
+      echo &quot;   Good  :: ${nfs} &quot;
+   else
+      echo &quot;   Error :: ${nfs} -- does not seem to be mounted right &quot; 
+   fi
+   echo &quot;&quot;
+done</pre>
+</div>
+</li>
+</ol>
+
+</div>

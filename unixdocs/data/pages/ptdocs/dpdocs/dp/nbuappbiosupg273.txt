@@ -1,0 +1,15 @@
+In order to upgrade BIOS on NBU 5230 appliance running **NBU 2.7.3** version follow below steps:
+  - Copy this file to NBU appliance S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip to /tmp/bios_upgrade go to point 4 to create this folder in advance - use this procedure to copy files [[dpdocs:dp:nbucopying|from here]]
+  - Files to be copied available at taitc009 E:\DataPres_share\BIOS
+  - Elevate to CLISH
+  - To create /tmp/bios_upgrade run this <code>mkdir /tmp/bios_upgrade</code>
+  - Uncompress it<code>unzip /tmp/bios_upgrade/S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas-170703110016.zip</code>
+  - Make the file bios_5x30_update.sh an executable one<code>chmod +x /tmp/bios_upgrade/S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas/bios_5x30_update.sh</code>
+  - Change the working directory to where you unzipped the downloaded BIOS file<code>cd /tmp/bios_upgrade/S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas</code> running it not being in this directory will fail the BIOS upgrade.
+  - Execute this file<code>/tmp/bios_upgrade/S2600GZ_BIOS02060005_ME020107328_BMC0127r10527_FRUSDR113_Veritas/bios_5x30_update.sh</code>
+  - Reboot the appliance- **if there are not running backup jobs** <code>reboot</code>
+This script file performs a Veritas branding check and some additional checks then launches Intel's OFU Utility to flash the appliance
+
+Some support commands that can be used to verify few things:<code>dmidecode -t bios
+cat /etc/*release
+dmidecode -s system-serial-number</code>

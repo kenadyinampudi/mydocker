@@ -1,0 +1,52 @@
+====== DOCKER ======
+
+ON CDCPILX056, I'm running a Docker instance.
+Docker runs microinstances of applications.  
+
+===== Storing Docker images =====
+Docker will automatically download the latest version of the application you are trying to run.  This is obviously not ideal, as data might not be compatible between versions.  To fix this, I've started a registry on LX056 as well.  This saves a designated version locally.  This static version can be downloaded and run instead of getting a random new version off the web.
+
+===== Procedure for downloading and storing images =====
+  - Download desired image (Not specifying a version will grab the "latest" tag.) \\ ''docker pull user/app''
+  - Tag the image with a local version \\ ''docker tag user/app localhost:5000/user/app:latest''
+  - Push it into the registry. \\ ''docker push localhost:5000/user/app:latest''
+
+===== Starting Docker instances =====
+Docker images are ephemeral by default.  To keep data intact, you need to specify volumes to store the data.  To allow the container to talk to the outside world, you need to expose ports to the server.  To keep track of all of this, I use a ''docker-compose.yaml'' file to hold all the variables.
+\\ \\ 
+Running the application means cd'ing into the directory with the docker-compose.yaml, then running "docker-compose up".  The file is implied.
+\\ \\ 
+You can manually run new instances with''docker run user/app'' with assorted options to get the container to do what you want.  This will pull the images and any necessary dependencies from the internet, then run the container.  If you do this, you should consider tagging it and pushing it into the local registry as above.
+\\ \\ 
+If the instance was already running, you can restart it.
+First, use ''docker ps -a'' to get a list of all instances and their status.  The last column will be the name of the instance.
+Next, run ''docker start <instancename>'' to restart the instance.  This will reuse the existing volumes.
+\\ \\ 
+===== Stopping and deleting an instance =====
+To temporarily stop a running instance, use ''docker ps -a'' to get the instance name, then ''docker stop <instancename>'' to stop it.  ''docker start <instancename>'' will start it again.
+\\
+To kill and delete a running docker instance, deleting the data associated with it, you have two methods
+
+=== Using docker-compose === 
+
+  - cd into the directory with the docker-compose.yaml file
+  - ''docker-compose down'' to kill off the running instance.
+
+=== Using docker ===
+
+Manually remove the instance (especially if you started it manually) and cleanup by running ''docker rm -f <instancename>''.  \\ This will remove the instance and delete the volumes associated with it as well. \\ 
+
+===== Network ports =====
+
+Docker instances all share the IP for the server.  \\ 
+Applications need to run on individual ports on the same IP address.  \\ 
+I use the range 8000-9000 for applications just as convention. \\
+
+===== Current instances =====
+
+  * [[unix:tracks | :8040 - Tracks]]
+  * [[unix:dokuwiki | :8080 Dokuwiki ]]
+  * [[unix:lpar2rrd | :8090 Xorux, aka lpar2rrd and stor2rrd]]
+  * [[unix:licensing | :8095 "snipe-IT" use ptunixadmins/ud42W1q24sbMWW]]
+  * [[unix:vmpowercli | On Demand VMWare PowerCLI ]]
+

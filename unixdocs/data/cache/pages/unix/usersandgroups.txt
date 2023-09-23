@@ -1,0 +1,65 @@
+====== AIX / VIOS ======
+
+  * Create these users<code>sudo mkgroup "id=8086" taunix
+sudo mkgroup "id=8089" ovteam
+sudo mkgroup "id=8090" sapteam
+sudo mkgroup "id=8091" dbateam
+sudo mkgroup "id=8092" stgteam
+sudo mkgroup "id=8093" secteam
+sudo mkgroup "id=8094" 3rdteam
+sudo mkgroup "id=8095" sudogrp
+sudo mkgroup "id=8096" mdlteam
+sudo mkgroup "id=8097" lnteam
+
+sudo mkuser "id=212" "pgrp=taunix" "home=/home/x1shukla" "gecos=Shukant Lagwankar" x1shukla
+sudo mkuser "id=4592" "pgrp=taunix" "home=/home/x1vasuna" "gecos=Vasudevan Nadar" x1vasuna
+sudo mkuser "id=4207" "pgrp=taunix" "home=/home/x1rzb826" "gecos=Robert Bieniek" x1rzb826
+sudo mkuser "id=4255" "pgrp=taunix" "home=/home/x1cxs952" "gecos=Chris Stachowiak" x1cxs952
+sudo mkuser "id=8088" "pgrp=taunix" "home=/home/x1kxk630" "gecos=Kapilraj Koroth" x1kxk630
+sudo mkuser "id=4247" "pgrp=ovteam" "home=/home/sxp8856" "gecos=Stephen Payne" sxp8856
+sudo mkuser "id=4244" "pgrp=stgteam" "home=/home/pawetkac" "gecos=Pawel Tkaczyk" pawetkac
+sudo mkuser "id=4607" "pgrp=ovteam" "home=/home/x1jhz999" "gecos=John Ziegler" x1jhz999
+sudo mkuser "id=2014" "pgrp=staff" "home=/home/tauxrpt" "gecos=GIOS Unix team - monitoring account" tauxrpt
+
+sudo pwdadm -c x1vasuna
+sudo pwdadm -c x1shukla
+sudo pwdadm -c pawetkac
+sudo pwdadm -c x1rzb826
+sudo pwdadm -c x1kxk630
+sudo pwdadm -c x1cxs952
+sudo pwdadm -c x1jhz999
+sudo pwdadm -c sxp8856</code>
+  * For some of our favorite team members, we also copy the ssh keys for them.
+    * Login to pgnmsv01<code>for user in sxp8856 x1jhz999 pawetkac tauxrpt x1kxk630 x1shukla x1vasuna x1rzb826 x1cxs952
+do
+   sudo rsync -avv /home/${user}/.ssh/ ${targethost}:/home/${user}/.ssh/
+done</code>   
+====== Linux ======
+
+  * Create these users<code>sudo groupadd -g 8086 taunix
+sudo groupadd -g 8089 ovteam
+sudo groupadd -g 8090 sapteam
+sudo groupadd -g 8091 dbateam
+sudo groupadd -g 8092 stgteam
+sudo groupadd -g 8093 secteam
+sudo groupadd -g 8094 3rdteam
+sudo groupadd -g 8095 sudogrp
+sudo groupadd -g 8096 mdlteam
+sudo groupadd -g 8097 lnteam
+
+
+sudo useradd -g stgteam -d /home/pawetkac -c "Pawel Tkaczyk" -m -u 4244 pawetkac
+sudo useradd -g stgteam -d /home/jhf1625 -c "James Fort" -m -u 4064 jhf1625
+sudo useradd -g taunix -d /home/x1kxk630 -c "Kapilraj Koroth" -m -u 8088 x1kxk630
+sudo useradd -g taunix -d /home/x1shukla -c "Shukant Lagwankar" -m -u 202 x1shukla
+sudo useradd -g taunix -d /home/x1vasuna -c "Vasudevan Nadar" -m -u 4592 x1vasuna
+sudo useradd -g taunix -d /home/x1rzb826 -c "Robert Bieniek" -m -u 4207 x1rzb826
+sudo useradd -g taunix -d /home/x1cxs952 -c "Chris Stachowiak" -m -u 4255 x1cxs952
+sudo useradd -g ovteam -d /home/sxp8856 -c "Stephen Payne" -m -u 4247 sxp8856
+sudo useradd -g ovteam -d /home/x1jhz999 -c "John Ziegler" -m -u 4607 x1jhz999
+sudo useradd -g users -d /home/tauxrpt -c "GIOS Unix team - monitoring account" -m -u 2014 tauxrpt</code>
+  * For some of our favorite team members, we also copy the ssh keys for them.
+    * Login to pgnmsv01<code>for user in sxp8856 pawetkac x1kxk630 tauxrpt x1shukla x1vasuna x1rzb826 x1cxs952 x1jhz999
+do
+   sudo rsync -avv /home/${user}/.ssh/ <host>:/home/${user}/.ssh/
+done</code>

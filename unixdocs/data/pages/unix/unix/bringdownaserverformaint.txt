@@ -1,0 +1,16 @@
+====== Steps to bring down a server for maintenance ======
+
+  - Verify you have an approved change control if the system is running a production application
+  - Verify you have an active blackout for the server affected. If not, enter one.
+    - [[http://taitc212/cgi-bin/active_bo.cgi|Check to very if we have an active blackout]]
+    - [[http://taitc212/cgi-bin/blackout/login.cgi|Use this URL to enter a new one]]
+  - Get on to the console. Login to taitc118<code>getconsole <servername></code>
+  - Get a list of running processes<code>ps -ef > /root/psef.$(date +%m%d%y)</code>
+  - Get a list of mounted filesystems<code>df -k > /root/mountedfs.$(date +%m%d%y)</code>
+  - Get a list of disks and vgs pagingspace etc<code>lsvg > /root/lsvg.$(date +%m%d%y)
+lspv > /root/lspv.$(date +%m%d%y)
+lsps -a > /root/lsps.$(date +%m%d%y)</code>
+  - Check the bootlist against the last booted device<code>bootlist -o -m normal > /root/bootlist.$(date +%m%d%y)
+bootinfo -b > /root/bootinfob.$(date +%m%d%y)</code>
+  - Shutdown the server<code>shutdown -F</code>
+

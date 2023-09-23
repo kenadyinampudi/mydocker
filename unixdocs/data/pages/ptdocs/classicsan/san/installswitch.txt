@@ -1,0 +1,38 @@
+====== Installing a Fiber Switch ======
+
+The following configurations must be completed before you release a switch to production usage.
+
+  - Change password of following users to Standard.<code>passwd admin
+passwd root
+passwd user
+passwd factory</code>
+  - License all the additional ports.
+  - Configure DNS name and IP address and gateway. - use //dnsconfig// command
+    - Configure DNS servers Here is a pointer [[http://unixdocs/doku.php?id=unix:setupresolv.conf]]
+  - Configure NTP
+    - AMER domain<code>tsclockserver "time.amer.int.tenneco.com; time.emea.int.tenneco.com"</code>
+    - EMEA domain<code>tsclockserver "time.emea.int.tenneco.com; time.amer.int.tenneco.com"</code>
+  - Configure the correct Domain ID.
+  - Add syslog configuration to send all logs to pablsv01 - 10.0.48.5 - use //syslogdIpAdd// command<code>syslogadmin --set -ip 10.0.48.5</code>
+  - Upgrade firmware.
+  - Add a line to ''pgunap01:/prod/storageteam/etc/allsanswitches''<code>sudo vi /prod/storageteam/etc/allsanswitches</code>The file is self explanatory.
+  - Setup SSH keys for sanmontr@pgunap01<code>ldcds5300a1:admin> sshutil importpubkey
+Enter user name for whom key is imported:admin
+Enter IP address:pgunap01
+Enter remote directory:/prod/storageteam/etc
+Enter public key name(must have .pub suffix):pgunap01.id_rsa.pub
+Enter login name:x1kxk630
+x1kxk630@pablsv01's password:
+public key is imported successfully.</code>**Use your own account to login**
+  - Setup SSH password less login to pablsv01 for config backups.
+    - Create SSH keys (Empty Passphrase) <code>sshutil genkey -rsa</code>**empty passphrase**
+    - Export the keys<code>ldcds5300b1:admin> sshutil exportpubkey
+Enter IP address:10.32.6.150
+Enter remote directory:/prod/storageteam/sanmontr
+Enter login name:sanmontr
+sanmontr@10.0.48.5's password:
+public key out_going_DS_5300B.pub is exported successfully.</code>
+    - Login to pgunap01 and add this to sanmontr's authorized keys<code>sudo su - sanmontr
+cd /prod/storageteam/sanmontr
+cat out_going_DS_5300B.pub >> .ssh/authorized_keys</code>**If the filename is different - please adjust**
+  - Add the switch to TPC ''https://pgtpcsv01.amer.int.tenneco.com:9569/srm''

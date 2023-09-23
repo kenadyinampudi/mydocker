@@ -1,0 +1,72 @@
+====== Fabric zoning servers - Seward ( Pure storage M20 ) ======
+
+===== Physical cabling of Pure M20 storage array =====
+
+
+^Storage array^Port Name^Switch Name^Port No^Fabric^Alias name^WWN^Zoning target^
+|sewpm20v1|ct0-fc0|sewds300a|10|Fabric A|sewpm20v1_ct0_fc0|52:4A:93:72:0B:6C:57:00|AIX/PowerVM|
+|sewpm20v1|ct0-fc1|sewds300b|10|Fabric B|sewpm20v1_ct0_fc1|52:4A:93:72:0B:6C:57:01|Wintel/VMWARE|
+|sewpm20v1|ct0-fc2|sewds300a|08|Fabric A|sewpm20v1_ct0_fc2|52:4A:93:72:0B:6C:57:02|Wintel/VMWARE|
+|sewpm20v1|ct0-fc3|sewds300b|08|Fabric B|sewpm20v1_ct0_fc3|52:4A:93:72:0B:6C:57:03|AIX/PowerVM|
+|sewpm20v1|ct1-fc0|sewds300a|11|Fabric A|sewpm20v1_ct1_fc0|52:4A:93:72:0B:6C:57:10|AIX/PowerVM|
+|sewpm20v1|ct1-fc1|sewds300b|11|Fabric B|sewpm20v1_ct1_fc1|52:4A:93:72:0B:6C:57:11|Wintel/VMWARE|
+|sewpm20v1|ct1-fc2|sewds300a|09|Fabric A|sewpm20v1_ct1_fc2|52:4A:93:72:0B:6C:57:12|Wintel/VMWARE|
+|sewpm20v1|ct1-fc3|sewds300b|09|Fabric B|sewpm20v1_ct1_fc3|52:4A:93:72:0B:6C:57:13|AIX/PowerVM|
+
+
+** Fabric A **
+
+^Storage array^Port Name^Switch Name^Port No^Fabric^Alias name^WWN^Zoning target^
+|sewpm20v1|ct0-fc0|sewds300a|10|Fabric A|sewpm20v1_ct0_fc0|52:4A:93:72:0B:6C:57:00|AIX/PowerVM|
+|sewpm20v1|ct0-fc2|sewds300a|08|Fabric A|sewpm20v1_ct0_fc2|52:4A:93:72:0B:6C:57:02|Wintel/VMWARE|
+|sewpm20v1|ct1-fc0|sewds300a|11|Fabric A|sewpm20v1_ct1_fc0|52:4A:93:72:0B:6C:57:10|AIX/PowerVM|
+|sewpm20v1|ct1-fc2|sewds300a|09|Fabric A|sewpm20v1_ct1_fc2|52:4A:93:72:0B:6C:57:12|Wintel/VMWARE|
+
+** Fabric B **
+
+
+^Storage array^Port Name^Switch Name^Port No^Fabric^Alias name^WWN^Zoning target^
+|sewpm20v1|ct0-fc1|sewds300b|10|Fabric B|sewpm20v1_ct0_fc1|52:4A:93:72:0B:6C:57:01|Wintel/VMWARE|
+|sewpm20v1|ct0-fc3|sewds300b|08|Fabric B|sewpm20v1_ct0_fc3|52:4A:93:72:0B:6C:57:03|AIX/PowerVM|
+|sewpm20v1|ct1-fc1|sewds300b|11|Fabric B|sewpm20v1_ct1_fc1|52:4A:93:72:0B:6C:57:11|Wintel/VMWARE|
+|sewpm20v1|ct1-fc3|sewds300b|09|Fabric B|sewpm20v1_ct1_fc3|52:4A:93:72:0B:6C:57:13|AIX/PowerVM|
+
+[[#fabric_a_zoning_-_aix_powervm_servers|AIX and PowerVM Zoning procedures]]
+
+[[#fabric_a_zoning_-_wintel_vmware_servers|Wintel and VMWARE Zoning procedures]]
+
+[[#xls|Supporting Excel file - will generate commands, if used properly]]
+
+
+===== Fabric A Zoning - AIX/PowerVM servers =====
+
+  - Define AIX host alias<code>alicreate "pocpuresv01_4e00d0","c0:50:76:06:10:4e:00:d0"</code>If there are multiple WWNs from the AIX host, repeat this step for the second WWN.
+  - Create zoning<code>zonecreate "pocpuresv01_4e00d0__sewpm20v1_ct0_ct1_fc0","pocpuresv01_4e00d0;sewpm20v1_ct0_fc0;sewpm20v1_ct1_fc0"</code>
+  - Add to config<code>cfgadd "fab_a_act_config","pocpuresv01_4e00d0__sewpm20v1_ct0_ct1_fc0"</code>
+  - Save and enable config<code>cfgsave</code>Enable<code>cfgenable "fab_a_act_config"</code>
+
+===== Fabric B Zoning - AIX/PowerVM servers =====
+
+  - Define AIX host alias<code>alicreate "pocpuresv01_4e00d2","c0:50:76:06:10:4e:00:d2"</code>If there are multiple WWNs from the AIX host, repeat this step for the second WWN.
+  - Create zoning<code>zonecreate "pocpuresv01_4e00d2__sewpm20v1_ct0_ct1_fc3","pocpuresv01_4e00d2;sewpm20v1_ct0_fc3;sewpm20v1_ct1_fc3"</code>
+  - Add to config<code>cfgadd "fab_b_act_config","pocpuresv01_4e00d2__sewpm20v1_ct0_ct1_fc3"</code>
+  - Save and enable config<code>cfgsave</code>Enable<code>cfgenable "fab_b_act_config"</code>
+
+===== Fabric A Zoning - Wintel/VMWARE servers =====
+
+  - Define VMWARE host alias<code>alicreate "taitc360_6cccb0","c0:50:76:06:10:6c:cc:b0"</code>
+  - Create zoning<code>zonecreate "taitc360_6cccb0__sewpm20v1_ct0_ct1_fc2","taitc360_6cccb0;sewpm20v1_ct0_fc2;sewpm20v1_ct1_fc2"</code>
+  - Add to config<code>cfgadd "fab_a_act_config","taitc360_6cccb0__sewpm20v1_ct0_ct1_fc2"</code>
+  - Save and enable config<code>cfgsave</code>Enable<code>cfgenable "fab_a_act_config"</code>
+
+===== Fabric B Zoning - Wintel/VMWARE servers =====
+
+  - Define VMWARE host alias<code>alicreate "taitc360_6cccb2","c0:50:76:06:10:6c:cc:b2"</code>
+  - Create zoning<code>zonecreate "taitc360_6cccb2__sewpm20v1_ct0_ct1_fc1","taitc360_6cccb2;sewpm20v1_ct0_fc1;sewpm20v1_ct1_fc1"</code>
+  - Add to config<code>cfgadd "fab_b_act_config","taitc360_6cccb2__sewpm20v1_ct0_ct1_fc1"</code>
+  - Save and enable config<code>cfgsave</code>Enable<code>cfgenable "fab_b_act_config"</code>
+
+
+===== xls =====
+This xlsx file if properly used will generate all commands needed in fabric A and B. It's now filled so you can see its 'syntax'.
+{{:san:sew_zonning.xlsx|}}

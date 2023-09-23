@@ -1,0 +1,61 @@
+<code>peerdb98-p8
+
+c05076090b8b0000		ldcds6510a1		port 22
+c05076090b8b0001		ldcds6510a1		port 22
+	
+c05076090b8b0002		ldcds6510b1		port 23
+c05076090b8b0003		ldcds6510b1		port 23
+
+
+2G1_3G1_PG
+
+
+Fabric A
+
+
+alicreate "peerdb98_p8_8b0000","c0:50:76:09:0b:8b:00:00"
+alicreate "peerdb98_p8_8b0001","c0:50:76:09:0b:8b:00:01"
+
+zonecreate "peerdb98_p8_8b0000__vmax_0301_2g1","peerdb98_p8_8b0000;vmax_0301_2g1"
+zonecreate "peerdb98_p8_8b0001__vmax_0301_2g1","peerdb98_p8_8b0001;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","peerdb98_p8_8b0000__vmax_0301_2g1"
+cfgadd "fab_a_act_config","peerdb98_p8_8b0001__vmax_0301_2g1"
+
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+
+Fabric B
+
+
+alicreate "peerdb98_p8_8b0002","c0:50:76:09:0b:8b:00:02"
+alicreate "peerdb98_p8_8b0003","c0:50:76:09:0b:8b:00:03"
+
+zonecreate "peerdb98_p8_8b0002__vmax_0301_3g1","peerdb98_p8_8b0002;vmax_0301_3g1"
+zonecreate "peerdb98_p8_8b0003__vmax_0301_3g1","peerdb98_p8_8b0003;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","peerdb98_p8_8b0002__vmax_0301_3g1"
+cfgadd "fab_b_act_config","peerdb98_p8_8b0003__vmax_0301_3g1"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+sudo symaccess -sid 0301 -name peerdb98-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerdb98-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerdb98-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerdb98-p8_IG -type initiator -wwn c05076090b8b0000 add
+sudo symaccess -sid 0301 -name peerdb98-p8_IG -type initiator -wwn c05076090b8b0001 add
+sudo symaccess -sid 0301 -name peerdb98-p8_IG -type initiator -wwn c05076090b8b0002 add
+sudo symaccess -sid 0301 -name peerdb98-p8_IG -type initiator -wwn c05076090b8b0003 add
+
+
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 08FA;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 08FA;" commit -nop
+
+sudo symaccess -sid 0301 -name peerdb98-p8_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name peerdb98-p8_SG add devs 
+sudo symfast -sid 0301 -fp_name Bronze associate -sg peerdb98-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerdb98-p8_MV -sg peerdb98-p8_SG -pg 2G1_3G1_PG -ig peerdb98-p8_IG</code>

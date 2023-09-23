@@ -1,0 +1,24 @@
+
+===== Allocate storage from VMAX to a standard host =====
+
+  - Normally we get a ticket from Unix or Wintel team requesting for storage in this way<code>Hello Storage team, 
+Please allocate 2*103G LUN from array Serial number 000198700301 on pggtdb01 server. This for Organic growth.</code>
+  - First step is to validate if the system is actually on VMAX
+    - Login to the server, in this case "pggtdb01"<code>ssh <servername></code>
+    - Execute the ''lsvpcfg.sh'' script and make sure all LUNs are from VMAX<code>sudo /usr/local/scripts/lsvpcfg.sh</code>
+    - Make a note of one of the LUNs of the same size from the system<code>e.g. ABCD</code>
+  - Login to VMAX Solution Enabler Server ''pgunap01''<code>ssh pgunap01</code>
+  - Create a LUN copying all the settings from the existing device that you just made a note of
+    - Preview <code>sudo symconfigure -sid 0301 -cmd "configure <number_of_devices> devices copying dev <dev_serial_number>;" preview -nop</code>E.g.<code>sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 0995;" preview -nop</code>
+    - Commit<code>sudo symconfigure -sid 0301 -cmd "configure <number_of_devices> devices copying dev <dev_serial_number>;" commit -nop</code>E.g.<code>sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 0995;" commit -nop</code>Make a note of the new devices.
+  - Add the device(s) to the correct storage group.
+    - Normally, a storage groups name is in this standard<code>hostname_SG</code>But not always, so don't bet on it<code>E.g. You may find a storage group like this
+peerap03_p8_SG</code>It was done when there was a need to duplicate a hostname.
+    - Lookup which storage group the device ( that you made a note of earlier is from )<code>sudo symaccess -sid 0301 list -type storage -dev <dev_ser_no></code>Make a note of the storage group name
+    - Add the device(s) to the storage group<code>sudo symaccess -sid 0301 -name <storage_group> -type storage add devs <dev1>,dev2></code>
+  - Send the ticket back to the team with a comment like this<code>The following devices have been added to the host
+ABCD, EFGH
+
+Please rescan and verify.</code>
+
+** PTA and TA2 database servers got BCV backups - Please read the BCV documentation before you go ahead for those systems **

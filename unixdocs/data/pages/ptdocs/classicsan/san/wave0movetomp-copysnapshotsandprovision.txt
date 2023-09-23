@@ -1,0 +1,26 @@
+====== Copy snapshots and provision storage at MP ======
+
+  - This is a SAN Storage task
+  - Login to SAN Admin host ''pgunap01''
+  - Define a variable to point to the MP Storage array. **Make sure you have ssh keys defined**
+    - Kapil<code>export SSH2PURE="ssh kapil.koroth@cdcvilns013.fmmotorparts.com"</code>
+    - Nithin<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns013.fmmotorparts.com"</code>
+    - Sadhna<code>export SSH2PURE="ssh sadhna.arora@cdcvilns013.fmmotorparts.com"</code>
+  - Store snapshots in a file.<code>${SSH2PURE} purevol list --snap --pgrouplist LDCPM70V1:ldcpm70-cdcvilns013-imo-wave0.w0mvmp > snapshots.mp</code> 
+  - Copy snapshots and provision storage
+    - Step 1, Define this function<code>function copysnapshots {
+for host in ${*}
+do
+   grep "LDCPM70V1:ldcpm70-cdcvilns013-imo-wave0.w0mvmp.${host}_" snapshots.mp > ${host}.snapshots
+   for snapshot in $(awk '{print $1}' ${host}.snapshots )
+   do
+      volumename=$(echo ${snapshot} | awk -F"." '{print $NF}' )
+      ${SSH2PURE} purevol copy ${snapshot} ${volumename}
+   done
+   volumes=$(awk '{print $1}' ${host}.snapshots | awk -F"." '{print $NF}' | tr "\n" " " )
+   ${SSH2PURE} purevol connect --host ${host} ${volumes}
+done
+}</code>
+    - Step 1 - Test on the first server<code>copysnapshots dreiap99</code>
+    - Step 2 - First set of servers    <code>copysnapshots dreidb99 ereiap99 ereidb99 drenap99 drendb99 erenap99 erendb99  drgtdb01 drsndb01 drsrdb01 drhgap99 drhgdb99 prhgap99</code>
+    - Step 3 - Final set of servers    <code>copysnapshots prhgdb99 prgtdb01 prsndb01 prsrdb01 prenap99 prendb99  xrenap99 xrendb99 preiap99 preidb99 xreiap99 xreidb99</code>

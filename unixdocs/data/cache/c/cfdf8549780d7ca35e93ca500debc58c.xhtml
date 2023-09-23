@@ -1,0 +1,26 @@
+
+<h1 class="sectionedit1" id="handle_storage_request_on_taprvio17_18_19">Handle Storage request on taprvio17,18,19</h1>
+<div class="level1">
+
+</div>
+
+<h5 id="whenever_we_get_a_request_to_add_storage_on_the_guests_running_on_the_3_node_vio_cluster_perform_the_below_steps">Whenever we get a request to add storage on the guests running on the 3 node VIO cluster perform the below steps:</h5>
+<div class="level5">
+<ol>
+<li class="level1"><div class="li"> Request the disks on all the three VIO servers taprvio17,18,19</div>
+</li>
+<li class="level1"><div class="li"> Run cfgmgr on the VIO server on which the guest is running to identify the newly added disks.&lt;code&gt;sudo lsvpcfg.sh &gt; lsvpcfg.out.before</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Allocate pvid, set reservation policy and enable round_robin for the disks on that VIOS server.</div>
+</li>
+<li class="level3"><div class="li"> Now run cfgmgr on rest of the two VIO servers and enable reservation policy, round_robin for the newly added disks. (Verify the correct disks by looking at the pvid&#039;s)</div>
+</li>
+<li class="level3"><div class="li"> Add the disks to the guest from the VIO server where it is present.</div>
+</li>
+<li class="level3"><div class="li"> Now login to the Webconsole of the VIO server on which the guest server is running and vaildate the migration of that guest to the rest of the two VIOS servers.</div>
+</li>
+</ol>
+
+</div>

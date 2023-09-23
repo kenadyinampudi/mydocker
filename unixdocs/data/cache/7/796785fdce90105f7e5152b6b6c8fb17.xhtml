@@ -1,0 +1,132 @@
+
+<h1 class="sectionedit1" id="fp1_data_refresh_documentation">FP1 Data refresh documentation</h1>
+<div class="level1">
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Source System  </th><th class="col1">Source DC </th><th class="col2 leftalign">Target System  </th><th class="col3">Target DC</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">sfldmilx366	</td><td class="col1 leftalign">CDC/PTCA  </td><td class="col2 leftalign">acdcfp1lxdb01   </td><td class="col3">CDC/MPPS</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [47-153] -->
+</div>
+<!-- EDIT1 SECTION "FP1 Data refresh documentation" [1-153] -->
+<h3 class="sectionedit3" id="vmware_steps">VMware steps</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to MPPS vCenter using PowerCLI<pre class="code">Connect-VIServer -server cdcvilms156.driv.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rescan for new devices &#039;NON-PROD-LINUX2&#039;<pre class="code">Get-Cluster NON-PROD-LINUX2 | Get-VMHost | Get-VMHostStorage -RescanAllHba</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Setup ESXCLI<pre class="code">$esxcli = Get-EsxCli -VMHost cdcvilvm183.driv.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Re-signature duplicated datastores<pre class="code">$vmfsname = &quot;PROD-SUSE1-PT-006&quot;
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+$vmfsname = &quot;PROD-SUSE1-PT-020&quot;
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+$vmfsname = &quot;PROD-SUSE1-PT-252&quot;
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if all the datastores have been re-signatured<pre class="code">get-datastore | Select-Object name |grep PROD-SUSE1-PT | grep snap</pre>
+
+<p>
+ You will get the default Names of the data stores, rename them using the below syntax.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename datastores to their final names<pre class="code">Get-DataStore -Name snap-******-PROD-SUSE1-PT-006| Set-DataStore -Name CDC-PURE-APOLLO-FP1DATA06
+Get-DataStore -Name snap-******-PROD-SUSE1-PT-020 | Set-DataStore -Name CDC-PURE-APOLLO-FP1DATA20
+Get-DataStore -Name snap-******-PROD-SUSE1-PT-252| Set-DataStore -Name CDC-PURE-APOLLO-FP1DATA252</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rescan for new devices and VMFS on <code>NON-PROD-LINUX2</code><pre class="code">Get-Cluster NON-PROD-LINUX2 | Get-VMHost | Get-VMHostStorage -RescanAllHba -RescanVmfs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Connect disks to Virtual Machine<pre class="code">New-HardDisk -vm ACDCFP1LXDB01 -Controller &quot;SCSI Controller 0&quot; -DiskPath &quot;[CDC-PURE-APOLLO-FP1DATA06] SFLDMILX366/SFLDMILX366_2.vmdk&quot;
+New-HardDisk -vm ACDCFP1LXDB01 -Controller &quot;SCSI Controller 0&quot; -DiskPath &quot;[CDC-PURE-APOLLO-FP1DATA06] SFLDMILX366/SFLDMILX366_3.vmdk&quot;
+New-HardDisk -vm ACDCFP1LXDB01 -Controller &quot;SCSI Controller 0&quot; -DiskPath &quot;[CDC-PURE-APOLLO-FP1DATA06] SFLDMILX366/SFLDMILX366_4.vmdk&quot;
+New-HardDisk -vm ACDCFP1LXDB01 -Controller &quot;SCSI Controller 0&quot; -DiskPath &quot;[CDC-PURE-APOLLO-FP1DATA06] SFLDMILX366/SFLDMILX366_5.vmdk&quot;
+New-HardDisk -vm ACDCFP1LXDB01 -Controller &quot;SCSI Controller 0&quot; -DiskPath &quot;[CDC-PURE-APOLLO-FP1DATA20] SFLDMILX366/SFLDMILX366_6.vmdk&quot;
+New-HardDisk -vm ACDCFP1LXDB01 -Controller &quot;SCSI Controller 0&quot; -DiskPath &quot;[CDC-PURE-APOLLO-FP1DATA252] SFLDMILX366/SFLDMILX366_7.vmdk&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "VMware steps" [154-2653] -->
+<h3 class="sectionedit4" id="unix_steps">Unix Steps</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to <code>ACDCFP1LXDB01</code></div>
+</li>
+<li class="level1"><div class="li"> Rescan for new devices<pre class="code">for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk &#039;{print $9}&#039; )
+do
+   echo &quot;- - -&quot; | sudo tee ${dir}/scan
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if all disks are available<pre class="code">sudo /sbin/pvs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Activate the volume groups<pre class="code">echo &quot;oravg saplogvg sapvg&quot; | xargs -n1 sudo /sbin/vgchange -a y  </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Put the fstab for application filesystems, fsck and mount the filesystems<pre class="code">sudo cp /etc/fstab /etc/fstab.rootvgonly
+sudo vi /etc/fstab</pre>
+
+<p>
+Enter the following filesystems
+</p>
+<pre class="code">/dev/oravg/oracle2lv		/oracle 		ext3    acl,user_xattr 1 2
+/dev/oravg/oraclelv     	/oracle/FP1     	ext3    user_xattr     1 2
+/dev/oravg/orabinlv     	/oracle/FP1/112_64      ext3    acl,user_xattr 1 2
+/dev/oravg/orbin12lv    	/oracle/FP1/122_64     	ext3    acl,user_xattr 1 2
+/dev/oravg/sapreorglv   	/oracle/FP1/sapreorg    ext3    acl,user_xattr 1 2
+/dev/oravg/oraclilv     	/oracle/client  	ext3    acl,user_xattr 1 2
+/dev/oravg/orastagelv   	/oracle/stage/112_64    ext3    acl,user_xattr 1 2
+/dev/oravg/orbin19lv    	/oracle/FP1/19.0.0      ext3    acl,user_xattr 1 2
+/dev/oravg/agentlv   		/oemagent            	ext3   	acl,user_xattr 1 2
+/dev/sapvg/sapdata1lv   	/oracle/FP1/sapdata1    ext3    acl,user_xattr 1 2
+/dev/sapvg/sapdata2lv   	/oracle/FP1/sapdata2    ext3    acl,user_xattr 1 2
+/dev/sapvg/sapdata3lv   	/oracle/FP1/sapdata3    ext3    acl,user_xattr 1 2
+/dev/sapvg/sapdata4lv   	/oracle/FP1/sapdata4    ext3    acl,user_xattr 1 2
+/dev/sapvg/daalv        	/usr/sap/DAA    	ext3    acl,user_xattr 1 2
+/dev/saplogvg/oramirrlva        /oracle/FP1/mirrlogA    ext3    acl,user_xattr 1 2
+/dev/saplogvg/oramirrlvb        /oracle/FP1/mirrlogB    ext3    acl,user_xattr 1 2
+/dev/saplogvg/oraloglva 	/oracle/FP1/origlogA    ext3    acl,user_xattr 1 2
+/dev/saplogvg/oraloglvb 	/oracle/FP1/origlogB    ext3    acl,user_xattr 1 2
+/dev/saplogvg/oraarchlv 	/oracle/FP1/oraarch     ext3    acl,user_xattr 1 2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> FSCK and mount the filesystems<pre class="code">for fs in /dev/oravg/oracle2lv /dev/oravg/oraclelv /dev/oravg/orabinlv /dev/oravg/orbin12lv /dev/oravg/sapreorglv /dev/oravg/oraclilv \
+/dev/oravg/orastagelv /dev/oravg/orbin19lv /dev/oravg/agentlv /dev/sapvg/sapdata1lv /dev/sapvg/sapdata2lv /dev/sapvg/sapdata3lv \
+/dev/sapvg/sapdata4lv /dev/sapvg/daalv /dev/saplogvg/oramirrlva /dev/saplogvg/oramirrlvb /dev/saplogvg/oraloglva \
+/dev/saplogvg/oraloglvb /dev/saplogvg/oraarchlv 
+do
+   sudo /usr/sbin/fsck -y ${fs}
+   sudo /usr/bin/mount ${fs}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure NFS are exported from <code>acdcfp1lxci01</code> and mounted on DB server <code>acdcfp1lxdb01</code><pre class="code">sudo /usr/bin/mount acdcfp1lxci01:/sapmnt/FP1/ /sapmnt/FP1
+sudo /usr/bin/mount acdcfp1lxci01:/usr/sap/FP1 /usr/sap/FP1
+sudo /usr/bin/mount acdcfp1lxci01:/usr/sap/trans /usr/sap/trans</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Unix Steps" [2654-] -->

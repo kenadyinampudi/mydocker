@@ -1,0 +1,97 @@
+
+<h1 class="sectionedit1" id="register_a_system_with_red_hat_satellite">Register a system with Red Hat Satellite</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Register a system with Red Hat Satellite" [1-56] -->
+<h2 class="sectionedit2" id="background">Background</h2>
+<div class="level2">
+
+<p>
+Red Hat uses Satellite to register systems remotely.  The alternative is to directly register the system with Red Hat.<br/>
+
+</p>
+
+<p>
+Licenses need to be explicitly transferred from the Red Hat main servers over to the Satellite server.  This means that any client wishing to register MUST connect to the proper location for the appropriate license.  If the server&#039;s license is attached to Satellite, then the client must register to Satellite.<br/>
+
+</p>
+
+<p>
+In this case, licenses were purchased for the VM servers themselves with unlimited virtual guests able to register underneath of them.<br/>
+
+Make sure to put Red Hat servers into the correct cluster BEFORE registering.<br/>
+
+</p>
+
+<p>
+If a client is in the wrong cluster and then is attempted to register, Satellite will refuse to authorize the subscription and registration won&#039;t complete, reporting an error.<br/>
+
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Background" [57-919] -->
+<h2 class="sectionedit3" id="process">Process</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Grab the Satellite agent code.  This allows simple registration.<br/>
+<pre class="code">curl --insecure --output katello-ca-consumer-latest.noarch.rpm https://cdcpillx205.pt.int.tenneco.com/pub/katello-ca-consumer-latest.noarch.rpm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install it via yum.<br/>
+<pre class="code">yum localinstall -y katello-ca-consumer-latest.noarch.rpm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Register it to Satellite using a generic key<br/>
+<pre class="code">subscription-manager register --org=&quot;tenneco&quot; --activationkey=&quot;eerbody&quot;</pre>
+
+<p>
+<br/>
+or for Physicals … <br/>
+
+</p>
+<pre class="code">subscription-manager register --org=&quot;tenneco&quot; --activationkey=&quot;hpcc_node_physical&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Go into the <abbr title="Graphical User Interface">GUI</abbr> and make sure the Release and Content view are set with this server.</div>
+<ol>
+<li class="level2"><div class="li"> You will need to run “Subscriptions” “Run Auto-attach” twice</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> From the server commandline, make sure the satellite toolset repo is enabled.<br/>
+<pre class="code">subscription-manager repos --enable=rhel-7-server-satellite-tools-6.7-rpms</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the rest of the Satellite toolset to allow package installation, monitoring and other things.<br/>
+<pre class="code">yum -y install katello-host-tools
+yum -y install katello-host-tools-tracer
+yum -y install katello-agent</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Process" [920-2080] -->
+<h3 class="sectionedit4" id="troubleshooting">Troubleshooting</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Received <a href="https://access.redhat.com/solutions/1263583" class="urlextern" title="https://access.redhat.com/solutions/1263583"  rel="nofollow"> TLSV1_ALERT_UNKNOWN_CA </a></div>
+<ul>
+<li class="level2"><div class="li"> Easiest answer is to “subscription-manager clean”, then try to register again.</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Troubleshooting" [2081-2279] -->
+<h2 class="sectionedit5" id="next_steps">Next Steps</h2>
+<div class="level2">
+
+<p>
+<a href="/doku.php?id=unix:redhatlifecycle" class="wikilink1" title="unix:redhatlifecycle"> Modify a registered Red Hat server&#039;s lifecycle policy</a>
+</p>
+
+</div>
+<!-- EDIT5 SECTION "Next Steps" [2280-] -->

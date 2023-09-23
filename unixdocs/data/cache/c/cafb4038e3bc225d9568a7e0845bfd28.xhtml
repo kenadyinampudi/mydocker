@@ -1,0 +1,263 @@
+
+<h1 class="sectionedit1" id="aix_alt_disk_migration_from_version_71_to_72">AIX alt_disk Migration from Version 7.1 to 7.2</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "AIX alt_disk Migration from Version 7.1 to 7.2" [1-62] -->
+<h1 class="sectionedit2" id="note_nim_client_to_be_upgraded_must_be_on_a_3x_level_vios_server">Note Nim client to be upgraded Must be on a 3.x Level VIOS Server</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create proper change controls and paper work, get approvals from business, get apps contacts to manage applications etc.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Note Nim client to be upgraded Must be on a 3.x Level VIOS Server" [63-269] -->
+<h1 class="sectionedit3" id="migration_with_nimadmnetwork_install_manager_alternate_disk_migration">Migration with NIMADM: Network Install Manager Alternate Disk Migration</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT3 SECTION "Migration with NIMADM: Network Install Manager Alternate Disk Migration" [270-354] -->
+<h2 class="sectionedit4" id="few_steps_which_needs_to_be_followed">Few steps which needs to be followed</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> PREREQUISITES</div>
+</li>
+<li class="level1"><div class="li"> PREPARATION</div>
+</li>
+<li class="level1"><div class="li"> MIGRATION</div>
+</li>
+<li class="level1"><div class="li"> POST_MIGRATION</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Few steps which needs to be followed" [355-471] -->
+<h3 class="sectionedit5" id="prerequisites_on_nim_master">Prerequisites on NIM master</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the respective NIM server ( pcdcunxaxap01)</div>
+</li>
+<li class="level1"><div class="li"> NIM master must be at the same or higher level than the level being migrated to. In MMPS we are using pcdcunxaxap01<pre class="code">x1vasuna on pcdcunxaxap01:/home/x1vasuna $ oslevel -s
+7200-05-03-2135</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The selected lpp_source and SPOT must match the AIX level to which you are migrating.<pre class="code">sfldmiax111@CDC:/root # lsnim |grep 7200
+7200-05-03-2135 resources lpp_source
+7200-05-03-2135-spot resources spot
+sfldmiax111@CDC:/root # lsnim -l 7200-05-03-2135
+7200-05-03-2135:
+ class = resources
+ type = lpp_source
+ arch = power
+ Rstate = ready for use
+ prev_state = unavailable for use
+ location = /export/lpp_source/7200-05-03-2135
+ simages = yes
+ alloc_count = 0
+ server = master
+sfldmiax111@CDC:/root # lsnim -l 7200-05-03-2135-spot
+7200-05-03-2135-spot:
+ class = resources
+ type = spot
+ plat_defined = chrp
+ arch = power
+ bos_license = yes
+ Rstate = ready for use
+ prev_state = verification is being performed
+ location = /export/spot/7200-05-03-2135-spot/usr
+ version = 7
+ release = 2
+ mod = 5
+ oslevel_r = 7200-05
+ oslevel_s = 7200-05-03-2135
+ alloc_count = 0
+ server = master
+ if_supported = chrp.64 ent
+ Rstate_result = success</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The same level of <strong>bos.alt_disk_install.rte</strong> must be installed in the rootvg (on NIM master) and in the SPOT which will be used.</div>
+<ol>
+<li class="level2"><div class="li"> Check on NIM master:<pre class="code">lslpp -l bos.alt_disk_install.rte</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check in SPOT:<pre class="code">nim -o lslpp -a filesets=&#039;bos.alt_disk_install.rte&#039; &lt;spot_name&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Example for above points<pre class="code">sfldmiax111@CDC:/root # lslpp -l bos.alt_disk_install.rte
+ Fileset Level State Description
+ --------------------------------------------------------------------
+--------
+Path: /usr/lib/objrepos
+ bos.alt_disk_install.rte
+ 7.2.5.100 COMMITTED Alternate Disk 
+Installation
+ Runtime
+Path: /etc/objrepos
+ bos.alt_disk_install.rte
+ 7.2.5.100 COMMITTED Alternate Disk 
+Installation
+ Runtime
+sfldmiax111@CDC:/root # nim -o lslpp -a 
+filesets=&#039;bos.alt_disk_install.rte&#039; 7200-05-03-2135-spot
+ Fileset Level State Description
+ --------------------------------------------------------------------
+--------
+Path: /usr/lib/objrepos
+ bos.alt_disk_install.rte
+ 7.2.5.100 COMMITTED Alternate Disk 
+Installation
+ Runtime
+Path: /etc/objrepos
+ bos.alt_disk_install.rte
+ 7.2.5.100 COMMITTED Alternate Disk 
+Installation
+ Runtime</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> In the VG, which will be used for migration, must be enough free space (about the size of the client&#039;s rootvg).We did not have any spare vg in sfldmiax111 So, we created a new VG with 300gig space (nimadmvg) this is dedicated for migration this VG will be used for filesystem cache so there would not be any load on client server.<pre class="code">sfldmiax111@CDC:/root # lsvg nimadmvg|grep -i free
+MAX LVs: 256 FREE PPs: 1999 (511744 megabytes)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if client can be reached via RSH from NIM master: <strong>rsh &lt;client_name&gt; date</strong>.To be able to rsh you need to add the entries in ~/.rhosts file in both client and nim.Example<pre class="code">sfldmiax111@CDC:/root # rsh pgnmsv01 date
+Wed Dec 15 11:27:48 CST 2021
+root on pgnmsv01:/root $ rsh sfldmiax111 date
+Wed Dec 15 12:06:40 EST 2021</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Prerequisites on NIM master" [472-3653] -->
+<h3 class="sectionedit6" id="preparation_on_nim_client">Preparation on NIM Client</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to pcdcunxaxap01</div>
+</li>
+<li class="level1"><div class="li"> Export a variable that contains the host being patched<pre class="code">export host2patch=&quot;HOSTNAME&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the host and preserve a copy of rootvg<pre class="code">ssh ${host2patch}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable the alt_disk_copy script<pre class="code">sudo touch /var/adm/do_not_run_alt_disk_until_removed_driv</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create an at job to remove this file after 30 days<pre class="code">echo &quot;rm /var/adm/do_not_run_alt_disk_until_removed_driv&quot; | sudo at now + 30 day</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Hardware and firmware levels</div>
+<ol>
+<li class="level2"><div class="li"> The client&#039;s hardware and software must be at the required level to support the level that is being migrated to<pre class="code">oslevel -s</pre>
+
+<p>
+Results should be something like this 7100-XX-XX-XXXX.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Check Instfix<pre class="code">sudo instfix -i|grep ML</pre>
+
+<p>
+Results should be something like this
+</p>
+<pre class="code"> All filesets for 7.1.0.0_AIX_ML were found.
+ All filesets for 7100-00_AIX_ML were found.
+ All filesets for 7100-01_AIX_ML were found.
+ All filesets for 7100-02_AIX_ML were found.
+ All filesets for 7100-03_AIX_ML were found.
+ All filesets for 7100-04_AIX_ML were found.
+ All filesets for 7100-05_AIX_ML were found.</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check lppchk<pre class="code">sudo lppchk -vm3</pre>
+
+<p>
+No output is good.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Check Firmware<pre class="code">sudo prtconf|grep -i firm</pre>
+
+<p>
+Result will be like this
+</p>
+<pre class="code">Platform Firmware level: SV860_180
+Firmware Version: IBM,FW860.60 (SV860_180)</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> free disk</div>
+<ol>
+<li class="level2"><div class="li"> Client must have a free disk, large enough to clone rootvg<pre class="code">lspv | grep rootvg
+hdisk0          00021ffb513afe5a                    rootvg          active
+hdisk1          00021ffb513aff90                    altinst_rootvg</pre>
+
+<p>
+We will be using hdisk1 which is used as alt_disk
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check NFS status on client<pre class="code">lssrc -g nfs</pre>
+
+<p>
+It should look like this all active
+</p>
+<pre class="code">Subsystem Group PID Status
+biod       nfs 5439670 active
+nfsd       nfs 7012582 active
+rpc.mountd nfs 7667960 active
+rpc.statd  nfs 8126476 active
+rpc.lockd  nfs 8650790 active</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> multibos ⇒ The nimadm command is not supported with the multibos command when there is a bos_hd5 logical volume. We can ignore this command for our migration.</div>
+</li>
+<li class="level1"><div class="li">  lv names must not be longer than 11 characters (because they will get an alt_ prefix during migration,and AIX limitaion is 15 characters for an lv) <pre class="code">lsvg -l rootvg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> TCB (Trusted Computing Base is a security feature which periodically checks the integrity of the system.)</div>
+<ol>
+<li class="level2"><div class="li"> <strong>Description</strong> ⇒ If you use disk caching option (-j flag) it does not matter if TCB is turned on or off (usually it is not turned on). However if you omit ”-j” flag (NFS read/write) TCB should be turned off. (TCB needs to access file metadata which is not visible over NFS).</div>
+</li>
+<li class="level2"><div class="li"> Command to check if TCB is enabled/disabled:<pre class="code">sudo odmget -q attribute=TCB_STATE PdAt</pre>
+
+<p>
+Result will be
+</p>
+<pre class="code">PdAt:
+ uniquetype = &quot;&quot;
+ attribute = &quot;TCB_STATE&quot;
+ deflt = &quot;tcb_disabled&quot;
+ values = &quot;&quot;
+ width = &quot;&quot;
+ type = &quot;&quot;
+ generic = &quot;&quot;
+ rep = &quot;&quot;
+ nls_index = 0</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check ncargs</div>
+<ol>
+<li class="level2"><div class="li"> <strong>Description</strong> (Specifies the maximum allowable size of the ARG/ENV list when running exec() subroutines.)This is a bug: if ncargs is customized to a value less than 256, it resets all other sys0 attributes to default value. So make sure ncargs value is at least on 256</div>
+</li>
+<li class="level2"><div class="li"> to check<pre class="code">$lsattr -El sys0 -a ncargs</pre>
+<pre class="code">ncargs 512 ARG/ENV list size in 4K byte blocks True</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Command to edit ncargs value if less then 256<pre class="code">sudo chdev -l sys0 -a ncargs=&#039;256&#039;</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Preparation on NIM Client" [3654-] -->

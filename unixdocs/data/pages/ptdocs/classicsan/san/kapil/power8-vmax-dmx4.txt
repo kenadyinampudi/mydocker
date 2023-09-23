@@ -1,0 +1,79 @@
+<code>pgscdb01
+
+c0507607f34d0010		ldcds6510b1		7
+c0507607f34d0012		ldcds6510a1		14
+
+
+pagi3p01
+
+c0507607f34d0014		ldcds6510a1		7
+c0507607f34d0016		ldcds6510b1		14
+
+	
+Fabric A
+
+VMAX --> zone to vmax_0301_2g1
+DMX4 --> zone to dmx4_3339_9d1
+
+
+alicreate "dmx4_3339_9d1","50:06:04:8a:d5:2f:ca:f8"
+
+alicreate "pgscdb01_4d0012","c0:50:76:07:f3:4d:00:12"
+alicreate "pagi3p01_4d0014","c0:50:76:07:f3:4d:00:14"
+
+zonecreate "pgscdb01_4d0012__vmax_0301_2g1","pgscdb01_4d0012;vmax_0301_2g1"
+zonecreate "pgscdb01_4d0012__dmx4_3339_9d1","pgscdb01_4d0012;dmx4_3339_9d1"
+zonecreate "pagi3p01_4d0014__vmax_0301_2g1","pagi3p01_4d0014;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","pgscdb01_4d0012__vmax_0301_2g1;pgscdb01_4d0012__dmx4_3339_9d1;pagi3p01_4d0014__vmax_0301_2g1"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+
+
+Fabric B
+
+VMAX --> zone to vmax_0301_3g1
+DMX4 --> zone to dmx4_3339_8d1
+
+alicreate "dmx4_3339_8d1","50:06:04:8a:d5:2f:ca:f7"
+
+alicreate "pgscdb01_4d0010","c0:50:76:07:f3:4d:00:10"
+alicreate "pagi3p01_4d0016","c0:50:76:07:f3:4d:00:16"
+
+zonecreate "pgscdb01_4d0010__vmax_0301_3g1","pgscdb01_4d0010;vmax_0301_3g1"
+zonecreate "pgscdb01_4d0010__dmx4_3339_8d1","pgscdb01_4d0010;dmx4_3339_8d1"
+zonecreate "pagi3p01_4d0016__vmax_0301_3g1","pagi3p01_4d0016;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","pgscdb01_4d0010__vmax_0301_3g1;pgscdb01_4d0010__dmx4_3339_8d1;pagi3p01_4d0016__vmax_0301_3g1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator create
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator -wwn c0507607f34d0012 add
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator -wwn c0507607f34d0010 add
+
+
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator create
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator -wwn c0507607f34d0014 add
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator -wwn c0507607f34d0016 add
+
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 08FA;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 08FA;" commit -nop
+
+sudo symaccess -sid 0301 -name pgscdb01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pgscdb01_SG add devs 
+sudo symfast -sid 0301 -fp_name Gold associate -sg pgscdb01_SG -priority 2
+sudo symaccess -sid 0301 create view -name pgscdb01_MV -sg pgscdb01_SG -pg 2G1_3G1_PG -ig pgscdb01_IG
+
+sudo symaccess -sid 0301 -name pagi3p01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pagi3p01_SG add devs 
+sudo symfast -sid 0301 -fp_name Gold associate -sg pagi3p01_SG -priority 2
+sudo symaccess -sid 0301 create view -name pagi3p01_MV -sg pagi3p01_SG -pg 2G1_3G1_PG -ig pagi3p01_IG</code>

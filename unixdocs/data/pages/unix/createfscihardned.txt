@@ -1,0 +1,12 @@
+====== Steps to create mirrored filesystems on hardned CI environment ======
+
+Mission critical SAP systems like PTA, TA2 and H1P, The Central instance system is mirrored between two storage arrays when possible. The procedure outlines steps to create a new filesystem on such systems.
+
+  - Find out we have two disks from two distinct storage arrays'' Use lsvpcfg.sh '' and ''lsvg -p '' commands to figure out the details.
+  - In this document , we assume the following<code>hdisk46 -- Free disk from VMAX
+hdisk50 -- Free disk on V9000</code>
+  - Create a logical volume on any one of the disk<code>sudo mklv -t jfs2 nfsvg01 400 hdisk46</code>
+  - Create a filesystems on it<code>sudo crfs -vjfs2 -d lvXX -A yes -t no -m /abc/def/ghi</code>Where lvXX is the logical volume that was created in the previous script
+  - Mount it and change permissions as necessary<code></code>
+  - Add the filesystems to ''/root/cluster'' mount99.sh and umount99.sh on both "ap99" and "ap98" systems
+  - Mirror the logical volume<code>sudo mklvcopy -k lvXX 2 hdisk50</code>

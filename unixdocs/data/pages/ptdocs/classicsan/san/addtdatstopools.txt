@@ -1,0 +1,39 @@
+====== VMAX - Enable, Activate and add TDATs to Thinpools ======
+
+==== Get a list of new TDATs from the CE ====
+
+  - Login to the CLI server pablsv01, store the new TDATs name to a text file<code>head newdevs
+1C3E
+1C3F
+...
+...
+1DD3
+1DD4</code>
+
+==== Add devices to the Thinpool(s) ====
+
+
+  - Create a command file to add the devices to the Thinpool<code>> addtopool.txt
+for dev in $(cat newdevs)
+do
+   echo "add dev ${dev} to pool <POOL_NAME>, type=thin;" >> addtopool.txt
+done</code>
+  - Preview the command<code>sudo symconfigure -sid 0301 -f ./addtopool.txt preview</code>
+  - If the preview produced no errors, commit and run<code>sudo symconfigure -sid 0301 -f ./addtopool.txt commit</code>
+
+==== Enable/Activate the devices in the Thinpool(s) ====
+
+  - Create a command file to enable devices<code>> enablepooldevs.txt
+for dev in $(cat newdevs)
+do
+   echo "enable dev ${dev} in pool <POOL_NAME>, type = thin;" >> enablepooldevs.txt
+done</code>
+  - Preview the command<code>sudo symconfigure -sid 0301 -f ./enablepooldevs.txt preview</code>
+  - If the preview produced no errors, commit and run<code>sudo symconfigure -sid 0301 -f ./enablepooldevs.txt commit</code>
+
+==== Start Thinpool re-balancing ====
+
+  - Preview the command<code>sudo symconfigure -sid 0301 -cmd "start balancing on pool <POOL_NAME>;" preview</code>
+  - If preview produced no errors, Run the command<code>sudo symconfigure -sid 0301 -cmd "start balancing on pool <POOL_NAME>;" commit</code>
+  - Check the Poolstate<code>sudo symcfg -sid 0301 show -pool VP_FC15_MIR2 -thin -detail -all |grep -i "Pool state"
+Pool State                       : Balancing</code>

@@ -1,0 +1,71 @@
+====== Upgrade AIX 5.3 mksysb to 6.1 using NIM ======
+
+  - Define the target server **xagi3p01** on NIM<code>nim -o define -t standalone -a platform=chrp \
+-a netboot_kernel=mp -a if1="find_net xagi3p01 0" \
+-a net_settings1="auto auto" -a cable_type1=tp \
+xagi3p01</code>
+  - Deallocate any resources that might have been defined<code>nim -o deallocate -a subclass=all xagi3p01</code>
+  - Reset the server<code>nim -o reset -aforce=yes xagi3p01</code>
+  - Create a /prod/images/bosinst.data/aixmigration-bosinst.data file as follows.<code>control_flow:
+    CONSOLE = Default
+    INSTALL_METHOD = migrate
+    PROMPT = no
+    EXISTING_SYSTEM_OVERWRITE = yes
+    INSTALL_X_IF_ADAPTER = yes
+    RUN_STARTUP = yes
+    RM_INST_ROOTS = no
+    ERROR_EXIT =
+    CUSTOMIZATION_FILE =
+    TCB = no
+    INSTALL_TYPE =
+    BUNDLES =
+    SWITCH_TO_PRODUCT_TAPE =
+    RECOVER_DEVICES = no
+    BOSINST_DEBUG = no
+    ACCEPT_LICENSES = yes
+    INSTALL_64BIT_KERNEL =
+    INSTALL_CONFIGURATION =
+    DESKTOP =
+    INSTALL_DEVICES_AND_UPDATES =
+    IMPORT_USER_VGS = no
+    ENABLE_64BIT_KERNEL = yes
+    CREATE_JFS2_FS = yes
+    ALL_DEVICES_KERNELS =
+    GRAPHICS_BUNDLE =
+    DOC_SERVICES_BUNDLE =
+    MOZILLA_BUNDLE =
+    HTTP_SERVER_BUNDLE =
+    KERBEROS_5_BUNDLE =
+    SERVER_BUNDLE =
+    ALT_DISK_INSTALL_BUNDLE =
+    REMOVE_JAVA_118 =
+    HARDWARE_DUMP =
+    MKSYSB_MIGRATION_DEVICE = network
+
+locale:
+    BOSINST_LANG =
+    CULTURAL_CONVENTION =
+    MESSAGES =
+    KEYBOARD =
+
+target_disk_data:
+        PVID = 00014bfa07031519
+        PHYSICAL_LOCATION =
+        CONNECTION =
+        LOCATION =
+        SIZE_MB =
+        HDISKNAME =</code>
+  - Select the correct disk<code>target_disk_data:
+        PVID = 00014bfa07031519
+        PHYSICAL_LOCATION =
+        CONNECTION =
+        LOCATION =
+        SIZE_MB =
+        HDISKNAME =</code>PVID is the best way to identify the disk. You can do a NIM boot using a Spot to list the disks and if needed allocate a pvid to the root disk.
+    - From taitc118<code>nim -o maint_boot -a spot=610TL07-05_spot xagi3p02</code>Boot the system to recovery and secure the pvid
+  - Define a bosinst_data resource<code>nim -o define -t bosinst_data -a server=master -a location=/prod/images/bosinst.data/aixmigration-bosinst.data aixmigration-bosinst</code>
+  - Allocate the mksysb resource<code>nim -o allocate -a mksysb=mksysb-dagi3p01 xagi3p01</code>
+  - Perform an rte install<code>nim -o bos_inst -a bosinst_data=aixmigration-bosinst -a source=rte -a spot=610TL07-05_spot -a lpp_source=610TL07-05_lppsrc -a no_client_boot=yes -a accept_licenses=yes -a script=postinstallCloning xagi3p01</code>
+   - Boot the system and perform a network boot to NIM server
+  - Login to the NIM server and perform a NIM client cleanup<code>sudo nim -F -o reset <hostname>
+sudo nim -o deallocate -a subclass=all</code> 

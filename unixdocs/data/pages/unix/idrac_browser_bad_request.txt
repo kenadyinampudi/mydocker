@@ -1,0 +1,28 @@
+====== BAD Request error while connecting to iDRAC through web======
+
+On some Dell Hardware, especially the ones with a iDRAC firmware version newer than 5.10.00.00, you might encounter an error while connecting to iDRAC using the fully qualified domain name. The technical explanation from Dell is.
+
+
+----
+If the HTTP / HTTPS host header check is activated (more secure), iDRAC can be accessed via the IPv4 / IPv6 address, the RAC name and / or the defined Idrac FQDN (DNSRacName. DNS domain name). If the end user accesses with host names that Idrac may not know (e.g. a manual DNS of entries added in DNS records), the firmware version of the iDRAC8 firmware 2.81.81.81 has introduced a new attribute " ManualDNSEntry". This new setting can be updated with up to 4 IP addresses / hostnames / FQDNs to provide an allow list of host headers. This ensures that incoming requests are not discarded if the HTTP / HTTPS host header contains one of the entries in the "ManualDNSEntry" setting.
+----
+
+
+
+====== Screenshot before applying the workaround:======
+
+{{:unix:pasted:20230125-093214.png}}
+
+====== There are two workarounds======
+
+===== Fix 1 - with access to Unix Shell =====
+  * Login to the Unix shell and disable the security check as we already have DNS entries for all remote consoles<code>sudo /opt/dell/srvadmin/sbin/racadm set idrac.webserver.HostHeaderCheck 0</code>SAMPLE OUTPUT:<code>x1naveka on cvtnbuhmams:/home/x1naveka $ sudo /opt/dell/srvadmin/sbin/racadm set idrac.webserver.HostHeaderCheck 0
+[Key=idrac.Embedded.1#WebServer.1]
+Object value modified successfully
+
+x1naveka on cvtnbuhmams:/home/x1naveka $</code>
+
+===== Fix 2 - no access to Unix Shell =====
+  * In case, one doesn't have access to the Unix shell, the workaround will be to use the IP address of the iDRAC instead of the hostname. The IP address can be fetched using the host or nslookup commands. 
+
+

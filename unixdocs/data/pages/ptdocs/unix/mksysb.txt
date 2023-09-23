@@ -1,0 +1,13 @@
+====== AIX mksysb recovery notes ======
+
+    - If recovering to a new architecture/hardware locations using mksysb, do not recover devices during NIM recovery.
+    - Check timezone, date and time after the build process and set them as it used to be. <code> date </code> 
+    - Configure etherchannel<code> smitty etherchannel </code>
+    - Configure TCP/IP <code> smitty tcpip </code>
+    - Check the hostname and set it as what it used to be. <code> hostname </code>
+    - Configure AIO and set parameters as what it used to be (refer sysdoc) Check ioo for aix Version 6. <code> lsattr -El aio0 </code>
+    - Configure powerpath devices ( if any ) <code> powermt config </code>
+    - Import non data Volume groups <code> importvg -y <vg_name> <diskname> or <pvid> </code>
+    - Enable Powerpath for rootvg <code> pprootdev on </code>
+    - Check and make sure the boot list is valid <code> bootlist -m normal -o </code>
+    - Restart the system <code>shutdown -Fr</code>

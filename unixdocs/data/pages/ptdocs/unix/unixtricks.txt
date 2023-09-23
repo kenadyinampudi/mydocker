@@ -1,0 +1,18 @@
+====== Tricks with Unix ... funny and use ful things it can do ======
+
+  - AIX sometimes gives an RMC error when you try to DLPAR. When that happens, do this on AIX<code>sudo /usr/sbin/rsct/bin/rmcctrl -z
+sleep 5
+sudo /usr/sbin/rsct/bin/rmcctrl -A
+sleep 5
+sudo /usr/sbin/rsct/bin/rmcctrl -p</code>
+  - If you have a corrupted block and you cannot copy, then you could potentially use this command  to copy the file ignoring the errors<code>sudo dd if=/directory/filename of=/directory/file2 bs=4096 conv=notrunc,noerror</code>
+  - Use ''xargs''.
+    - Unmount all filesystems on a system(AIX)<code>lsvg -o | grep -v rootvg | xargs -n1 lsvgfs | sort -r | xargs -n1 sudo umount</code>
+  - Use ''awk'' 
+    - Print the second column in a comma "," delimited file<code>awk -F"," '{print $2}' filename</code>
+  - Use ''sed''
+    - Print LPs of a LV from 0007 through 0014<code>lslv -m fslv20 | sed -n "/^0007/,/^0014/"p</code>
+  - How to eject a CDROM from Linux system and VSphere Client.
+    - First eject the cdrom from the linux system<code>sudo eject /dev/cdrom</code>Login to the the VSphere Client and then change the device to “Client Device” on VM
+  - [[http://unixisos/lenovo_t430.zip|Install Lenovo T430 Drivers]]
+  - [[http://unixisos/lenovo_t450s.zip|Install Lenovo T450s Drivers]]

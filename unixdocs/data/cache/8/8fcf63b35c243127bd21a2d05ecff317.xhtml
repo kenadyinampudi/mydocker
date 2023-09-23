@@ -1,0 +1,86 @@
+
+<h1 class="sectionedit1" id="applying_vios_22422_updates_from_a_remotely_mounted_file_system">Applying VIOS 2.2.4.22 updates from a remotely mounted file system</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Applying VIOS 2.2.4.22 updates from a remotely mounted file system" [1-82] -->
+<h3 class="sectionedit2" id="apply_22420">Apply 2.2.4.20</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Check if rootvg has atleast 30G of free space<pre class="code">lsvg rootvg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the remote directory onto the Virtual I/O Server.<pre class="code">oem_setup_env</pre>
+
+<p>
+Then
+</p>
+<pre class="code">mkdir /mnt
+mount 10.0.48.12:/prod/images/vio/vios2/fixpacks /mnt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login as padmin to commit previous updates, by running the updateios command.<pre class="code">su - padmin</pre>
+<pre class="code">updateios -commit</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Apply the update by running the updateios command.<pre class="code">updateios -accept -install -dev /mnt/VIOS_SP_2.2.4.20</pre>
+
+<p>
+Rerun it if bos.rte fileset has been upgraded.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> To load all changes, reboot the VIOS as user padmin .<pre class="code"> shutdown -force -restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.4.20.<pre class="code">ioslevel</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the license acept command for all upgrades<pre class="code">license -accept</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Commit all the updates <pre class="code">updateios -commit</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Apply 2.2.4.20" [83-1092] -->
+<h3 class="sectionedit3" id="apply_22422">Apply 2.2.4.22</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Mount the remote directory onto the Virtual I/O Server.<pre class="code">oem_setup_env</pre>
+
+<p>
+Then
+</p>
+<pre class="code">mount 10.0.48.12:/prod/images/vio/vios2/fixpacks /mnt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to padmin to commit previous updates, by running the updateios command.<pre class="code">su - padmin</pre>
+<pre class="code">updateios -commit</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Apply the update by running the updateios command.<pre class="code">updateios -accept -install -dev /mnt/VIOS_MP_2.2.4.22</pre>
+
+<p>
+Rerun it if bos.rte fileset has been upgraded.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> To load all changes, reboot the VIOS as user padmin .<pre class="code"> shutdown -force -restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.4.22<pre class="code">ioslevel</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the license acept command for all upgrades<pre class="code">license -accept</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Commit all the updates <pre class="code">updateios -commit</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Apply 2.2.4.22" [1093-] -->

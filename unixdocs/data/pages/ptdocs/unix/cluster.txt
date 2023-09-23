@@ -1,0 +1,96 @@
+For VM clusters, 
+ - Add a new SCSI adapter to each node.
+	- The adapter must be set to "Physical"
+ - On first node 
+	- Add the RDM
+	- Mark it "Multi-Writer"
+	- Note where the virtual disk is saved
+ - On second node
+	- Add Existing Hard disk
+	- Navigate to where the fake VMDK was saved for the first node
+	- Change the settings to mark it "Multi-writer"
+
+
+Requirements
+ - 3 IP addresses, 2 for nodes and 1 for a virtual IP.
+	- The virtual IP will serve the data, so it's going to be the one to be published to the world
+	- I guess in theory you can have more than one virtual IP.  I have not tested it.
+ - You also need a subscription with the High Availability Add-on
+ -  Each node will need to see the same drives.  If these are virtual machines, then you should do RDMs to both machines. https://kb.vmware.com/s/article/2147661
+ - Also, you will need enough credentials to programmatically shut down nodes.
+	- Linux clustering requires the ability to Shoot The Other Node In The Head (stonith)
+ - Need naming convention
+	- Name of cluster - Suggest VIP
+	
+===== 
+Install (both nodes) =====
+
+ - <code>subscription-manager repos --enable rhel-8-for-x86_64-highavailability-rpms</code>
+ - <code>yum install -y pcs pacemaker fence-agents-all pcp-zeroconf</code>
+ - <code>systemctl enable --now pcsd.service</code>
+ - <code>passwd hacluster</code>
+ 
+
+
+===== Configure cluster =====
+
+  - ''pcs host auth node1.fqdn node2.fqdn'' 
+  - ''%%pcs cluster setup <clustername> --start node1.fqdn node2.fqdn%%'' 
+  - Setup fencing \\ 
+For dev, disable for now to get running. \\
+''pcs property set stonith-enabled=false''\\
+  - ''pcs cluster status''\\ 
+	At this point, you can also check the web address at https://node1:2224/  Sign in with hacluster; Add existing cluster (pass name of node1.fqdn)
+  - ''%%pcs cluster enable --all%%''
+ 
+===== Set up Services =====
+
+*** Note - Do not use systemctl enable to enable any services that will be managed by the cluster to start at system boot. 
+ Make sure LVM uses uname for a system id.
+  - On both nodes <code>sed -ibak "s/system_id_source = \"none\"/system_id_source = \"uname\"/g" /etc/lvm/lvm.conf </code>
+  - Create a partition on the disk <cli prompt="#">
+	[root@cdcpillx226 tmp]# lsblk
+		NAME                MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+		sda                   8:0    0  100G  0 disk
+		├─sda1                8:1    0    2G  0 part /boot
+		├─sda2                8:2    0   66G  0 part
+		│ ├─rootvg-rootlv   253:0    0  9.8G  0 lvm  /
+		│ ├─rootvg-tmplv    253:1    0   10G  0 lvm  /tmp
+		│ ├─rootvg-varloglv 253:2    0   10G  0 lvm  /var/log
+		│ ├─rootvg-varlv    253:3    0    5G  0 lvm  /var
+		│ └─rootvg-etclv    253:4    0    5G  0 lvm  /opt
+		└─sda3                8:3    0   32G  0 part [SWAP]
+		sdb                   8:16   0   76G  0 disk
+		└─sdb1                8:17   0   76G  0 part </cli>
+  - Make it a PV
+  - Create your VG
+  - Check the VG for systemID  <cli prompt="#">
+	[root@cdcpillx226 tmp]# vgs -o+systemid
+	  VG     #PV #LV #SN Attr   VSize   VFree  System ID
+	  nfsvg    1   0   0 wz--n-  75.99g 75.99g cdcpillx226.pt.int.tenneco.com
+	  rootvg   1   5   0 wz--n- <66.00g 26.18g
+</cli>
+  - Create your LV <cli prompt="#">[root@cdcpillx226 tmp]# lvcreate -l 100%VG -n nfslv nfsvg</cli>
+  - Create a resource group for the VG associated with the NFS. \\ ''%%pcs resource create nfs_lvm ocf:heartbeat:LVM-activate vgname=nfsvg vg_access_mode=system_id --group nfsgroup%%''
+  - Create a filesystem which the LV will be mounted to \\ ''%%pcs resource create nfsshare Filesystem device=/dev/nfsvg/nfslv directory=/nfsshare fstype=ext4 --group nfsgroup%%''
+ - Create a resource representing the NFS daemon to start \\ ''%%pcs resource create nfs-daemon nfsserver nfs_shared_infodir=/nfsshare/nfsinfo nfs_no_notify=true --group nfsgroup%%''
+ - Add NFS exports entries as resources under the NFS daemon 
+   - Watch out for the \\ 
+''%%pcs resource create nfs-root-710 exportfs clientspec=10.131.10.0/24 options=rw,sync,no_root_squash directory=/nfsshare/exports fsid=0 --group nfsgroup%%'' \\
+''%%pcs resource create nfs-root-712 exportfs clientspec=10.131.12.0/24 options=rw,sync,no_root_squash directory=/nfsshare/exports fsid=0 --group nfsgroup%%''
+ - Add the shared IP address for data access. \\ ''%%pcs resource create nfs_ip IPaddr2 ip=10.131.15.58 cidr_netmask=24 --group nfsgroup%%''
+ - Add a "Notifier" to tell when to restart NFS services \\ ''%%pcs resource create nfs-notify nfsnotify source_host=10.131.15.58 --group nfsgroup%%''
+	
+	
+===== Maintenance =====
+
+ - Hard shutdown of a node resulted in failover to the other node with no interruption in writes or reads
+ - Individual nodes can be put on standby for maintenance if necessary
+ - You can check individual status with either CLI or via your browser.
+	- CLI - log into a node and issue a "pcs status"
+	- Browser - https://cdcpillx224.pt.int.tenneco.com:2224/
+	
+
+
+
+

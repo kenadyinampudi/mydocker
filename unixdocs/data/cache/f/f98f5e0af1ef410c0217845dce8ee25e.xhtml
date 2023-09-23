@@ -1,0 +1,239 @@
+
+<h1 class="sectionedit1" id="skokie_production_recovery_process">Skokie Production Recovery Process</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Skokie Production Recovery Process" [1-50] -->
+<h2 class="sectionedit2" id="servers_in_scope">Servers in scope</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> uskux01</div>
+</li>
+<li class="level1"><div class="li"> uskux12</div>
+</li>
+<li class="level1"><div class="li"> uskux13</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Servers in scope" [51-116] -->
+<h3 class="sectionedit3" id="how_are_ignite_backups_configured">How are Ignite backups configured?</h3>
+<div class="level3">
+
+</div>
+
+<h4 id="uskux01">uskux01</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> Configured as the Ignite Backup server</div>
+</li>
+<li class="level1"><div class="li"> Installed with the same Ignite-UX software as uskux12 &amp; uskux13.  This depot was copied to uskux01 using swcopy<pre class="code">uskux01:/root # swlist Ignite-UX-11-00
+# Initializing...
+# Contacting target &quot;uskux01&quot;...
+#
+# Target:  uskux01:/
+#
+
+# Ignite-UX-11-00               B.4.3.123      HP-UX Installation Utilities for Installing 11.00  Systems
+  Ignite-UX-11-00.Ignite-UX     B.4.3.123      HP-UX System Installation Services
+uskux01:/root #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Software depot was already available on uskux12<pre class="code">uskux12:/root # swlist -d -s /var/opt/ignite/depots/recovery_cmds
+# Initializing...
+# Contacting target &quot;uskux12&quot;...
+#
+# Target:  uskux12:/var/opt/ignite/depots/recovery_cmds
+#
+
+#
+# Bundle(s):
+#
+
+  IUX-Recovery          B.4.3.123      Ignite-UX network recovery tool subset
+  Ignite-UX-11-00       B.4.3.123      HP-UX Installation Utilities for Installing 11.00  Systems</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> New Disks presented, VG &amp; Filesystem for Ignite LV <pre class="code">uskux01:/var/opt/ignite/server # lvdisplay /dev/ignitevg/iglv
+--- Logical volumes ---
+LV Name                     /dev/ignitevg/iglv
+VG Name                     /dev/ignitevg
+LV Permission               read/write
+LV Status                   available/syncd
+Mirror copies               0
+Consistency Recovery        MWC
+Schedule                    parallel
+LV Size (Mbytes)            194560
+Current LE                  12160
+Allocated PE                12160
+Stripes                     0
+Stripe Size (Kbytes)        0
+Bad block                   on
+Allocation                  strict
+IO Timeout (Seconds)        default
+
+uskux01:/var/opt/ignite/server #
+uskux01:/var/opt/ignite/server # bdf /var/opt/ignite/recovery_new
+Filesystem          kbytes    used   avail %used Mounted on
+/dev/ignitevg/iglv 199229440 8404228 184861944    4% /var/opt/ignite/recovery_new
+uskux01:/var/opt/ignite/server # </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Client Directories created on Ignite filesyste, NFS server configured on uskux01 &amp; Filesystems exported<pre class="code">uskux01:/var/opt/ignite/server # exportfs
+/var/opt/ignite/recovery/archives/uskux04
+/var/opt/ignite/clients                       -anon=2
+/var/opt/ignite/recovery_new/archives/uskux04 -anon=2,access=uskux04,rw=uskux04
+/var/opt/ignite/recovery_new/archives/uskux12 -anon=2,access=uskux12,rw=uskux12
+/var/opt/ignite/recovery_new/archives/uskux13 -anon=2,access=uskux13,rw=uskux13
+uskux01:/var/opt/ignite/server #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ignite images are available in /var/opt/ignite/recovery_new/archives for 5 weeks, before they are automatically overwritten by the ignite scripts running on the clients.<pre class="code">uskux01:/root # ls -l /var/opt/ignite/recovery_new/archives/uskux1?/* |grep ^\-
+-rw-------   1 bin        sys        1447042265 Nov 19 19:54 /var/opt/ignite/recovery_new/archives/uskux12/2021-11-19,17:58
+-rw-------   1 bin        sys        1446191293 Dec  5 10:49 /var/opt/ignite/recovery_new/archives/uskux12/2021-12-05,10:34
+-rw-------   1 bin        sys        1446621421 Dec 12 05:12 /var/opt/ignite/recovery_new/archives/uskux12/2021-12-12,04:58
+-rw-------   1 bin        root       906426226 Nov 19 21:26 /var/opt/ignite/recovery_new/archives/uskux13/2021-11-19,18:00
+-rw-------   1 bin        root       905880632 Dec  5 10:54 /var/opt/ignite/recovery_new/archives/uskux13/2021-12-05,10:38
+-rw-------   1 bin        root       956573252 Dec 11 06:19 /var/opt/ignite/recovery_new/archives/uskux13/2021-12-11,06:00
+-rw-r--r--   1 root       sys           2280 Nov 19 17:57 swagent.log
+uskux01:/root #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> bootd configurations (commented out)<pre class="code">uskux01:/etc/opt/ignite # grep uskux /etc/opt/ignite/instl_boottab
+# 10.135.112.80:00306e0e376f::reserve     #uskux13;update as required
+# 10.135.112.79:00306e033ed4::reserve     #uskux12;update as required
+# 10.135.112.xx:00306ec3d267::reserve     #uskux14;update IP as required
+uskux01:/etc/opt/ignite #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Updated entries in inetd configuration files <pre class="code">uskux01:/etc/opt/ignite # grep boot /etc/inetd.conf
+bootps      dgram  udp wait   root /usr/lbin/bootpd   bootpd
+instl_boots dgram udp wait root /opt/ignite/lbin/instl_bootd instl_bootd
+uskux01:/etc/opt/ignite #</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h4 id="configurations_on_uskux12_uskux13_uskux14">Configurations on uskux12, uskux13 &amp; uskux14</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> cron job <pre class="code">uskux12:/root # crontab -l |grep ignite
+0 6 * * 6 /scripts/ignite.sh &gt; /dev/null 2&gt;&amp;1
+uskux12:/root # ls -lrt /scripts/ignite.sh
+-rwxr-xr-x   1 root       sys            238 Dec  5 10:38 /scripts/ignite.sh
+uskux12:/root #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> backup script <pre class="code">uskux12:/root # cat /scripts/ignite.sh
+#!/bin/ksh
+this_host=`uname -n`
+server=uskux01
+/opt/ignite/bin/make_net_recovery \
+ -a ${server}:/var/opt/ignite/recovery_new/archives/${this_host} \
+ -s ${server} -n 5 -x inc_entire=vg00 \
+ -x exclude=/usr/openv -v &gt; /var/log/ignite.log
+uskux12:/root #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> MAC ID for uskux14 that must be updated in bootd cofigurations on uskux01<pre class="code">Information Menu: Enter command &gt; la
+
+   LAN Station Address:  00306e-c3d267
+
+Information Menu: Enter command &gt;</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "How are Ignite backups configured?" [117-5158] -->
+<h3 class="sectionedit4" id="recovering_from_ignite">Recovering from Ignite</h3>
+<div class="level3">
+
+</div>
+
+<h4 id="some_theory_before_the_actual_recovery">Some theory before the actual Recovery</h4>
+<div class="level4">
+
+<p>
+When a system boots HP-UX from an Ignite-UX server, it needs an IP address to get the operating system kernel. 
+</p>
+
+<p>
+When a PA-RISC system boots from an Ignite-UX server, the first IP address request is answered by the instl_bootd daemon. This communication uses ports 1067 and 1068. The file /etc/opt/ignite/instl_boottab is referenced to assign the first IP address to the booting system whether it is registered or anonymous. 
+</p>
+
+<p>
+After HP-UX is running on a PA-RISC system, it requests a second IP address for networking. This request is answered by bootpd using ports 67 and 68. The /etc/bootptab file is referenced for registered clients; <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr> services are used for anonymous clients.
+</p>
+
+</div>
+
+<h4 id="recovery">Recovery</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> Login to the service processor (MP or GSP) and enter CO to access the Console list. When accessing the console, confirm that you are at the BCH Main Menu (the Main Menu: Enter command or menu&gt; prompt). If at a BCH menu other than the Main Menu, then enter MA to return to the BCH Main Menu. </div>
+</li>
+<li class="level1"><div class="li"> Issue the <pre class="code">BOOT LAN INSTALL</pre>
+
+<p>
+ command or the 
+</p>
+<pre class="code">BOOT LAN.10.135.112.72 INSTALL</pre>
+
+<p>
+ command to boot over a network and perform an HP-UX installation. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> The BOOT… INSTALL commands boot HP-UX from the default HP-UX install server or from the server specified by ip-address. Exit the console and service processor interfaces if finished using them. To exit the BCH environment type ^B (Control-B); this exits the nPartition console and returns to the service processor Main Menu. To exit the service processor, type X at the Main Menu. </div>
+</li>
+<li class="level1"><div class="li"> Continue the Recovery</div>
+</li>
+<li class="level1"><div class="li"> Once the Operating system has been installed, request the GIOS Storage team to present all the required disks from the source system to the target system.</div>
+</li>
+</ul>
+
+</div>
+
+<h4 id="appendix">Appendix</h4>
+<div class="level4">
+<ul>
+<li class="level1"><div class="li"> External Documentation Reference</div>
+<ul>
+<li class="level2"><div class="li"> <a href="https://docstore.mik.ua/manuals/hp-ux/en/5992-5230/" class="urlextern" title="https://docstore.mik.ua/manuals/hp-ux/en/5992-5230/"  rel="nofollow">Ignite-UX Quick start guide</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="https://docstore.mik.ua/manuals/hp-ux/en/5992-5309/" class="urlextern" title="https://docstore.mik.ua/manuals/hp-ux/en/5992-5309/"  rel="nofollow">Ignite-UX Administrator Guide</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="https://docstore.mik.ua/manuals/hp-ux/en/5991-1247B/ch05s17.html" class="urlextern" title="https://docstore.mik.ua/manuals/hp-ux/en/5991-1247B/ch05s17.html"  rel="nofollow">Booting Over a network</a></div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Configuration - lanscan &amp; network config on uskux12<pre class="code">uskux12:/root # ifconfig lan1
+lan1: flags=1843&lt;UP,BROADCAST,RUNNING,MULTICAST,CKO&gt;
+        inet 10.135.112.79 netmask ffffff00 broadcast 10.135.112.255
+uskux12:/root # lanscan
+Hardware Station        Crd Hdw   Net-Interface  NM  MAC       HP-DLPI DLPI
+Path     Address        In# State NamePPA        ID  Type      Support Mjr#
+0/0/0/0  0x00306E1C01E4 0   UP    lan0 snap0     1   ETHER     Yes     119
+0/5/0/0  0x00306E033ED4 1   UP    lan1 snap1     2   ETHER     Yes     119
+uskux12:/root #</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> lanscan &amp; network config on uskux13<pre class="code">uskux13:/root # ifconfig lan3
+lan3: flags=1843&lt;UP,BROADCAST,RUNNING,MULTICAST,CKO&gt;
+        inet 10.135.112.80 netmask ffffff00 broadcast 10.135.112.255
+uskux13:/root # lanscan
+Hardware Station        Crd Hdw   Net-Interface  NM  MAC       HP-DLPI DLPI
+Path     Address        In# State NamePPA        ID  Type      Support Mjr#
+0/0/0/0  0x00306E2CB0BE 0   UP    lan0 snap0     1   ETHER     Yes     119
+1/10/0/0 0x00306E0E376F 3   UP    lan3 snap3     2   ETHER     Yes     119
+1/12/0/0 0x00306E279FE5 2   UP    lan2 snap2     3   ETHER     Yes     119
+uskux13:/root #</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Recovering from Ignite" [5159-] -->

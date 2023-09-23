@@ -1,0 +1,14 @@
+=== Import SUSE 15 SP3 distribution to the cobbler server pcdcunxlxap01 ===
+
+  * Copy the iso to the build server<code>cd /var/tmp
+wget http://unixisos.driv.com/SLE-15-SP3-Full-x86_64-GM-Media1.iso</code>
+  * Loopback mount the iso file on build server<code>sudo mkdir -p /cdrom</code><code>sudo mount /var/tmp/SLE-15-SP3-Full-x86_64-GM-Media1.iso /cdrom -t iso9660 -o loop</code>
+  * Copy the contents to the sources directory<code>sudo mkdir -p /var/www/html/sources/SLE-15-SP3</code><code>sudo rsync -a /cdrom/ /var/www/html/sources/SLE-15-SP3/</code>
+  * Create a SLE-15 repository<code>sudo createrepo /var/www/html/sources/SLE-15-SP3</code>
+  * Import SLE-15 distribution to cobbler<code>sudo cobbler import --path=/cdrom --name=SLE-15-SP3 --arch=x86_64</code>
+  * Cleanup the files<code>sudo umount /cdrom
+rm /var/tmp/SLE-15-SP3-Full-x86_64-GM-Media1.is</code>
+  * Create SLE-15 kickstart file<code>sudo vi /var/lib/cobbler/kickstarts/sle15-sp3.ks</code>
+    * [[unix:tennecorhel7ks|Add this content]] 
+  * Associate kickstart to the SLE15 profile.<code>sudo cobbler profile edit --name SLE-15-SP3 --kickstart=/var/lib/cobbler/kickstarts/sle15-sp3.ks</code>
+

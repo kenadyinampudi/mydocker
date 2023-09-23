@@ -1,0 +1,66 @@
+====== Scan & Present the Snapshot disks to the cluster ======
+
+**This documentation is a continuation of [[unix:powercli_datastore_cname|How to get Datastore Name and Canonical Name through PowerCLI]]**
+
+  - Once the disks have been identified, request the storage team to take the snapshot and present it on the cluster where the new VM will be built.
+  - Once the disks are presented, scan the LUNs.  Replace the cluster with the appropriate cluster where the disks are presented <code>Get-Cluster non-prod-linux2 |Get-VMHost|Get-VMHostStorage -RescanAllHba</code> In previous instances, this has taken upto 20 minutes.  
+  - To confirm that the LUN has been added, assign all the CanonicalNames that the Storage team gave to a variable and then verify it against the command below. Please remember to put a space separated list of all CanonicalNames that were newly presented to confirm that they are visible.<code>$DISKS="451CEEAA321E480801E6D3AC 451CEEAA321E480801E6D3AD 451CEEAA321E480801E6D3AE 451CEEAA321E480801E6D3AF 451CEEAA321E480801E6D419 451CEEAA321E480801E6D41A 451CEEAA321E480801E6D41B 451CEEAA321E480801E6D41C 451CEEAA321E480801E6D41D 451CEEAA321E480801E6D41E 451CEEAA321E480801E6D41F 451CEEAA321E480801E6D420" 
+
+Get-SCSILun -VMhost cdcvilvm125.driv.com -LunType Disk | Select CanonicalName, CapacityGB | findstr /I $DISKS</code> Sample Output <code>PS C:\WINDOWS\system32> Get-SCSILun -VMhost cdcvilvm125.driv.com -LunType Disk | Select CanonicalName, CapacityGB | findstr /I $DISKS
+naa.624a9370451ceeaa321e480801e6d3ac       4096
+naa.624a9370451ceeaa321e480801e6d3ad       4096
+naa.624a9370451ceeaa321e480801e6d3ae       4096
+naa.624a9370451ceeaa321e480801e6d3af       4096
+naa.624a9370451ceeaa321e480801e6d419       4096
+naa.624a9370451ceeaa321e480801e6d41a       4096
+naa.624a9370451ceeaa321e480801e6d41b       4096
+naa.624a9370451ceeaa321e480801e6d41c       4096
+naa.624a9370451ceeaa321e480801e6d41d       4096
+naa.624a9370451ceeaa321e480801e6d41e       4096
+naa.624a9370451ceeaa321e480801e6d41f       4096
+naa.624a9370451ceeaa321e480801e6d420       4096
+
+PS C:\WINDOWS\system32> </code>
+  - Initialize the esxcli <code>$esxcli = Get-EsxCli -VMHost cdcvilvm125.driv.com</code>
+  - The next step is to resignature. **Exercise Caution** for the following steps. We are going to use the vmfsname of the original disk.  Repeat the steps for all the disks that have to be resignatured.  <code>$vmfsname = "CDC-PURE-NL-002"
+$esxcli.storage.vmfs.snapshot.list($vmfsname)</code> Verify the output of the previous command & then only execute the next command <code>$esxcli.storage.vmfs.snapshot.resignature($vmfsname)</code> Verify again, the next command is to verify that the resignature is done and should return a blank o/p as the disk has been resignatured.<code>$esxcli.storage.vmfs.snapshot.list($vmfsname)</code>Sample output below <code>PS C:\WINDOWS\system32> $vmfsname = "CDC-PURE-NL-002"
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+Canmount                      : false
+Canresignature                : true
+Reasonfornonresignaturability : 
+Reasonforunmountability       : the original volume is still online
+UnresolvedExtentCount         : 1
+VMFSUUID                      : 5a5ed8b1-0bcb99a6-d493-0025b5a433be
+VolumeName                    : CDC-PURE-NL-002
+
+PS C:\WINDOWS\system32>
+PS C:\WINDOWS\system32> $esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+true
+
+PS C:\WINDOWS\system32>
+PS C:\WINDOWS\system32> $esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+PS C:\WINDOWS\system32>
+</code>
+  - Now Rename the disks.  The resignatured disks will automatically take a name that starts with snap, has the SUUID & the original disk name<code>get-datastore |findstr CDC-PURE-NL-002</code> Rename it <code>get-datastore snap-7ea60f66-CDC-PURE-NL-002 | set-datastore -name CDC-PURE-NL-002-NEW</code> Replace CDC-PURE-NL-002-NEW following the standard convention of the disks. & verify <code> get-datastore CDC-PURE-NL-002-NEW </code> Sample Output below.<code>PS C:\WINDOWS\system32> get-datastore |findstr CDC-PURE-NL-002
+snap-7ea60f66-CDC-PURE-NL-002        1,175.333       4,095.750
+CDC-PURE-NL-002                      1,175.325       4,095.750
+
+PS C:\WINDOWS\system32>
+PS C:\WINDOWS\system32> get-datastore |findstr CDC-PURE-NL-002 |findstr snap
+snap-7ea60f66-CDC-PURE-NL-002        1,175.333       4,095.750
+
+PS C:\WINDOWS\system32>
+PS C:\WINDOWS\system32> get-datastore snap-7ea60f66-CDC-PURE-NL-002 | set-datastore -name CDC-PURE-NL-002-NEW
+Name                               FreeSpaceGB      CapacityGB
+----                               -----------      ----------
+CDC-PURE-NL-002-NEW                  1,175.348       4,095.750
+
+PS C:\WINDOWS\system32>
+PS C:\WINDOWS\system32> get-datastore CDC-PURE-NL-002-NEW
+Name                               FreeSpaceGB      CapacityGB
+----                               -----------      ----------
+CDC-PURE-NL-002-NEW                  1,175.348       4,095.750
+
+PS C:\WINDOWS\system32></code>

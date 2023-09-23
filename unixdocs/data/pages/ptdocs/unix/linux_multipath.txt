@@ -1,0 +1,46 @@
+====== Multipathing in Linux ======
+
+
+==== Multipathing ====
+
+Multiplathing in Linux is important for physical machines which have SAN connections.
+Right now, the main servers which use multipath daemon are UCS servers in the CDC.
+
+[[https://documentation.suse.com/sles/15-SP1/html/SLES-all/cha-multipath.html]]
+
+
+==== Make sure the kernel has the multipathing built into the kernel ====
+Install and configure the multipathing bits
+
+  lsinitrd /boot/initramfs-4.12.14-95.45-default.img | grep dm
+- Enable the multipathing daemon  
+  vi /etc/multipath.conf
+  systemctl status multipathd
+  systemctl enable --now multipathd
+  
+- Add it into the kernel and reboot to take effect
+  dracut --force --add multipath
+  reboot now
+  
+- Check the multipath configs
+  vi /etc/multipath.conf
+  
+- Add in the new udev rules
+  vi /etc/multipath.conf
+  cd /usr/lib/udev/rules.d/
+  vi /usr/lib/udev/rules.d/99-pure-storage.rules
+  
+- Have the rules take effect in the running kernel
+  udevadm trigger
+  
+- Now try to see what multipath comes up with.  Do a dry-run
+  multipath –v2 -d
+  
+- If multipathing puts the disks together like you expect, run multipath reconfigure to save the changes and then redo the kernel to load the changes next reboot.
+  multipathd reconfigure
+  multipath –v2 -ll
+  dracut -f
+
+- And reboot to make sure it takes.
+  reboot now
+  grep multipath /var/log/messages

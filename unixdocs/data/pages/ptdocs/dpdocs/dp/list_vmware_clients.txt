@@ -1,0 +1,54 @@
+Once you find out that VM_WARES_xxx policy is based on Automatc VMWare Intelligent Policy query - you are not able to tell which clients will be backed up. To check this out you can use GUI or CLI. For GUI please open up given policy, go to the Clients tab and press Test Query... button as shown on the {{dp:nbu_vmintellitgentpolicy.png?linkonly|picture}}.
+For CLI please open a command prompt and run the following<code>nbdiscover -noxmloutput -includedonly -policy VM_WARES_STR
+tastr018.emea.int.tenneco.com
+tastr022.emea.int.tenneco.com
+tastr057.emea.int.tenneco.com
+tastr020.emea.int.tenneco.com
+tastr010.emea.int.tenneco.com</code>Of course replace the policy name with the proper one. To see how ESXi cluster is being built you can use this command<code>nbdiscover "vmsearch:/;reqType=browse;viewtype=vsphere" -noxmloutput
++ "taitc150.emea.int.tenneco.com"
++ "/ITOC"
++ "STR"
++ "tastr360.emea.int.tenneco.com"
++ "tastr361.emea.int.tenneco.com"
++ "/Sint Truiden"
++ "Sint Truiden"
++ "tastr360.emea.int.tenneco.com"
++ "tastr361.emea.int.tenneco.com"</code>or example from EDE NBU master server<code>nbdiscover "vmsearch:/;reqType=browse;viewtype=vsphere" -noxmloutput
++ "taede601"
++ "/Edenkoben"
++ "EDE-Cluster"
++ "taede501.emea.int.tenneco.com"
++ "taede502.emea.int.tenneco.com"
++ "taede503.emea.int.tenneco.com"
++ "taede504.emea.int.tenneco.com"
++ "taede505.emea.int.tenneco.com"
++ "VM Cluster"
++ "taede501.emea.int.tenneco.com"
++ "taede502.emea.int.tenneco.com"
++ "taede503.emea.int.tenneco.com"
++ "VM Cluster 2"
++ "taede504.emea.int.tenneco.com"
++ "taede505.emea.int.tenneco.com"
++ "taitc150.emea.int.tenneco.com"
++ "/Edenkoben"
++ "EDE-Cluster"
++ "taede501.emea.int.tenneco.com"
++ "taede502.emea.int.tenneco.com"
++ "taede503.emea.int.tenneco.com"
++ "taede504.emea.int.tenneco.com"
++ "taede505.emea.int.tenneco.com"</code>So from now on ESXi admins can add a client to ours backup scope by tagging server with TAG 'BACKUP_YES'. But still thay have to liaise with us about the same!!
+To see all VM which are poweredon in Sint Truide DataCenter use this<code>nbdiscover -noxmloutput -includedonly "vmware:/?filter=DataCenter StartsWith 'Sint' AND Powerstate Equal poweredOn"
+tastrdc01.emea.int.tenneco.com
+tastrdc02.emea.int.tenneco.com
+tastrdc03.int.tenneco.com
+tastr011.emea.int.tenneco.com
+tastr003.emea.int.tenneco.com
+tastr018.emea.int.tenneco.com
+tastr022.emea.int.tenneco.com
+tastr057.emea.int.tenneco.com
+tastr020.emea.int.tenneco.com
+tastr010.emea.int.tenneco.com
+tastr021.emea.int.tenneco.com
+tastr024.emea.int.tenneco.com
+tastr055.emea.int.tenneco.com
+tastr006.amer.int.tenneco.com</code>

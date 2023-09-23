@@ -1,0 +1,168 @@
+====== Mock 2 Storage Instructions ======
+
+** Scope - Live systems **
+
+^Source system ( Legacy Tenneco )^Target system (DRiV)^Comments                            ^
+|pgdmr057                        |qcdcccsaxdb01       |                                    |
+|qggpdb01                        |qcdcpltaxdb01       |                                    |
+|taitc493                        |cdcusms086          |Wintel VMWare                       |
+|qggtdb01                        |qcdcqgtaxdb01       |                                    |
+|qgsndb01                        |qcdcqsnaxdb01       |                                    |
+|qgimdb01                        |qcdcqimaxdb01       |                                    |
+|qehrdb01                        |qcdch1taxdb01       |Don't reset - source system         |
+|tsqa1d01                        |qcdcqsraxdb01       |                                    |
+|taitc269                        |CDCUSMS074          |Wintel VMWare                       |
+|qaerdb01                        |qcdcftaaxdb01       |                                    |
+|TEDV2D01                        |qcdcit0axdb01       |                                    |
+|qgscdb01                        |qcdcqscaxdb01       |                                    |
+
+
+===== Mock 2 T(-) activities =====
+
+==== Mock 2 T(-) activities - Reset Tenneco Live systems to the Mock 1 snapshot====
+
+** Remove current volumes from the host **
+
+  - Login to pgunap01, Connect to the target array - In this case we are only resetting systems in CDC/PTT
+    - CDC/PTT - taprpur001<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+  - Create an empty host definition to keep the volumes being deleted<code>${SSH2PURE} purehost create dress-rehearsal-ten-live-hosts</code>
+  - Export a variable to list the DRiV server's volumes<code>export tensrv="hostname"</code>
+  - Disconnect the volumes
+    - Get a list<code>${SSH2PURE} purevol list | grep "^${tensrv}_" > ${tensrv}.luns</code>
+    - Disconnect the volumes except boot disks<code>vollist=$(grep -v 138G ${tensrv}.luns | awk '{print $1}' | tr "\n" " ")
+${SSH2PURE} purevol disconnect --host ${tensrv} ${vollist}</code>
+    - Rename and connect the volumes except boot disks to a host definition<code>volumes=""
+for volume in $(grep -v 138G ${tensrv}.luns | awk '{print $1}' )
+do
+   newname=$(echo ${volume} | sed "s;$;_deleted;g")
+   volumes="${volumes} ${newname}"
+   ${SSH2PURE} purevol rename  ${volume} ${newname}
+done
+${SSH2PURE} purevol connect --host dress-rehearsal-ten-live-hosts ${volumes}</code>
+
+** Connect the Mock1 - snapshot LUNs to the host **
+
+  - Provision from ''mock1-may2-cdc-aix.Mock1DoNotDelete''<code>vol_no=700
+volumes=""
+for snapshot in $(${SSH2PURE} purevol list --snap --pgrouplist mock1-may2-cdc-aix.Mock1DoNotDelete | grep ${tensrv}_ | grep -v "138G" | awk '{print $1}')
+do
+   volumes="${volumes} ${tensrv}_${vol_no}"
+   ${SSH2PURE} purevol copy ${snapshot} ${tensrv}_${vol_no}
+   vol_no=$(echo "${vol_no} + 1 " | bc )
+done   
+
+${SSH2PURE} purevol connect --host ${tensrv} ${volumes}</code>
+  - For FTA provision from ''mock1-may2-cdc-aix.Mock1DoNotDelete-0516-FTA''<code>vol_no=700
+volumes=""
+for snapshot in $(${SSH2PURE} purevol list --snap --pgrouplist mock1-may2-cdc-aix.Mock1DoNotDelete-0516-FTA | grep ${tensrv}_ | grep -v "138G" | awk '{print $1}')
+do
+   volumes="${volumes} ${tensrv}_${vol_no}"
+   ${SSH2PURE} purevol copy ${snapshot} ${tensrv}_${vol_no}
+   vol_no=$(echo "${vol_no} + 1 " | bc )
+done   
+
+${SSH2PURE} purevol connect --host ${tensrv} ${volumes}</code>
+
+
+==== Mock 2 T(-) activities - Create Protection Groups ====
+
+** Tenneco Systems **
+
+  - Connect to the respective array and take a local snapshot and replicate
+    - Store hosts in a variable **Remember to include mock1-vmwares** to the host list. It contains the VMWARE LUNs in scope.
+      - CDC<code>export ten_hosts="pgdmr057,qggpdb01,qggtdb01,qgsndb01,qgimdb01,tsqa1d01,qaerdb01,TEDV2D01,qgscdb01,mock1-vmware"</code>
+      - Store PGname in a variable<code>export pg_name="mock-dress-jun7"</code>
+      - Connect to CDC array<code>export SSH2PURE="ssh x1nithsa@taprpur001.pt.int.tenneco.com"</code>
+      - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist ${ten_hosts} --targetlist cdcvilns015 ${pg_name}</code>
+      - Allow snapshots on cdcvilns015<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>Then<code>${SSH2PURE} purepgroup allow taprpur001:${pg_name}</code>
+
+** DRiV Systems **
+
+  - Connect to the respective array and take a local snapshot and replicate
+    - Store hosts in a variable **Remember to include mock1-vmwares** to the host list. It contains the VMWARE LUNs in scope.
+      - CDC<code>export driv_hosts="qcdcccsaxdb01,qcdcpltaxdb01,qcdcqgtaxdb01,qcdcqsnaxdb01,qcdcqimaxdb01,qcdch1taxdb01,qcdcqsraxdb01,qcdcftaaxdb01,qcdcit0axdb01,qcdcqscaxdb01,mock1-vmware"</code>
+      - Store PGname in a variable<code>export pg_name="mock-dress-jun7"</code>
+      - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+      - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist ${driv_hosts} ${pg_name}</code>
+
+===== Mock-2 Dress Rehearsal - T(0) activity =====
+
+==== Pre-cutover snapshot ====
+
+  - Wait for all Live servers in bundles are stopped at source
+  - Connect to the respective array and take a local snapshot and replicate
+    - Store PGname in a variable<code>export pg_name="mock-dress-jun7"</code>
+    - Snapshots at CDC/PTT ** This mock does not have a system that needs to be refreshed from Interxion **
+      - Connect to CDC array<code>export SSH2PURE="ssh x1nithsa@taprpur001.pt.int.tenneco.com"</code>
+      - Take a snapshot and replicate<code>${SSH2PURE} purepgroup snap --replicate --suffix precut ${pg_name}</code>
+
+==== Provision replicated storage to DRiV systems ====
+
+  - Connect to the respective array and provision storage
+    - Login to pgunap01 and define this function<code>function copy_and_provision_snapshot {
+export source_host=${1}
+export target_host=${2}
+
+ser_no=700
+
+volumes=""
+
+for snapshot in $(grep "${source_host}_" snapshots.mp | grep -v 138G | awk '{print $1}' )
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${target_host}_${ser_no}
+   volumes="${volumes} ${target_host}_${ser_no}"
+   ser_no=$(echo "${ser_no} + 1 " | bc )
+done
+
+${SSH2PURE} purevol connect --host ${target_host} ${volumes}
+}</code>
+    - CDC systems
+      - Connect to cdcvilns015<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+      - Store all snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist taprpur001:${pg_name}.precut > snapshots.mp</code>
+      - H1T system needs to be provisioned from mock1 snapshot<code>${SSH2PURE} purevol list --snap --pgrouplist INXPM20V1:mock1-may2-inx-aix.Mock1DoNotDelete | grep qehrdb01 >> snapshots.mp</code>
+      - Provision storage<code>copy_and_provision_snapshot pgdmr057 qcdcccsaxdb01
+copy_and_provision_snapshot qggpdb01 qcdcpltaxdb01
+copy_and_provision_snapshot qggtdb01 qcdcqgtaxdb01
+copy_and_provision_snapshot qgsndb01 qcdcqsnaxdb01
+copy_and_provision_snapshot qgimdb01 qcdcqimaxdb01
+copy_and_provision_snapshot tsqa1d01 qcdcqsraxdb01
+copy_and_provision_snapshot qaerdb01 qcdcftaaxdb01
+copy_and_provision_snapshot qehrdb01 qcdch1taxdb01
+copy_and_provision_snapshot TEDV2D01 qcdcit0axdb01
+copy_and_provision_snapshot qgscdb01 qcdcqscaxdb01</code>
+      - Wintel systems
+        - Copy the volume<code>${SSH2PURE} purevol copy taprpur001:${pg_name}.precut.non_prod_ms1_mock1  non_prod_ms1_mock1</code>
+        - Present ''non_prod_ms1_mock1'' to the ''non-prod-ms2'' VMWare cluster<code>${SSH2PURE} purevol connect --hgroup non-prod-ms2 non_prod_ms1_mock1</code>
+        - Also add ''non_prod_ms1_mock1'' to ''mock1-vmwares'' host definition<code>${SSH2PURE} purevol connect --host mock1-vmwares non_prod_ms1_mock1</code>
+
+==== Post functional test snapshot of Tenneco and DRiV systems ====
+
+** Tenneco Systems **
+
+  - Connect to the respective array and take a local snapshot
+    - Store PGname in a variable<code>export pg_name="mock-dress-jun7"</code>
+    - Connect to CDC array<code>export SSH2PURE="ssh x1nithsa@taprpur001.pt.int.tenneco.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix postfunc ${pg_name}</code>
+
+** DRiV Systems **
+
+  - Connect to the respective array and take a local snapshot
+    - Store PGname in a variable<code>export pg_name="mock-dress-jun7"</code>
+    - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix postfunc ${pg_name}</code>
+
+==== Final snapshot of Tenneco and DRiV systems ====
+
+** Tenneco Systems **
+
+  - Connect to the respective array and take a local snapshot
+    - Store PGname in a variable<code>export pg_name="mock-dress-jun7"</code>
+    - Connect to CDC array<code>export SSH2PURE="ssh x1nithsa@taprpur001.pt.int.tenneco.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix final ${pg_name}</code>
+
+** DRiV Systems **
+
+  - Connect to the respective array and take a local snapshot
+    - Store PGname in a variable<code>export pg_name="mock-dress-jun7"</code>
+    - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix final ${pg_name}</code>

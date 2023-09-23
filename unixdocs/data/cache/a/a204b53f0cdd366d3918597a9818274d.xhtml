@@ -1,0 +1,24 @@
+
+<h1 class="sectionedit1" id="virtual_io_server">Virtual IO Server</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Create an SEA adapter <pre class="code">mkvdev -sea &lt;etherchannel&gt; -vadapter &lt;virtual_ent&gt; -default &lt;virtual_ent&gt; -defaultid &lt;pvid&gt; -attr ha_mode=auto ctl_chan=&lt;virtual_ctrl_channel&gt; netaddr=&lt;def_gateway&gt;
+mkvdev -sea ent17 -vadapter ent21 -default ent21 -defaultid 49 -attr ha_mode=auto ctl_chan=ent19 netaddr=10.0.49.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Assign IP address to the Primary SEA interface <pre class="code">mktcpip -hostname &lt;hostname&gt; -inetaddr &lt;ip_addr&gt; -interface &lt;sea_ent&gt; -netmask &lt;mask&gt; -gateway 10.0.49.1 -start
+mktcpip -hostname taprvio50 -inetaddr 10.0.49.49 -interface en23 -netmask 255.255.255.0 -gateway 10.0.49.1 -start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Assign IP address to additional interfaces <pre class="code">mktcpip -hostname &lt;hostname&gt; -inetaddr &lt;ip&gt; -interface &lt;sea&gt; -netmask &lt;mask&gt; </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List all disks allocated to a vhost <pre class="code">lsmap -vadapter &lt;vhostname&gt; </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List all virtual disks configuration <pre class="code">/usr/local/scripts/lsdiskcfg</pre>
+</div>
+</li>
+</ul>
+
+</div>

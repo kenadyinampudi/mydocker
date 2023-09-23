@@ -1,0 +1,83 @@
+====== pablsv01 build ======
+
+  - Installed the OS
+  - Register the OS to Redhat ** This is not necessary **
+    - Enable proxy<code>sudo vi /etc/sysconfig/rhn/up2date</code>Change these<code>enableProxy[comment]=Use a HTTP Proxy
+enableProxy=1
+enableProxyAuth=1
+httpProxy=170.64.0.72:8080
+proxyUser=x1kxk630
+proxyPassword=<password></code>
+    - <code>sudo rhn_register</code>
+  - Install createrepo<code>sudo yum install createrepo</code>
+  - Install Apache<code>sudo yum install httpd-2.2.15-15.el6_2.1.i686</code>
+  - Create a local yum repo of the Redhat DVD
+    - Like this <code>sudo mkdir -p /var/www/html/RHEL-6.3/
+sudo mount -r -t iso9660 -o loop -v /mnt/images/rhel-server-6.3-i386-dvd.iso /mnt/cdrom
+sudo rsync -avv /mnt/cdrom/ /var/www/html/RHEL-6.3/
+cd /var/www/html/RHEL-6.3/
+createrepo .
+yum clean all</code>
+    - create this file ''/etc/yum.repos.d/file.repo'' <code>cat /etc/yum.repos.d/file.repo
+[RHEL-6.3_i386-Repository]
+name=RHEL-6.3_i386
+baseurl=file:///var/www/html/RHEL-6.3/
+enabled=1
+gpgcheck=0 </code>
+    - create an httpd config<code>ServerAdmin root@<ip_of_your_server>
+DocumentRoot /var/www/html
+ServerName pablsv02</code>
+    - Start apache<code>sudo service httpd start</code>
+    - Client side config<code>sudo vi /etc/yum.repos.d/my.repo</code>Add this<code>[RHEL-6.3_i386]
+name=RHEL-6.3_i386-Repository
+baseurl=http://pablsv02/RHEL6.3
+enabled=1
+gpgcheck=0</code>
+     - Verify from client<code>sudo yum list</code>Should show<code>Loading "installonlyn" plugin
+Setting up repositories
+Reading repository metadata in from local files
+Available Packages
+Deployment_Guide-as-IN.noarch 5.0.0-19
+RH51-Server Deployment_Guide-bn-IN.noarch
+5.0.0-19 RH51-Server
+Deployment_Guide-de-DE.noarch 5.0.0-19
+RH51-Server Deployment_Guide-en-US.noarch
+5.0.0-19 RH51-Server
+Deployment_Guide-es-ES.noarch 5.0.0-19
+RH51-Server Deployment_Guide-fr-FR.noarch
+5.0.0-19 RH51-Server ========</code>
+    -  sdfg
+
+===== Setup Cobbler =====
+
+[[https://pablsv01/cobbler_web|Click here to access cobbler web interface]]
+
+  * Enable EPEL repository
+    * Redhat 6<code>wget http://linux.mirrors.es.net/fedora-epel/6/i386/epel-release-6-7.noarch.rpm
+sudo rpm -Uvh epel-release-6-7.noarch.rpm</code>Change https to http ( For some reason our proxy does not work )<code>sudo vi /etc/yum.repos.d/epel.repo</code>
+  * Disable SELinux (If it exists)<code>echo "0" | sudo tee /selinux/enforce</code>
+  * Install Cobbler<code>sudo yum install cobbler</code>
+  * Install Cobbler Web UI<code>sudo yum install cobbler-web</code>
+  * Perform a check<code>sudo cobbler check</code>Fix the errors and run the check again.
+  * Import the distros
+    * RHEL 5.8 i386<code>sudo cobbler import --path=/var/www/html/rhel-5.8-i386 --name=rhel-5.8-i386 --arch=i386</code>
+    * RHEL 5.8 x86_64<code>sudo cobbler import --path=/var/www/html/rhel-5.8-x86_64 --name=rhel-5.8-x86_64 --arch=x86_64</code>
+    * RHEL 6.3 i386<code>sudo cobbler import --path=/var/www/html/rhel-6.3-i386 --name=rhel-6.3-i386 --arch=i386</code>
+    * RHEL 6.3 x86_64<code>sudo cobbler import --path=/var/www/html/rhel-6.3-x86_64 --name=rhel-6.3-x86_64 --arch=x86_64</code>
+  * Create a profile associate it with a distro. The profiles were created and associated with each distro, hence the profiles were edited like this to have a customized kickstart file<code>sudo cobbler profile edit --name rhel-5.8-i386 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-5.8.ks
+sudo cobbler profile edit --name rhel-5.8-x86_64 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-5.8.ks
+sudo cobbler profile edit --name rhel-6.3-i386 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-6.3.ks
+sudo cobbler profile edit --name rhel-6.3-x86_64 --kickstart=/var/lib/cobbler/kickstarts/tenneco.rhel-6.3.ks</code>
+  * Register a client<code>sudo cobbler system add \
+--name=paavap02 \
+--profile=rhel-6.3-i386 \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=amer.int.tenneco.com \
+--gateway=10.32.50.1 \
+--interface=eth0 \
+--static=True \
+--mac=00:17:08:50:6D:E2 \
+--ip-address=10.32.50.56 \
+--netmask=255.255.255.0</code>
+  * Create an iso and perform an automagical installation.<code>sudo cobbler buildiso --systems="paavap02"</code>

@@ -1,0 +1,12 @@
+Starting with April 2018 in STR NBU domain I changed the NDMP policies in regards of client name to mimic actual state. 
+Up to April 2018 all backups for VNX filer at STR were made against this client name:
+  * **tastrvnx5300vs.emea.int.tenneco.com** 
+from April 2018 I changed in respective policies client names to: 
+  * **tastr050.emea.int.tenneco.com**
+  * **tastr051.emea.int.tenneco.com**.
+
+Some time back in May Storage team for groups share changed the file system from 
+  * /root_vdm_6/fs_tastr050_groups
+to 
+  * /root_vdm_6/fs_tastr050_groupsnew
+You need to remember about this while performing restores from older backups (prior this file system change) - you have to redirect these to /root_vdm_6/fs_tastr050_groupsnew or the restore will fail.

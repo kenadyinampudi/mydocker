@@ -1,0 +1,80 @@
+====== Customization for PTA App servers ======
+
+  - Create users account<code>sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba -d /home/ptaadm -c "SAP NA System Admin" -m -u 3201 ptaadm
+sudo useradd -s /usr/bin/csh -g dba -G sapinst,sapsys -d /home/orapta -c "SAP NA Oracle Admin" -m -u 3200 orapta
+echo "ptaadm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+echo "orapta:DKK*],E-7Pwp?tqX" | sudo chpasswd
+sudo useradd -g taedigrp -d /home/ifuser -m -c "GIS sftp account" -u 101 ifuser
+echo "ifuser:So5gT8Fx3PX5U" | sudo chpasswd</code>
+
+  - On paerap01h ONLY - create edipta61 user for sftp GIS transfers<code>sudo useradd -g taedigrp -d /taedi61/gentran -c "GIS sftp account" -u 4057 edipta61
+echo "edipta61:So5gT8Fx3PX5U" | sudo chpasswd
+</code>
+  - Create filesystems<code>sudo lvcreate -n oracle_PTA        -L 1024MB  datavg01
+sudo lvcreate -n usr_sap_PTA       -L 8192MB  datavg01
+sudo lvcreate -n usr_sap_PTA_SUM   -L 10240MB datavg01
+sudo lvcreate -n home_ptaadm       -L 512MB   datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/oracle_PTA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_PTA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_PTA_SUM
+sudo mkfs -t ext4 /dev/datavg01/home_ptaadm
+
+cat << EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-oracle_PTA         /oracle/PTA           ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_PTA        /usr/sap/PTA          ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_PTA_SUM    /usr/sap/PTA/SUM      ext4    defaults        1 2
+/dev/mapper/datavg01-home_ptaadm        /home/ptaadm          ext4    defaults        1 2
+EOF
+
+sudo chown orapta:dba /oracle
+sudo chown orapta:dba /oracle/client
+sudo chown ptaadm:sapsys /usr/sap
+
+sudo mkdir -p /oracle/PTA        ; sudo mount /oracle/PTA          ; sudo chown orapta:dba /oracle/PTA
+sudo mkdir -p /usr/sap/PTA       ; sudo mount /usr/sap/PTA         ; sudo chown ptaadm:sapsys /usr/sap/PTA
+sudo mkdir -p /usr/sap/PTA/SUM   ; sudo mount /usr/sap/PTA/SUM     ; sudo chown ptaadm:sapsys /usr/sap/PTA/SUM
+sudo mkdir -p /home/ptaadm       ; sudo mount /home/ptaadm         ; sudo chown ptaadm:sapsys /home/ptaadm</code>
+  - Add NFS. First export the filesystems from the NFS server<code>cat << EOF | sudo tee -a /etc/fstab
+tapr1d01:/sapmnt/PTA/exe       /sapmnt/PTA/exe       nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tapr1d01:/sapmnt/PTA/profile   /sapmnt/PTA/profile   nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tapr1d01:/sapmnt/PTA/global    /sapmnt/PTA/global    nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tapr1d01:/usr/sap/trans        /usr/sap/trans        nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tapr1d01:/sapcomm/PTA          /sapcomm/PTA          nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+paarfs01:/sapcomm/PTA/archive  /sapcomm/PTA/archive  nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pgadap01:/sapmedia             /sapmedia             nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tapr1d01:/taedi61              /taedi61              nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+paap3p01:/comm                 /comm                 nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+EOF
+
+sudo mkdir -p /sapmnt/PTA/exe          ; sudo mount /sapmnt/PTA/exe
+sudo mkdir -p /sapmnt/PTA/profile      ; sudo mount /sapmnt/PTA/profile
+sudo mkdir -p /sapmnt/PTA/global       ; sudo mount /sapmnt/PTA/global
+sudo mkdir -p /usr/sap/trans           ; sudo mount /usr/sap/trans
+sudo mkdir -p /sapcomm/PTA             ; sudo mount /sapcomm/PTA
+sudo mkdir -p /sapcomm/PTA/archive     ; sudo mount /sapcomm/PTA/archive
+sudo mkdir -p /sapmedia                ; sudo mount /sapmedia
+sudo mkdir -p /comm                    ; sudo mount /comm
+sudo mkdir -p /taedi61                 ; sudo mount /taedi61</code>
+  - If the system needs a Web dispatcher, follow these steps<code>
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst -d /home/pw1adm -c "Web dispatcher account - dev" -m -u 4533 pw1adm
+
+echo "pw1adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+
+sudo lvcreate -n sapmnt_PW1  -L 1G datavg01  ; sudo mkfs -t ext4 /dev/datavg01/sapmnt_PW1
+sudo lvcreate -n usr_sap_PW1 -L 2G datavg01  ; sudo mkfs -t ext4 /dev/datavg01/usr_sap_PW1
+
+cat << EOF | sudo tee -a /etc/fstab
+/dev/mapper/datavg01-sapmnt_PW1    /sapmnt/PW1                    ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_PW1   /usr/sap/PW1                   ext4    defaults        1 2
+EOF
+
+sudo mkdir -p /sapmnt/PW1  ; sudo mount /sapmnt/PW1
+sudo mkdir -p /usr/sap/PW1 ; sudo mount /usr/sap/PW1
+
+sudo chown pw1adm:sapsys /home/pw1adm /usr/sap/PW1 /sapmnt/PW1
+sudo chmod 700 /home/pw1adm
+sudo chmod 751 /usr/sap/PW1
+sudo chmod 755 /sapmnt/PW1</code>
+  - If the system needs unispool, enable it<code>sudo systemctl enable unispool</code>
+  - Install 64bit C++ library<code>sudo yum install compat-libstdc++-33-3.2.3-72.el7.x86_64</code>

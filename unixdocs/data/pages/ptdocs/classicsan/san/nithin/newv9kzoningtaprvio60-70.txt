@@ -1,0 +1,150 @@
+====== Taprvio60-70 zoning in new v9000 ======
+
+
+  -zoning taprvio60-70 v9000 new<code>    Zoning TAPRVIO60
+
+
+wwwns:-
+
+fcs2 10000000c9e830fa     
+
+fcs3 10000000c9e830fb   -ldcds5300b1
+
+fcs0 10000000c9e83122
+
+fcs1 10000000c9e83123   -ldcds5300a1
+
+
+Zoning TAPRVIO70
+
+
+wwwns:-
+
+fcs2 10000000C9e82ac8
+
+fcs3 10000000C9e82ac9   -ldcds5300b1
+
+fcs0 10000000C9e83130
+
+fcs1 10000000C9e83131   -ldcds5300a1
+
+
+        
+               Zoning TAPRVIO60
+              ------------------
+
+  Zoning V9000-2 ( ldcv9ac3vip1 ) to hosts connected to ldcds5300a1
+
+Fabric A
+
+
+1):Create an alias for the host
+
+   alicreate "taprvio60_e83123","c0:50:76:08:9b:c1:23:45" already created
+
+
+2):Create zones
+
+zonecreate "taprvio60_e83123__ldcv9ac3n1_13843c","taprvio60_e83123;ldcv9ac3n1_13843c"
+
+zonecreate "taprvio60_e83123__ldcv9ac3n2_13847e","taprvio60_e83123;ldcv9ac3n2_13847e"
+
+
+cfgadd "fab_a_act_config","taprvio60_e83123__ldcv9ac3n1_13843c;taprvio60_e83123__ldcv9ac3n2_13847e"
+
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+
+         
+      Fabric B zoning
+     ----------------
+
+
+
+1)Create an alias for the host
+
+  alicreate "taprvio60_e830fb","c0:50:76:08:9b:c1:23:47" its already created.
+
+
+2):Create zones
+
+zonecreate "taprvio60_e830fb__ldcv9ac3n1_14843c","taprvio60_e830fb;ldcv9ac3n1_14843c"
+
+zonecreate "taprvio60_e830fb__ldcv9ac3n2_14847e","taprvio60_e830fb;ldcv9ac3n2_14847e"
+
+
+cfgadd "fab_b_act_config","taprvio60_e830fb__ldcv9ac3n1_14843c;taprvio60_e830fb__ldcv9ac3n2_14847e"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+
+_________________________________________________________________________________________________________________________________________________________________
+
+
+
+
+           Zoning TAPRVIO70
+           ------------------
+
+wwwns:-
+
+fcs2 10000000C9e82ac8
+
+fcs3 10000000C9e82ac9   -ldcds5300b1
+
+fcs0 10000000C9e83130
+
+fcs1 10000000C9e83131   -ldcds5300a1
+
+
+  Zoning V9000-2 ( ldcv9ac3vip1 ) to hosts connected to ldcds5300a1
+
+Fabric A
+
+
+1):Create an alias for the host
+
+   alicreate "taprvio70_e83131","c0:50:76:08:9b:c1:23:45" already created
+
+
+2):Create zones
+
+zonecreate "taprvio70_e83131__ldcv9ac3n1_13843c","taprvio70_e83131;ldcv9ac3n1_13843c"
+
+zonecreate "taprvio70_e83131__ldcv9ac3n2_13847e","taprvio70_e83131;ldcv9ac3n2_13847e"
+
+
+cfgadd "fab_a_act_config","taprvio70_e83131__ldcv9ac3n1_13843c;taprvio70_e83131__ldcv9ac3n2_13847e"
+
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+
+         
+      Fabric B zoning
+     ----------------
+
+
+
+1)Create an alias for the host
+
+  alicreate "taprvio70_e82ac9","c0:50:76:08:9b:c1:23:47" its already created.
+
+
+2):Create zones
+
+zonecreate "taprvio70_e82ac9__ldcv9ac3n1_14843c","taprvio70_e82ac9;ldcv9ac3n1_14843c"
+
+zonecreate "taprvio70_e82ac9__ldcv9ac3n2_14847e","taprvio70_e82ac9;ldcv9ac3n2_14847e"
+
+
+cfgadd "fab_b_act_config","taprvio70_e82ac9__ldcv9ac3n1_14843c;taprvio70_e82ac9__ldcv9ac3n2_14847e"
+
+cfgsave
+
+cfgenable "fab_b_act_config"</code>

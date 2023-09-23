@@ -1,0 +1,110 @@
+
+<h2 class="sectionedit1" id="shutdown_standby_database_and_disconnect_volumes">Shutdown standby database and disconnect volumes</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Disconnect old dbdata volumes from pehrdb99</div>
+<ol>
+<li class="level2"><div class="li"> Ask the <abbr title="Database Administrator">DBA</abbr> team to shutdown the database on pehrdb99</div>
+</li>
+<li class="level2"><div class="li"> Login to pehrdb99, take a snapshot of current config<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.out.6</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Offline and export the VG<pre class="code">lsvgfs datavg01 | xargs -n1 sudo umount
+sudo varyoffvg datavg01
+sudo exportvg datavg01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Delete the datavg01 disks<pre class="code">grep datavg01 lsvpcfg.out.6 | awk -F: &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Disconnect the volumes from pehrdb99. Login to pgunap01<pre class="code">for volume in {001..021}
+do
+   echo &quot;Disconnecting h1pdbprimary_${volume} from pehrdb99&quot;
+   ${SSH2INXM20} purevol disconnect --host pehrdb99 h1pdbprimary_${volume}
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Shutdown standby database and disconnect volumes" [1-770] -->
+<h2 class="sectionedit2" id="create_a_protection_group_for_h1p_standby_database_volumes">Create a protection group for H1P standby database volumes</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li">Create an empty protection group<pre class="code">${SSH2INXM20} purepgroup create h1pdbstandby2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add all h1p standby database volumes to the protection group<pre class="code">for volume in {001..021}
+do
+   ${SSH2INXM20} purepgroup setattr --addvollist h1pdbstandby_${volume} h1pdbstandby2
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List the protection group<pre class="code">${SSH2INXM20} purepgroup list h1pdbstandby2</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Create a protection group for H1P standby database volumes" [771-1220] -->
+<h2 class="sectionedit3" id="create_a_snapshot_of_the_protection_group">Create a snapshot of the protection group</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Ask <abbr title="Database Administrator">DBA</abbr> team to put H1P  database on pehrdb98 hot backup mode.</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of H1P pehrdb98<pre class="code">${SSH2INXM20} purepgroup snap --suffix stbyrefresh h1pdbstandby2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ask <abbr title="Database Administrator">DBA</abbr> team to put the DB in to end backup mode</div>
+</li>
+<li class="level1"><div class="li"> Copy the snapshot to new volumes.<pre class="code">for volume in {001..021}
+do
+   echo &quot;Copying snapshot h1pdbstandby2.stbyrefresh.h1pdbstandby_${volume} to h1pdbprimary_${volume} &quot;
+   ${SSH2INXM20} purevol copy --overwrite h1pdbstandby2.stbyrefresh.h1pdbstandby_${volume} h1pdbprimary_${volume}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Connect the snapshot volumes to pehrdb99<pre class="code">for volume in {001..021}
+do
+   ${SSH2INXM20} purevol connect --host pehrdb99 h1pdbprimary_${volume}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to pehrdb99<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.out.7
+sudo cfgmgr
+sudo lsvpcfg.sh &gt; lsvpcfg.out.8</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Recreate VG on pehrdb99<pre class="code">ssh pehrdb98 lspv | grep datavg01 | awk &#039;{print $2}&#039; &gt; pehrdb98.datavg01.pvids</pre>
+
+<p>
+Document the disks
+</p>
+<pre class="code">lspv | grep -f pehrdb98.datavg01.pvids | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot;</pre>
+
+<p>
+Then recreatevg 
+</p>
+<pre class="code">sudo recreatevg -L/ -Y/ -y datavg01 &lt;list of disks from above comand&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run fsck and mount the filesystems<pre class="code">for fs in $(lsvgfs datavg01)
+do
+   sudo fsck -y ${fs}
+   if [ ${?} -eq 0 ]
+   then
+      sudo mount ${fs}
+   else
+      echo &quot;Error mounting ${fs} ...&quot;
+   fi      
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Handover to <abbr title="Database Administrator">DBA</abbr> team</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Create a snapshot of the protection group" [1221-] -->

@@ -1,0 +1,57 @@
+<code>cfgremove "fab_b_act_config","pocafasv01_bd0006_ldcv9ac2n1_222fbf;pocafasv01_bd0006_ldcv9ac2n1_222fc0"
+cfgremove "fab_b_act_config","pocafasv01_bd000a_ldcv9ac2n1_222fbf;pocafasv01_bd000a_ldcv9ac2n1_222fc0"
+
+cfgremove "fab_b_act_config","pocafasv02_bd000e_ldcv9ac2n1_222fbf;pocafasv02_bd000e_ldcv9ac2n1_222fc0"
+
+cfgremove "fab_b_act_config","pocafasv03_bb0006__ldcv9ac2n1_122fc0;pocafasv03_bb0006__ldcv9ac2n1_222fc0"
+
+cfgremove "fab_b_act_config","pocafasv04_bb0008__ldcv9ac2n1_122fc0;pocafasv04_bb0008__ldcv9ac2n1_222fbf"
+cfgremove "fab_b_act_config","pocafasv04_bb0008__ldcv9ac2n1_222fc0"
+
+zonedelete  "pocafasv01_bd0006_ldcv9ac2n1_222fbf"
+zonedelete  "pocafasv01_bd0006_ldcv9ac2n1_222fc0"
+zonedelete  "pocafasv01_bd000a_ldcv9ac2n1_222fbf"
+zonedelete  "pocafasv01_bd000a_ldcv9ac2n1_222fc0"
+zonedelete  "pocafasv02_bd000e_ldcv9ac2n1_222fbf"
+zonedelete  "pocafasv02_bd000e_ldcv9ac2n1_222fc0"
+zonedelete  "pocafasv03_bb0006__ldcv9ac2n1_122fc0"
+zonedelete  "pocafasv03_bb0006__ldcv9ac2n1_222fc0"
+zonedelete  "pocafasv04_bb0008__ldcv9ac2n1_122fc0"
+zonedelete  "pocafasv04_bb0008__ldcv9ac2n1_222fbf"
+zonedelete  "pocafasv04_bb0008__ldcv9ac2n1_222fc0"
+
+alidelete "ldcv9ac2n1_122fc0"
+alidelete "ldcv9ac2n1_222fc0"
+
+alicreate "ldcv9ac2n2_122fc0","50:05:07:68:0c:12:2f:c0"
+alicreate "ldcv9ac2n2_222fc0","50:05:07:68:0c:22:2f:c0"
+
+zonecreate "pocafasv01_bd0006__ldcv9ac2n1_222fbf","pocafasv01_bd0006;ldcv9ac2n1_222fbf"
+zonecreate "pocafasv01_bd0006__ldcv9ac2n2_222fc0","pocafasv01_bd0006;ldcv9ac2n2_222fc0"
+zonecreate "pocafasv01_bd000a__ldcv9ac2n1_222fbf","pocafasv01_bd000a;ldcv9ac2n1_222fbf"
+zonecreate "pocafasv01_bd000a__ldcv9ac2n2_222fc0","pocafasv01_bd000a;ldcv9ac2n2_222fc0"
+
+zonecreate "pocafasv02_bd000e__ldcv9ac2n1_222fbf","pocafasv02_bd000e;ldcv9ac2n1_222fbf"
+zonecreate "pocafasv02_bd000e__ldcv9ac2n2_222fc0","pocafasv02_bd000e;ldcv9ac2n2_222fc0"
+
+zonecreate "pocafasv03_bb0006__ldcv9ac2n1_222fbf","pocafasv03_bb0006;ldcv9ac2n1_222fbf"
+zonecreate "pocafasv03_bb0006__ldcv9ac2n2_222fc0","pocafasv03_bb0006;ldcv9ac2n2_222fc0"
+
+zonecreate "pocafasv04_bb0008__ldcv9ac2n1_222fbf","pocafasv04_bb0008;ldcv9ac2n1_222fbf"
+zonecreate "pocafasv04_bb0008__ldcv9ac2n2_222fc0","pocafasv04_bb0008;ldcv9ac2n2_222fc0"
+
+cfgadd "fab_b_act_config","pocafasv01_bd0006__ldcv9ac2n1_222fbf;pocafasv01_bd0006__ldcv9ac2n2_222fc0"
+cfgadd "fab_b_act_config","pocafasv01_bd000a__ldcv9ac2n1_222fbf;pocafasv01_bd000a__ldcv9ac2n2_222fc0"
+cfgadd "fab_b_act_config","pocafasv02_bd000e__ldcv9ac2n1_222fbf;pocafasv02_bd000e__ldcv9ac2n2_222fc0"
+cfgadd "fab_b_act_config","pocafasv03_bb0006__ldcv9ac2n1_222fbf;pocafasv03_bb0006__ldcv9ac2n2_222fc0"
+cfgadd "fab_b_act_config","pocafasv04_bb0008__ldcv9ac2n1_222fbf;pocafasv04_bb0008__ldcv9ac2n2_222fc0"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+for disk in $(lsdev -Ccdisk | grep 2145 | awk '{print $1}' )
+do
+   echo $disk
+   lspath -l $disk
+done</code>

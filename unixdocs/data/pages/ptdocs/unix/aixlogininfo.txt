@@ -1,0 +1,166 @@
+
+====== USER LOGIN PROCESS ======
+:
+
+
+
+
+===== LOGIN PROCESS DESCRIPTION =====
+:
+
+1. getty:
+The file /etc/inittab contains possible ports for login (i.e. console). When init runs, a getty process is started for each port listed in that file. The process "getty" provides a login prompt on the terminal attached to that port. The actual message displayed (also known as the herald) by the getty process is defined in /etc/security/login.cfg (i.e. console login and password...). Once this is displayed getty process waits for a user to make a login attempt.
+
+--------------
+
+2. login:
+First user name is entered. The login program checks /etc/passwd and /etc/security/passwd to see if a password is required. If a password is required or the user name doesn't match a valid name, the Password: prompt is displayed.
+
+--------------
+
+3. invalid:
+If an invalid user name was given or the password is incorrect an entry is made in /etc/security/failedlogin.
+
+    root@bb_lpar: / # who /etc/security/failedlogin
+    root        vty0        Jun 08 12:50        <--username was valid, but password was incorrect
+    UNKNOWN_    vty0        Jun 08 13:20        <--invalid username
+
+
+If the user name is valid, but the password is incorrect, the number of failed attempts are tracked in /etc/security/lastlog.
+
+    root@bb_lpar: / # cat /etc/security/lastlog
+    root:
+            time_last_login = 1339152601
+            tty_last_login = /dev/pts/0
+            host_last_login = server.domain.com
+            unsuccessful_login_count = 2       <--this shows the number of failed login attemts of a user
+
+    (or you can check that with command "lsuser")
+
+--------------
+
+4. valid:
+If a user name and password is correct, the usw stanza in /etc/security/login.cfg is checked. This stanza sets the maximum number of concurrent logins in the systemt. If that number is exceeded, the login is denied.
+
+
+root@bb_lpar: /etc/ssh # cat /etc/security/login.cfg
+usw:
+        shells = /bin/sh,/bin/bsh,/bin/csh...
+        maxlogins = 32767                      <--this shows maximum concurrent logins on the system
+        logintimeout = 60
+        maxroles = 8
+        auth_type = STD_AUTH
+
+--------------
+
+5. setup environment:
+If everything is successful, then the user's environment is set using:
+
+/etc/environment                 <--base environment settings (PATH, TZ, LANG...)
+/etc/security/environ            <--defines the environment attributes for users (it is not used too much by users)
+/etc/security/limits             <--defines process resource limits for users (fsize, rss, nofiles...)
+/etc/security/user               <--contains the most important settings, outside of the basics in /etc/passwd(umask, expires, rlogin...)
+
+--------------
+
+6. /etc/motd:
+The login program sets the current directory to the user's HOME directory and displays the content of /etc/motd , date of the last successful login, and the number of unsuccessful login attempts since the last successful login.
+
+(if .hushlogin file is found in the HOME directory these infos will not be displayed)
+
+--------------
+
+7. shell:
+Finally, control is passed to the login shell (as defined in /etc/passwd) which will read /etc/environment and run /etc/profile and $HOME/.profile and $HOME/.kshrc (when using Korn shell).
+
+--------------
+
+When a user logs out, the shell terminates and a new getty process is spawned for that  port.
+
+--------------
+
+Files used for user/environment customization (in login sequence):
+
+1. /etc/environment           <--contains variables specifying the basic environment for all processes ( PATH, TZ, LANG...)
+2. /etc/profile               <-- sets other system-wide default variables (TERM...)
+3. $HOME/.profile             <-- lets you customize your individual working environment (PATH, ENV, PS1...)
+4. $HOME/.kshrc               <--if it is used, user can customize his personal Korn shell environment (set -o vi, alias...)
+
+--------------
+
+USER LOGIN RELATED FILES
+
+/etc/motd                     contains the message to be displayed every time a user logs in to the system.
+/etc/utmp                     contains the record of users logged into the system. (who /etc/utmp)
+/var/adm/wtmp                 records the logins to the system. (who /var/adm/wtmp)
+/var/adm/sulog                records information about su - username
+/etc/environment              sets base environment variables for all processes (PATH, TZ, LANG...) (don't put commands there, only root)
+/etc/profile                  specifies additional environment settings for all users. (TERM...) (only root)
+
+/etc/security/login.cfg       contains configuration information for login and user authentication.
+/etc/security/lastlog         contains the last login attributes for users
+/etc/security/failedlogin     records all failed login attempts. (who /etc/security/failedlogin)
+/etc/security/environ         defines the environment attributes for users (it is not used too much by users)
+/etc/security/limits          defines process resource limits for users (fsize, rss, nofiles...)
+/etc/security/user            contains the most important settings, outside of the basics in /etc/passwd(umask, expires, rlogin...)
+
+$HOME/.profile                specifies user specific settings (user can overwrite settings from /etc/environment and /etc/profile)
+                              ($HOME/profile contains ENV=$HOME/.kshrc)
+$HOME/.kshrc                  user can customize his Korn shell environment (set -o vi, alias...) (it will be run when opening new shell)
+
+--------------
+
+unsuccessful login count reset:
+
+If a user's unsuccessful login count reaches a max value (loginretries=<value>), the user is not enabled to login into the system.
+
+3004-303 There have been too many unsuccessful login attempts; please see
+        the system administrator.
+
+
+1. check unsuccessful login count:
+root@bb_lpar: / # lsuser -f bb
+        loginretries=3                                        <--shows max failed login retries, it is contained in /etc/security/user
+        pwdwarntime=0
+        account_locked=false
+        unsuccessful_login_count=5                            <--it is higher than the max value
+
+2. reset the login count:
+root@bb_lpar: / # chuser unsuccessful_login_count=0 <user>    <--it will reset to 0 the number of unsuccessful login count
+
+--------------
+
+locked account reset:
+
+It is possible, that an administrator disables a user to use the system temporary by locking it account.
+
+3004-301 Your account has been locked; please see the system administrator.
+
+1. check user account setting:
+root@bb_lpar: / # lsuser -f bb
+        account_locked=true                                    <--it will show if account is locked
+        minage=0
+        maxage=0
+
+2. unlock the account:
+root@bb_lpar: / # chuser account_locked=false bb               <--it will remove lock from the account
+
+
+--------------
+
+user max concurrent logins are too high
+
+Maximum concurrent sessions of a user can be limited in /etc/security/user, by maxulogs entry.
+If it is not limited, in the file there are no maxulogs entry and lsuser won't show anything, it can be checked only if it is set to a value.
+
+Maximum number of login sessions exceeded for user <user>
+
+1. check maxulogs entry of the user
+root@bb_lpar: / # lsuser -f bb
+        pwdchecks=
+        dictionlist=
+        maxulogs=3                                             <--it will show maximum concurrent allowed login sessions of a user
+                                                               (this vallue can be checked in /etc/security/user as well)
+
+2. change to a higher value (0 means unlimited)
+root@bb_lpar: / # chuser maxulogs=0 <user>                     <--it will change to unlimited

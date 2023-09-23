@@ -1,0 +1,98 @@
+====== Redhat Server Post installation work ======
+
+  - Correct hostname. Cobler sometimes reverse lookup the IP and set up the hostname. So a DNS error can change the hostname(temporary root password 'abc123')<code>sudo vi /etc/sysconfig/network</code>Change the FQDN to shortname.Also edit hosts file<code>sudo vi /etc/hosts</code>Remove the ipv6 line. And add a line for the host itself.
+  - Change default password(abc123) to the standard unix password<code>passwd root</code>
+  - Add Centralized syslog entry<code>echo 'authpriv.info      @pablsv01' | sudo tee -a /etc/rsyslog.conf
+sudo service rsyslog restart</code>
+  - Remove the Redhat repository<code>rm /etc/yum.repos.d/rhel-source.repo</code>
+  - Modify the local.repo file with the latest repository<code>sudo vi /etc/yum.repos.d/local.repo</code>Remove everything except the following depending on the OS and type.
+    - RHEL6 64 bit<code>[local-rhel-6.4-x86_64]
+name=local-rhel-6.4-x86_64
+baseurl=http://pablsv01/sources/rhel-6.4-x86_64/
+enabled=1
+gpgcheck=0
+[local-tenneco-noarch]
+name=local-tenneco-noarch
+baseurl=http://pablsv01/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0</code>
+  - [[unix:setupresolv.conf|Setup resolv.conf]]
+  - [[unix:setupntp&#redhat|Setup NTP]]
+  - Configure default ssh configs<code>scp taitc118:/prod/images/etc/global_ssh_config /etc/ssh/ssh_config</code>
+  - Setup SSH keys for NIM server<code>rsync -avv taitc118:/root/.ssh/authorized_keys /root/.ssh/authorized_keys</code>
+  - Install xinetd<code>sudo yum -y install xinetd</code>Enable and start it<code>chkconfig --level 234 xinetd on
+service xinetd start</code>
+  - [[unix:installsysinter|Install sysinter ]]
+  - Install cfg2html<code>sudo yum -y install cfg2html-linux-2.66-2.noarch</code>
+  - Install Korhshell<code>sudo yum -y install ksh
+sudo ln -s /bin/ksh /usr/bin/ksh</code>
+  - Install these libraries for openview
+    - RHEL <code>sudo yum -y install libgcc.i686 libstdc++.i686 compat-libstdc++-33-3.2.3-69.el6.i686</code>
+  - Add the TMOUT variable to /etc/profile if it wasn't a clone<code>sudo vi /etc/profile</code><code># Automatic logout, include in export line if uncommented
+TMOUT=3600
+readonly TMOUT</code>
+  - Copy the scripts<code>mkdir -p /usr/local/scripts
+scp taitc118:/usr/local/scripts/* /usr/local/scripts/</code>
+  - Create a file /var/adm/.information which explains the host's role and mksysb target e.g.<code>mkdir -p /var/adm ; vi /var/adm/.information</code>Enter these details<code>mksysbhost:
+location:
+rack:
+virtual:
+virtualization:
+physhost:
+appname:
+role:
+contacts:
+function:
+asset owner:
+asset owner email:ta-unix@tenneco.com
+asset owner phone:+1-847-482-6440
+application owner:
+department:GIOS
+status:Active
+part number:
+vendor Service Tag:N/A
+express code:N/A
+company asset tag:N/A
+cage/room:LDC Datacenter
+rack position:
+private IP: N/A
+mac address:
+wwn:
+warranty start date:
+warranty end date:
+warranty number:
+warranty type:
+maintenance start date:
+maintenance end date:
+maintenance number:
+maintenance type:
+vendor:
+classification level:Critical
+business criticality:High</code>
+  - Copy the sudoers file from the NIM server taitc118<code>scp taitc118:/prod/images/etc/sudoers /etc/sudoers</code>
+  - [[unix:usersandgroups&#linux|Create basic unix group and users]]
+  - Schedule standard cron jobs<code>03 03 * * 6 /usr/local/scripts/clean_var 1>/dev/null 2>&1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1>/dev/null 2>&1</code>
+  - Send ticket for netbackup
+  - Send ticket for Monitoring
+  - Send a ticket to "GIOS Operations - Entitlement" to add the systems.
+  - On VMWare VMs, 
+    - [[unix:vmware:vmwaretools|Install VMWare tools]]
+    - Install SYMCquiesce, SYMCquiesce is a utility to quiesce the IO during a snapshopt backup.<code>sudo scp taitc118:/prod/images/netbackup-vm/SYMCquiesce-*$(uname -i).rpm /var/tmp/
+sudo rpm -Uvh /var/tmp/SYMCquiesce-*$(uname -i).rpm</code>
+  - Install and configure SNMPD<code>sudo yum install net-snmp -y</code>Configure it<code>sudo mv /etc/snmp/snmpd.conf /etc/snmp/snmpd.conf.Original
+sudo vi /etc/snmp/snmpd.conf</code>Add this config<code>syslocation Server Room
+syscontact Sysadmin (root@localhost)
+
+rocommunity oicu812 10.32.6.113 
+rocommunity oicu812 10.32.8.188 
+rocommunity oicu812 10.32.8.187 
+rocommunity oicu812 10.32.8.191
+rocommunity oicu812 10.56.1.144
+trapsink   10.32.8.191   oicu812
+trap2sink  10.32.8.191   oicu812</code>Start snmpd<code>sudo chkconfig --level 234 snmpd on
+sudo service snmpd start</code>
+  - Add the system to UUMA
+    - Login to taqa1a03 and add the hostname to /home/oracle/uuma/hosts.txt<code>vi /home/oracle/uuma/hosts.txt</code>
+  - Perform a reboot
+  - [[unix:security|Systems in the DMZ - perform these steps]]

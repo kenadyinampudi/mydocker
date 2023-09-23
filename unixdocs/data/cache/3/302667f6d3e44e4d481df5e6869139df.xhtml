@@ -1,0 +1,69 @@
+
+<h1 class="sectionedit1" id="installing_lpar2rrd_agent_-_aix">Installing LPAR2RRD agent - AIX</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to pcdcunxaxap01 and set a variable to define the target system<pre class="code">export targethost=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the rpm to target<pre class="code">sudo scp /prod/images/rpms/lpar2rrd/lpar2rrd-agent-5.05-8.ppc.rpm ${targethost}:/var/tmp/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install and configure lpar2rrd agent </div>
+<ol>
+<li class="level2"><div class="li"> Login to target system<pre class="code">sudo ssh ${targethost}</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create the user<pre class="code">sudo /usr/bin/mkuser id=2209 pgrp=staff groups=staff home=/home/lpar2rrd shell=/usr/bin/ksh gecos=&quot;Micro partition Data collection&quot; lpar2rrd</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the agent package<pre class="code">sudo rpm -Uvh /var/tmp/lpar2rrd-agent-5.05-8.ppc.rpm</pre>
+
+<p>
+Cleanup
+</p>
+<pre class="code">sudo rm /var/tmp/lpar2rrd-agent-5.05-8.ppc.rpm</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Enable cron access for lpar2rrd<pre class="code">echo &quot;lpar2rrd&quot; | sudo tee -a /var/adm/cron/cron.allow</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add the script to crontab<pre class="code">cat &lt;&lt; EOF | sudo tee /var/spool/cron/crontabs/lpar2rrd
+* * * * * /usr/bin/perl /opt/lpar2rrd-agent/lpar2rrd-agent.pl lpar2rrd &gt; /var/tmp/lpar2rrd-agent.out 2&gt;&amp;1
+EOF</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Refresh cron<pre class="code">ps -ef | grep cron | grep -v grep | awk &#039;{print $2}&#039; | xargs -n1 sudo kill</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Installing LPAR2RRD agent - AIX" [1-1157] -->
+<h1 class="sectionedit2" id="installing_lpar2rrd_agent_-_rhel">Installing LPAR2RRD agent - RHEL</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create the user<pre class="code">sudo useradd -g users -d /home/lpar2rrd -c &quot;Micro partition Data collection&quot; -m -u 2209 lpar2rrd
+echo &quot;lpar2rrd:sa7uSbZX5aYMU&quot; | sudo chpasswd -e
+sudo chage -M -1 lpar2rrd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron access<pre class="code">echo &quot;lpar2rrd&quot; | sudo tee -a /etc/cron.allow</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the client<pre class="code">sudo yum -y install lpar2rrd-agent</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the cron job<pre class="code">cat &lt;&lt; EOF | sudo tee /var/spool/cron/lpar2rrd
+* * * * * /usr/bin/perl /opt/lpar2rrd-agent/lpar2rrd-agent.pl lpar2rrd &gt; /var/tmp/lpar2rrd-agent.out 2&gt;&amp;1
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart cron<pre class="code">sudo systemctl restart crond</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Installing LPAR2RRD agent - RHEL" [1158-] -->

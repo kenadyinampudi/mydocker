@@ -1,0 +1,234 @@
+
+<h1 class="sectionedit1" id="storage_migration_-_tamon055">Storage Migration - tamon055</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Storage Migration - tamon055" [1-44] -->
+<h2 class="sectionedit2" id="shutdown_applications">Shutdown Applications</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Run the RC script that brings down application<pre class="code">sudo /etc/rc.d/rc2.d/K02content
+sudo /etc/rc.d/rc2.d/K02plotmng
+sudo /etc/rc.d/rc2.d/K02UnicenterAT</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure applications are shutdown.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Shutdown Applications" [45-284] -->
+<h2 class="sectionedit3" id="fix_ntp">Fix NTP</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Fix NTP<pre class="code">sudo cp /etc/ntp.conf /etc/ntp.conf.07262014
+sudo cp /home/x1kxk630/sanmigration/ntp.conf /etc/ntp.conf
+sudo stopsrc -s xntpd
+sudo chrctcp -S -a xntpd
+date ; sudo ntpdate -u 10.1.1.1 ; date
+sudo xntpdc -l</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Fix NTP" [285-535] -->
+<h2 class="sectionedit4" id="start_the_copy_process">Start the copy process</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Rename old filesystems with a /OLD prefix and disable automount<pre class="code">sudo chfs -A no -m /OLD/oracle /oracle
+sudo chfs -A no -m /OLD/sapdb /sapdb
+sudo chfs -A no -m /OLD/sapdb/CDB /sapdb/CDB
+sudo chfs -A no -m /OLD/sapdb/CDB/archivelog /sapdb/CDB/archivelog
+sudo chfs -A no -m /OLD/sapdb/CDB/reorg /sapdb/CDB/reorg
+sudo chfs -A no -m /OLD/sapdb/CDB/sapdata /sapdb/CDB/sapdata
+sudo chfs -A no -m /OLD/sapdb/CDB/saplog /sapdb/CDB/saplog
+sudo chfs -A no -m /OLD/sapdb/SDB /sapdb/SDB
+sudo chfs -A no -m /OLD/sapdb/SDB/archivelog /sapdb/SDB/archivelog
+sudo chfs -A no -m /OLD/sapdb/SDB/reorg /sapdb/SDB/reorg
+sudo chfs -A no -m /OLD/sapdb/SDB/sapdata /sapdb/SDB/sapdata
+sudo chfs -A no -m /OLD/sapdb/SDB/saplog /sapdb/SDB/saplog
+sudo chfs -A no -m /OLD/IOS/software /IOS/software
+sudo chfs -A no -m /OLD/opt/seal /opt/seal
+sudo chfs -A no -m /OLD/application /application
+sudo chfs -A no -m /OLD/application/plpcs /application/plpcs
+sudo chfs -A no -m /OLD/application/plpcsc /application/plpcsc
+sudo chfs -A no -m /OLD/home/dataload /home/dataload
+sudo chfs -A no -m /OLD/opt/CA /opt/CA
+sudo chfs -A no -m /OLD/sapdb/backups /sapdb/backups</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount the old mounts<pre class="code">sudo umount /sapdb/backups
+sudo umount /sapdb/SDB/saplog
+sudo umount /sapdb/SDB/sapdata
+sudo umount /sapdb/SDB/reorg
+sudo umount /sapdb/SDB/archivelog
+sudo umount /sapdb/SDB
+sudo umount /sapdb/CDB/saplog
+sudo umount /sapdb/CDB/sapdata
+sudo umount /sapdb/CDB/reorg
+sudo umount /sapdb/CDB/archivelog
+sudo umount /sapdb/CDB
+sudo umount /sapdb
+sudo umount /oracle
+sudo umount /opt/seal
+sudo umount /opt/CA
+sudo umount /home/dataload
+sudo umount /application/plpcsc
+sudo umount /application/plpcs
+sudo umount /application
+sudo umount /IOS/software</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the old filesystems<pre class="code">sudo mount /OLD/oracle
+sudo mount /OLD/sapdb
+sudo mount /OLD/sapdb/CDB
+sudo mount /OLD/sapdb/CDB/archivelog
+sudo mount /OLD/sapdb/CDB/reorg
+sudo mount /OLD/sapdb/CDB/sapdata
+sudo mount /OLD/sapdb/CDB/saplog
+sudo mount /OLD/sapdb/SDB
+sudo mount /OLD/sapdb/SDB/archivelog
+sudo mount /OLD/sapdb/SDB/reorg
+sudo mount /OLD/sapdb/SDB/sapdata
+sudo mount /OLD/sapdb/SDB/saplog
+sudo mount /OLD/IOS/software
+sudo mount /OLD/opt/seal
+sudo mount /OLD/application
+sudo mount /OLD/application/plpcs
+sudo mount /OLD/application/plpcsc
+sudo mount /OLD/home/dataload
+sudo mount /OLD/opt/CA
+sudo mount /OLD/sapdb/backups</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start the copy processes</div>
+<ol>
+<li class="level2"><div class="li"> Thread 1<pre class="code">sudo /home/x1kxk630/sanmigration/thread1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Thread 2<pre class="code">sudo /home/x1kxk630/sanmigration/thread2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Thread 3<pre class="code">sudo /home/x1kxk630/sanmigration/thread3</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Thread 4<pre class="code">sudo /home/x1kxk630/sanmigration/thread4</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Thread 5<pre class="code">sudo /home/x1kxk630/sanmigration/thread5</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Start the copy process" [536-3314] -->
+<h2 class="sectionedit5" id="rename_mount_points">Rename mount points</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Rename the new filesystems to the correct mount point.<pre class="code">sudo chfs -m /oracle /NEW/oracle
+sudo chfs -m /sapdb /NEW/sapdb
+sudo chfs -m /sapdb/CDB /NEW/sapdb/CDB
+sudo chfs -m /sapdb/CDB/archivelog /NEW/sapdb/CDB/archivelog
+sudo chfs -m /sapdb/CDB/reorg /NEW/sapdb/CDB/reorg
+sudo chfs -m /sapdb/CDB/sapdata /NEW/sapdb/CDB/sapdata
+sudo chfs -m /sapdb/CDB/saplog /NEW/sapdb/CDB/saplog
+sudo chfs -m /sapdb/SDB /NEW/sapdb/SDB
+sudo chfs -m /sapdb/SDB/archivelog /NEW/sapdb/SDB/archivelog
+sudo chfs -m /sapdb/SDB/reorg /NEW/sapdb/SDB/reorg
+sudo chfs -m /sapdb/SDB/sapdata /NEW/sapdb/SDB/sapdata
+sudo chfs -m /sapdb/SDB/saplog /NEW/sapdb/SDB/saplog
+sudo chfs -m /IOS/software /NEW/IOS/software
+sudo chfs -m /opt/seal /NEW/opt/seal
+sudo chfs -m /application /NEW/application
+sudo chfs -m /application/plpcs /NEW/application/plpcs
+sudo chfs -m /application/plpcsc /NEW/application/plpcsc
+sudo chfs -m /home/dataload /NEW/home/dataload
+sudo chfs -m /opt/CA /NEW/opt/CA
+sudo chfs -m /sapdb/backups /NEW/sapdb/backups</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount the new filesystems and remount them to the correct mount point<pre class="code">sudo umount /NEW/sapdb/backups
+sudo umount /NEW/sapdb/SDB/saplog
+sudo umount /NEW/sapdb/SDB/sapdata
+sudo umount /NEW/sapdb/SDB/reorg
+sudo umount /NEW/sapdb/SDB/archivelog
+sudo umount /NEW/sapdb/SDB
+sudo umount /NEW/sapdb/CDB/saplog
+sudo umount /NEW/sapdb/CDB/sapdata
+sudo umount /NEW/sapdb/CDB/reorg
+sudo umount /NEW/sapdb/CDB/archivelog
+sudo umount /NEW/sapdb/CDB
+sudo umount /NEW/sapdb
+sudo umount /NEW/oracle
+sudo umount /NEW/opt/seal
+sudo umount /NEW/opt/CA
+sudo umount /NEW/home/dataload
+sudo umount /NEW/application/plpcsc
+sudo umount /NEW/application/plpcs
+sudo umount /NEW/application
+sudo umount /NEW/IOS/software</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the new filesystems<pre class="code">sudo mount /IOS/software
+sudo mount /application
+sudo mount /application/plpcs
+sudo mount /application/plpcsc
+sudo mount /home/dataload
+sudo mount /opt/CA
+sudo mount /opt/seal
+sudo mount /oracle
+sudo mount /sapdb
+sudo mount /sapdb/CDB
+sudo mount /sapdb/CDB/archivelog
+sudo mount /sapdb/CDB/reorg
+sudo mount /sapdb/CDB/sapdata
+sudo mount /sapdb/CDB/saplog
+sudo mount /sapdb/SDB
+sudo mount /sapdb/SDB/archivelog
+sudo mount /sapdb/SDB/reorg
+sudo mount /sapdb/SDB/sapdata
+sudo mount /sapdb/SDB/saplog
+sudo mount /sapdb/backups</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount the local/old filesystems<pre class="code">sudo umount /OLD/sapdb/backups
+sudo umount /OLD/sapdb/SDB/saplog
+sudo umount /OLD/sapdb/SDB/sapdata
+sudo umount /OLD/sapdb/SDB/reorg
+sudo umount /OLD/sapdb/SDB/archivelog
+sudo umount /OLD/sapdb/SDB
+sudo umount /OLD/sapdb/CDB/saplog
+sudo umount /OLD/sapdb/CDB/sapdata
+sudo umount /OLD/sapdb/CDB/reorg
+sudo umount /OLD/sapdb/CDB/archivelog
+sudo umount /OLD/sapdb/CDB
+sudo umount /OLD/sapdb
+sudo umount /OLD/oracle
+sudo umount /OLD/opt/seal
+sudo umount /OLD/opt/CA
+sudo umount /OLD/home/dataload
+sudo umount /OLD/application/plpcsc
+sudo umount /OLD/application/plpcs
+sudo umount /OLD/application
+sudo umount /OLD/IOS/software</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Rename mount points" [3315-6313] -->
+<h2 class="sectionedit6" id="start_the_applications">Start the applications</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Run the RC start script<pre class="code">sudo /etc/rc.d/rc2.d/S99content
+S99UnicenterAT
+S99plotmng</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Start the applications" [6314-] -->

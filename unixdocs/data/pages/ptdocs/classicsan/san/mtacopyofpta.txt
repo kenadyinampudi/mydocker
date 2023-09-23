@@ -1,0 +1,73 @@
+====== Creating PTA copy using Puresnapshot======
+
+===== Define variables depending on the system we are working against =====
+
+  - Login to the admin server<code>ssh pgunap01</code>
+  - Define some variables for ease of use
+    - If doing PTA refresh<code>export INSTANCE="PTA"
+export SRCHOST="tapr1d01"
+export ARRAY="ldcpm70v1"</code>
+  - export some additional variables<code>export ADMHOST="pgunap01"
+export TESTHOST="pocafasv03"
+export SSH2PURE="sudo -u sanmontr ssh pureuser@${ARRAY}"</code>
+
+===== Create a new protection group for PTA database volumes =====
+
+  -Create an empty protection group<code>${SSH2PURE} purepgroup create ptaprmybkp1</code>
+  - Add all PTA database volumes to the protection group<code>for volume in {001..043}
+do
+   ${SSH2PURE} purepgroup setattr --addvollist ptadbdata_${volume} ptaprmybkp1
+done</code>
+  - List the protection group<code>${SSH2PURE} purepgroup list ptaprmybkp1</code>
+  ===== Create a snapshot of the protection group =====
+
+  - Ask DBA team to put PTA  database on tapr1d01 hot backup mode.
+  - Take a snapshot of PTA tapr1d01<code>${SSH2PURE} purepgroup snap --suffix mtarefresh ptaprmybkp1</code>
+  - Ask DBA team to put the DB in to end backup mode
+  - Pick the  snapshot to restore<code>export SNAP="ptaprmybkp1.mtarefresh"</code>
+  - List snapshot volumes<code>${SSH2PURE} purevol list --snap --pgrouplist ${SNAP}</code>
+
+===== Copy the snapshots to target volumes=====
+
+  - Export a start number for volume<code>export vol_no=500</code>
+  - Store the snapshot volumes in a variable<code>export snapshots=$(${SSH2PURE} purevol list --snap --pgrouplist ${SNAP} --notitle | grep 250G | awk '{print $1}' | tr "\n" " ")</code>
+  - Copy the snapshots to volumes<code>target_vols=""
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${TESTHOST}_${vol_no}
+   target_vols="${target_vols} ${TESTHOST}_${vol_no}"
+   vol_no=$((vol_no+1))
+done</code>
+  -Preserve the target volumes in a file<code>echo ${target_vols} > ${INSTANCE}.poc.volumes</code>
+  -Connect the volumes to TEST host<code>${SSH2PURE} purevol connect --host ${TESTHOST} ${target_vols}</code>
+
+===== Mount the filesystems and handover to DBA team =====
+
+  -Login to the target host<code>ssh ${TESTHOST}</code>
+  -Take a snapshot of the existing disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  -Discover new devices<code>sudo cfgmgr</code>
+  -Take a snapshot of the new disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+  -Copy file_systems.txt from the source system.<code>scp tapr1d01:/usr/local/scripts/file_systems.txt .</code>
+  -Recreate the VGs and change the PVIDs<code>cat file_systems.txt | sed -n '/Printing diskmap/,/Done Printing diskmap/'p \
+| grep hdisk | grep datavg > diskmap</code>
+  -fsck and mount them<code>for VG in $(awk -F: '{print $NF}' diskmap | sort -u )
+do
+   grep ":${VG}$" diskmap | awk -F: '{print $2}' > ${VG}.pvids
+   disks=$(lspv | grep -wf ${VG}.pvids | awk '{print $1}' | tr "\n" " " )
+   sudo recreatevg -Y/ -L/ -y ${VG} ${disks}
+   for fs in $(lsvgfs ${VG} )
+   do
+      sudo fsck -y ${fs}
+      NEWFS=$(echo ${fs} | sed "s;PTA;MTA;g")
+      sudo chfs -m ${NEWFS} ${fs}
+      sudo mkdir -p ${NEWFS}
+      sudo mount ${NEWFS}
+   done      
+done</code>
+  -Handover the system to DBA for recovery.
+  -DBA to recover DB on pocafasv03.
+
+
+  
+
+

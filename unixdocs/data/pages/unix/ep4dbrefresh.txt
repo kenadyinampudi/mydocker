@@ -1,0 +1,85 @@
+====== EP4 Data refresh documentation ======
+
+^Source System^Sourcve DC^Target System^Target DC^
+|sfldmilx292  |CDC PTCA  |acdcep4lxdb01|CDC MPPS |
+
+
+==== VMware steps ====
+
+  - Login to MPPS vCenter using PowerCLI<code>Connect-VIServer -server cdcvilms156.driv.com</code>
+  - Rescan for new devices ''NON-PROD-LINUX2'', Using GUI , Right -click on the "NON-PROD-LINUX2" cluster and select "Storage" and then "Rescan storage". Below is the way to do it using cli (still needs to be adjusted to scan vmfs so use GUI instead )<code>Get-Cluster NON-PROD-LINUX2 | Get-VMHost | Get-VMHostStorage -RescanAllHba</code>
+  - Setup ESXCLI<code>$esxcli = Get-EsxCli -VMHost cdcvilvm183.driv.com</code>
+  - Re-signature duplicated datastores<code>$vmfsname = "SAP-EP4-PT-002"
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+$vmfsname = "SAP-EP4-PT-004"
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+$vmfsname = "SAP-EP4-PT-005"
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+
+$vmfsname = "SAP-EP4-PT-006"
+$esxcli.storage.vmfs.snapshot.list($vmfsname)
+$esxcli.storage.vmfs.snapshot.resignature($vmfsname)
+$esxcli.storage.vmfs.snapshot.list($vmfsname)</code>
+  - Check if all the datastores have been re-signatured<code>get-datastore | Select-Object name |grep SAP-EP4-PT | grep snap</code> You will get the default Names of the data stores, rename them using the below syntax.
+  - Rename datastores to their final names<code>Get-DataStore -Name snap-******-SAP-EP4-PT-002 | Set-DataStore -Name CDC-PURE-APOLLO-EP4DATA02
+Get-DataStore -Name snap-******-SAP-EP4-PT-004 | Set-DataStore -Name CDC-PURE-APOLLO-EP4DATA04 
+Get-DataStore -Name snap-******-SAP-EP4-PT-005 | Set-DataStore -Name CDC-PURE-APOLLO-EP4DATA05
+Get-DataStore -Name snap-******-SAP-EP4-PT-006 | Set-DataStore -Name CDC-PURE-APOLLO-EP4DATA06</code>
+  - Rescan for new devices and VMFS on ''NON-PROD-LINUX2''<code>Get-Cluster NON-PROD-LINUX2 | Get-VMHost | Get-VMHostStorage -RescanAllHba -RescanVmfs</code>
+  - Connect disks to Virtual Machine<code>New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA06] SFLDMILX292/SFLDMILX292_2.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA06] SFLDMILX292/SFLDMILX292_3.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA06] SFLDMILX292/SFLDMILX292_4.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA06] SFLDMILX292/SFLDMILX292_8.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA05] SFLDMILX292/SFLDMILX292_10.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA05] SFLDMILX292/SFLDMILX292_12.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA04] SFLDMILX292/SFLDMILX292_14.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA04] SFLDMILX292/SFLDMILX292_18.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA06] SFLDMILX292/SFLDMILX292_17.vmdk"
+New-HardDisk -vm acdcep4lxdb01 -Controller "SCSI Controller 0" -DiskPath "[CDC-PURE-APOLLO-EP4DATA02] SFLDMILX292-NEW/SFLDMILX292-NEW_2.vmdk"</code>
+==== Unix Steps ====
+
+  - Login to ''acdcep4lxdb01''
+  - Rescan for new devices<code>for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk '{print $9}' )
+do
+   echo "- - -" | sudo tee ${dir}/scan
+done</code>
+  - Check if all disks are available<code>sudo /sbin/pvs</code>
+  - Activate the volume groups<code>echo "oravg saplogvg sapvg" | xargs -n1 sudo vgchange -a y </code>
+  - Put the fstab for application filesystems, fsck and mount the filesystems<code>sudo cp /etc/fstab /etc/fstab.rootvgonly
+sudo vi /etc/fstab</code>Enter the following filesystems<code>/dev/oravg/oracle2lv      /oracle                 ext3    acl,user_xattr        1 2
+/dev/oravg/oraclelv       /oracle/EP4             ext3    user_xattr            1 2
+/dev/oravg/orabinlv       /oracle/EP4/112_64      ext3    acl,user_xattr        1 2
+/dev/oravg/sapreorglv     /oracle/EP4/sapreorg    ext3    acl,user_xattr        1 2
+/dev/oravg/oraclilv       /oracle/client          ext3    acl,user_xattr        1 2
+/dev/oravg/orastagelv     /oracle/stage/112_64    ext3    acl,user_xattr        1 2
+/dev/saplogvg/oramirrlva  /oracle/EP4/mirrlogA    ext3    acl,user_xattr        1 2
+/dev/saplogvg/oramirrlvb  /oracle/EP4/mirrlogB    ext3    acl,user_xattr        1 2
+/dev/saplogvg/oraloglva   /oracle/EP4/origlogA    ext3    acl,user_xattr        1 2
+/dev/saplogvg/oraloglvb   /oracle/EP4/origlogB    ext3    acl,user_xattr        1 2
+/dev/saplogvg/oraarchlv   /oracle/EP4/oraarch     ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata1lv     /oracle/EP4/sapdata1    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata2lv     /oracle/EP4/sapdata2    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata3lv     /oracle/EP4/sapdata3    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata4lv     /oracle/EP4/sapdata4    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdaalv       /usr/sap/DAA            ext3    acl,user_xattr        1 2
+/dev/oravg/agentlv        /oemagent               ext3    acl,user_xattr        1 2
+/dev/oravg/stagelv        /oracle/stage/12102     ext3    acl,user_xattr        1 2
+/dev/oravg/12102lv        /oracle/EP4/12102       ext3    acl,user_xattr        1 2
+/dev/oravg/orbin19lv      /oracle/EP4/19.0.0      ext3    acl,user_xattr        1 2</code>
+  - FSCK and mount the filesystems<code>for fs in /dev/oravg/oracle2lv /dev/oravg/oraclelv /dev/oravg/orabinlv /dev/oravg/sapreorglv /dev/oravg/oraclilv \
+/dev/oravg/orastagelv /dev/saplogvg/oramirrlva /dev/saplogvg/oramirrlvb /dev/saplogvg/oraloglva \
+/dev/saplogvg/oraloglvb /dev/saplogvg/oraarchlv /dev/sapvg/sapdata1lv /dev/sapvg/sapdata2lv \
+/dev/sapvg/sapdata3lv /dev/sapvg/sapdata4lv /dev/sapvg/sapdaalv /dev/oravg/agentlv /dev/oravg/stagelv \
+/dev/oravg/12102lv /dev/oravg/orbin19lv 
+do
+   sudo fsck -y ${fs}
+   sudo mount ${fs}
+done</code>

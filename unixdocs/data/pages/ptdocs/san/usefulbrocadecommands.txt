@@ -1,0 +1,135 @@
+====== Useful Brocade Commands ======
+For everything, use ''help <command>'' to get help on a given command.  Most likely, this wiki shows a single dash "-" instead of a doubledash "%%--%%"
+^ Zoning Commands ^ ^
+| alicreate “Name”, “domain,port#” | Used to create an alias |
+| alicreate “Name”,”portname1; portname2″ | To create multiple ports under a single alias |
+| alidelete “Name” | To delete an alias |
+| aliadd “Name”, “domain,port#” | To add additional ports to an alias |
+| aliremove “Name”, “domain,port#” | To remove a port from the alias |
+| alishow “AliName” | To show the alias configuration on the switch |
+| zoneObjectRename {old_name} {new_name} | Rename a zone.  Do a cfgsave followed by an cfgenable {configname} after. |
+| zonecreate “Zone Name”, “alias1; alias2″ | To create zones based on alias |
+| zonedelete “ZoneName” | To delete a zone |
+| zoneadd “ZoneName”, “alias name” | To add additional alias into the zone |
+| zoneremove “ZoneName”, “alias name” | To remove an alias from the zone |
+| zoneshow “zoneName” | To show the zone configuration information |
+| cfgcreate “Configname”, “Zone1; Zone2″ | To create configurations by adding in zones |
+| cfgdelete “ConfigName” | To delete a configuration |
+| cfgadd “ConfigName”, “Zone3″ | To add additional zones in the configuration |
+| cfgremove “ConfigName”, “Zone3″ | To remove a zone from the configuration |
+| cfgshow “ConfigName” | To show the details of that configuration |
+| cfgenable “ConfigName” | To enable a configuration on the switch |
+| cfgsave | To have the effective configuration to be written into the flash memory |
+
+^ Show Commands ^ ^
+|  psshow | Displays the status of the power supply |
+| fansshow | Displays the status of the fans |
+| tempshow | Displays the status of the temperature readings |
+| sensorshow | Displays the status of the sensor readings |
+| nsshow | Displays information in the name server |
+| nsshow -t | Displays information in the name server |
+| nsshow -r | Displays the information in the name server along with the state change registration details |
+| nscamshow | Displays detailed information of all the devices connected to all the switches in the fabric (Remote Name Servers) |
+| nsallshow | Displays the 24 bit address of all devices that are in the fabric |
+| licenseshow | Displays all the licenses that have been added in the switch |
+| date | Displays the current date set on the switch |
+| bannershow | Displays the banner that will appear when logging in using the CLI or web tools |
+| httpcfgshow | Displays the JAVA version the switch expects at the management console |
+| switchname | Displays the name of the switch |
+| fabricshow | Displays information of all the switches in the fabric |
+| userconfig –show -a | Displays the account information like role , description , password exp date , locked status |
+| switchstatusshow | Displays the overall status of the switch |
+| switchstatuspolicyshow | Displays policy set for the switch regarding Marginal(Yellow) or Down(Red) error status |
+| portshow | To show the port status |
+| portcfgshow | Displays the speed set for all ports on all slots and other detailed port information |
+| configshow fabric.ops | Displays the parameters of the switch. Ensure all switches in a fabric have the same parameters in order to communicate |
+| configshow fabric.ops.pidFormat | Displays the PID set for a switch Core , Native or Extended edge |
+| switchuptime OR uptime | Displays the uptime for the switch |
+| firmwareshow | Displays the firmware on the switch |
+| version | Displays the current firmware version on the switch |
+| hashow | Displays the status of local and remote CP’s. High availability , heartbeat and synchronization |
+
+^ Port Settings ^ ^
+| portcfgshow | Displays the port settings |
+| portcfg rscnsupr [slot/port] –enable | A registered state change registration is suppressed when a state change occurs on the port |
+| portcfg rscnsupr [slot/port] –disable | A registered state change registration is sent when a state change occurs on the port |
+| portname | To assign a name for a port |
+| portdisable | To disable a port or slot |
+| portenable | To enable a port or slot |
+| portcfgpersistentdisable | To disable a port , status would not change even after rebooting the switch |
+| portcfgpersistentenable | To enable a port , status would not change even after rebooting the switch |
+| portshow | To show the port status |
+| portcfgspeed , | To set speed for a port#te – 0:auto negotiated 1,2,4 Gbit/sec , 1 : 1Gbit/sec , 2 : 2 Gbit/sec , 4 : 4Gbit/sec |
+| switchcfgspeed | To set speed for all the ports on the switch Note – 0:auto negotiated 1,2,4 Gbit/sec , 1 : 1Gbit/sec , 2 : 2 Gbit/sec , 4 : 4Gbit/sec |
+| portcfgshow | Displays the speed set for all ports on all slots and other detailed port information |
+| portcfgdefault | To set the port settings to default |
+| portcfglongdistance | To set the long distance mode . Default is L0(Normal), as per distance will display LE <=10 kms , L0.5 <=25kms , L1 <=50 kms, L2<=100kms , LD=auto , LS = Static |
+| portcfgeport | Used to disable a port from being a E port |
+
+^ Time and Date Settings ^ ^
+| date | Displays the current date set on the switch |
+| tsclockserver 10.10.1.1 | Instruction for the principal switch to synchronize time with the NTP server (specify the  ip address of the NTP server) |
+| tsclockserver LOCL | Instruction to stop NTP server synchronization (Local time of the switch) |
+| date mmddhhmmyy | To set the time of the switch when the NTP server synchronization is cancelled |
+| tstimezone -5 | To set the time zone for individual switches |
+
+^ License Commands ^ ^
+| licenseshow | Displays all the licenses that are added in the switch |
+| licenseadd | To add a new license to the switch |
+| licenseremove | To remove a license from the switch |
+| licenseidshow | Based on Switch WWN |
+
+^ Banner Commands ^ ^
+| bannershow | Displays the banner that will appear when logging in using the CLI or web tools |
+| bannerset | To set the banner which will appear when logging in using the CLI or web tools |
+| bannerset “” | To remove the bannerset (two quotes) |
+
+^ Password commands ^ ^
+| passwd | To change the password for that particular login |
+| passwdcfg %%--%%set -lowercase 3 uppercase 1 -digits 2 -punctuation 2 -minlength 10 -history 3 | To set the password rules |
+| passwdcfg %%--%%set -minpasswordage 1 | To set the minimum password age in Days |
+| passwdcfg %%--%%set -maxpasswordage 30 | To set the maximum password age in Days |
+| passwdcfg %%--%%set -warning 23 | To set a warning for the expiration Days remaining |
+| passwdcfg %%--%%set -lockoutthreshold 5 | To set the account lockout thresh hold |
+| passwdcfg %%--%%set -lockoutduration 30 | To set the account lockout duration in Minutes |
+| passwdcfg %%--%%setdefault | To restore the password policy to Factory settings (min length – 8, history -1 , lockoutduration – 30) |
+
+^ SNMP Commands ^ ^
+| snmpconfig | snmpconfig for 5.0 above fos |
+| agtcfgset | snmp config for fos below 5.0 |
+| snmpmibcapset | for choosing the MIB’s for the snmp settings |
+
+^ User Configuration ^ ^
+| userconfig %%--%%show -a / userconfig %%--%%show | Displays all the account information like role , description , password expiration date , locked status |
+| userconfig %%--%%add john -r admin -d “John Doe” | To add a new account -r = role , -d = description |
+| userconfig %%--%%show john | Displays all the information for the account john |
+| userconfig %%--%%change -e no | To Disable an account , usually default a/cs like admin and user . But ensure before disabling the admin a/c there is another a/c with admin rights |
+| userconfig %%--%%change -e yes | To Enable an account |
+
+^ Firmware commands ^ ^
+| configupload | Saves the switch config as an ASCII text file to an FTP server |
+| configdownload | To restore a switch configuration from ASCII text file Note – Need to disable the switch before downloading the config file |
+| configure => cfgload attributes : [y] => Ensure secure config upload / download : [y] | Fabric OS v 4.4 & above provides Secure File Copy Protocol (SCP) during upload or download of configurations |
+| firmwaredownload | To download the firmware to be installed on the switch |
+| firmwareshow | To be run after installing the firmware on the switch |
+| version | Displays the current firmware version on the switch |
+| fastboot | Needs to be run after installing the firmware. This does not include the post. |
+| reboot | Needs to be run after installing the firmware. This includes the post. |
+
+^ Miscellaneous commands ^ ^
+| killtelnet | To kill a particular session which is using telnet |
+| configure | To configure a switch |
+| quietmode | To switch off the quiet mode |
+| quietmode 1 | To suppress messages to the console |
+| switchname | Displays the switch name |
+| switchname “EXAMPLE” | To assign a switch name |
+| bannerset | To set the banner which will appear when logging in using the CLI or web tools |
+| timeout | Displays the timeout time set for Telnet session on the switch |
+| timeout 10 | To set a specific timeout time for the Telnet session |
+| switchuptime or uptime | Displays the uptime for the switch |
+| switchcfgspeed | To set speed for all the ports on the switch Note – 0:auto negotiated 1,2,4 Gbit/sec , 1 : 1Gbit/sec , 2 : 2 Gbit/sec , 4 : 4Gbit/sec |
+| fastboot | To reboot the switch without post |
+| reboot | To reboot the switch with the post |
+| switchstatusshow | Displays the overall status of the switch |
+| switchstatuspolicyshow | Displays policy set for the switch regarding Marginal(Yellow) or Down(Red) error status |
+| switchstatuspolicyset | To change the policy set for the switch regarding Marginal(Yellow) or Down(Red) error status |

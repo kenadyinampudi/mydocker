@@ -1,0 +1,200 @@
+
+<p>
+# yum list installed
+# yum list packageName
+# yum remove packageName
+</p>
+
+<p>
+Remove unwanted.
+</p>
+
+<p>
+chkconfig –list | grep &#039;3:on&#039;
+</p>
+
+<p>
+Turnoff ipv6
+</p>
+
+<p>
+#See all set user id files:
+find / -perm +4000
+# See all group id files
+find / -perm +2000
+# Or combine both in a single command
+find / \( -perm -4000 -o -perm -2000 \) -print
+find / -path -prune -o -type f -perm +6000 –ls
+</p>
+
+<p>
+find /dir -xdev -type d \( -perm -0002 -a ! -perm -1000 \) -print
+</p>
+
+<p>
+find /dir -xdev \( -nouser -o -nogroup \) -print
+</p>
+
+<p>
+Remove
+</p>
+
+<p>
+ca::ctrlaltdel:/sbin/shutdown -r -t 4 now
+</p>
+
+<p>
+chkconfig –list | awk &#039;/xinetd based services/,/””/&#039; - will show you all processes/services controlled be xinetd. 
+</p>
+
+<p>
+route | grep link-local
+</p>
+
+<p>
+How to disable zeroconf:
+</p>
+<pre class="code">  1. edit /etc/sysconfig/network and NOZEROCONF=yes
+  2. remove all traces of avahi. </pre>
+
+<p>
+<abbr title="Secure Shell">SSH</abbr> Config / Lockdown
+</p>
+
+<p>
+A few things you must (should) do. There are a pile of other options you may want to consider.
+</p>
+<pre class="code">  1. Change the &#039;PermitRootLogin yes&#039; to &#039;PermitRootLogin no&#039;
+  2. Change the &#039;ListenAddress&#039; to &#039;ListenAddress &lt;ip&gt;&#039;. Where &lt;IP&gt; is your management ip address.
+  3. Change the &#039;IgnoreRhosts no&#039; to &#039;IgnoreRhosts yes&#039;.
+  4. Change the &#039;HostbasedAuthentication yes&#039; to &#039;HostbasedAuthentication no&#039;.
+  5. Change the &#039;PermitEmptyPasswords&#039; to &#039;PermitEmptyPasswords no&#039;.
+  6. Setup a banner. Add a line &#039;Banner /etc/ssh/banner&#039; to /etc/ssh/sshd_config and add the following in /etc/ssh/banner (or whatever you like): </pre>
+
+<p>
+·         There are a couple things you may want to add to the /etc/sysctl.conf file.
+</p>
+
+<p>
+·         # Don&#039;t reply to broadcasts. Prevents joining a smurf attack
+</p>
+
+<p>
+·         net.ipv4.icmp_echo_ignore_broadcasts = 1
+</p>
+
+<p>
+·          
+</p>
+
+<p>
+·         # Enable protection for bad icmp error messages
+</p>
+
+<p>
+·         net.ipv4.icmp_ignore_bogus_error_responses = 1
+</p>
+
+<p>
+·          
+</p>
+
+<p>
+·         # Enable syncookies for SYN flood attack protection
+</p>
+
+<p>
+·         net.ipv4.tcp_syncookies = 1
+</p>
+
+<p>
+·          
+</p>
+
+<p>
+·         # Log spoofed, source routed, and redirect packets
+</p>
+
+<p>
+·         net.ipv4.conf.all.log_martians = 1
+</p>
+
+<p>
+·         net.ipv4.conf.default.log_martians = 1
+</p>
+
+<p>
+·          
+</p>
+
+<p>
+·         # Don&#039;t allow source routed packets
+</p>
+
+<p>
+·         net.ipv4.conf.all.accept_source_route = 0
+</p>
+
+<p>
+·         net.ipv4.conf.default.accept_source_route = 0
+</p>
+
+<p>
+·          
+</p>
+
+<p>
+·         # Turn on reverse path filtering
+</p>
+
+<p>
+·         net.ipv4.conf.all.rp_filter = 1
+</p>
+
+<p>
+·         net.ipv4.conf.default.rp_filter = 1
+</p>
+
+<p>
+·          
+</p>
+
+<p>
+·         # Don&#039;t allow outsiders to alter the routing tables
+</p>
+
+<p>
+·         net.ipv4.conf.all.accept_redirects = 0
+</p>
+
+<p>
+·         net.ipv4.conf.default.accept_redirects = 0
+</p>
+
+<p>
+·         net.ipv4.conf.all.secure_redirects = 0
+</p>
+
+<p>
+·         net.ipv4.conf.default.secure_redirects = 0
+</p>
+
+<p>
+·          
+</p>
+
+<p>
+·         # Don&#039;t pass traffic between networks or act as a router
+</p>
+
+<p>
+·         net.ipv4.ip_forward = 0
+</p>
+
+<p>
+·         net.ipv4.conf.all.send_redirects = 0
+</p>
+
+<p>
+·         net.ipv4.conf.default.send_redirects = 0
+</p>

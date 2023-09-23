@@ -1,0 +1,25 @@
+====== Change IP and hostname Redhat (relay1, relay2, ns1 and ns2) ======
+
+Swap identity of these servers.
+
+^Hostname^Old IP^New IP^
+|relay1|170.64.0.70|170.64.0.73|
+|relay2|170.64.0.71|170.64.0.79|
+|ns1|170.64.0.94|170.64.0.95|
+|ns2|170.64.0.150|170.64.0.152|
+
+  - Shut down old server(s) OR change their IPs to the temporary IPs and shutdown.
+  - Login to the new server and backup config files<code>mkdir backups
+sudo cp /etc/hosts backups/
+sudo cp /etc/sysconfig/network-scripts/ifcfg-eth0 backups/
+sudo cp /etc/sysconfig/network backups/</code>
+  - Change the IP address<code>sudo vi /etc/sysconfig/network-scripts/ifcfg-eth0</code>
+  - Change the hostname<code>sudo vi /etc/sysconfig/network</code>
+  - Change the hosts file<code>sudo vi /etc/hosts</code>
+  - From the console, restart the network<code>sudo service network restart</code>OR just reboot<code>sudo init 6</code>
+  - Re-define the hosts on Kickstart / Cobbler.
+  - Cleanup the host SSH keys on NIM server and the build server.
+
+** Backout **
+
+  - Drive to data-centre and power on relay1 and relay2 , probably ns1 ns2 as well ?

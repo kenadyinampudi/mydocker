@@ -1,0 +1,193 @@
+
+<h1 class="sectionedit1" id="linux_lvm_notes">Linux LVM notes</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Linux LVM notes" [1-31] -->
+<h3 class="sectionedit2" id="redhat">Redhat</h3>
+<div class="level3">
+
+</div>
+
+<h5 id="discover_a_newly_added_vmware_disk">Discover a newly added VMWare disk</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Dont know which host has it hence<pre class="code">echo &quot;- - -&quot; | sudo tee /sys/class/scsi_host/host0/scan
+echo &quot;- - -&quot; | sudo tee /sys/class/scsi_host/host1/scan
+echo &quot;- - -&quot; | sudo tee /sys/class/scsi_host/host2/scan</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h5 id="find_free_space_on_lvm">Find free space on LVM</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Check the VGs and find free space<pre class="code">sudo vgs</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h5 id="extend_a_filesystem">Extend a filesystem</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Extend the logical volume<pre class="code">sudo lvextend -L 13G /dev/datavg/fslv12</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Extend the filesystem<pre class="code">sudo resize2fs /dev/datavg/fslv12</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h5 id="create_a_new_filesystem">Create a new filesystem</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Create a logical volume<pre class="code">sudo lvcreate -L 12G -n fslv26 /dev/datavg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a filesystem<pre class="code">sudo mkfs -t ext4 /dev/datavg/fslv26</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make an entry in fstab<pre class="code">echo &quot;/dev/mapper/datavg-fslv26   /data/fsname                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create Mount point and mount the filesystem<pre class="code">sudo mkdir -p /data/fsname
+sudo mount /data/fsname</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Redhat" [32-1040] -->
+<h3 class="sectionedit3" id="suse">SuSE</h3>
+<div class="level3">
+
+</div>
+
+<h5 id="managing_disks">Managing disks</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> List all disks<pre class="code">x1kxk630@paitap01:~&gt; sudo lsscsi
+[2:0:0:16]   disk    EMC      SYMMETRIX        5773  /dev/sda
+[2:0:0:255]  disk    EMC      SYMMETRIX        5773  /dev/sdb
+[2:0:1:0]    disk    EMC      SYMMETRIX        5773  /dev/sdc
+....lines removed....
+[2:0:2:0]    disk    DGC      VRAID            0532  /dev/sdl
+[5:0:1:0]    disk    EMC      SYMMETRIX        5773  /dev/sdj
+[5:0:1:239]  disk    EMC      SYMMETRIX        5773  /dev/sdk</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove a disk<pre class="code">echo 1 | sudo tee -a /sys/block/sdX/device/delete</pre>
+
+<p>
+<strong>sdX</strong> is the device that gets deleted.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Rescan the bus for new disks<pre class="code">sudo rescan-scsi-bus.sh -l</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h5 id="extend_a_filesystem1">Extend a filesystem</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Find out which volume group it is on<pre class="code">grep /oracle/OEM /etc/fstab</pre>
+
+<p>
+It should print something like this
+</p>
+<pre class="code">/dev/datavg01/oracleOEM /oracle/OEM reiserfs   acl,user_xattr        1 2</pre>
+
+<p>
+It is on datavg01
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out if datavg01 has enough space<pre class="code">sudo vgs</pre>
+
+<p>
+It prints
+</p>
+<pre class="code">VG       #PV #LV #SN Attr   VSize  VFree
+  datavg01   1   2   0 wz--n- 20.00G 10.00G</pre>
+
+<p>
+That says it has 10 <abbr title="Gigabyte">GB</abbr> free
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Extend the logical volume<pre class="code">sudo lvextend -L 13G /dev/datavg01/oracleOEM
+  Extending logical volume fslv12 to 13.00 GB
+  Logical volume fslv12 successfully resized</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Extend the filesystem<pre class="code">sudo /sbin/resize_reiserfs /dev/datavg01/oracleOEM
+resize_reiserfs 3.6.19 (2003 www.namesys.com)
+resize_reiserfs: On-line resizing finished successfully.</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h5 id="create_a_new_filesystem1">Create a new filesystem</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Create a logical volume<pre class="code">sudo lvcreate -L 12G -n fslv26 /dev/datavg
+  Logical volume &quot;fslv26&quot; created</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a filesystem<pre class="code">sudo /sbin/mkreiserfs -f /dev/datavg/fslv26
+mkreiserfs 3.6.19 (2003 www.namesys.com)
+....... lines removed .....
+....... lines removed .....
+Initializing journal - 0%....20%....40%....60%....80%....100%
+Syncing..ok
+ReiserFS is successfully created on /dev/datavg/fslv26.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make an entry in fstab<pre class="code">echo &quot;/dev/datavg/fslv26 /oracle/QCU/11203 reiserfs   acl,user_xattr        1 2&quot; | sudo tee -a /etc/fstab</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create Mount point and mount the filesystem<pre class="code">sudo mkdir -p /oracle/QCU/11203
+sudo mount /oracle/QCU/11203</pre>
+</div>
+</li>
+</ul>
+
+</div>
+
+<h5 id="remove_a_filesystem">Remove a filesystem</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Unmount the file system<pre class="code">sudo umount /oracle/TCOG/11203</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the logical volume and file system <pre class="code">sudo lvremove /dev/datavg/fslv36
+Do you really want to remove active logical volume &quot;fslv36&quot;? [y/n]: y
+  Logical volume &quot;fslv36&quot; successfully removed </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove entry from /etc/fstab<pre class="code">sudo vi /etc/fstab</pre>
+
+<p>
+Delete line for file system 
+</p>
+<pre class="code">/dev/datavg/fslv36 /oracle/TCOG/11203 reiserfs   acl,user_xattr        1 2,</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove mount point <pre class="code">sudo rmdir /oracle/TCOG/11203</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "SuSE" [1041-] -->

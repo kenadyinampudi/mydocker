@@ -1,0 +1,68 @@
+====== Purestorage - H1P refresh using pure snapshot ======
+
+===== Prep work =====
+
+  - Login to pgunap01 and set a easy variable for the ssh command<code>export SSH2INXM20="sudo -u sanmontr ssh pureuser@inxpm20v1"</code>
+  - Rename the current data volumes on pehrdb98<code>for volume in {001..019}
+do
+   echo "Renaming h1pdbstandby_${volume} to oldh1pdbstandby_${volume} .."
+   ${SSH2INXM20}  purevol rename h1pdbstandby_${volume} oldh1pdbstandby_${volume}
+done</code>
+  - Create new volumes for h1p standby db<code>for volume in {001..019}
+do
+   ${SSH2INXM20}  purevol create --size 250G h1pdbstandby_${volume}
+done</code>
+
+===== Shutdown standby database and disconnect volumes =====
+
+  - Disconnect old dbdata volumes from pehrdb98
+    - Ask the DBA team to shutdown the database on pehrdb98
+    - Login to pehrdb98, take a snapshot of current config<code>sudo lsvpcfg.sh > lsvpcfg.out.6</code>
+    - Offline and export the VG<code>lsvgfs datavg01 | xargs -n1 sudo umount
+sudo varyoffvg datavg01
+sudo exportvg datavg01</code>
+    - Delete the datavg01 disks<code>grep datavg01 lsvpcfg.out.6 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+    - Disconnect the volumes from pehrdb98. Login to pgunap01<code>for volume in {001..019}
+do
+   echo "Disconnecting oldh1pdbstandby_${volume} from pehrdb98"
+   ${SSH2INXM20} purevol disconnect --host pehrdb98 oldh1pdbstandby_${volume}
+done</code>
+
+===== Create a protection group for H1P primary database volumes =====
+
+  - Create an empty protection group<code>${SSH2INXM20} purepgroup create h1ppridbdata</code>
+  - Add all h1p database columes to the protection group<code>for volume in {001..019}
+do
+   ${SSH2INXM20} purepgroup setattr --addvollist h1pdbprimary_${volume} h1ppridbdata
+done</code>
+  - List the protection group<code>${SSH2INXM20} purepgroup list h1ppridbdata</code>
+
+===== Create a snapshot of the protection group =====
+
+  - Ask DBA team to put H1P primary database on hot backup mode.
+  - Take a snapshot of H1P primary<code>${SSH2INXM20} purepgroup snap --suffix stbyrefresh h1ppridbdata</code>
+  - Ask DBA team to put the DB in to end backup mode
+  - Copy the snapshot to new volumes.<code>for volume in {001..019}
+do
+   echo "Copying snapshot h1ppridbdata.stbyrefresh.h1pdbprimary_${volume} to h1pdbstandby_${volume} "
+   ${SSH2INXM20} purevol copy --overwrite h1ppridbdata.stbyrefresh.h1pdbprimary_${volume} h1pdbstandby_${volume}
+done</code>
+  - Connect the snapshot volumes to pehrdb98<code>for volume in {001..019}
+do
+   ${SSH2INXM20} purevol connect --host pehrdb98 h1pdbstandby_${volume}
+done</code>
+  - Login to pehrdb98<code>sudo lsvpcfg.sh > lsvpcfg.out.7
+sudo cfgmgr
+sudo lsvpcfg.sh > lsvpcfg.out.8</code>
+  - Recreate VG on pehrdb98<code>ssh pehrdb99 lspv | grep datavg01 | awk '{print $2}' > pehrdb99.datavg01.pvids</code>Document the disks<code>lspv | grep -f pehrdb99.datavg01.pvids | awk '{print $1}' | tr "\n" " "</code>Then recreatevg <code>sudo recreatevg -L/ -Y/ -y datavg01 <list of disks from above comand></code>
+  - Run fsck and mount the filesystems<code>for fs in $(lsvgfs datavg01)
+do
+   sudo fsck -y ${fs}
+   if [ ${?} -eq 0 ]
+   then
+      sudo mount ${fs}
+   else
+      echo "Error mounting ${fs} ..."
+   fi      
+done</code>
+  - Handover to DBA team

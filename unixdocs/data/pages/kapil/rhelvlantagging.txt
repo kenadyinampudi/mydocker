@@ -1,0 +1,28 @@
+====== VLAN tagging on RHEL ======
+
+  - First delete all configs related to the physical adapter<code>sudo nmcli con del eth0</code>
+  - Create VLAN200 virtual interface<code>sudo nmcli con add type vlan con-name vlan200 dev eth0 id 200</code>
+  - Configure IPs etc<code>sudo nmcli con mod vlan200 ipv4.addresses 10.x.x.x/24
+# nmcli con mod vlan200 ipv4.gateway 192.x.x.1
+# nmcli con mod vlan200 ipv4.method manual
+# nmcli con up vlan200</code>
+  - This will create a file called<code>/etc/sysconfig/network-scripts/ifcfg-vlan200</code>That contains<code>VLAN=yes
+TYPE=Vlan
+PHYSDEV=eno1
+VLAN_ID=200
+REORDER_HDR=0
+BOOTPROTO=none
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+NAME=vlan200
+UUID=6ca93091-930e-4850-829f-cc62cd15ae3d
+ONBOOT=yes
+IPADDR=10.60.81.40
+PREFIX=24
+GATEWAY=10.60.81.1
+IPV6_PEERDNS=yes
+IPV6_PEERROUTES=yes</code>

@@ -1,0 +1,76 @@
+
+<h1 class="sectionedit1" id="setup_lpar2rrd_client">Setup LPAR2RRD client</h1>
+<div class="level1">
+
+<p>
+<strong> IVM (Scroll down to find standard frame) This one is specific for Blade VIOs that run IVM </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Create the lpar2rrd user<pre class="code">mkuser &quot;id=206&quot; &quot;pgrp=view&quot; &quot;groups=view,staff&quot; &quot;home=/home/lpar2rrd&quot; &quot;shell=/usr/bin/rksh&quot; lpar2rrd</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create DSA keys<pre class="code">su - lpar2rrd
+ssh-keygen -t rsa</pre>
+
+<p>
+Hit enter 3 times
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Add the authorized_keys as root<pre class="code">vi /home/lpar2rrd/.ssh/authorized_keys</pre>
+
+<p>
+Add this key to it
+</p>
+<pre class="code">ssh-dss AAAAB3NzaC1kc3MAAACBAI3dOLUfqbZ+0b0WfwHqmYIjkE9YxznLzCRjnbjmRWDqC3lW3CNv6FCeuWQkjmzcktjYZ7FcfZR7P2/hl46LtgPkpxONCYbGPyr0YoYd+AnWngHO6ZBCKU/rvpBJD+hZ4Agl+PLhji87NlFp9p1quBWOuq5Yo+BTp3QXWZvyVVh/AAAAFQCyxS2OpqDWiAKYI9deAOwajJ1xMwAAAIAdV7cKTWcj7t6bOoEFZtEdj0fJ9Bf9kKP5OCAdP4D6qFQEMzZLYElEF5tpw9ejEiHnNAMZH0a0sK3D1iU59zIss2ldgB9jEmCTRJHLQv83yVACmYyCCutHZyL8y5PejWDZeoNxRGTAMmltU1OCeNxkVu1g5CnMID5okxPjrW3TCgAAAIBGWTIRbZsJ+gfU7nA1VP3kTpZeZtv0Oe5hDnW0LpoOjlJR5jMmGIDpaMWNoerJvYto4UHZyIUS7R2gQRZObXerzOYmQf7N56FeqRDrz7OiLQf58P3eN4l89KjE/0QaIFXb2Wc8KYFCjcPkd0UgQzsYRnGMeooEKY4wGQ1A7K3ng== lpar2rrd@taitc118</pre>
+
+<p>
+and this
+</p>
+<pre class="code">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCyS1CIiMYKFMkA/jfgehukXQD5Sce/MOPNZU+9zrM5JXhHXKq4jw+T4Ve9Hc7zfEJt3ChgVlxvNVfZKOqCEOqae3wFDHsPg6B+zd/5AOOZCZ0pDLloUR095D7nX0udeaYk2TGjlSXqpA+r8WG/iuHpzYdbgTJr0n3hB0yiJ6MpebVfsne82qh5pHv2BgOcz+b8E1ci9ejuwhwBI112noS3t+8L9my5Wq/flbrWArB3mkNAJl2iSfjkggZTTxpdJat38pit+gi2tJHuaQhNSd9GtMTqwjB+7OeouwGzfKRDbkO0CITBBHtME1FayVSeIYheRVBppGtBtF1tZioA9zTL lpar2rrd@taitc118</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Edit /etc/environment and add these to the PATH variable<pre class="code">vi /etc/environment</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">/usr/ios/cli:/usr/ios/utils:/usr/ios/lpm/bin:/usr/ios/oem:/usr/ios/ldw/bin</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Link the .profile<pre class="code">cd /home/lpar2rrd
+ln -sf /usr/ios/cli/.profile .profile</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Provide view access<pre class="code">chuser &quot;roles=ViewOnly&quot; lpar2rrd</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Verify password less login. Logon to taitc118 and su to lpar2rrd<pre class="code">su - lpar2rrd</pre>
+
+<p>
+Now ssh to the vio server and accept the host key
+</p>
+<pre class="code">ssh &lt;vioserver&gt; ls</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> On taitc118, add the system to the lpar2rrd config file.<pre class="code">vi /home/lpar2rrd/lpar2rrd/lpar2rrd.cfg</pre>
+
+<p>
+Add here
+</p>
+<pre class="code"># HMC or IVM hostname(s) (you can specify list of hostnames separated by a space, all in double quotes)
+  HMC_LIST=&quot;tgprhmc2 taprvio3 taprvio4 taprvio5 taprvio6 taprvio7 taprvio8 taprvio9 taprvio14 taprvio15 taprvio17 taprvio18&quot;</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> Standard frame </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Enable data collection on the Managed frame. Login to the HMC and execute this command<pre class="code">chlparutil -m Server-8202-E4C-SN101260T -r config -s 60</pre>
+</div>
+</li>
+</ul>
+
+</div>

@@ -1,0 +1,62 @@
+====== Setting up bonding on RHEL. ======
+
+** In this example we are bonding(or teaming or etherchanneling) the following devices **<code>eth0 + eth1 = bond0      10.0.48/24
+eth2 + eth3 = bond1      10.0.49/24</code>
+
+  - Enable bonding devices<code>sudo vi /etc/modprobe.d/bonding.conf</code>Insert the following lines<code>alias bond0 bonding
+alias bond1 bonding</code>
+  - Configure the bond interfaces<code>sudo vi /etc/sysconfig/network-scripts/ifcfg-bond0</code>Insert the following lines for bond0 **change IPs**<code>DEVICE=bond0
+IPADDR=10.0.48.5
+NETMASK=255.255.255.0
+ONBOOT=yes
+BOOTPROTO=none
+USERCTL=no
+BONDING_OPTS="mode=active-backup fail_over_mac=1"</code>And bond1 **change IPs**<code>sudo vi /etc/sysconfig/network-scripts/ifcfg-bond1</code>these lines<code>DEVICE=bond1
+IPADDR=10.0.49.35
+NETMASK=255.255.255.0
+ONBOOT=yes
+BOOTPROTO=none
+USERCTL=no
+BONDING_OPTS="mode=active-backup arp_interval=3000 arp_ip_target=xx.xx.xx.xx"</code>**xx.xx.xx.xx is the default router for that subnet**
+  - Configure the slave adapters for bond0
+    - eth0<code>sudo vi /etc/sysconfig/network-scripts/ifcfg-eth0</code>Add these<code>DEVICE=eth0
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+USERCTL=no</code>
+    - eth1<code>sudo vi /etc/sysconfig/network-scripts/ifcfg-eth1</code>Add these<code>DEVICE=eth1
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+USERCTL=no</code>
+  - Now that all devices are configured, turn on the devices.<code>sudo service network restart</code>
+  - Check the bonding configuration<code>cat /proc/net/bonding/bond0
+Ethernet Channel Bonding Driver: v3.6.0 (September 26, 2009)
+
+Bonding Mode: fault-tolerance (active-backup)
+Primary Slave: None
+Currently Active Slave: eth0
+MII Status: up
+MII Polling Interval (ms): 0
+Up Delay (ms): 0
+Down Delay (ms): 0
+ARP Polling Interval (ms): 3000
+ARP IP target/s (n.n.n.n form): 170.64.0.129
+
+Slave Interface: eth0
+MII Status: up
+Speed: 1000 Mbps
+Duplex: full
+Link Failure Count: 1
+Permanent HW addr: 00:17:08:50:4b:42
+Slave queue ID: 0
+
+Slave Interface: eth1
+MII Status: up
+Speed: 1000 Mbps
+Duplex: full
+Link Failure Count: 1
+Permanent HW addr: 00:17:08:50:4b:41
+Slave queue ID: 0</code>

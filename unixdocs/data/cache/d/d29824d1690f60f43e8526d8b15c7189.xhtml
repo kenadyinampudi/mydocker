@@ -1,0 +1,210 @@
+
+<h1 class="sectionedit1" id="for_hpcc_nodes">For HPCC Nodes</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "For HPCC Nodes" [1-30] -->
+<h2 class="sectionedit2" id="install_libraries">Install libraries</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Some software libraries are needed for the HPCC to work correctly<pre class="code">sudo yum install libX11 nfs-utils redhat-lsb-core libXft.x86_64 mesa-libGL libSM cockpit -y </pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Install libraries" [31-237] -->
+<h2 class="sectionedit3" id="configuring_winbind">Configuring winbind</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Install the software needed to configure winbind<pre class="code">sudo yum install -y realmd oddjob oddjob-mkhomedir sssd samba-common-tools</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a <a href="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=e0d11627db50a410a5506e9d1396191d&amp;sysparm_category=ed1dd647db3a909079a6a07c13961985" class="urlextern" title="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=e0d11627db50a410a5506e9d1396191d&amp;sysparm_category=ed1dd647db3a909079a6a07c13961985"  rel="nofollow">ticket</a> to the Wintel Team asking them for assistance to join the server to the domain.  This is what could be put in the ticket<pre class="code">Please help to add new Linux servers to domain.  The server join must be done from a Linux session, so kindly propose a time so we can do a screen sharing and let one of the Windows Team member input the credentials.
+
+The server to be joined to domain are:
+pnbrenglxap01
+pnbrenglxap02
+pnbrenglxap03
+pnbrenglxap04
+
+This is documented here.
+http://cdcpillx056.federalmogul.com:8040/doku.php?id=redhatldap#steps</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> During the session with the Wintel Team, enter the following command, where da-unni is the Admin ID for the Wintel Team member in the corresponding domain<pre class="code">realm join -U da-unni pt.int.tenneco.com</pre>
+
+<p>
+ If you are joining to another domain, like apac.int.tenneco.com then the corresponding domain should be mentioned in the <strong>realm join</strong> command.  Please also highlight to the Wintel team member when you give the remote control that when they type the password, no characters (not even asterisk) will be displayed on the screen.  It take about a minute to complete the registration. No message is displayed.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check <strong>/var/log/messages</strong> and look for messages like below to confirm that the join was successful<pre class="code">Sep 12 07:44:31 pnbrenglxap02 realmd: * Successfully enrolled machine in realm
+Sep 12 07:44:31 pnbrenglxap02 realmd: * Successfully enrolled machine in realm
+Sep 12 07:44:31 pnbrenglxap02 realmd: * Successfully enrolled machine in realm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Overwrite /etc/sssd/sssd.conf with the following contents<pre class="code">[sssd]
+domains = pt.int.tenneco.com
+config_file_version = 2
+services = nss, pam
+default_domain_suffix = pt.int.tenneco.com
+full_name_format = %1$s
+
+[domain/pt.int.tenneco.com]
+ad_domain = pt.int.tenneco.com
+krb5_realm = PT.INT.TENNECO.COM
+realmd_tags = manages-system joined-with-samba
+cache_credentials = True
+id_provider = ad
+krb5_store_password_if_offline = True
+default_shell = /bin/bash
+ldap_id_mapping = True
+use_fully_qualified_names = True
+fallback_homedir = /home/%u
+access_provider = ad
+ldap_id_mapping = True
+ignore_group_members=True
+ldap_purge_cache_timeout = 0
+access_provider = simple
+simple_allow_groups = pt linux admins@pt, glkadvancedengineeringgroup@amer, hpccluster_pistons@pt, hpccluster_sealings_and_gaskets@pt, hpccluster_ignition@pt, hpccluster_bearings@pt, hpccluster_clean_air@pt
+simple_allow_users = lsfadmin@pt, huj00059@pt, yaldol28, zhangj51@pt, zhaoj024@pt, tothd021@pt, sedlab46@pt, zeling41@pt, yaldol28@pt, nickeb38@pt, roessa78@pt, yanga065@pt, chowdf62@pt, malghr10@pt, mengl063@pt, panj0044@pt, wangk086@pt, matsue82@pt, jias0030@pt, modolj18@pt, liw00073@pt, shenk023@pt, meissj71@pt, mks0646@amer, houghn13@pt, leedsn16@pt, winarb11@pt, kleinc36@pt, lindnc57@pt, sigelf98@pt, hauerf38@pt, hoppg095@pt, albreh88@pt, merzl037@pt, scherm84@pt, boehmr14@pt, bewers06@pt, wirthf71@pt, mesker21@pt, schyma22@pt, holzma47@pt, groott16@pt</pre>
+
+<p>
+ Update the following sections based on each system or site 
+</p>
+</div>
+<ul>
+<li class="level2"><div class="li"> <strong>simple_allow_groups</strong>, <strong>simple_allow_users</strong> have to be updated with the AD IDs of who would need access to the server. </div>
+</li>
+<li class="level2"><div class="li"> <strong>domains</strong> - pt.int.tenneco.com or apac.int.tenneco.com</div>
+</li>
+<li class="level2"><div class="li"> <strong>default_domain_suffix</strong> = pt.int.tenneco.com or apac.int.tenneco.com</div>
+</li>
+<li class="level2"><div class="li"> <strong>[domain/pt.int.tenneco.com]</strong> - as appropriate</div>
+</li>
+<li class="level2"><div class="li"> <strong>ad_domain</strong> = pt.int.tenneco.com or apac.int.tenneco.com</div>
+</li>
+<li class="level2"><div class="li"> <strong>krb5_realm</strong> = PT.INT.TENNECO.COM or APAC.INT.TENNECO.COM</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Update the /etc/nsswitch.conf to have the passwd &amp; shadow services look up sssd first<pre class="code">passwd:     sss files
+shadow:     sss files</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart the services<pre class="code">sudo systemctl stop sssd &amp;&amp; sudo  rm -f /var/lib/sss/db/* &amp;&amp;  sudo systemctl start sssd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Validate that the winbind lookup works.<pre class="code">getent -s sss passwd lsfadmin</pre>
+
+<p>
+Expected o/op
+</p>
+<pre class="code">[root@pnbrenglxap02 /var/log]# getent -s sss passwd lsfadmin
+lsfadmin:*:1247654788:1247600513:Lsfadmin:/home/lsfadmin:/bin/bash
+[root@pnbrenglxap02 /var/log]#</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install additional softwares that they need<pre class="code">sudo yum install nfs-utils redhat-lsb-core libX11 cockpit -y</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure NFS filesystems as required.</div>
+</li>
+<li class="level1"><div class="li"> Configure /data &amp; /scratch as required.  Some Background info is available <a href="/doku.php?id=changeeventplans:rhel_engineering_builds_disk" class="wikilink1" title="changeeventplans:rhel_engineering_builds_disk">here</a></div>
+</li>
+<li class="level1"><div class="li"> Configure <a href="http://cdcpillx056.federalmogul.com:8040/doku.php?id=unix:transparenthugepages#red_hat" class="urlextern" title="http://cdcpillx056.federalmogul.com:8040/doku.php?id=unix:transparenthugepages#red_hat"  rel="nofollow">Transparent Huge Pages</a></div>
+</li>
+<li class="level1"><div class="li"> Disable Hyperthreading.  This can be done through the <strong>iDRAC –&gt; Configuration –&gt; BIOS Settings –&gt; Processor Settings –&gt; Virtualization (Disabled)</strong> Remember to click <strong>twice</strong> on Apply.  A reboot is required to affect this change.  From the <abbr title="Operating System">OS</abbr>, this can be validated by checking for 0, which means that the hyperthreading is disabled<pre class="code">[root@pnbrenglxap02 ~]# cat /sys/devices/system/cpu/smt/active
+0
+[root@pnbrenglxap02 ~]# </pre>
+
+<p>
+ OR \check this using dmidecode command and make sure that the thread count and core count matches and this is when we know that the hyperthreading is disabled
+</p>
+<pre class="code">[root@pnbrenglxap02 /var/log]# sudo dmidecode -t processor |grep Count
+        Core Count: 8
+        Thread Count: 8
+        Core Count: 8
+        Thread Count: 8
+[root@pnbrenglxap02 /var/log]#</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "Configuring winbind" [238-5831] -->
+<h2 class="sectionedit4" id="configure_active_standby_lan">Configure Active/Standby LAN</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Get the current IP Address and Subnet mask to be used in the bond configuration file<pre class="code">export IPADDRESS=$(host `hostname` |awk &#039;{print $4}&#039;)
+export NETMASK=$(netstat -rn |awk &#039;{print $3}&#039; |grep ^255 |head -n 1)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Backup all the existing NIC config files to your home directory<pre class="code">cd /etc/sysconfig/network-scripts/
+for files in `ls ifcfg*`
+do
+cp -pr $files ~/${files}_$(date +&#039;%Y_%m_%d&#039;)
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Generate the config files - em1 <pre class="code">cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-em1
+DEVICE=em1
+NAME=em1
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Generate the config files - em2 <pre class="code">cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-em2
+DEVICE=em2
+NAME=em2
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Generate the config files - bond0 <pre class="code">cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+NAME=bond0
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=$IPADDRESS
+NETMASK=$NETMASK
+USERCTL=no
+BONDING_OPTS=&quot;mode=active-backup miimon=100&quot;
+EOF</pre>
+
+<p>
+ OR Use this for LACP
+</p>
+<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+NAME=bond0
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=$IPADDRESS
+NETMASK=$NETMASK
+USERCTL=no
+BONDING_OPTS=&quot;mode=802.3ad miimon=100&quot;
+EOF</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> Restart the network &amp; validate. If you have not lost the connectivity, then the connection should be good<pre class="code">sudo systemctl restart network
+ifconfig bond0</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Configure Active/Standby LAN" [5832-] -->

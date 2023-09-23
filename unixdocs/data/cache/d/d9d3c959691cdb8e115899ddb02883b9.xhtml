@@ -1,0 +1,108 @@
+
+<h1 class="sectionedit1" id="post_installation">Post Installation</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Post Installation" [1-34] -->
+<h2 class="sectionedit2" id="aix_physical_lpars">AIX Physical LPARs</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login from the console</div>
+</li>
+<li class="level1"><div class="li"> Remove the existing network adapter configurations and delete any ethernet devices from kernel<pre class="code">ifconfig enX down detach
+lsdev -C | egrep &quot;ent|en|et&quot; | sort | xargs -n1 rmdev -dl # Repeat this step until all errors go away</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Scan for devices <pre class="code">cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> configure etherchannel for the public and backup network<pre class="code"> smitty etherchannel</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure TCP/IP and start the TCP/IP subsystems<pre class="code">smitty tcpip ===&gt;Initial configuration </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the bck network adapter<pre class="code">smitty tcpip ===&gt; Further configuration</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove unwanted jobs from CRON and setup the following jobs</div>
+<ol>
+<li class="level2"><div class="li"> AIX mksysb</div>
+</li>
+<li class="level2"><div class="li"> AIX alt_disk_copy script # Only if this is a SAN booting system.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure Multipathing</div>
+<ol>
+<li class="level2"><div class="li"> Powerpath <pre class="code">powermt config </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> MPIO <pre class="code">lspath # Make sure each disk has two paths </pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Turn on powerpath booting <pre class="code">pprootdev on</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create alt_rootvg <pre class="code"> alt_disk_copy -d &lt;diskname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send a ticket to the openview team to configure Openview on the system</div>
+</li>
+<li class="level1"><div class="li"> Send a ticket to the NBU team to setup backups.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "AIX Physical LPARs" [35-1204] -->
+<h2 class="sectionedit3" id="aix_virtual_lpars">AIX Virtual LPARs</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login from the console</div>
+</li>
+<li class="level1"><div class="li"> Remove the existing network adapter configurations and delete any ethernet devices from kernel<pre class="code">ifconfig enX down detach
+lsdev -C | egrep &quot;ent|en|et&quot; | sort | xargs -n1 rmdev -dl # Repeat this step until all errors go away</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Scan for devices <pre class="code">cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure TCP/IP and start the TCP/IP subsystems<pre class="code">smitty tcpip ===&gt;Initial configuration </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the bck network adapter<pre class="code">smitty tcpip ===&gt; Further configuration</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove unwanted jobs from CRON and setup the following jobs</div>
+<ol>
+<li class="level2"><div class="li"> AIX mksysb</div>
+</li>
+<li class="level2"><div class="li"> AIX alt_disk_copy script # Only if this is a SAN booting system.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Mirror rootvg if the system boots from internal disks. <pre class="code"> extendvg rootvg &lt;diskname&gt;
+mirrorvg -c2 rootvg
+bootlist -m normal &lt;bootdisk&gt; &lt;mirrdisk&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure Multipathing</div>
+<ol>
+<li class="level2"><div class="li"> MPIO <pre class="code">lspath # Make sure each disk has two paths in case of VIO clusters </pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create alt_rootvg <pre class="code"> alt_disk_copy -d &lt;diskname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send a ticket to the openview team to configure Openview on the system</div>
+</li>
+<li class="level1"><div class="li"> Send a ticket to the NBU team to setup backups.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "AIX Virtual LPARs" [1205-] -->

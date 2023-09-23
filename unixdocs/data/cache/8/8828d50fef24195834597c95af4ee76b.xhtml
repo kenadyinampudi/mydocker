@@ -1,0 +1,124 @@
+
+<h1 class="sectionedit1" id="create_standard_sap_filesystems">Create standard SAP filesystems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Look for data disk<pre class="code">sudo fdisk -l | grep ^Disk | grep /dev/sd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Look for currently used pvs<pre class="code">sudo pvs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Identitfy the correct disk to be used for data. In this case, it is /dev/sdb</div>
+</li>
+<li class="level1"><div class="li"> Prepare disk for LVM<pre class="code">sudo pvcreate -f /dev/sdb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create datavg01<pre class="code">sudo vgcreate datavg01 /dev/sdb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create logical volumes<pre class="code">sudo lvcreate -n oracle -L 512MB datavg01
+sudo lvcreate -n oracle_client -L 1024MB datavg01
+sudo lvcreate -n oracle_CTA -L 1024MB datavg01
+sudo lvcreate -n usr_sap -L 1024MB datavg01
+sudo lvcreate -n usr_sap_CTA -L 8192MB datavg01
+sudo lvcreate -n usr_sap_CTA_SUM -L 10240MB datavg01
+sudo lvcreate -n usr_sap_DAA -L 3072MB datavg01
+sudo lvcreate -n usr_sap_hostctrl -L 1024MB datavg01
+sudo lvcreate -n home_ctaadm -L 512MB datavg01
+sudo lvcreate -n home_daaadm -L 512MB datavg01
+sudo lvcreate -n users_unispool -L 2048MB datavg01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">sudo mkfs -t ext4 /dev/datavg01/oracle
+sudo mkfs -t ext4 /dev/datavg01/oracle_client
+sudo mkfs -t ext4 /dev/datavg01/oracle_CTA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_CTA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_CTA_SUM
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_DAA
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_hostctrl
+sudo mkfs -t ext4 /dev/datavg01/home_ctaadm
+sudo mkfs -t ext4 /dev/datavg01/home_daaadm
+sudo mkfs -t ext4 /dev/datavg01/users_unispool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add to /etc/fstab<pre class="code">echo &quot;/dev/mapper/datavg01-oracle   /oracle                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-oracle_client   /oracle/client                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-oracle_CTA   /oracle/CTA                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap   /usr/sap                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_CTA   /usr/sap/CTA                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_CTA_SUM   /usr/sap/CTA/SUM                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_DAA   /usr/sap/DAA                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-usr_sap_hostctrl   /usr/sap/hostctrl                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-home_ctaadm   /home/ctaadm                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-home_daaadm   /home/daaadm                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+echo &quot;/dev/mapper/datavg01-users_unispool   /users/unispool                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the filesystems<pre class="code">sudo mkdir -p /oracle
+sudo mount /oracle
+sudo mkdir -p /oracle/client
+sudo mount /oracle/client
+sudo mkdir -p /oracle/CTA
+sudo mount /oracle/CTA
+sudo mkdir -p /usr/sap
+sudo mount /usr/sap
+sudo mkdir -p /usr/sap/CTA
+sudo mount /usr/sap/CTA
+sudo mkdir -p /usr/sap/CTA/SUM
+sudo mount /usr/sap/CTA/SUM
+sudo mkdir -p /usr/sap/DAA
+sudo mount /usr/sap/DAA
+sudo mkdir -p /usr/sap/hostctrl
+sudo mount /usr/sap/hostctrl
+sudo mkdir -p /home/ctaadm
+sudo mount /home/ctaadm
+sudo mkdir -p /home/daaadm
+sudo mount /home/daaadm
+sudo mkdir -p /users/unispool
+sudo mount /users/unispool
+sudo mkdir -p /comm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the ownership for filesystems as requested<pre class="code">sudo chown oracta:dba /oracle
+sudo chown oracta:dba /oracle/client
+sudo chown oracta:dba /oracle/CTA
+sudo chown ctaadm:sapsys /usr/sap
+sudo chown ctaadm:sapsys /usr/sap/CTA
+sudo chown ctaadm:sapsys /usr/sap/CTA/SUM
+sudo chown daaadm:sapsys /usr/sap/DAA
+sudo chown root:sapsys /usr/sap/hostctrl
+sudo chown ctaadm:sapsys /home/ctaadm
+sudo chown daaadm:sapsys /home/daaadm
+sudo chown unispool:unispool /users/unispool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create NFS mounts. Add these lines to /etc/fstab<pre class="code">sudo vi /etc/fstab</pre>
+
+<p>
+Add these to the end
+</p>
+<pre class="code">xaerdb03:/sapmnt/CTA/exe /sapmnt/CTA/exe nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+xaerdb03:/sapmnt/CTA/profile /sapmnt/CTA/profile nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+xaerdb03:/sapmnt/CTA/global /sapmnt/CTA/global nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+xaerdb03:/usr/sap/trans /usr/sap/trans nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daap3p01:/taedi61 /taedi61 nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+xaerdb03:/sapcomm /sapcomm nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+xaerdb03:/sapcomm/CTA/archive /sapcomm/CTA/archive nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pgadap01:/sapmedia /sapmedia nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+daap3p01:/comm /comm nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Create standard SAP filesystems" [1-5129] -->
+<h1 class="sectionedit2" id="create_user_and_filesystems_for_web_dispatcher">Create user and filesystems for Web dispatcher</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> </div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Create user and filesystems for Web dispatcher" [5130-] -->

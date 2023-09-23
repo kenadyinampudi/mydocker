@@ -1,0 +1,212 @@
+
+<h1 class="sectionedit1" id="what_to_do_when_you_get_a_ticket_for_filesystem_expansion">What to do when you get a ticket for filesystem expansion</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "What to do when you get a ticket for filesystem expansion" [1-73] -->
+<h3 class="sectionedit2" id="make_sure_you_have_adequate_information_to_work_on_the_ticket">Make sure you have adequate information to work on the ticket</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Hostname.</div>
+</li>
+<li class="level1"><div class="li"> Filesystem name.</div>
+</li>
+<li class="level1"><div class="li"> How much additional space is needed.</div>
+</li>
+<li class="level1"><div class="li"> Reason for expansion ( Organic growth or Project work )</div>
+</li>
+<li class="level1"><div class="li"> Figure out the type of host</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Make sure you have adequate information to work on the ticket" [74-315] -->
+<h3 class="sectionedit3" id="special_systems_refresh_scope_or_bcv_backups">Special systems (refresh scope or BCV backups )</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> If the system on which this task is requested is listed below, please look for special instructions</div>
+</li>
+</ol>
+<div class="table sectionedit4"><table class="inline">
+	<tr class="row0">
+		<th class="col0">System Name</th><th class="col1">Instructions</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">peerdb99</td><td class="col1">BCV backups, refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">peerdb98</td><td class="col1">Standby system, refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">pggtdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">pgscdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">pggpdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">pgrmdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">teprbk01</td><td class="col1">BCV backups .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">taqa1d01</td><td class="col1">BCV backups .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row9">
+		<td class="col0">qaerdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row10">
+		<td class="col0">tedv2d01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row11">
+		<td class="col0">qggtdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row12">
+		<td class="col0">qgscdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row13">
+		<td class="col0">qgrmdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+	<tr class="row14">
+		<td class="col0">qggpdb01</td><td class="col1">Refreshes .. There are dedicated volume groups for /oracle/XXX/sapdata… filesystems</td>
+	</tr>
+</table></div>
+<!-- EDIT4 TABLE [480-1897] -->
+</div>
+<!-- EDIT3 SECTION "Special systems (refresh scope or BCV backups )" [316-1899] -->
+<h3 class="sectionedit5" id="understand_the_ticket">Understand the ticket</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> A typical filesystem expansion can come in these fashions<pre class="code">Please increase filesystem /oracle/CTB/sapdata3 by 10G on dahrdb01</pre>
+
+<p>
+OR
+</p>
+<pre class="code">Filesystem /oracle/CTB/sapdata3 is 95% on dahrdb01, please increase the filesystemby 10G</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> From the above ticket, we know,<pre class="code">Hostname is dahrdb01
+Filesystem name is /oracle/CTB/sapdata3
+Filesystem is to be increased by an additional 10G</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Understand the ticket" [1900-2338] -->
+<h3 class="sectionedit6" id="allocating_additional_filesystem_space_-_aix_have_enough_space_on_the_vg">Allocating additional filesystem space - AIX (Have enough space on the VG)</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Find out the volume group the filesystem is on<pre class="code">df -k /oracle/CTB/sapdata3
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/fslv19       6684672   1568888   77%       13     1% /oracle/CTB/sapdata3</pre>
+
+<p>
+The logical volume is <strong>fslv19</strong>
+</p>
+<pre class="code">lslv fslv19 | grep &quot;VOLUME GROUP&quot;
+LOGICAL VOLUME:     fslv19                 VOLUME GROUP:   datavg01</pre>
+
+<p>
+The volume group is <strong>datavg01</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out if the volume group has enough space or not<pre class="code">lsvg datavg01 | grep &quot;FREE PPs:&quot;
+MAX LVs:            256                      FREE PPs:       461 (29504 megabytes)</pre>
+
+<p>
+That says we have 29 Gig free here. Thats good news ….
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Increase the filesystem size<pre class="code">sudo chfs -a size=+10G /oracle/CTB/sapdata3
+Filesystem size changed to 34340864</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> If you get an error message like this<pre class="code">0516-787 extendlv: Maximum allocation for logical volume fslv19
+        is 102.</pre>
+
+<p>
+This means, the “Maximum LPs” parameter set for this logical volume is 102. Hence, the logical volume size is limited to 102 * 64 Meg = 6528Meg. This can be fixed by changing the Max LPs value higher. In this case, an increase by 10G would bring this filesystem(logical volume) to approx 16G, so we need to make the “Max LP” parameter to atleast 16 * 1024 / 64 = 256
+</p>
+<pre class="code">sudo chlv -x 300 fslv19</pre>
+
+<p>
+Once done, retry the chfs command and it will succeed.
+</p>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Allocating additional filesystem space - AIX (Have enough space on the VG)" [2339-3799] -->
+<h3 class="sectionedit7" id="allocating_additional_filesystem_space_-_aix_not_enough_space_on_the_vg">Allocating additional filesystem space - AIX (Not enough space on the VG)</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> What if the ticket said, the filesystem need to be expanded by 50G ?</div>
+</li>
+<li class="level1"><div class="li"> Let us redo the check again<pre class="code">lsvg datavg01 | grep &quot;FREE PPs:&quot;
+MAX LVs:            256                      FREE PPs:       461 (29504 megabytes)</pre>
+
+<p>
+That says we have 29 Gig free here. That is no a good news if we were to expand the filesystem by 50G.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> This means, we need to add an additional disk.</div>
+</li>
+<li class="level1"><div class="li"> List the disks that makes up the volume group<pre class="code">x1kxk630 on dahrdb01:/home/x1kxk630 $ lsvg -p datavg01
+datavg01:
+PV_NAME           PV STATE          TOTAL PPs   FREE PPs    FREE DISTRIBUTION
+hdisk4            active            539         113         30..00..00..00..83
+hdisk5            active            539         166         14..00..00..44..108
+hdisk8            active            539         172         28..00..00..36..108
+hdisk9            active            539         10          01..00..00..00..09</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now check what type disks they are</div>
+<ol>
+<li class="level2"><div class="li"> Virtual <abbr title="Small Computer System Interface">SCSI</abbr> Disk Drive(dahrdb01)<pre class="code">x1kxk630 on dahrdb01:/home/x1kxk630 $ lsdev -Ccdisk | egrep &quot;hdisk4|hdisk5|hdisk8|hdisk9&quot;
+hdisk4 Available  Virtual SCSI Disk Drive
+hdisk5 Available  Virtual SCSI Disk Drive
+hdisk8 Available  Virtual SCSI Disk Drive
+hdisk9 Available  Virtual SCSI Disk Drive</pre>
+
+<p>
+In this case, they are Virtual SCSO Disk Drive. These disks are virtualized by VIOS servers. This <abbr title="Uniform Resource Locator">URL</abbr> will show you a map between the lpar and VIOS servers.<a href="http://unixdocs/doku.php?id=unix:viodisksmap-summary" class="urlextern" title="http://unixdocs/doku.php?id=unix:viodisksmap-summary"  rel="nofollow">http://unixdocs/doku.php?id=unix:viodisksmap-summary</a>
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> EMC MPIO disk(tedv2d01)<pre class="code">hdisk2  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID
+hdisk3  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID
+hdisk4  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID
+hdisk5  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID
+hdisk6  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> EMC Powerpath disks(peerdb98<pre class="code">hdiskpower96  Available 02-08-02 PowerPath Device
+hdiskpower97  Available 02-08-02 PowerPath Device
+hdiskpower98  Available 01-08-02 PowerPath Device
+hdiskpower99  Available 02-08-02 PowerPath Device
+hdiskpower100 Available 02-08-02 PowerPath Device
+hdiskpower101 Available 02-08-02 PowerPath Device</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> <abbr title="Small Computer System Interface">SCSI</abbr> disks<pre class="code">hdisk2 Available 00-08-01-4,0 16 Bit LVD SCSI Disk Drive
+hdisk3 Available 03-08-00-4,0 16 Bit LVD SCSI Disk Drive
+hdisk4 Available 03-08-00-5,0 16 Bit LVD SCSI Disk Drive
+hdisk5 Available 03-08-00-8,0 16 Bit LVD SCSI Disk Drive</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Allocating additional filesystem space - AIX (Not enough space on the VG)" [3800-] -->

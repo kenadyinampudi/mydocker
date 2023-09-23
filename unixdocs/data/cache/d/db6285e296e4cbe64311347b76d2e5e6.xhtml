@@ -1,0 +1,99 @@
+
+<h1 class="sectionedit1" id="notes_about_changing_identity_of_xagi3p01_and_dagi3p01">Notes about Changing identity of xagi3p01 and dagi3p01</h1>
+<div class="level1">
+
+<p>
+Swap identity of xagi3p01 and dagi3p01.
+</p>
+<ol>
+<li class="level1"><div class="li"> Before making any changes</div>
+<ol>
+<li class="level2"><div class="li"> xagi3p01 - IPs<pre class="code">en2 - 10.0.49.57
+en3 - 10.0.48.58</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> dagi3p01 - IPs<pre class="code">en2 - 10.0.49.28
+en3 - 10.0.48.191</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Backed up the hosts file on both the systems<pre class="code">/etc/hosts.Original.10082012</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> When ready unmount /taedi filesystem on qaap3p01<pre class="code">ssh qaap3p01 umount /taedi</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to console </div>
+<ol>
+<li class="level2"><div class="li"> xagi3p01<pre class="code">getconsole xagi3p01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> dagi3p01<pre class="code">getconsole dagi3p01</pre>
+</div>
+<ol>
+<li class="level3"><div class="li"> Unexport filesystem from dagi3p01<pre class="code">cp /etc/exports /etc/exports.10082012
+rmnfsexp -d /taedi</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Unmount all filesystems from dagi3p01<pre class="code">df -k | grep : | awk &#039;{print $NF}&#039; | xargs -n1 umount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount all filesystems from xagi3p01<pre class="code">df -k | grep : | awk &#039;{print $NF}&#039; | xargs -n1 umount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Backup host ssh keys to taitc118 from dagi3p01<pre class="code">tar cf /var/tmp/dagi3p01.ssh.keys.tar /etc/ssh/ssh_host*
+scp /var/tmp/dagi3p01.ssh.keys.tar taitc118:/var/tmp/
+scp /var/tmp/dagi3p01.ssh.keys.tar xagi3p01:/var/tmp/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Backup host ssh keys to taitc118 from xagi3p01<pre class="code">tar cf /var/tmp/xagi3p01.ssh.keys.tar /etc/ssh/ssh_host*
+scp /var/tmp/xagi3p01.ssh.keys.tar taitc118:/var/tmp/
+scp /var/tmp/xagi3p01.ssh.keys.tar dagi3p01:/var/tmp/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> From the console deconfigure network on dagi3p01<pre class="code">ifconfig en2 down detach
+ifconfig en3 down detach</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> From the console deconfigure network on xagi3p01<pre class="code">ifconfig en2 down detach
+ifconfig en3 down detach</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> From the console change identity of dagi3p01<pre class="code">/usr/sbin/mktcpip -h&#039;xagi3p01&#039; -a&#039;10.0.48.58&#039; -m&#039;255.255.255.0&#039; -i&#039;en3&#039; -n&#039;10.32.8.53&#039; -d&#039;amer.int.tenneco.com&#039; -g&#039;10.0.48.1&#039; -A&#039;no&#039; -t&#039;N/A&#039; -s&#039;&#039;
+chdev -l en2 -a netaddr=10.0.49.57 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> From the console change identity of xagi3p01<pre class="code">/usr/sbin/mktcpip -h&#039;dagi3p01&#039; -a&#039;10.0.48.191&#039; -m&#039;255.255.255.0&#039; -i&#039;en3&#039; -n&#039;10.32.8.53&#039; -d&#039;amer.int.tenneco.com&#039; -g&#039;10.0.48.1&#039; -A&#039;no&#039; -t&#039;N/A&#039; -s&#039;&#039;
+chdev -l en2 -a netaddr=10.0.49.28 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Inspect /etc/hosts on both the systems and make sure that the hosts file has entries like this.<pre class="code">egrep &quot;dagi3p01|xagi3p01&quot; /etc/hosts
+10.0.48.191     dagi3p01.amer.int.tenneco.com  dagi3p01 gblap01
+10.0.48.58      xagi3p01.amer.int.tenneco.com  xagi3p01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot both the systems<pre class="code">shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restore <abbr title="Secure Shell">SSH</abbr> keys on dagi3p01<pre class="code">tar xf /var/tmp/dagi3p01.ssh.keys.tar</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restore <abbr title="Secure Shell">SSH</abbr> keys on xagi3p01<pre class="code">tar xf /var/tmp/xagi3p01.ssh.keys.tar</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> NFS mount the filesystem on qaap3p01<pre class="code">ssh qaap3p01 mount /taedi</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On taitc118, update console database<pre class="code">sudo vi /prod/images/unix_sys_console</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On the HMC/IVM - Rename the lpar names.</div>
+</li>
+</ol>
+
+</div>

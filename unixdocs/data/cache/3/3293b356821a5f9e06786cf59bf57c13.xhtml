@@ -1,0 +1,29 @@
+
+<p>
+For educational purposes only.
+</p>
+
+<p>
+Conceptually, VNC creates an xserver on sehrdb01 as the effective user who invoked it i.e. in this case .x1kxk630..
+In my case sehrdb01:2.0 ( echo $DISPLAY ) . That.s the reason my xclock works as myself. 
+</p>
+
+<p>
+When you switch to root,
+</p>
+
+<p>
+1.	DISPLAY variable is lost, so, when you type xclock, it fails. Because, it needs a display capable of graphics, it looks for the DISPLAY variable that should be configured to point to an X-server.
+2.	As we already know, sehrdb01:2.0 is an xserver, so we can export a variable at the root shell export DISPLAY=sehrdb01:2.0
+3.	At this time, xclock gives another error .connection to sehrdb01:2.0 refuced by server. , This happens because .root. user from sehrdb01 is not in the access list.
+4.	Now, you can whitelist just the root user from sehrdb01. I forgot the syntax to it. I executed xhost + . This command disables the access control. i.e. Anybody can use the xserver.
+5.	Now xclock from root works perfectly.
+</p>
+
+<p>
+Back to my original message, for ancient educational purposes only. VNC uses a very poor protocol and it is easy to break into. Leaving a root shell inside is a bad idea.
+</p>
+
+<p>
+I also noticed, you left your VNC session, please don.t. kill it once your job is done. You have .god like permissions. using sudo.
+</p>

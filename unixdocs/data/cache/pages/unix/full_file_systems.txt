@@ -1,0 +1,10 @@
+====== AIX Commands for dealing with Full File Systems ======
+
+  - When you get the notification on a file system approaching the upper limits do the following steps.  Be sure to open a log document, Notepad, Wordpad or Word to keep track of your steps and results. 
+  - Do a df -g on the suspect file system. This will capture the initial state.  <code> df -g {file system}</code> 
+  - Change direcory to the offending file system <code> cd [file system}</code>
+  - List the files in most recient order of access <code> ls -liat | more </code>
+  - Check for the user writing to the file  displayed above <code> fuser -fu {file name}</code>
+  - Use the find command to locate large files in the file system/directory to see if they canbe cleaned up. <code> find . -depth -size 10000c -exec ls -l {} \;</code>
+  - Another tool is the List Open Files tool lsof. There are several excellent options to assist in determining the process id (pid) and user that is writing to the file.<code> lsof +d {file system}</code><code>lsof +D {file system}</code><code> lsof +d {file system}</code><code>lsof +d {file system} +r</code>
+ 

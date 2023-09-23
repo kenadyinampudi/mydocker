@@ -1,0 +1,92 @@
+====== Fabric A migration - Technical plan ======
+
+**Pre-requisit Steps **
+
+  - Prepare the zoning configuration
+  - Check and verify the zoning config.
+  - Check and verify core switches / bladecentre switches compatibility
+  - Configure zoning on Fabric A switch [ LDCDS5300A1 ]
+    - [[san:fabric:fabricbaliasesA|All aliases Sigma sent out]]
+    - [[san:fabric:fabricballzonesA|All zones Sigma sent out]]
+  - Configure monitoring on new switches
+  - Label the old cables on tasanswitch03
+  - Run configupload on all switches and backup the information on another server
+  - VMOTION the hosts on taitc350 and move them to taitc351
+  - Run cables.
+  - Verify the cables run once again.
+  - Secure a flashlight.
+  - Fiber channel switch config(switchconfigure)
+
+**On May 12th @ 9:00 AM**
+
+  - Verify blackouts for servers are in place
+  - Reboot peerdb98 to correct Multipathing issues.
+  - Upgrade firmware on blade1switch1
+    - Login to IBM Bladecentre1 - Switch1<code>ssh blade1switch1 -l tenneco</code>Upgrade to 6.0.1a from **taitc118:/prod/images/brocade/6.0.1a**<code>firmwaredownload</code>Upgrade to 6.1.1a from **taitc118:/prod/images/brocade/6.1.1a**<code>firmwaredownload</code>Upgrade to 6.2.2d from **taitc118:/prod/images/brocade/6.2.2d**<code>firmwaredownload</code>
+  - Enable external ports on the Fiber switch from IBM Bladecentre console.
+  - Validate MPIO on all lpars on IBM Bladecentre1<code>for host in $(cat /home/x1kxk630/dmx3/fabrica/bladecentrehosts)
+do
+   sudo ssh ${host} lspath
+   echo "Done checking ${host} - Press a key to continue ..."
+   read
+done</code>If found errors<code>for dev in $(lspv | awk '{print $1}' )
+do
+   echo "Working on ${dev} "
+   lspath -l ${dev} | grep Failed > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      echo "Found failed path for ${dev} - Enabling the path"
+      failedpath=$(lspath -l ${dev}| grep -v Enabled | awk '{print $NF}' )
+      chpath -l ${dev} -p ${failedpath} -s enable
+      lspath -l $dev
+      bootinfo -s ${dev}
+      echo "Press a key"
+      read
+   else
+      bootinfo -s ${dev}
+   fi   
+done</code>
+  - Upgrade firmware on blade2switch1
+    - Login to Bladecentre2 - Switch1<code>ssh blade2switch1 -l tenneco</code>Upgrade to 6.0.1a from **taitc118:/prod/images/brocade/6.0.1a**<code>firmwaredownload</code>Upgrade to 6.1.1a from **taitc118:/prod/images/brocade/6.1.1a**<code>firmwaredownload</code>Upgrade to 6.2.2d from **taitc118:/prod/images/brocade/6.2.2d**<code>firmwaredownload</code>
+  - Enable external ports on the Fiber switch from IBM Bladecentre console.
+  - Validate MPIO on all lpars on IBM Bladecentre1<code>for host in $(cat /home/x1kxk630/dmx3/fabrica/bladecentrehosts)
+do
+   sudo ssh ${host} lspath
+   echo "Done checking ${host} - Press a key to continue ..."
+   read
+done</code>If found errors<code>for dev in $(lspv | awk '{print $1}' )
+do
+   echo "Working on ${dev} "
+   lspath -l ${dev} | grep Failed > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      echo "Found failed path for ${dev} - Enabling the path"
+      failedpath=$(lspath -l ${dev}| grep -v Enabled | awk '{print $NF}' )
+      chpath -l ${dev} -p ${failedpath} -s enable
+      lspath -l $dev
+      bootinfo -s ${dev}
+      echo "Press a key"
+      read
+   else
+      bootinfo -s ${dev}
+   fi   
+done</code>
+  - Stop traffic through LDCDS5300A1.<code>switchdisable</code>
+  - Stop traffic through blade1switch1 and blade2switch1<code>switchdisable</code>
+  - Disconnect old cables from IBM Bladecentre  switches
+  - Delete the zoning configuration on IBM Bladecentre switches<code>cfgclear
+cfgdisable
+cfgsave</code>
+  - Connect Bladecentre cables to Fabric A - new switch.
+  - Enable traffic through LDCDS5300A1.<code>switchenable</code>
+  - Enable traffic through blade1switch1 and blade2switch1<code>switchenable</code>Verify Blade switches have joined the Fabric A<code>fabricshow</code>
+  - [[san:fabric:disabletraffic|Stop traffic through tasanswitch01, 03, blade1switch1 and blade2switch1 except PTA ports.]]
+  - Stop traffic through LDCDS5300A1<code>switchdisable</code>
+  - Move Unix server cables to Fabric A
+  - Move tasanswitch03 cables to Fabric A
+  - Move DMX3 cables from tasanswitch01
+  - Enable traffic on LDCDS5300A1, blade1switch1 and blade2switch1<code>switchenable</code>
+  - Verify all WWPNs are visible on Fabric A
+  - Re-discover LUNs on servers
+  - Run validation on all servers
+  - Go / No Go

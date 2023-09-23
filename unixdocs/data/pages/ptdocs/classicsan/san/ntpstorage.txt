@@ -1,0 +1,57 @@
+====== NTP servers for AMER/Europeam/Asia ======
+
+
+  -North American NTP server<code>server pgntpap01.amer.int.tenneco.com
+IP:10.32.6.131</code>
+  -European NTP server<code>pgntpap02.amer.int.tenneco.com
+IP:10.56.13.111</code>
+  -Asia NTP server<code>pgntpap03.aspa.int.tenneco.com
+IP:10.43.8.130</code> 
+====== NTP configuration for Storage array ======
+
+===== IBM V9000 =====
+
+  -Set the NTP Server on IBM storage<code>GUI:
+Open the GUI via the Web browser and move via the Settings to the system menu:
+Click on “Set NTP Server IP Address” and put in the IP of your NTP server</code>
+{{:san:capture.png?200|}}
+ ===== EMC Storage array NTP configuration Unisphere =====
+
+  -Login to Unisphere as Sysadmin (Administrator)<code>
+
+Select the Desired Array from Unisphere Dashboard</code>
+  -Go to System > Hardware > Data Movers.<code>
+
+Select the desired Data Mover.
+
+Click Properties.
+
+In NTP Servers, type NTP Servers IP Address (10.10.10.10).
+Click OK.</code>
+===== Pure Storage NTP configuration =====
+
+  -North American pure storage array<code>A)purearray setattr --ntpserver pgntpap01.amer.int.tenneco.com,pgntpap02.amer.int.tenneco.com,pgntpap03.amer.int.tenneco.com
+B)purearray list --ntpserver
+NTP Server
+pgntpap01.amer.int.tenneco.com
+pgntpap02.amer.int.tenneco.com
+pgntpap03.amer.int.tenneco.com
+</code>
+  -European Pure storage array<code>A)purearray setattr --ntpserver pgntpap02.amer.int.tenneco.com,pgntpap01.amer.int.tenneco.com,pgntpap03.amer.int.tenneco.com
+B)purearray list --ntpserver
+NTP Server
+pgntpap02.amer.int.tenneco.com
+pgntpap01.amer.int.tenneco.com
+pgntpap03.amer.int.tenneco.com</code>
+
+
+===== Brocade switch NTP configuration =====
+
+  -Log in to the switch as admin<code>tsclockserver "192.82.x.x;192.88.y.y"</code>
+   **NTP is used only on the principal switch in the fabric** 
+
+
+
+
+
+

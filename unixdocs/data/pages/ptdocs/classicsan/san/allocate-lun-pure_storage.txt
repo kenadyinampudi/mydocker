@@ -1,0 +1,37 @@
+======  Pure Storage provisioning and reclamation ======
+
+===== Figure out and prepare on which Pure storage array we are planning to work on =====
+
+  - Login to pgunap01, the storage admin server.
+  - Define a variable depending on the site
+    - Lincolnshire<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+    - Interxion<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@inxpm20v1"</code>
+    - CDC - MP Pure M50 - cdcvilns013<code>export SSH2PURE="ssh <your username>@cdcvilns013.fmmotorparts.com"</code>This depends now.
+    - Seward<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@sewpm20v1"</code>
+    - Sterling Forest<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ibmpm20v1"</code>
+
+===== Defining a host / hostgroup on pure storage array =====
+
+  - Make sure that the zoning work has completed. Follow [[san:fabriczoninggeneric|this]]
+  - Define the host<code>${SSH2PURE} purehost create --wwnlist 51402ec0017aceb4,51402ec0017acdd8 taitc380</code>taitc380 is just an example please change WWNs and hostnames accordingly.
+  - A hostgroup is a group of hosts, i.e. If you have a VMWARE cluster and wants to share LUNs with a bunch of systems
+  - Define a hostgroup<code>${SSH2PURE} purehgroup create --hostlist taitc380,taitc381 dmzvmwares</code>taitc380, taitc381 and dmzvmwares are just example, please change them accordingly.
+  - Adding an additional host to an existing hostgroup<code>${SSH2PURE} purehgroup setattr --addhostlist <new_host_name> <host_group_name></code>
+
+===== Provisioning storage on Pure storage =====
+
+  - List volumes mapped to given client to get next sequence number<code>${SSH2PURE} purevol list |grep servername</code>
+  - Create a volume size 102G<code>${SSH2PURE} purevol create --size 102g servername_00X</code>
+  - Map the volume to 
+    - Host<code>${SSH2PURE} purevol connect --host servername servername_00X</code>
+    - HostGroup<code>${SSH2PURE} purevol connect --hgroup groupname servername_00X</code>
+Make an entry to [[https://tenneco.sharepoint.com/sites/COUSGI/strg/Document%20Library/Storage-Allocations/Storage%20allocation%20log%20-%20current.xlsx?d=w3b9307e09d8b4038ad3004edf2b1bb53|this]]
+  - **Any new volume you create on LDCPM70V1 -- please add them to the protection group so that it gets replicated.**<code>${SSH2PURE} purepgroup setattr --addvollist volume1,volume2 ... ldcpm70-taprpur001-imo-allvolumes</code>
+===== Reclaiming storage on Pure storage =====
+
+  - Make sure the volume has been disconnected from the host. ( Wintel / Unix )
+  - Disconnect the volume from,
+    - A given host<code>${SSH2PURE} purevol disconnect --host taitc380 dmztempvol01</code>taitc380 and dmztempvol01 are for example, please change accordingly.
+    - A given hostgroup<code>${SSH2PURE} purevol disconnect --hgroup dmzvmwares dmztempvol01</code>dmzvmwares and dmztempvol01 are for example, please change accordingly.
+  - Give it a week before you go ahead with the next step
+  - Delete the volume<code>${SSH2PURE} purevol destroy dmztempvol01</code>The volumes will still be in the deleted volumes bucket for 24 hours.

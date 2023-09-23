@@ -1,0 +1,17 @@
+====== Apollo AIX Cleanup ======
+
+  - Make sure you logged in to the right server which starts with **ACDC**
+  - Once logged in please check for SAP & ORACLE process running status<code>ps -aef | grep -i sap
+ps -aef | grep -i ora</code>
+  - If something is running Kill it.
+  - Collect the disk details except Rootvg & Alt_rootvg to give it to the storage team.<code>sudo /usr/local/scripts/lsvpcfg.sh | grep -v root</code>
+  - Run the below script which umounts,Varyoff & Exports the filesystems in Descending order.<code>for vg in $(lsvg | grep -v rootvg | sort -r)
+do
+echo "Working on ${vg} "
+lsvgfs ${vg} | sort -r | xargs -n1 sudo umount
+sudo varyoffvg ${vg}
+sudo exportvg ${vg}
+done</code>
+  - Please cross check the VG is anything got missed.<code>lsvg</code>
+  - Now delete the disk other than Rootvg & ALt_rootvg<code>lspv | grep -i none | awk '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - **Now ask the Storage team to reclaim the disks** by giving the output of point number 4.

@@ -1,0 +1,117 @@
+====== FTA refresh documentation ( VMAX ) ======
+
+===== Introduction =====
+
+Business at times ask us to create a copy of PTA database to FTA. We perform it using symclone. Here are the instructions.
+
+^App Name^Role^Hostname^Storage Array^
+|PTA|Database|tapr1d01|VMAX - 0301|
+|FTA|Database|qaerdb01|VMAX - 0301|
+
+===== Prework =====
+
+** A week in advance, please check and make sure the pairing file is correct**
+
+  * Login to pablsv01, the CLI host for VMAX.
+  * Check and make sure the pairing file is correct. They have a syntax like this<code>ABCD STUV
+EFGH WXYZ</code>Where ABCD and EFGH are source LUNs , STUV and WXYZ are target LUNs
+  * Check and document existing symclone sessions in the VMAX array<code>sudo symclone -sid 0301 list</code>Now carefully examine each device pair. If they are not required, terminate them<code>sudo symclone -sid 0301 -f <filename> terminate</code>
+  * Get a list of data devices on PTA<code>ssh tapr1d01 sudo /usr/local/scripts/lsvpcfg.sh | grep datavg | awk -F: '{print $4}' | sort > /var/tmp/PTA.source.luns</code>
+  * Get a list of data devices on FTA<code>ssh qaerdb01 sudo /usr/local/scripts/lsvpcfg.sh | grep datavg | awk -F: '{print $4}' | sort > /var/tmp/FTA.target.luns</code>
+  * If there are more devices on PTA as compared to FTA, allocate more LUNs to FTA start over "Prework"
+  * Create the pairing file<code>paste /var/tmp/PTA.source.luns /var/tmp/FTA.target.luns > PTA-to-FTA-clone.txt</code>
+  * **//Send the pairing file to other storage team members and Unix team, get their approval//**
+===== FTA refresh - Shutdown and unmount FTA volumes =====
+
+  * Shutdown FTA SAP instance including database. Basis/DBA does this step<code>ssh qaerdb01 "ps -ef | grep ora"</code>Make sure nothing comes up
+  * Disable the BCV backup of PTA on taqa1d01.
+  * Make a note of the disks that makes up FTA<code>lspv | grep datavg > /var/tmp/deletethesedisks</code>
+  * Unmount the data filesystems on FTA<code>for vg in $(lsvg | grep datavg0)
+do
+   for fs in $(sudo lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -cuk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] && echo "Unable to umount ${fs} "
+      fi         
+   done
+   lsvg -l ${vg} | grep -i open > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      echo "warning :: ${vg} requires manual intervention "
+   else
+      sudo varyoffvg ${vg}
+      sudo exportvg ${vg}
+   fi
+done</code>
+  * Define the LUNs so that AIX stops complaining about it<code>cat /var/tmp/deletethesedisks | awk '{print $1}' | xargs -n1 sudo rmdev -l</code>
+
+===== FTA refresh - Start symclone =====
+
+  * Login to pablsv01 and start the clone operation.
+    * Check for existing clones<code>sudo symclone –sid 0301 –f <clone pairing file> query</code>Make sure there are no clones currently between any devices.
+    * Establish a clone session but nocopy<code>sudo symclone –sid 0301 –f <clone pairing file> create -nocopy</code>
+
+===== FTA refresh - symclone - Begin background copy =====
+
+  * Begin the background copy in chunks of 10
+    * Split the clone pairing file into multiple<code>split -l 10 <clone pairing file></code>This will split the file into multiple files with 10 lines on each of them.
+    * Start copying each chunk, one at a time, waiting for one to complete.<code>sudo symclone -sid 0301 -f <split file> set mode precopy</code>To check the status<code>sudo symclone -sid 0301 -f <split file> query</code>
+    * Wait until all the copies are complete, now check the status on all of the LUNs<code>sudo symclone –sid 0301 –f <clone pairing file> query</code>The output should say all device pairs in Copied state.
+
+===== FTA refresh - PTA to backup mode and activate the clone =====
+
+  * Contact the DBA to put PTA table-spaces in ''begin-backup-mode''.
+  * Once the table-spaces are in ''begin-backup-mode'', Activate the clone.<code>sudo symclone –sid 0301 –f <clone pairing file> activate -consistent</code>
+  * Ask the DBAs to put PTA table-spaces in end backup mode.
+  * Enable the BCV backup of PTA.
+
+===== FTA refresh - Configure devices, mount filesystems on FTA DB server =====
+
+  * On qaerdb01, configure the luns.<code>sudo cfgmgr
+sudo powermt check
+sudo powermt config</code>
+  * Get a list of pvids from PTA host<code>ssh tapr1d01 "lspv" > /var/tmp/tapr1d01.pvids</code>
+  * Import the VGs<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   grep -w ${vg} /var/tmp/tapr1d01.pvids | awk '{print $2}' > ${vg}.pvids
+   echo "Recreating ${vg} .."
+   pvs=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   sudo recreatevg -L/ -Y/ -y ${vg} ${pvs}
+done</code>
+  * Change the mount point of all filesystems from PTA to FTA<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(sudo lsvgfs ${vg} )
+   do
+      newfs=$(echo ${fs} | sed "s;PTA;FTA;g" )
+      sudo chfs -m ${newfs} ${fs}
+   done
+done</code>
+  * Run fsck on each filesystem<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo fsck -y ${fs} &
+   done
+done</code>
+  * Mount all filesystems and fix permissions<code>for vg in $(grep datavg /var/tmp/tapr1d01.pvids | awk '{print $3}' | sort -u)
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mount ${fs}
+      if [ ${?} -eq 0 ]
+      then
+         sudo chown -R orafta:dba ${fs}
+      else
+         echo "Unable to mount ${fs} - please fix and don't forget to change the permissions using chown -R orafta:dba ${fs}"
+      fi         
+   done
+done</code>
+  * Handover FTA to DBA team.
+
+===== FTA refresh - If DBA/Basis is happy with the cloned copy, terminate the clone =====
+
+  * Terminate the cloning relationship, leaving them on for ever is a bad practice. It is an overhead on the storage array overall as it needs to keep track of protected tracks<code>sudo symclone –sid 0301 –f <clone pairing file> terminate</code>

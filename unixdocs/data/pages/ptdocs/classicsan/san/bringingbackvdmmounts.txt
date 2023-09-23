@@ -1,0 +1,243 @@
+In case of complete VXN outage - ie how it happened recently in RYB, in order to bring backup the shares back up do this:<code>
+[nasadmin@rybvnx5400cs0 ~]$ nas_server -l -a
+id      type  acl  slot groupID  state  name
+1        1    0     2              0    server_2
+2        4    0     3              0    server_3
+
+id       acl  server    mountedfs       rootfs  name
+1        0    1         13,15,16,17,18, 11      vdm_taryb050
+
+
+[nasadmin@rybvnx5400cs0 ~]$ nas_fs -l
+id      inuse deleting type acl   volume    name                server
+1         n    n         1   0     10       root_fs_1            
+2         y    n         1   0     40       root_fs_common       2,1
+3         n    n         5   0     73       root_fs_ufslog       
+4         n    n         5   0     76       root_panic_reserve   
+5         n    n         5   0     93       root_fs_d3           
+6         n    n         5   0     94       root_fs_d4           
+7         n    n         5   0     95       root_fs_d5           
+8         n    n         5   0     96       root_fs_d6           
+9         y    n         1   0     12       root_fs_2            1
+10        y    n         1   0     14       root_fs_3            2
+11        y    n         1   0     124      root_fs_vdm_vdm_tar  1
+13        y    n         1   0     127      fs_050_groups        v1
+15        y    n         7   0     131      ckpt_fs050groups_00  v1
+16        y    n         7   0     131      ckpt_fs050groups_00  v1
+17        y    n         7   0     131      ckpt_fs050groups_00  v1
+18        y    n         7   0     131      ckpt_fs050groups_00  v1
+19        y    n         7   0     131      ckpt_fs050groups_00  v1
+20        y    n         7   0     131      ckpt_fs050groups_00  v1
+21        y    n         7   0     131      ckpt_fs050groups_00  v1
+22        y    n         7   0     131      ckpt_fs050groups_00  v1
+23        y    n         7   0     131      ckpt_fs050groups_00  v1
+24        y    n         7   0     131      ckpt_fs050groups_01  v1
+26        y    n         1   0     137      fs_050_users         v1
+28        y    n         1   0     142      fs_050_data          v1
+30        y    n         7   0     145      ckpt_fs050users_001  v1
+31        y    n         7   0     145      ckpt_fs050users_002  v1
+34        y    n         7   0     145      ckpt_fs050users_003  v1
+36        y    n         7   0     145      ckpt_fs050users_004  v1
+38        y    n         7   0     145      ckpt_fs050users_005  v1
+39        y    n         7   0     145      ckpt_fs050users_006  v1
+41        y    n         7   0     145      ckpt_fs050users_007  v1
+43        y    n         7   0     145      ckpt_fs050users_008  v1
+45        y    n         7   0     145      ckpt_fs050users_009  v1
+47        y    n         7   0     145      ckpt_fs050users_010  v1
+167       y    n         7   0     278      ckpt_fs050data_001   v1
+170       y    n         7   0     278      ckpt_fs050data_002   v1
+172       y    n         7   0     278      ckpt_fs050data_003   v1
+175       y    n         7   0     278      ckpt_fs050data_004   v1
+179       y    n         7   0     278      ckpt_fs050data_005   v1
+183       y    n         7   0     278      ckpt_fs050data_006   v1
+187       y    n         7   0     278      ckpt_fs050data_007   v1
+191       y    n         7   0     278      ckpt_fs050data_008   v1
+194       y    n         7   0     278      ckpt_fs050data_009   v1
+196       y    n         7   0     278      ckpt_fs050data_010   v1
+
+[nasadmin@rybvnx5400cs0 ~]$ server_mount server_2
+server_2 : 
+root_fs_2 on / uxfs,perm,rw
+root_fs_common on /.etc_common uxfs,perm,ro
+root_fs_vdm_vdm_taryb050 on /root_vdm_1/.etc uxfs,perm,rw,<unmounted>
+fs_050_groups on /root_vdm_1/fs_050_groups uxfs,perm,rw,<unmounted>
+ckpt_fs050groups_001 on /root_vdm_1/ckpt_fs050groups_001 ckpt,perm,ro,cvfsname=fs050_groups.002,<unmounted>
+ckpt_fs050groups_002 on /root_vdm_1/ckpt_fs050groups_002 ckpt,perm,ro,cvfsname=fs050_groups.001,<unmounted>
+ckpt_fs050groups_003 on /root_vdm_1/ckpt_fs050groups_003 ckpt,perm,ro,cvfsname=fs050_groups.000,<unmounted>
+ckpt_fs050groups_004 on /root_vdm_1/ckpt_fs050groups_004 ckpt,perm,ro,cvfsname=fs050_groups.009,<unmounted>
+ckpt_fs050groups_005 on /root_vdm_1/ckpt_fs050groups_005 ckpt,perm,ro,cvfsname=fs050_groups.008,<unmounted>
+ckpt_fs050groups_006 on /root_vdm_1/ckpt_fs050groups_006 ckpt,perm,ro,cvfsname=fs050_groups.007,<unmounted>
+ckpt_fs050groups_007 on /root_vdm_1/ckpt_fs050groups_007 ckpt,perm,ro,cvfsname=fs050_groups.006,<unmounted>
+ckpt_fs050groups_008 on /root_vdm_1/ckpt_fs050groups_008 ckpt,perm,ro,cvfsname=fs050_groups.005,<unmounted>
+ckpt_fs050groups_009 on /root_vdm_1/ckpt_fs050groups_009 ckpt,perm,ro,cvfsname=fs050_groups.004,<unmounted>
+ckpt_fs050groups_010 on /root_vdm_1/ckpt_fs050groups_010 ckpt,perm,ro,cvfsname=fs050_groups.003,<unmounted>
+fs_050_data on /root_vdm_1/fs_050_data uxfs,perm,rw,<unmounted>
+fs_050_users on /root_vdm_1/fs_050_users uxfs,perm,rw,triggerlevel=512,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_001 on /root_vdm_1/ckpt_fs050users_001 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_002 on /root_vdm_1/ckpt_fs050users_002 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_003 on /root_vdm_1/ckpt_fs050users_003 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_004 on /root_vdm_1/ckpt_fs050users_004 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_005 on /root_vdm_1/ckpt_fs050users_005 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_006 on /root_vdm_1/ckpt_fs050users_006 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_007 on /root_vdm_1/ckpt_fs050users_007 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_008 on /root_vdm_1/ckpt_fs050users_008 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_009 on /root_vdm_1/ckpt_fs050users_009 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050users_010 on /root_vdm_1/ckpt_fs050users_010 ckpt,perm,ro,accesspolicy=NATIVE,nolock,<unmounted>
+ckpt_fs050data_001 on /root_vdm_1/ckpt_fs050data_001 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_002 on /root_vdm_1/ckpt_fs050data_002 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_003 on /root_vdm_1/ckpt_fs050data_003 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_004 on /root_vdm_1/ckpt_fs050data_004 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_005 on /root_vdm_1/ckpt_fs050data_005 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_006 on /root_vdm_1/ckpt_fs050data_006 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_007 on /root_vdm_1/ckpt_fs050data_007 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_008 on /root_vdm_1/ckpt_fs050data_008 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_009 on /root_vdm_1/ckpt_fs050data_009 ckpt,perm,ro,<unmounted>
+ckpt_fs050data_010 on /root_vdm_1/ckpt_fs050data_010 ckpt,perm,ro,<unmounted>
+
+[nasadmin@rybvnx5400cs0 ~]$ server_mount vdm_taryb050
+vdm_taryb050 : 
+Error 4032: vdm_taryb050 : VDM is not loaded
+[nasadmin@rybvnx5400cs0 ~]$ 
+[nasadmin@rybvnx5400cs0 ~]$ 
+[nasadmin@rybvnx5400cs0 ~]$ 
+[nasadmin@rybvnx5400cs0 ~]$ nas_server -i -v vdm_taryb050
+id        = 1
+name      = vdm_taryb050
+acl       = 0
+type      = vdm
+server    = server_2
+rootfs    = root_fs_vdm_vdm_taryb050
+I18N mode = UNICODE
+mountedfs = fs_050_groups,ckpt_fs050groups_001,ckpt_fs050groups_002,ckpt_fs050groups_003,ckpt_fs050groups_004,ckpt_fs050groups_005,ckpt_fs050groups_006,ckpt_fs050groups_007,ckpt_fs050groups_008,ckpt_fs050groups_009,ckpt_fs050groups_010,fs_050_data,fs_050_users,ckpt_fs050users_001,ckpt_fs050users_002,ckpt_fs050users_003,ckpt_fs050users_004,ckpt_fs050users_005,ckpt_fs050users_006,ckpt_fs050users_007,ckpt_fs050users_008,ckpt_fs050users_009,ckpt_fs050users_010,ckpt_fs050data_001,ckpt_fs050data_002,ckpt_fs050data_003,ckpt_fs050data_004,ckpt_fs050data_005,ckpt_fs050data_006,ckpt_fs050data_007,ckpt_fs050data_008,ckpt_fs050data_009,ckpt_fs050data_010
+member_of = 
+status    : 
+  defined = enabled
+   actual = temporarily unloaded
+Interfaces to services mapping:
+ interface=if_taryb050 :cifs
+
+[nasadmin@rybvnx5400cs0 domain]$ nas_cs -i
+Host Name               = rybvnx5400cs0
+Version                 = 8.1.8-121 
+Location                = system:VNX5400:CKM001434014812007|controlStation::0
+Status                  = OK
+Standby Location        = system:VNX5400:CKM001434014812007|controlStation::1
+Standby Status          = Info 26575634437: Standby Ready
+IPv4 Address            = 10.62.16.181
+IPv4 Netmask            = 255.255.255.0
+IPv4 Gateway            = 10.62.16.1
+IPv6 Address            = 
+IPv6 Gateway            = 
+DNS Domain              = emea.int.tenneco.com
+DNS Domain search order = emea.int.tenneco.com
+DNS Servers             = 10.62.17.24,170.64.216.180
+Session Monitor Timeout = 0 Days
+Session Idle Timeout    = 0 Minutes
+NTP Servers             = 10.56.1.1
+System Time             = Wed Dec 07 12:14:03 CET 2016
+
+[root@rybvnx5400cs0 domain]# /nasmcd/getreason
+10 - slot_0 primary control station
+11 - slot_1 secondary control station
+ 5 - slot_2 contacted
+ 5 - slot_3 contacted
+[root@rybvnx5400cs0 domain]# 
+[root@rybvnx5400cs0 domain]# 
+[root@rybvnx5400cs0 domain]# 
+[root@rybvnx5400cs0 domain]# 
+[root@rybvnx5400cs0 domain]# server_cpu serstandby server_2 -activate mover
+server_2 : 
+ server_2 : going offline
+ server_3 : going active
+ replace in progress ...done
+ failover activity complete
+
+ Waiting for server_2.faulted.server_3 to complete warm reboot.
+ Data services are available on server_2.
+
+ commit  in progress (not interruptible)...done
+
+server_2 : renamed as server_2.faulted.server_3
+server_3 : renamed as server_2
+[root@rybvnx5400cs0 domain]# server_standby server_2 -activate mover
+
+[root@rybvnx5400cs0 domain]# 
+[root@rybvnx5400cs0 domain]# 
+[root@rybvnx5400cs0 domain]# /ncd /home/nasadmin
+[root@rybvnx5400cs0 nasadmin]# /nasmcd/getreason
+10 - slot_0 primary control station
+11 - slot_1 secondary control station
+ 5 - slot_2 contacted
+ 5 - slot_3 contacted
+[root@rybvnx5400cs0 nasadmin]# 
+[root@rybvnx5400cs0 nasadmin]# /nasmcd/getreasoncd /home/nasadminserver_standby server_2 -activate mover
+/nasmcd/getreasonserver_standby server_2 -activate mover
+cd /home/nasadmin/nasmcd/getreasonnas_server -l
+id      type  acl  slot groupID  state  name
+1        4    0     2              2    server_2.faulted.server_3
+2        1    0     3              0    server_2
+
+[root@rybvnx5400cs0 nasadmin]# nas_server -l/nasmcd/getreasoncd /home/nasadminserver_standby server_2 -activate mover
+/nasmcd/getreasonserver_standby server_2 -activate mover mover mover mover mover mover mover mover moverr movere movers movert movero moverr movere mover
+server_2 : 
+ server_2 : going standby
+ server_2.faulted.server_3 : going active
+ replace in progress ...done
+ failover activity complete
+
+ Waiting for server_3 to complete warm reboot.
+ Data services are available on server_2.
+
+ commit  in progress (not interruptible)...done
+
+server_2 : renamed as server_3
+server_2.faulted.server_3 : renamed as server_2
+
+[root@rybvnx5400cs0 nasadmin]# nas_Server -ls
+id      type  acl  slot groupID  state  name
+1        1    0     2              0    server_2
+2        4    0     3              0    server_3
+
+[root@rybvnx5400cs0 nasadmin]# 
+[root@rybvnx5400cs0 nasadmin]# 
+[root@rybvnx5400cs0 nasadmin]# /nasmcd/getreason
+10 - slot_0 primary control station
+11 - slot_1 secondary control station
+ 5 - slot_2 contacted
+ 5 - slot_3 contacted
+[root@rybvnx5400cs0 nasadmin]# 
+[root@rybvnx5400cs0 nasadmin]# server_mount ALL | grep unm
+root_fs_3 on / uxfs,perm,rw,<unmounted>
+root_fs_common on /.etc_common uxfs,perm,ro,<unmounted>
+
+[root@rybvnx5400cs0 nasadmin]# nas_Server -ls
+id      type  acl  slot groupID  state  name
+1        1    0     2              0    server_2
+2        4    0     3              0    server_3
+
+[root@rybvnx5400cs0 nasadmin]# 
+[root@rybvnx5400cs0 nasadmin]# 
+[root@rybvnx5400cs0 nasadmin]# /nasmcd/getreason
+10 - slot_0 primary control station
+11 - slot_1 secondary control station
+ 5 - slot_2 contacted
+ 5 - slot_3 contacted
+[root@rybvnx5400cs0 nasadmin]# 
+[root@rybvnx5400cs0 nasadmin]# server_mount ALL | grep unm
+root_fs_3 on / uxfs,perm,rw,<unmounted>
+root_fs_common on /.etc_common uxfs,perm,ro,<unmounted>
+
+[root@rybvnx5400cs0 /]# server_export vdm_taryb050
+vdm_taryb050 :
+share "ryb_users$" "/fs_050_users/ryb_users" umask=022 maxusr=4294967295 netbios=TARYB050
+share "users$" "/fs_050_users/ryb_users" umask=022 maxusr=4294967295 netbios=TARYB050
+share "data" "/fs_050_data/data" umask=022 maxusr=4294967295 netbios=TARYB050
+share "data$" "/fs_050_data/data" umask=022 maxusr=4294967295 netbios=TARYB050
+share "Cash$" "/fs_050_groups/groups/Cash" umask=022 maxusr=4294967295 netbios=TARYB050
+share "groups$" "/fs_050_groups/groups" umask=022 maxusr=4294967295 netbios=TARYB050
+share "ZUS$" "/fs_050_groups/groups/ZUS" umask=022 maxusr=4294967295 netbios=TARYB050
+share "Magazyn narzedzi DPR$" "/fs_050_groups/groups/Magazyn narzedzi DPR" umask=022 maxusr=4294967295 netbios=TARYB050
+share "groups" "/fs_050_groups/groups" umask=022 maxusr=4294967295 netbios=TARYB050
+share "LESUCH" "/fs_050_groups/groups/LESUCH" umask=022 maxusr=4294967295 netbios=TARYB050 comment="dedictaed share for x1leszuc he has non Tenneco PC and can only access direct shares"
+
+</code>

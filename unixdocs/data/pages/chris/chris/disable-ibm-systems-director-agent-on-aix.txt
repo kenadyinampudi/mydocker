@@ -1,0 +1,12 @@
+====== Disable IBM Systems Director Agent on AIX ======
+
+  To permanently disable the Director agent, do the following:
+
+  - Stop and permanently disable the common agent: <code>sudo /opt/ibm/director/agent/runtime/agent/bin/endpoint.sh stop</code> <code>sudo ./opt/ibm/director/agent/runtime/nonstop/bin/installnonstop.sh -uninstallservice</code>
+  - Stop the platform agent: <code>sudo stopsrc -s platform_agent</code>
+  Stop and permanently disable the cimserver if there are no other applications depending on the cimserver:
+  - Stop cimserver: <code>sudo stopsrc -s cimsys</code>
+  Modify inittab file to permanently disable the cimserver if there are no other applications depending on the cimserver:
+  - Create a backup copy of /etc/inittab  where .yn = your initials <code>cd /etc</code><code>sudo  cp -p inittab inittabg-$(date +%Y%m%d-%H:%M:%S).yn </code>
+  Comment out the following lines in /etc/inittab file and save the file when finished:
+<code> sudo vi /etc/inittab</code><code> platform_agent:2:once:/usr/bin/startsrc -s platform_agent >/dev/null 2>&1</code> <code>cimservices:2:once:/usr/bin/startsrc -s cimsys >/dev/null 2>&1</code>

@@ -1,0 +1,65 @@
+====== HPUX LVM ======
+
+
+==== Steps to create a new filesystem and to extend the existing filesystem on taitc114 ====
+
+  - Document the request<code>To create a new filesystem /oracle/DOMU/data1 of 20g 
+And extend the filsesystem /oracle/DOMU/data2 by 10g</code>
+  - Discover a newly added disk
+    - a. Find the disks allocated to the system<code>
+x1shukla on taitc114:/home/x1shukla $ sudo strings /etc/lvmtab
+/dev/vg00
+/dev/disk/disk24_p2
+/dev/disk/disk25_p2
+/dev/vgOVD
+/dev/disk/disk43
+/dev/disk/disk45
+/dev/disk/disk47
+/dev/disk/disk50
+/dev/disk/disk52</code>
+    - b. Scan for the newly added disk<code>
+x1shukla on taitc114:/home/x1shukla $ sudo ioscan -m dsf
+/dev/rdisk/disk43        /dev/rdsk/c16t0d2 /dev/rdsk/c22t0d2 /dev/rdsk/c23t0d2 /dev/rdsk/c18t0d2
+/dev/rdisk/disk45        /dev/rdsk/c16t0d4 /dev/rdsk/c22t0d4 /dev/rdsk/c23t0d4 /dev/rdsk/c18t0d4
+/dev/rdisk/disk47        /dev/rdsk/c16t0d1 /dev/rdsk/c22t0d1 /dev/rdsk/c18t0d1 /dev/rdsk/c23t0d1
+/dev/rdisk/disk50        /dev/rdsk/c16t0d3 /dev/rdsk/c22t0d3 /dev/rdsk/c18t0d3 /dev/rdsk/c23t0d3
+/dev/rdisk/disk52        /dev/rdsk/c16t0d0 /dev/rdsk/c22t0d0 /dev/rdsk/c23t0d0 /dev/rdsk/c18t0d0
+/dev/rdisk/disk63        /dev/rdsk/c16t0d5 /dev/rdsk/c23t0d5 /dev/rdsk/c18t0d5 /dev/rdsk/c22t0d5</code>
+    - **Compare the output from point I and II and find the newly added disk**
+    - Make sure you have selected the right disk. **Be extremely careful here, HPUX is not forgiving as AIX – it will wipe out a disk that is in use** . Anyways start with checking the size of the disk. We requested for 34G<code>
+x1shukla on taitc114:/home/x1shukla $ sudo diskinfo /dev/rdisk/disk63
+SCSI describe of /dev/rdisk/disk63:
+             vendor: DGC
+         product id: VNX5300WDVR
+               type: direct access
+               size: 35350528 Kbytes
+   bytes per sector: 512</code><code>
+   “size: 35354880 Kbytes”
+   35354880/1024/1024 is 33.71 -- so yes we have a 34G LUN and we are able to read it.</code>
+  - Now prepare the disk for LVM And add the disk to the Volume group<code>x1shukla on taitc114:/home/x1shukla $ sudo pvcreate /dev/rdisk/disk63
+Physical volume "/dev/rdisk/disk63" has been successfully created.</code><code>
+x1shukla on taitc114:/home/x1shukla $ sudo extendvg /dev/vgOVD /dev/disk/disk63
+Volume group "vgOVD" has been successfully extended.
+Volume Group configuration for /dev/vgOVD has been saved in /etc/lvmconf/vgOVD.conf</code>
+  - Steps to create a new filesystem
+    - create a new FS /oracle/DOMU/data1 of 20g<code>
+sudo lvcreate -L 20480 /dev/vgOVD
+sudo newfs -F vxfs /dev/vgOVD/rlvol11</code>
+    - Make a new directory to mount the filesystem and mount it<code>
+sudo mkdir /oracle/DOMU//data1
+sudo mount /oracle/DOMU//data1</code>
+    - Check it<code>
+x1shukla on taitc114:/home/x1shukla $ bdf /oracle/DOMU/data1
+Filesystem          kbytes    used   avail %used Mounted on
+/dev/vgOVD/lvol23 20971520   71784 19593510    0% oracle/DOMU//data1</code>
+    - Make a entry in /etc/fstab<code>
+sudo vi /etc/fstab
+/dev/vgOVD/lvol23 /oracle/DOMU/data1 vxfs rw,suid,largefiles,delaylog,datainlog 0 2</code>
+  - Steps to extend the file system
+    - Extend logical volume /oracle/DOMU/data2 by 10g<code>
+x1shukla on taitc114:/home/x1shukla $ sudo lvextend -L 10240 /dev/vgOVD/lvol1
+Logical volume "/dev/vgOVD/lvol1" has been successfully extended.
+Volume Group configuration for /dev/vgOVD has been saved in /etc/lvmconf/vgOVD.conf</code>
+    - Now extend the file system.<code>
+x1shukla on taitc114:/home/x1shukla $  sudo fsadm -F vxfs -b 10240m /oracle/DOMU/data2
+UX:vxfs fsadm: INFO: V-3-25942: /dev/vgOVD/rlvol1 size increased from 41943040 sectors to 57671680 sectors</code>

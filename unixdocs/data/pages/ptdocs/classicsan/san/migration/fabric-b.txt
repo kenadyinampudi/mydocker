@@ -1,0 +1,72 @@
+====== Fabric B migration - Technical plan ======
+
+**Pre-requisit Steps **
+
+  - Prepare the zoning configuration
+  - Check and verify the zoning config.
+  - Check and verify core switches / bladecentre switches compatibility
+  - Configure zoning on Fabric B switch [ LDCDS5300B1 ]
+    - [[san:fabric:fabricbaliases|All aliases Sigma sent out]]
+    - [[san:fabric:fabricballzones|All zones Sigma sent out]]
+  - Configure monitoring on new switches
+  - Label the old cables on tasanswitch03
+  - Run configupload on all switches and backup the information on another server
+  - VMOTION the hosts on taitc351 and move them to taitc350
+  - Fiber channel switch config(switchconfigure)
+  - Run cables
+
+**On May 4th**
+
+  - Verify blackouts for servers are in place
+  - Upgrade firmware on blade1switch2
+    - Login to Bladecentre1 - Switch2<code>ssh blade1switch2 -l tenneco</code>Upgrade to 6.0.1a from **taitc118:/prod/images/brocade/6.0.1a**<code>firmwaredownload</code>Upgrade to 6.1.1a from **taitc118:/prod/images/brocade/6.1.1a**<code>firmwaredownload</code>Upgrade to 6.2.2d from **taitc118:/prod/images/brocade/6.2.2d**<code>firmwaredownload</code>
+  - Validate MPIO on all lpars on Bladecentre1
+  - Upgrade firmware on blade2switch2
+    - Login to Bladecentre2 - Switch2<code>ssh blade2switch2 -l tenneco</code>Upgrade to 6.0.1a from **taitc118:/prod/images/brocade/6.0.1a**<code>firmwaredownload</code>Upgrade to 6.1.1a from **taitc118:/prod/images/brocade/6.1.1a**<code>firmwaredownload</code>Upgrade to 6.2.2d from **taitc118:/prod/images/brocade/6.2.2d**<code>firmwaredownload</code>
+  - Disable traffic through Bladecentre switches 
+    - (blade1switch2 and blade2switch2)<code>switchdisable</code>
+    - [[san:fabric:disable-tasanswitch02|Disable ports on tasanswitch02 except PTA [port 2/26]]]
+    - [[san:fabric:disable-tasanswitch04|Disable ports on tasanswitch04 except PTA [ports 4/28 and 4/0]]]
+  - Disable B paths on VMWARE side
+  - Disable traffic through LDCDS5300B1<code>switchdisable</code>
+  - Move the cables for Unix
+  - Move tasanswitch04 cables
+  - Move DMX3 cables
+  - Disconnect old cables from Bladecentre switches
+  - Clear switch configuration from Bladecentre switches (blade1switch2 and blade2switch2)<code>cfgclear</code>
+  - Connect bladecentre switches to the new cables
+  - Check and verify the bladecentre switches have joined Fabric B zoning domain.<code>fabricshow</code>
+  - Enable switches LDCDS5300B1, blade1switch2 and blade2switch2
+  - VMWARE to activate paths one at a time.
+  - Execute switchshow on DS5300B1 and validate the WWNs are correct.
+  - Re-discover LUNs on servers
+    - Unix - AIX - from taitc118<code>for host in $(sudo cat /home/x1kxk630/dmx3/fabricb/hosts)
+do
+   sudo ssh ${host} "cfgmgr &"
+done</code>
+    - Unix - HPUNIX from taitc118<code>for host in taitc113 taitc114
+do
+   sudo ssh ${host} ioscan -fnC disk
+done</code>
+  - Run validation on all servers
+    - Unix - from taitc118<code>for host in $(sudo cat /home/x1kxk630/dmx3/fabricb/hosts)
+do
+   echo "Checking ${host} "
+   ssh ${host} lspv | grep hdiskpower > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      sudo ssh ${host} powermt display
+   else
+      sudo ssh ${host} lspath
+   fi
+   echo ""
+   echo ""
+   echo "Done checking ${host} - press a key to continue "
+   read
+done</code>
+    - Check hpux hosts<code>for host in taitc113 taitc114
+do
+   sudo ssh ${host} ioscan -fnkC disk
+done</code>
+    - Reboot paitap01
+  - Go / No Go decision

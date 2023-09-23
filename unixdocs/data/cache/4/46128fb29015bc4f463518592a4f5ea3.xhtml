@@ -1,0 +1,73 @@
+
+<h1 class="sectionedit1" id="change_legacy_uuid_of_a_cloned_virtual_machine">Change Legacy UUID of a cloned Virtual Machine</h1>
+<div class="level1">
+
+<p>
+<strong> Background </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> As we clone an original VM&#039;s boot disk to a new Virtual Machine for duplicating an environment, the process also clones the VMX file that contains the Legacy “uuid.bios”</div>
+</li>
+<li class="level1"><div class="li"> VMware <abbr title="Graphical User Interface">GUI</abbr> will allocate a new “Persistent ID” - Yet, tools like “dmidecode” would pull the serial number using <code>uuid.bios</code></div>
+</li>
+<li class="level1"><div class="li"> This becomes a problem as Service Now CMDB discovery process uses “Serial Number” that is derived from “uuid.bios” to uniquely identify a Virtual Machine.</div>
+</li>
+</ol>
+
+<p>
+<strong> Fix </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> The easiest way to fix this is to edit the VMX file and change uuid.bios - but it is difficult ( not many has access) and error prone (typos in a config file)</div>
+</li>
+<li class="level1"><div class="li"> Here&#039;s the PowerCLI way to fix this.</div>
+</li>
+<li class="level1"><div class="li"> Power off the VM # It does not allow you to edit this while the VM is running.</div>
+</li>
+<li class="level1"><div class="li"> Login to vCenter<pre class="code">Connect-VIServer -server cdcvilms156.driv.com</pre>
+
+<p>
+Supply credentials
+</p>
+<pre class="code">Specify Credential
+Please specify server credential
+User: driv\x1kxk630
+Password for user driv\x1kxk630: ******************
+
+
+Name                           Port  User
+----                           ----  ----
+cdcvilms156.driv.com           443   DRIV\x1kxk630</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the “Persistend ID of the VM”<pre class="code">Get-VM acdcinplxap01 | Select-Object PersistentId</pre>
+
+<p>
+The output looks like this
+</p>
+<pre class="code">PersistentId
+------------
+50187ad0-6f4c-0884-3150-bf4b91ee9ada</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set some variable and run this snippet</div>
+<ol>
+<li class="level2"><div class="li"> Name of the VM<pre class="code">$vmName=&quot;acdcinplxap01&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> New UUID - this will be the Persistent ID as that is a unique one across the vCenter<pre class="code">$newUuid=&quot;50187ad0-6f4c-0884-3150-bf4b91ee9ada&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> This part is from VMware articles - feel free to read about it<pre class="code">$spec = New-Object VMware.Vim.VirtualMachineConfigSpec
+$spec.uuid = $newUuid
+$vm = Get-VM -Name $vmName
+$vm.Extensiondata.ReconfigVM_Task($spec)</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Power on the VM</div>
+</li>
+</ol>
+
+</div>

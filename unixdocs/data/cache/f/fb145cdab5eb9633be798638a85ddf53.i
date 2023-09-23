@@ -1,0 +1,54 @@
+a:33:{i:0;a:3:{i:0;s:14:"document_start";i:1;a:0:{}i:2;i:0;}i:1;a:3:{i:0;s:6:"header";i:1;a:3:{i:0;s:33:"Customization for IT0 App servers";i:1;i:1;i:2;i:1;}i:2;i:1;}i:2;a:3:{i:0;s:12:"section_open";i:1;a:1:{i:0;i:1;}i:2;i:1;}i:3;a:3:{i:0;s:10:"listo_open";i:1;a:0:{}i:2;i:49;}i:4;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:49;}i:5;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:49;}i:6;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:33:" Create groups and users accounts";}i:2;i:53;}i:7;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:730:"sudo groupadd -g 205 abap
+sudo groupadd -g 300 ftpgis
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,abap,ftpgis -d /home/c11adm -c "SAP EU System Admin" -m -u 3207 c11adm
+echo "c11adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+sudo useradd -s /usr/bin/csh -g dba -G sapinst,sapsys -d /home/orait0 -c "SAP EU Oracle Admin" -m -u 3206 orait0
+echo "orait0:DKK*],E-7Pwp?tqX" | sudo chpasswd
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,abap,ftpgis -d /home/it0adm -c "SAP EU System Admin" -m -u 3205 it0adm
+echo "it0adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,abap,ftpgis -d /home/ta2adm -c "SAP EU System Admin" -m -u 3203 ta2adm
+echo "ta2adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+";i:1;N;i:2;N;}i:2;i:91;}i:8;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:829;}i:9;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:829;}i:10;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:829;}i:11;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:829;}i:12;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:19:" Create filesystems";}i:2;i:833;}i:13;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:1332:"sudo lvcreate -n oracle_IT0        -L 1024MB  datavg01
+sudo lvcreate -n usr_sap_IT0       -L 8192MB  datavg01
+sudo lvcreate -n usr_sap_IT0_SUM   -L 10240MB datavg01
+sudo lvcreate -n home_it0adm       -L 512MB   datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/oracle_IT0
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_IT0
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_IT0_SUM
+sudo mkfs -t ext4 /dev/datavg01/home_it0adm
+
+cat << EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-oracle_IT0         /oracle/IT0           ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_IT0        /usr/sap/IT0          ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_IT0_SUM    /usr/sap/IT0/SUM      ext4    defaults        1 2
+/dev/mapper/datavg01-home_it0adm        /home/it0adm          ext4    defaults        1 2
+EOF
+
+sudo chown orait0:dba /oracle
+sudo chown orait0:dba /oracle/client
+sudo chown it0adm:sapsys /usr/sap
+
+sudo mkdir -p /oracle/IT0        ; sudo mount /oracle/IT0          ; sudo chown orait0:dba /oracle/IT0
+sudo mkdir -p /usr/sap/IT0       ; sudo mount /usr/sap/IT0         ; sudo chown it0adm:sapsys /usr/sap/IT0
+sudo mkdir -p /usr/sap/IT0/SUM   ; sudo mount /usr/sap/IT0/SUM     ; sudo chown it0adm:sapsys /usr/sap/IT0/SUM
+sudo mkdir -p /home/it0adm       ; sudo mount /home/it0adm         ; sudo chown it0adm:sapsys /home/it0adm";i:1;N;i:2;N;}i:2;i:857;}i:14;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:2197;}i:15;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:2197;}i:16;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:2197;}i:17;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:2197;}i:18;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:58:" Add NFS. First export the filesystems from the NFS server";}i:2;i:2201;}i:19;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:1610:"cat << EOF | sudo tee -a  /etc/fstab
+tedv2d01:/sapmnt/IT0/exe /sapmnt/IT0/exe nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tedv2d01:/sapmnt/IT0/global  /sapmnt/IT0/global nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tedv2d01:/sapmnt/IT0/profile /sapmnt/IT0/profile nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tedv2d01:/sapmnt/IT0/global/docwh    /sapmnt/IT0/global/docwh    nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tepr2d01:/usr/sap/trans        /usr/sap/trans        nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tedv2d01:/sapcomm  /sapcomm  nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tedv2d01:/sapcomm/IT0/archive  /sapcomm/IT0/archive  nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pgadap01:/sapmedia             /sapmedia             nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tedv2d01:/sapcomm/Finance/DART /sapcomm/Finance/DART nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+EOF
+
+sudo mkdir -p /sapmnt/IT0          ; sudo mount /sapmnt/IT0
+sudo mkdir -p /sapmnt/IT0/global/docwh      ; sudo mount /sapmnt/IT0/global/docwh
+sudo mkdir -p /usr/sap/trans           ; sudo mount /usr/sap/trans
+sudo mkdir -p /sapcomm     ; sudo mount /sapcomm
+sudo mkdir -p /sapcomm/IT0/archive     ; sudo mount /sapcomm/IT0/archive
+sudo mkdir -p /sapcomm/Finance/DART    ; sudo mount /sapcomm/Finance/DART
+sudo mkdir -p /sapmedia                ; sudo mount /sapmedia
+";i:1;N;i:2;N;}i:2;i:2264;}i:20;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:3882;}i:21;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:3882;}i:22;a:3:{i:0;s:11:"listo_close";i:1;a:0:{}i:2;i:3882;}i:23;a:3:{i:0;s:10:"listo_open";i:1;a:0:{}i:2;i:3883;}i:24;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:3883;}i:25;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:3883;}i:26;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:40:" If the system needs unispool, enable it";}i:2;i:3888;}i:27;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:30:"sudo systemctl enable unispool";i:1;N;i:2;N;}i:2;i:3933;}i:28;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:3971;}i:29;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:3971;}i:30;a:3:{i:0;s:11:"listo_close";i:1;a:0:{}i:2;i:3971;}i:31;a:3:{i:0;s:13:"section_close";i:1;a:0:{}i:2;i:3971;}i:32;a:3:{i:0;s:12:"document_end";i:1;a:0:{}i:2;i:3971;}}

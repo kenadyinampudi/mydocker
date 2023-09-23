@@ -1,0 +1,15 @@
+====== Remove OpenView Monitoring Client ======
+
+**If you have added removeOV NIM resource while building the server, this step has been done already**
+
+  - Stop the OVO agent<code>/usr/lpp/OV/bin/ovc -kill</code>
+  - Kill ov processes<code>ps -ef | grep -i ov</code>kill if there are any.
+  - Check the version<code>/usr/lpp/OV/bin/opcagt -version</code>
+    - If the version is 11.x
+      - Remove the 11.x agent<code>/usr/lpp/OV/bin/OpC/install/oainstall.sh -remove -agent</code>
+      - Delete these directories<code>rm -rf /usr/lpp/OV /usr/lpp/perf /var/opt/OV /var/opt/perf</code>
+    - If the version is not 11.x
+      - Remove the OVO agent<code>/usr/lpp/perf/bin/ovpa.remove</code>
+      - Kill perf processes<code>ps -ef | grep perf</code>
+      - Uninstall the OVO agent<code>/usr/lpp/OV/bin/OpC/install/opc_inst -r</code>
+      - Delete these directories<code>rm -rf /usr/lpp/OV /usr/lpp/perf /var/opt/OV /var/opt/perf</code>

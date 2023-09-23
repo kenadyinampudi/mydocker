@@ -1,0 +1,58 @@
+====== Mock 2 Dress Rehearsal Instructions ======
+
+===== Reset Tenneco systems back to Mock1 =====
+
+** Disconnect volumes from current host **
+
+  - Perform this step only on the clones **not on the Tenneco Legacy systems **
+  - Login to the host
+  - Terminate any SAP or Oracle processes<code>ps -ef | egrep "sap|ora|sdb" | grep -v grep | awk '{print $2}' | xargs -n1 sudo kill -9</code>
+  - Take a snapshot of disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Unmount all NFS filesystems<code>df -k | grep : | awk '{print $NF}' | sort -r | xargs -n1 sudo umount</code>
+  - Unexport all NFS filesystems<code>sudo exportfs -ua</code>
+  - Stop Openview<code>sudo /usr/lpp/OV/bin/ovc -stop</code>
+  - Unmount datavg filesystems<code>for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   for fs in $(lsvgfs ${vg} | sort -r )
+   do
+      echo "Working on ${vg} - ${fs} "
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -uk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] && echo "We have a problem unmounting ${fs} "
+      fi
+   done
+done</code>
+  - Check for any open logical volumes and take action to close them<code>lsvg | grep -v rootvg | xargs -n1 lsvg -l | grep -i open</code>
+  - Export VGs and delete disks<code>for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+   grep ${vg} lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl
+done</code>
+  - Send the output of this command to Storage team with the hostname, ask them to reclaim<code>grep -v rootvg lsvpcfg.out.1 | grep "PURE-FLASH"</code>
+
+** Connect volumes from mock1, import and mount filesystems **
+
+  - Login to the host
+  - Validate the LUNs<code>sudo lsvpcfg.sh | grep "PURE-FLASH"</code>You should only see rootvg and alt_rootvg
+  - Discover new disks<code>sudo cfgmgr</code>
+  - List new disks<code>sudo lsvpcfg.sh | grep "PURE-FLASH"</code>You should see more than rootvg and alt_rootvg
+  - Import VGs and mount filesystems<code>for VG in $(grep -v rootvg lsvpcfg.out.1 | grep "PURE-FLASH" | awk -F: '{print $NF}' | sort -u )
+do
+   echo "Working on ${VG} .. "
+   grep ${VG}$ lsvpcfg.out.1 | awk -F: '{print $2}' > ${VG}.pvids
+   disktoimport=$(lspv | grep -wf ${VG}.pvids | head -1 | awk '{print $1}' )
+   sudo importvg -y ${VG} ${disktoimport}
+   for fs in $(lsvgfs ${VG} | sort )
+   do
+      sudo fsck -y $fs
+      sudo mkdir -p $fs
+      sudo mount $fs
+   done      
+done</code>
+  - Mount all NFS filesystems<code>grep -p nfs /etc/filesystems | grep :  | sort  | sed "s;:;;g" | xargs -n1 sudo mount</code>
+  - Export all NFS filesystems<code>sudo exportfs -a</code>
+  - Start Openview<code>sudo /usr/lpp/OV/bin/ovc -start</code>

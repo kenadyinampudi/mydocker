@@ -1,0 +1,297 @@
+====== Rybnik - Cleaning up filesystems, disks and LUNs ======
+
+  - Login to taryb055
+  - Create a directory to store all data<code>mkdir cleanuptaryb055</code>
+  - Capture some information<code>cd cleanuptaryb055
+sudo lsvpcfg.sh > lsvpcfg.out.1
+lsvg -o | xargs -n1 lsvg -l > lsvg-o-l.out.1 2>&1</code>
+  - Just checking why fsck would not report any errors<code>sudo fsck /corrupted/sapdb/SDB/sapdata4</code><code>The current volume is: /dev/fslv20
+Primary superblock is valid.
+*** Phase 1 - Initial inode scan
+*** Phase 2 - Process remaining directories
+*** Phase 3 - Process remaining files
+*** Phase 4 - Check and repair inode allocation map
+*** Phase 5 - Check and repair block allocation map
+File system is clean.</code>
+
+===== Remove old filesystems =====
+
+  - Remove filesystems<code>sudo rmfs -r /corrupted/sapdb/SDB/sapdata</code><code>rmlv: Logical volume fslv14 is removed.</code><code>sudo rmfs -r /corrupted/sapdb/SDB/sapdata1</code><code>rmlv: Logical volume fslv15 is removed.</code><code>sudo rmfs -r /corrupted/sapdb/SDB/sapdata2</code><code>rmlv: Logical volume fslv16 is removed.</code><code>sudo rmfs -r /corrupted/sapdb/SDB/sapdata3</code><code>rmlv: Logical volume fslv19 is removed.</code>
+  - Decided to remove "/corrupted/sapdb/SDB/sapdata4" after all other LVs are off of the bad LUN. I don't know why !
+  - Check which hdisk is LUN 134, the problematic one.<code>grep 134 lsvpcfg.out.1</code><code>hdisk48:0001991f233ed53d:EMC-SYMM/CLAR-CKM00143401481:0134:103566::datavg02</code>
+  - List LVs on it ?<code>lspv -l hdisk48</code><code>hdisk48:
+LV NAME               LPs     PPs     DISTRIBUTION          MOUNT POINT
+fslv13                32      32      02..00..00..00..30    /sapdb/SDB/reorg
+fslv12                344     344     50..00..00..162..132  /sapdb/SDB/archivelog
+fslv18                55      55      55..00..00..00..00    /sapdb/backups
+fslv20                378     378     55..162..161..00..00  /corrupted/sapdb/SDB/sapdata4</code>
+  - Find out some disks to which the LVs can be migrated to<code>lsvg -p datavg02</code><code>datavg02:
+PV_NAME           PV STATE          TOTAL PPs   FREE PPs    FREE DISTRIBUTION
+hdisk33           active            809         9           00..00..00..00..09
+hdisk22           active            809         803         162..156..161..162..162
+hdisk23           active            809         803         162..156..161..162..162
+hdisk24           active            809         797         162..150..161..162..162
+hdisk25           active            809         797         162..150..161..162..162
+hdisk26           active            809         791         162..144..161..162..162
+hdisk27           active            809         791         162..144..161..162..162
+hdisk28           active            809         245         162..00..00..00..83
+hdisk29           active            809         803         162..156..161..162..162
+hdisk30           active            809         797         162..150..161..162..162
+hdisk31           active            809         538         162..00..52..162..162
+hdisk53           active            809         799         162..162..161..162..152
+hdisk34           active            809         809         162..162..161..162..162
+hdisk35           active            809         809         162..162..161..162..162
+hdisk36           active            809         809         162..162..161..162..162
+hdisk37           active            809         809         162..162..161..162..162
+hdisk38           active            809         809         162..162..161..162..162
+hdisk39           active            809         809         162..162..161..162..162
+hdisk40           active            809         809         162..162..161..162..162
+hdisk32           active            809         809         162..162..161..162..162
+hdisk41           active            809         809         162..162..161..162..162
+hdisk42           active            809         809         162..162..161..162..162
+hdisk43           active            809         809         162..162..161..162..162
+hdisk44           active            809         809         162..162..161..162..162
+hdisk45           active            809         396         73..162..161..00..00
+hdisk46           active            809         0           00..00..00..00..00
+hdisk48           active            809         0           00..00..00..00..00
+hdisk56           active            809         0           00..00..00..00..00
+hdisk71           active            809         0           00..00..00..00..00
+hdisk54           active            809         808         162..161..161..162..162</code>
+  - Migrate them<code>sudo migratepv -l fslv13 hdisk48 hdisk22 hdisk23</code><code>sudo migratepv -l fslv12 hdisk48 hdisk22 hdisk23</code><code>sudo migratepv -l fslv18 hdisk48 hdisk22 hdisk23</code><code>sudo migratepv -l fslv18 hdisk48 hdisk22 hdisk23</code>
+  - List what is left<code>lspv -l hdisk48</code><code>hdisk48:
+LV NAME               LPs     PPs     DISTRIBUTION          MOUNT POINT
+fslv20                378     378     55..162..161..00..00  /corrupted/sapdb/SDB/sapdata4</code>
+  - Remove "/corrupted/sapdb/SDB/sapdata4"<code>sudo rmfs -r /corrupted/sapdb/SDB/sapdata4</code><code>rmlv: Logical volume fslv20 is removed.</code>
+  - Remove the bad disk/LUN out of datavg02<code>sudo reducevg datavg02 hdisk48</code>
+  - Cleanup datavg03 as well<code>lsvg -l datavg03</code><code>datavg03:
+LV NAME             TYPE       LPs     PPs     PVs  LV STATE      MOUNT POINT
+loglv00             jfs2log    1       1       1    closed/syncd  N/A
+fslv05              jfs2       960     960     2    closed/syncd  /corrupted/sapdb/SDB/sapdata5
+fslv21              jfs2       480     480     1    closed/syncd  /corrupted/NEW/sapdb/SDB/sapdata6</code>
+  - Found both of them are closed<code>sudo rmfs -r /corrupted/sapdb/SDB/sapdata5</code><code>rmlv: Logical volume fslv05 is removed.</code><code>sudo rmfs -r /corrupted/NEW/sapdb/SDB/sapdata6</code><code>rmlv: Logical volume fslv21 is removed.</code>
+  - Get rid of datavg03<code>sudo varyoffvg datavg03
+sudo exportvg datavg03</code>
+
+===== Remove old devices =====
+
+  - Get rid of free disks from datavg02<code>lsvg -p datavg02</code><code>datavg02:
+PV_NAME           PV STATE          TOTAL PPs   FREE PPs    FREE DISTRIBUTION
+hdisk33           active            809         809         162..162..161..162..162
+hdisk22           active            809         716         162..69..161..162..162
+hdisk23           active            809         459         135..00..00..162..162
+hdisk24           active            809         797         162..150..161..162..162
+hdisk25           active            809         797         162..150..161..162..162
+hdisk26           active            809         791         162..144..161..162..162
+hdisk27           active            809         791         162..144..161..162..162
+hdisk28           active            809         245         162..00..00..00..83
+hdisk29           active            809         803         162..156..161..162..162
+hdisk30           active            809         797         162..150..161..162..162
+hdisk31           active            809         538         162..00..52..162..162
+hdisk53           active            809         799         162..162..161..162..152
+hdisk34           active            809         809         162..162..161..162..162
+hdisk35           active            809         809         162..162..161..162..162
+hdisk36           active            809         809         162..162..161..162..162
+hdisk37           active            809         809         162..162..161..162..162
+hdisk38           active            809         809         162..162..161..162..162
+hdisk39           active            809         809         162..162..161..162..162
+hdisk40           active            809         809         162..162..161..162..162
+hdisk32           active            809         809         162..162..161..162..162
+hdisk41           active            809         809         162..162..161..162..162
+hdisk42           active            809         809         162..162..161..162..162
+hdisk43           active            809         809         162..162..161..162..162
+hdisk44           active            809         809         162..162..161..162..162
+hdisk45           active            809         809         162..162..161..162..162
+hdisk46           active            809         809         162..162..161..162..162
+hdisk56           active            809         378         162..00..100..116..00
+hdisk71           active            809         0           00..00..00..00..00
+hdisk54           active            809         808         162..161..161..162..162</code><code>lsvg -p datavg02 | grep "809         809"</code><code>hdisk33           active            809         809         162..162..161..162..162
+hdisk34           active            809         809         162..162..161..162..162
+hdisk35           active            809         809         162..162..161..162..162
+hdisk36           active            809         809         162..162..161..162..162
+hdisk37           active            809         809         162..162..161..162..162
+hdisk38           active            809         809         162..162..161..162..162
+hdisk39           active            809         809         162..162..161..162..162
+hdisk40           active            809         809         162..162..161..162..162
+hdisk32           active            809         809         162..162..161..162..162
+hdisk41           active            809         809         162..162..161..162..162
+hdisk42           active            809         809         162..162..161..162..162
+hdisk43           active            809         809         162..162..161..162..162
+hdisk44           active            809         809         162..162..161..162..162
+hdisk45           active            809         809         162..162..161..162..162
+hdisk46           active            809         809         162..162..161..162..162</code><code>lsvg -p datavg02 | grep "809         809" | awk '{print $1}' | tr "\n" " "</code><code>hdisk33 hdisk34 hdisk35 hdisk36 hdisk37 hdisk38 hdisk39 hdisk40 hdisk32 hdisk41 hdisk42 hdisk43 hdisk44 hdisk45 hdisk46</code><code>sudo reducevg datavg02 hdisk33 hdisk34 hdisk35 hdisk36 hdisk37 hdisk38 hdisk39 hdisk40 hdisk32 hdisk41 hdisk42 hdisk43 hdisk44 hdisk45 hdisk46</code>
+
+===== Tidy up the volume group and cleanup more devices =====
+
+  - Cleanup further<code>lsvg -p datavg02</code><code>datavg02:
+PV_NAME           PV STATE          TOTAL PPs   FREE PPs    FREE DISTRIBUTION
+hdisk22           active            809         716         162..69..161..162..162
+hdisk23           active            809         459         135..00..00..162..162
+hdisk24           active            809         797         162..150..161..162..162
+hdisk25           active            809         797         162..150..161..162..162
+hdisk26           active            809         791         162..144..161..162..162
+hdisk27           active            809         791         162..144..161..162..162
+hdisk28           active            809         245         162..00..00..00..83
+hdisk29           active            809         803         162..156..161..162..162
+hdisk30           active            809         797         162..150..161..162..162
+hdisk31           active            809         538         162..00..52..162..162
+hdisk53           active            809         799         162..162..161..162..152
+hdisk56           active            809         378         162..00..100..116..00
+hdisk71           active            809         0           00..00..00..00..00
+hdisk54           active            809         808         162..161..161..162..162</code>
+  - Print Total, Used and free PPs for each disk(Yea ! it should have been $1 )<code>lsvg -p datavg02 | grep hdisk | awk '{print $2"\t"$3"\t"$3-$4"\t"$4}'</code><code>active  809     93      716
+active  809     350     459
+active  809     12      797
+active  809     12      797
+active  809     18      791
+active  809     18      791
+active  809     564     245
+active  809     6       803
+active  809     12      797
+active  809     271     538
+active  809     10      799
+active  809     431     378
+active  809     809     0
+active  809     1       808</code>
+  - Find out the total PPs used<code>lsvg -p datavg02 | grep hdisk | awk '{print $2"\t"$3"\t"$3-$4"\t"$4}' | awk '{print x+=$3}' | tail -1</code><code>2607</code>
+  - Find out how many disks will be needed to fit them all<code>"2607/809" | bc -l</code><code>3.22249690976514215080</code>We'll need 4 disks.
+  - Sort it based on usage<code>lsvg -p datavg02 | grep hdisk | awk '{print $1"\t"$3"\t"$3-$4"\t"$4}' | sort -n -k 3</code><code>hdisk54 809     1       808
+hdisk29 809     6       803
+hdisk53 809     10      799
+hdisk24 809     12      797
+hdisk25 809     12      797
+hdisk30 809     12      797
+hdisk26 809     18      791
+hdisk27 809     18      791
+hdisk22 809     93      716
+hdisk31 809     271     538
+hdisk23 809     350     459
+hdisk56 809     431     378
+hdisk28 809     564     245
+hdisk71 809     809     0</code>
+  - We already know they would fit on 4 disks, so pick the last 4 rows in the above output and migrate the top 10 rows to it. 
+  - Before that, double check anyway<code>lsvg -p datavg02 | grep hdisk | awk '{print $1"\t"$3"\t"$3-$4"\t"$4}' | sort -n -k 3 | head -10 | awk '{print x+=$3}' | tail -1</code><code>453</code><code>lsvg -p datavg02 | grep hdisk | awk '{print $1"\t"$3"\t"$3-$4"\t"$4}' | sort -n -k 3 | tail -4 | awk '{print x+=$4}' | tail -1</code><code>1082</code>
+  - Would 453 fit in 1082 ? Ofcourse it will. Hence, we do this<code>for disk in hdisk54 hdisk29 hdisk53 hdisk24 hdisk25 hdisk30 hdisk26 hdisk27 hdisk22 hdisk31
+do
+   echo "$(date) :: Migrating ${disk} to hdisk23 hdisk56 hdisk28 hdisk71 "
+   sudo migratepv ${disk} hdisk23 hdisk56 hdisk28 hdisk71
+done</code><code>Thu Jul 13 18:40:43 BST 2017 :: Migrating hdisk54 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:40:55 BST 2017 :: Migrating hdisk29 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:41:11 BST 2017 :: Migrating hdisk53 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:41:33 BST 2017 :: Migrating hdisk24 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:41:57 BST 2017 :: Migrating hdisk25 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:42:19 BST 2017 :: Migrating hdisk30 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:42:42 BST 2017 :: Migrating hdisk26 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:43:13 BST 2017 :: Migrating hdisk27 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:43:43 BST 2017 :: Migrating hdisk22 to hdisk23 hdisk56 hdisk28 hdisk71
+Thu Jul 13 18:45:55 BST 2017 :: Migrating hdisk31 to hdisk23 hdisk56 hdisk28 hdisk71</code>
+  - Check the allocation now<code>lsvg -p datavg02</code><code>datavg02:
+PV_NAME           PV STATE          TOTAL PPs   FREE PPs    FREE DISTRIBUTION
+hdisk22           active            809         809         162..162..161..162..162
+hdisk23           active            809         175         86..00..00..00..89
+hdisk24           active            809         809         162..162..161..162..162
+hdisk25           active            809         809         162..162..161..162..162
+hdisk26           active            809         809         162..162..161..162..162
+hdisk27           active            809         809         162..162..161..162..162
+hdisk28           active            809         233         150..00..00..00..83
+hdisk29           active            809         809         162..162..161..162..162
+hdisk30           active            809         809         162..162..161..162..162
+hdisk31           active            809         809         162..162..161..162..162
+hdisk53           active            809         809         162..162..161..162..162
+hdisk56           active            809         221         105..00..00..116..00
+hdisk71           active            809         0           00..00..00..00..00
+hdisk54           active            809         809         162..162..161..162..162</code>
+  - Get rid of the free LUNs<code>lsvg -p datavg02 | grep "809         809" | awk '{print $1}' | tr "\n" " "</code><code>hdisk22 hdisk24 hdisk25 hdisk26 hdisk27 hdisk29 hdisk30 hdisk31 hdisk53 hdisk54</code><code>sudo reducevg datavg02 hdisk22 hdisk24 hdisk25 hdisk26 hdisk27 hdisk29 hdisk30 hdisk31 hdisk53 hdisk54</code>
+  - Check the allocation now<code>lsvg -p datavg02</code><code>datavg02:
+PV_NAME           PV STATE          TOTAL PPs   FREE PPs    FREE DISTRIBUTION
+hdisk23           active            809         175         86..00..00..00..89
+hdisk28           active            809         233         150..00..00..00..83
+hdisk56           active            809         221         105..00..00..116..00
+hdisk71           active            809         0           00..00..00..00..00</code>
+
+===== Delete the unwanted devices =====
+
+  - Take another snapshot<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>
+  - List the free EMC LUNs<code>grep -v vg lsvpcfg.out.2 | grep EMC</code><code>hdisk22:0001991f00d0ad5a:EMC-SYMM/CLAR-CKM00143401481:0102:103566::
+hdisk24:0001991f00d0b39e:EMC-SYMM/CLAR-CKM00143401481:0104:103566::
+hdisk25:0001991f00d0b6c7:EMC-SYMM/CLAR-CKM00143401481:0105:103566::
+hdisk26:0001991f00d0ba3e:EMC-SYMM/CLAR-CKM00143401481:0106:103566::
+hdisk27:0001991f00d0bd4b:EMC-SYMM/CLAR-CKM00143401481:0107:103566::
+hdisk29:0001991f00d0c3c5:EMC-SYMM/CLAR-CKM00143401481:0109:103566::
+hdisk30:0001991f00d0c6f3:EMC-SYMM/CLAR-CKM00143401481:0110:103566::
+hdisk31:0001991f00d0ca16:EMC-SYMM/CLAR-CKM00143401481:0111:103566::
+hdisk32:0001991fb1a0a961:EMC-SYMM/CLAR-CKM00143401481:0122:103566::
+hdisk33:0001991f41dfd63b:EMC-SYMM/CLAR-CKM00143401481:0188:103566::
+hdisk34:0001991f00d0d055:EMC-SYMM/CLAR-CKM00143401481:0115:103566::
+hdisk35:0001991f00d0d375:EMC-SYMM/CLAR-CKM00143401481:0116:103566::
+hdisk36:0001991f00d0d691:EMC-SYMM/CLAR-CKM00143401481:0117:103566::
+hdisk37:0001991f00d0d9ac:EMC-SYMM/CLAR-CKM00143401481:0118:103566::
+hdisk38:0001991f00d0dccf:EMC-SYMM/CLAR-CKM00143401481:0119:103566::
+hdisk39:0001991f00d0dfe5:EMC-SYMM/CLAR-CKM00143401481:0120:103566::
+hdisk40:0001991f00d0e2ea:EMC-SYMM/CLAR-CKM00143401481:0121:103566::
+hdisk41:0001991fb1a0ae3e:EMC-SYMM/CLAR-CKM00143401481:0123:103566::
+hdisk42:0001991f19f02a19:EMC-SYMM/CLAR-CKM00143401481:0124:103566::
+hdisk43:0001991f752d4f83:EMC-SYMM/CLAR-CKM00143401481:0126:103566::
+hdisk44:0001991fbec6a6c4:EMC-SYMM/CLAR-CKM00143401481:0130:103566::
+hdisk45:0001991f16b252cd:EMC-SYMM/CLAR-CKM00143401481:0131:103566::
+hdisk46:0001991f5b32d314:EMC-SYMM/CLAR-CKM00143401481:0132:103566::
+hdisk48:0001991f233ed53d:EMC-SYMM/CLAR-CKM00143401481:0134:103566::
+hdisk53:0001991f41dfd9fe:EMC-SYMM/CLAR-CKM00143401481:0187:103566::
+hdisk54:0001991f41e8242f:EMC-SYMM/CLAR-CKM00143401481:0189:103566::
+hdisk57:0001991fefdd2a6d:EMC-SYMM/CLAR-CKM00143401481:0194:103566::0001991f0000d6000000015cefdd328e
+hdisk72:0001991ff1bf1c1f:EMC-SYMM/CLAR-CKM00143401481:0201:103566::0001991f0000d6000000015cefdd328e</code>
+  - List the LUN numbers and send it to storage team to reclaim.<code>grep -v vg lsvpcfg.out.2 | grep EMC | awk -F: '{print $4}' | sort -n</code><code>0102
+0104
+0105
+0106
+0107
+0109
+0110
+0111
+0115
+0116
+0117
+0118
+0119
+0120
+0121
+0122
+0123
+0124
+0126
+0130
+0131
+0132
+0134
+0187
+0188
+0189
+0194
+0201</code>
+  - Delete the disks from the host<code>grep -v vg lsvpcfg.out.2 | grep EMC | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code><code>hdisk22 deleted
+hdisk24 deleted
+hdisk25 deleted
+hdisk26 deleted
+hdisk27 deleted
+hdisk29 deleted
+hdisk30 deleted
+hdisk31 deleted
+hdisk32 deleted
+hdisk33 deleted
+hdisk34 deleted
+hdisk35 deleted
+hdisk36 deleted
+hdisk37 deleted
+hdisk38 deleted
+hdisk39 deleted
+hdisk40 deleted
+hdisk41 deleted
+hdisk42 deleted
+hdisk43 deleted
+hdisk44 deleted
+hdisk45 deleted
+hdisk46 deleted
+hdisk48 deleted
+hdisk53 deleted
+hdisk54 deleted
+hdisk57 deleted
+hdisk72 deleted</code>

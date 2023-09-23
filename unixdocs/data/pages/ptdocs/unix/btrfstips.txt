@@ -1,0 +1,194 @@
+====== BTRFS TIPS AND TRICKS ======
+ Culled from [[https://en.opensuse.org/SDB:BTRFS]]
+
+==Default Subvolumes==
+By default, openSUSE is set up using Btrfs and snapshots for the root partition. Snapshots allow you to easily roll back your system if needed after applying updates, or to back up files. Snapshots can easily be managed with [[Portal:Snapper|Snapper]].
+
+When using a snapshot to roll back the system, it must be ensured that data such as user's home directories, Web and FTP server contents or log files do not get lost or overwritten during a roll back. This is achieved by using Btrfs subvolumes on the root file system. Subvolumes are excluded from snapshots by default. The default root file system setup on openSUSE as proposed by YaST during the installation contains the following subvolumes. They are excluded from snapshots for the reasons given below.
+
+    /boot/grub2/i386-pc, /boot/grub2/x86_64-efi, /boot/grub2/powerpc-ieee1275, /boot/grub2/s390x-emu
+A rollback of the boot loader configuration is not supported. The directories listed above are architecture-specific. The first two directories are present on AMD64/Intel 64 machines, the latter two on IBM POWER and on IBM z Systems, respectively. 
+    /home
+If /home does not reside on a separate partition, it is excluded to avoid data loss on rollbacks. 
+    /opt
+Third-party products usually get installed to /opt. It is excluded to avoid uninstalling these applications on rollbacks.
+    /root
+The root users home directory should also be preserved during a rollback 
+    /srv
+Contains data for Web and FTP servers. It is excluded to avoid data loss on rollbacks. 
+    /tmp
+All directories containing temporary files and caches are excluded from snapshots. 
+    /usr/local
+This directory is used when manually installing software. It is excluded to avoid uninstalling these installations on rollbacks. 
+    /var
+This directory contains many variable files, including logs, temporary caches, third party products in /var/opt, and is the default location for many virtual machine images and databases. Therefore this subvolume is created to exclude all of this variable data from snapshots and is created with Copy-On-Write disabled.
+
+===Old /var/* subvolume layout (pre Jan 2018)===
+In older *SUSE distributions (SLE 12/Leap 42.x/and Tumbleweed installed before Jan 2018) the default btrfs subvolume layout considered /var as part of the root filesystem and instead included the following subvolumes under /var
+
+    /var/opt
+Third-party products usually get installed to /opt. It is excluded to avoid uninstalling these applications on 
+    /var/tmp, /var/cache, /var/crash
+All directories containing temporary files and caches are excluded from snapshots. 
+    /var/lib/libvirt/images
+The default location for virtual machine images managed with libvirt. Excluded to ensure virtual machine images are not replaced with older versions during a rollback. By default, this subvolume is created with the option no copy on write. 
+    /var/lib/mailman, /var/spool
+Directories containing mails or mail queues are excluded to avoid a loss of mails after a rollback. 
+    /var/lib/named
+Contains zone data for the DNS server. Excluded from snapshots to ensure a name server can operate after a rollback. 
+    /var/lib/mariadb, /var/lib/mysql, /var/lib/pgqsl
+These directories contain database data. By default, these subvolumes are created with the option no copy on write. 
+    /var/log
+Log file location. Excluded from snapshots to allow log file analysis after the rollback of a broken system. 
+----
+
+==Compressed btrfs filesystems==
+In Leap & Tumbleweed, compression for Btrfs file systems is supported. Use the compress or compress-force option and select the compression algorithm, lzo or zlib (the default). The zlib compression has a higher compression ratio while lzo is faster and takes less CPU load.
+For example:
+    mount -o compress /dev/sdx /mnt
+In case you create a file, write to it, and the compressed result is greater or equal to the uncompressed size, Btrfs will skip compression for future write operations forever for this file. If you do not like this behaviour, use the compress-force option. This can be useful for files that have some initial uncompressible data.
+
+Note, compression takes effect for new files only. Files that were written without compression are not compressed when the file system is mounted with the compress or compress-force option. Furthermore, files with the nodatacow attribute never get their extents compressed:
+    chattr +C FILE
+    mount -o nodatacow  /dev/sdx /mnt
+
+In regard to encryption, this is independent from any compression. After you have written some data to this partition, print the details:
+    btrfs filesystem show /mnt
+    btrfs filesystem show /mnt
+    Label: 'Test-Btrfs'  uuid: 62f0c378-e93e-4aa1-9532-93c6b780749d
+            Total devices 1 FS bytes used 3.22MiB
+          devid    1 size 2.00GiB used 240.62MiB path /dev/sdb1
+
+If you want this to be permanent, add the compress or compress-force option into the /etc/fstab configuration file. For example:
+    UUID=1a2b3c4d /home btrfs subvol=@/home,compress 0 0
+----
+==Checking Free Space==
+File system usage is usually checked by running the df command. On a Btrfs file system, the output of df can be misleading, because in addition to the space the raw data allocates, a Btrfs file system also allocates and uses space for metadata.
+
+Consequently a Btrfs file system may report being out of space even though it seems that plenty of space is still available. In that case, all space allocated for the metadata is used up. Use the following commands to check for used and available space on a Btrfs file system:
+
+===btrfs filesystem show===
+
+    sudo btrfs filesystem show /
+    Label: 'ROOT'  uuid: 52011c5e-5711-42d8-8c50-718a005ec4b3
+            Total devices 1 FS bytes used 10.02GiB
+            devid    1 size 20.02GiB used 13.78GiB path /dev/sda3
+
+Shows the total size of the file system and its usage. If these two values in the last line match, all space on the file system has been allocated. 
+===btrfs filesystem df===
+
+    sudo btrfs filesystem df /
+    Data, single: total=13.00GiB, used=9.61GiB
+    System, single: total=32.00MiB, used=16.00KiB
+    Metadata, single: total=768.00MiB, used=421.36MiB
+    GlobalReserve, single: total=144.00MiB, used=0.00B
+
+Shows values for allocated (total) and used space of the file system. If the values for total and used for the metadata are almost equal, all space for metadata has been allocated.
+
+===btrfs filesystem usage===
+
+    sudo btrfs filesystem usage /
+    Overall:
+        Device size:                  20.02GiB
+        Device allocated:             13.78GiB
+        Device unallocated:            6.24GiB
+        Device missing:                  0.00B
+        Used:                         10.02GiB
+        Free (estimated):              9.63GiB      (min: 9.63GiB)
+        Data ratio:                       1.00
+        Metadata ratio:                   1.00
+        Global reserve:              144.00MiB      (used: 0.00B)
+
+                 Data     Metadata  System
+    Id Path      single   single    single   Unallocated
+    -- --------- -------- --------- -------- -----------
+     1 /dev/sda3 13.00GiB 768.00MiB 32.00MiB     6.24GiB
+    -- --------- -------- --------- -------- -----------
+       Total     13.00GiB 768.00MiB 32.00MiB     6.24GiB
+       Used       9.61GiB 421.36MiB 16.00KiB
+
+Shows data similar to that of the two previous commands combined. 
+
+For more information refer to man 8 btrfs-filesystem and https://btrfs.wiki.kernel.org/index.php/FAQ.
+
+----
+==Disk Space Full Because of Snapper==
+If Snapper is running for the Btrfs file system, the “No space left on device” problem is typically caused by having too much data stored as snapshots on your system.
+You can remove some snapshots from Snapper, however, the snapshots are not deleted immediately and might not free up as much space as you need.
+To delete files from Snapper: 
+  * Open a terminal console.
+  * At the command prompt, enter btrfs filesystem show, for example:
+ sudo btrfs filesystem show
+ Label: none uuid: 40123456-cb2c-4678-8b3d-d014d1c78c78
+  Total devices 1 FS bytes used 20.00GB
+  devid 1 size 20.00GB used 20.00GB path /dev/sda3
+  * Enter
+ sudo btrfs fi balance start </mountpoint> -dusage=5
+
+This command attempts to relocate data in empty or near-empty data chunks, allowing the space to be reclaimed and reassigned to metadata. This can take a while (many hours for 1 TB) although the system is otherwise usable during this time.
+  * List the snapshots in Snapper. Enter
+ sudo snapper -c root list
+  * Delete one or more snapshots from Snapper. Enter
+ sudo snapper -c root delete snapshot_number(s)
+
+Ensure that you delete the oldest snapshots first. The older a snapshot is, the more disk space it occupies. 
+----
+
+==How to repair a broken/unmountable btrfs filesystem==
+
+The below are the recommended steps for any major btrfs filesystem issue, especially if its unmountable.
+Reading dmesg or syslog might help you identify which step you could skip to in order to fix a particular problem, but the initial steps are normally useful regardless as btrfs scrub is a very safe repair tool.
+
+  * Boot to a suitable alternative system, such as a rescue shell, different installation of openSUSE, a liveCD, or an openSUSE installation DVD. The installation DVD for the version of openSUSE you are running is usually a good choice as it will certainly use the same kernel/btrfs version. A recent Tumbleweed disk might be better as it will include newer kernel/btrfs
+  * Go to a suitable console and make sure you do the below as root
+  * Try to mount your partition to /mnt, just to confirm it's really broken
+ mount /dev/sda1 /mnt
+  * If it mounts - are you sure it's broken? if Yes - run
+ btrfs scrub start /mnt
+to scrub the system, and 
+ btrfs scrub status /mnt
+to monitor it
+  * If it doesn't mount, try to scrub the device just in case it works
+ btrfs scrub start /dev/sda1
+and
+ btrfs scrub status /dev/sda1
+to monitor. Once complete, try mounting, if yes, you're fixed.
+  * If scrubbing is not an option or does not resolve the issue
+then instead try mount -o usebackuproot
+ mount -o usebackuproot /dev/sda1 /mnt
+
+{{Warning| All of the above steps are considered safe and should make no destructive changes to disk. If the above doesn't fix things for you, you can continue with the below steps but the situation is serious enough to justify a bug report, please!}}
+
+  * Run "btrfs check <device>" 
+ btrfs check /dev/sda1
+This isn't going to help, but save the log somewhere, it will be useful for the bug report.
+  * Seriously consider running "btrfs restore <device> <somewhereto copy data>" 
+ btrfs restore /dev/sda1 /mnt/usbdrive
+This won't fix anything but it will scan the filesystem and recover everything it can to the mounted device. This especially useful if your btrfs issues are actually caused by failing hardware and not btrfs fault.
+  * Run "btrfs rescue super-recover <device>"
+ btrfs rescue super-recover /dev/sda1
+Then try to mount the device normally. If it works, stop going.
+  * Run "btrfs rescue zero-log <device>"
+ btrfs rescue zero-log /dev/sda1
+Then try to mount the device normally. If it works, stop going.
+  * Run "btrfs rescue chunk-recover <device>"
+ btrfs rescue chunk-recover /dev/sda1"
+This will take a LONG while. Then try to mount the device normally. If it works, stop going.
+  * If you didn't run it earlier, be sure to now run "btrfs restore <device> <somewhere to copy data>"
+ btrfs restore /dev/sda1 /mnt/usbdrive
+  * Failure to use btrfs restore at this point but continuing to attempt repairs means you are at a very high risk of data loss. It is advisable to use btrfs restore to recover as much data as possible before continuing.
+
+{{Warning|The above tools had a small chance of making unwelcome changes. Below this point there is a higher risk of damage. Do not continue unless you're prepared to accept the consequences of your choice.}}
+
+  * Now, ONLY NOW, try btrfsck aka "btrfs check --repair <device>" 
+ btrfs check --repair /dev/sda1
+
+----
+=== External links ===
+
+  * [https://btrfs.wiki.kernel.org/index.php/Main_Page | Btrfs wiki]
+  * [https://documentation.suse.com/sles/15-SP1/html/SLES-all/cha-filesystems.html | SLES Overview of File Systems in Linux]
+  * [https://www.suse.com/releasenotes/x86_64/SUSE-SLES/15-SP1/#TechInfo.Filesystems.Comparison | SLES Comparison of Supported File Systems]
+  * [https://www.suse.com/media/presentation/TUT91782_getting_the_most_out_of_the_btrfs_filesystem.pdf | Getting the most out of the ‘btrfs’ filesystem]
+  * [https://github.com/kdave/btrfsmaintenance/blob/master/README.md | btrfsmaintenance]
+

@@ -1,0 +1,27 @@
+===== Migrate FMMP to DRIV =====
+ 
+  - Note On all servers do not use the FDQN (Fully Qualified Domain Name) use the short name only.
+  - logon to the server to be migrated.
+  - Before starting the migration check for aliases in the /etc/hosts file <code>STBM=$(uname -n); grep -i $STBM /etc/hosts</code>  Example <code> 10.135.2.242    sap1201  sfldmiax11</code>
+  - Log into a NIM server either pcdcunxaxap01, or cdcvilax118. Verify that the driv.com  DNS entries for the server to be migrated have been created by the Wintel Team.Do this for each hostname in the output from the line above. <code> nslookup {server to be migrated} </code> If the DNS entries are missing STOP! Contact the Wintel Team and have then create the new DNS entries for both the server names in the outoput from th step above. 
+  -  Make a backup copy of the /etc/hosts file <code> sudo cp -p /etc/hosts /etc/hosts-$(date +%Y%m%d-%H:%M:%S)</code>
+  -  make a backup copy of the /etc/resolv.conf file <code> sudo cp -p /etc/resolv.conf /etc/resolv.conf-$(date +%Y%m%d-%H:%M:%S)</code>
+  -  Edit the /etc/host file and correct the entries. Example OLD Entries:<code>10.135.2.242    sap1201  sfldmiax11</code> CORRECTED Entries:<code> 10.135.2.242    sap1201 sap1201.driv.com sfldmiax11 sfldmiax11.driv.com</code>Save the File. 
+  -  Edit the /etc/resolv.conf file and remove the old entries.  Add the following entries.<code>search driv.com fmmotorparts.com fmmp.fmmotorparts.com federalmogul.com na.fmo.com fedmog.federalmogul.com
+rotate
+nameserver 10.128.11.200
+nameserver 10.128.11.201
+nameserver 10.128.11.202</code> save the file.
+
+  -  Make a backup copy of the /etc/mail/sendmail.cf file <code> sudo cp -p /etc/mail/sendmail.cf /etc/mail/sendmail.cf-$(date +%Y%m%d-%H:%M:%S)</code>
+  -  Check the /etc/mail/sendmail.cf "Smart" relay host entry and fix it<code>TOFIX=$(grep -p '"Smart" relay host' /etc/mail/sendmail.cf | grep DS)
+if [[ $TOFIX = 'DS' ]]
+        then
+        echo $TOFIX
+        echo "Nothing to FIX Here, Move along"
+        else
+	echo "Edit the /etc/mail/sendmai.cf file and change the /"Smart/" relay host from $TOFIX to DS"
+fi</code>
+
+
+  -  reboot the server. 

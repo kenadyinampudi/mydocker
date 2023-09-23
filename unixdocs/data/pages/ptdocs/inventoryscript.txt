@@ -1,0 +1,40 @@
+====== IMS Inventory Scripts ======
+Inventory scripts are in cdcpillx055:/scripts/inventory_script
+  * Script gathers some basic LPAR definition from the HMCs.
+  * It runs through the translation-matrix.txt and substitutes the second field as a friendly name for the LPAR name in the first field.
+  * It then attempts to log into each LPAR to gather more interesting information from the OS.
+  * Finally, a mount is made to the IMS upload location and the output is copied.  The mount is removed.
+
+==== getlparinventory ====
+//Main script.//  \\
+HMCs are hard-coded in the "main" function.  
+Grab a current list of LPARs and put it in a temp file  
+Loop through the list and substitute names from the translation matrix  
+Log into each entry not named "DoNotUse" and grab more information.
+
+==== translation-matrix.txt ====
+//CSV to provide a friendly name for LPARs//  \\
+Format is ''LPARNAME,ACTUALNAME''  
+This accounts for funky names for LPARs.  The "Actual" or "Friendly" name should be pingable by CDCPILLX055.  It's used for ssh.  
+If you do not want an LPAR to show up in IMS, add an entry in the translation matrix for the LPAR but change the friendly name to "DoNotUse".
+Example:  
+  cdcpilpx004,cdcpilpv004
+  21-F635B,DoNotUse                    
+  sfldmiax102.andy,sfldmiax102         
+  sfldmiax107-sap4001,sfldmiax107      
+  sfldmiax108\ -\ sap4011,sfldmiax108  
+
+==== output.tmp ====
+//Working file for the script.//  \\
+Temp file. Can be deleted if necessary.  Otherwise is overwritten every execution
+
+==== output.txt ====
+//final output for the script.//  \\
+Contains the final output of the scripts.  Is overwritten every execution.
+
+=== /tmp/IMS ===
+Mount to //cdcpilms085.federalmogul.com/FTP/IMS/AIX \\ 
+Uses ~/.smbcred for server creds. 
+
+=== /tmp/IMS/AIX_EXTRACT.csv === 
+File IMS expects to import.

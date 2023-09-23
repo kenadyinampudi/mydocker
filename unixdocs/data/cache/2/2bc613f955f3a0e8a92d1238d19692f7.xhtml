@@ -1,0 +1,166 @@
+
+<h1 class="sectionedit1" id="rhel_patching_-_jan_-_2020">RHEL Patching - Jan - 2020</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "RHEL Patching - Jan - 2020" [1-42] -->
+<h2 class="sectionedit2" id="preparation_work">Preparation work</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Get the downtime approved by users.</div>
+</li>
+<li class="level1"><div class="li"> Align resources to perform shutdown and startup of applications, databases etc.</div>
+</li>
+<li class="level1"><div class="li"> Create change controls, get approval.</div>
+</li>
+<li class="level1"><div class="li"> Send IT communications for production systems.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Preparation work" [43-290] -->
+<h2 class="sectionedit3" id="during_the_downtime">During the downtime</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Shutdown applications.</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:vspherehosts" class="wikilink1" title="unix:vspherehosts">Login to the respective vCenter servers documented here</a> </div>
+</li>
+<li class="level1"><div class="li"> Login using your active directory credentials i.e. <code>AMER\x1…..</code></div>
+</li>
+<li class="level1"><div class="li"> Backup the <abbr title="Operating System">OS</abbr> using VMWARE snapshots.</div>
+<ol>
+<li class="level2"><div class="li"> Shutdown the <abbr title="Operating System">OS</abbr></div>
+</li>
+<li class="level2"><div class="li"> Take a cold snapshot – Wintel/Unix</div>
+</li>
+<li class="level2"><div class="li"> Power the system back on</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the server.</div>
+</li>
+<li class="level1"><div class="li"> Set the build server as a variable<pre class="code">export server=pcdcunxlxap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Modify the local.repo file with the latest patches.</div>
+<ol>
+<li class="level2"><div class="li"> First make a copy<pre class="code">sudo cp /etc/yum.repos.d/local.repo local.repo</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> <strong>For all RHEL7 systems and SAP App servers – This will take release level to RHEL 7.7.</strong> Add this<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/yum.repos.d/local.repo
+[01-09-2020-rhel-7-7-server-rpms]
+name=01-09-2020-rhel-7-7-server-rpms
+baseurl=http://${server}/sources/01-09-2020/rhel-7.7/rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[01-09-2020-rhel-7-7-server-extras-rpms]
+name=01-09-2020-rhel-7-7-server-extras-rpms
+baseurl=http://${server}/sources/01-09-2020/rhel-7.7/rhel-7-server-extras-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[01-09-2020-rhel-7-7-server-optional-rpms]
+name=01-09-2020-rhel-7-7-server-optional-rpms
+baseurl=http://${server}/sources/01-09-2020/rhel-7.7/rhel-7-server-optional-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> <strong>RHEL 7.2 updates for SAP HANA Database servers</strong><pre class="code">cat &lt;&lt; EOF | sudo tee /etc/yum.repos.d/local.repo
+[01-09-2020-rhel-7-2-server-rpms]
+name=01-09-2020-rhel-7-2-server-rpms
+baseurl=http://${server}/sources/01-09-2020/rhel-7.2/rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[01-09-2020-rhel-7-2-server-extras-rpms]
+name=01-09-2020-rhel-7-2-server-extras-rpms
+baseurl=http://${server}/sources/01-09-2020/rhel-7.2/rhel-7-server-extras-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[01-09-2020-rhel-7-2-server-optional-rpms]
+name=01-09-2020-rhel-7-2-server-optional-rpms
+baseurl=http://${server}/sources/01-09-2020/rhel-7.2/rhel-7-server-optional-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Add the standard DRiV packages<pre class="code">cat &lt;&lt; EOF | sudo tee -a /etc/yum.repos.d/local.repo
+[local-driv-noarch]
+name=local-driv-noarch
+baseurl=http://${server}/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-driv-nbu]
+name=local-driv-nbu
+baseurl=http://${server}/sources/nbuclient/
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>On SAP App servers modify the sap.repo with the latest repository.</strong>First make a copy<pre class="code">sudo cp /etc/yum.repos.d/sap.repo sap.repo</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/yum.repos.d/sap.repo
+[01-09-2020-rhel-sap-for-rhel-7-server-rpms]
+name=01-09-2020-rhel-sap-for-rhel-7-server-rpms
+baseurl=http://${server}/sources/01-09-2020/rhel-7.7/rhel-sap-for-rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>On SAP HANA servers modify the saphana.repo with the latest repository.</strong> First make a copy<pre class="code">sudo cp /etc/yum.repos.d/saphana.repo saphana.repo</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">cat &lt;&lt; EOF | sudo tee /etc/yum.repos.d/saphana.repo
+[01-09-2020-rhel-sap-hana-for-rhel-7-server-rpms]
+name=01-09-2020-rhel-sap-hana-for-rhel-7-server-rpms
+baseurl=http://${server}/sources/01-09-2020/rhel-7.2/rhel-sap-hana-for-rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the updates / patches.<pre class="code">sudo yum clean all
+sudo yum update</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server<pre class="code">sudo init 6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the server and verify the patches have been installed.<pre class="code">cat /etc/redhat-release</pre>
+
+<p>
+Expected output
+</p>
+<pre class="code">Red Hat Enterprise Linux Server release 7.7 (Maipo)</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "During the downtime" [291-] -->

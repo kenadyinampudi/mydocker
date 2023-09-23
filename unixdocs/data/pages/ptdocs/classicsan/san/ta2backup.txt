@@ -1,0 +1,147 @@
+====== TA2 Oracle upgrade -- 2-17-2018 (snapshot backups) ======
+
+===== Pre-work -- to be done an hour before =====
+
+  - Get confirmation from DBA that the TA2 backup is complete.
+  - Login to teprbk01 and offline the disks<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Offline all VGs<code>for vg in $(grep datavg0 lsvpcfg.out.1 | awk -F: '{print $NF}' | sort -u)
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         echo "Unable to unmount ${fs} -- please check "
+      fi
+   done
+   sudo varyoffvg ${vg}
+   if [ ${?} -ne 0 ]
+   then
+      echo "Unable to varyoff ${vg} -- please check"
+   fi
+   sudo exportvg ${vg}   
+   if [ ${?} -ne 0 ]
+   then
+      echo "Unable to export ${vg} -- please check"
+   fi
+done</code>
+  - Delete all the disks<code>grep datavg0 lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - Stop previous flashcopy job.<code>ssh ldcv9ac2vip1 stopfcconsistgrp TA2ONLINEBKP</code>
+
+===== Backup during the downtime phase =====
+
+  - Ask DBA to shutdown databases on peerdb99 & peerdb98
+  - AsK DBA to copy redologs to sapdata file system
+  - Start flashcopy job<code>ssh ldcv9ac2vip1 startfcconsistgrp -prep TA2ONLINEBKP</code>
+  - Take a snapshot of the standby database on Pure storage array
+    - Login to pgunap01<code>sudo -u sanmontr ssh pureuser@ldcpm70v1 purepgroup snap --suffix oraupg TA2STBYDR</code>
+  - Ask DBA to start the database(s) back up and continue.
+
+===== Backout plan using V9000 =====
+
+  - Login to peerdb99
+  - Take a snapshot of the existing disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.10</code>
+  - Dismount and export V9000 volume groups<code>for vg in datavg01 datavg02 datavg03 datavg04
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount $fs > /dev/null 2>&1
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -kuc ${fs} > /dev/null 2>&1
+         sudo umount ${fs}
+         if [ ${?} -ne 0 ]
+         then
+            echo "Unable to unmount ${vg} -- ${fs} -- Manual intervention needed"
+         fi   
+   done
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+done</code>
+  - Offline TA2 flashcopy backups.
+  - Swing the backup LUNs from teprbk01 to peerdb99<code>for LUN in {001..040}
+do
+   ssh ldcv9ac2vip1 rmvdiskmap -host teprbk01 ta2dbbkup_${LUN}
+   ssh ldcv9ac2vip1 rmvdiskmap -host peerdb99 ta2dbdata_${LUN}
+   ssh ldcv9ac2vip1 mkvdiskmap -host peerdb99 ta2dbbkup_${LUN}
+done</code>
+  - Login to peerdb99<code>ssh peerdb99</code>
+  - Discover new devices<code>sudo cfgmgr</code>
+  - Take a snapshot of the new disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.11</code>
+  - fsck and mount backup filesystems on peerdb99<code>for VG in datavg01 datavg02 datavg03 datavg04
+do
+   echo "$(date) :: Working on ${VG}"
+   PVID=$(grep ":${VG}$" lsvpcfg.out.10 | awk -F: '{print $2}' | head -1
+   sudo importvg -y ${VG} ${PVID}
+   for fs in $(lsvgfs ${VG} | sort )
+   do
+   echo "$(date) :: Working on ${VG} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>
+  - Have the DBAs recover / startup the database.
+
+===== Backout plan using standby database (Pure Storage ) =====
+
+  - Zone peerdb99 host to pure storage array
+  - Define The Host peerdb99 on Linconshire Pure Storage array
+  - export some variables<code>
+export ARRAY="ldcpm70v1"
+export PGRP="TA2STBYDR"
+export SSH2PURE="sudo -u sanmontr ssh pureuser@${ARRAY}"</code>
+  - Log in to to pgunap01<code>ssh pgunap01</code>
+  - Store the snapshot as a variable<code>export SNAP="TA2STBYDR.oraupg"</code>
+  - Copy the snapshots to target volumes
+    - Export a start number for volume<code>export vol_no=100</code>
+    - Store the snapshot volumes in a variable<code>export snapshots=$(${SSH2PURE} purevol list --snap --pgrouplist ${SNAP} --notitle | grep -v 138G | awk '{print $1}' | tr "\n" " ")</code>
+    - Copy the snapshots to volumes<code>target_vols=""
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol copy ${snapshot} peerdb99_${vol_no}
+   target_vols="${target_vols} peerdb99_${vol_no}"
+   vol_no=$((vol_no+1))
+done</code>
+    - Preserve the target volumes in a file<code>echo ${target_vols} > TA2.poc.volumes</code>
+  - Connect the volumes to peerdb99<code>${SSH2PURE} purevol connect --host peerdb99 ${target_vols}</code>
+  - Login to peerdb99 host<code>ssh peerdb99</code>
+  - Dismount and export V9000 volume groups<code>for vg in origredovg mirrredovg datavg01 datavg02 datavg03 datavg04 binvg01
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount $fs > /dev/null 2>&1
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -kuc ${fs} > /dev/null 2>&1
+         sudo umount ${fs}
+         if [ ${?} -ne 0 ]
+         then
+            echo "Unable to unmount ${vg} -- ${fs} -- Manual intervention needed"
+         fi   
+   done
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+done</code>
+  - Take a snapshot of the existing disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Discover new devices<code>sudo cfgmgr</code>
+  - Take a snapshot of the new disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Get the LUN map from peerdb98<code>ssh peerdb98 "sudo /usr/local/scripts/lsvpcfg.sh" > lsvpcfg.out.recovery</code>
+  - Recreate the VGs and change the PVIDs<code>cat lsvpcfg.out.recovery | grep hdisk | grep -v rootvg > diskmap</code>
+  - fsck and mount them<code>for VG in binvg01 mirrredovg origredovg datavg01 datavg02 datavg03 datavg04
+do
+   echo "$(date) :: Working on ${VG}"
+   grep ":${VG}$" diskmap | awk -F: '{print $2}' > ${VG}.pvids
+   disks=$(lspv | grep -wf ${VG}.pvids | awk '{print $1}' | tr "\n" " " )
+   echo "$(date) :: Working on ${VG} -- recreatevg in progress"
+   sudo recreatevg -Y/ -L/ -y ${VG} ${disks}
+   for fs in $(lsvgfs ${VG} | sort )
+   do
+   echo "$(date) :: Working on ${VG} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>
+  - Handover the system  to DBA for recovery.
+  - DBA to recover DB on peerdb99.

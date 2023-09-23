@@ -1,0 +1,103 @@
+**taprvio140 / taprvio141 cluster supports the following  tagged  vlans:
+4(Native)
+48, 
+49,  
+406,  
+460,  
+450,  
+451**
+
+{{:unix:itc_-_lincolnshire_ibm_mmd_-_ta2_frame_-_unix_chassis_taprvio140_and_141_final.pdf|{{:unix:itc_-_lincolnshire_ibm_mmd_-_ta2_frame_-_unix_chassis_taprvio140_and_141_final.pdf|}}}}
+
+taprvio140-trunk 802.3ad going to switch#1 native vlan=4,tagged vlans=48,406,450
+	U3.1 - 29 - Core Switch#1 - ent0 (top port Location...U2C4E.001.DBJX011-P2-C4-T1)						
+	U3.1 - 30 - Core Switch#1 - ent1 (2nd port Location...U2C4E.001.DBJX011-P2-C4-T1)
+
+taprvio140 - trunk 802.3ad going to switch#2 tagged vlans=49,451,460
+	U3.1 - 31 - Core Switch#2 - ent2 (3rd port Location...U2C4E.001.DBJX011-P2-C4-T1)			
+	U3.1 - 32 - Core Switch#2 - ent3 (4th port Location...U2C4E.001.DBJX011-P2-C4-T1)	
+
+
+
+as padmin: For vlans: 48,  406,  450
+<code>mkvdev -lnagg ent0 ent1 -attr mode=8023ad
+ent4 Available
+en4
+et4</code>
+
+as padmin: For backup vlans: 49,  460,  451
+<code>mkvdev -lnagg ent2 ent3 -attr mode=8023ad
+ent5 Available
+en5
+et5</code>
+
+In HMC create two virtual adapters:
+1)  Vadapter ID=2, VLANID=1, 802.1q compatible, supported vlans=48,  406,  450, priority=1
+2)  Vadapter ID=3, VLANID=2, 802.1q compatible, supported vlans=49,  451,  460, priority=2
+
+  ent4             Available   EtherChannel / IEEE 802.3ad Link Aggregation  <--- production vlans 48,406,450
+  ent5             Available   EtherChannel / IEEE 802.3ad Link Aggregation  <--- backup vlans 49,451,460
+  ent6    Available       Virtual I/O Ethernet Adapter (l-lan)
+  ent7    Available       Virtual I/O Ethernet Adapter (l-lan)
+  ent8    Available       Virtual I/O Ethernet Adapter (l-lan)  <--- control 99
+  ent9    Available       Virtual I/O Ethernet Adapter (l-lan)  <--- control 98
+
+
+taprvio140
+----------
+<code>entstat -all ent6 | grep -iE "Priority|Port VLAN ID"
+  Priority: 1  Active: True
+  Port VLAN ID:     1</code>
+<code>entstat -all ent7 | grep -iE "Priority|Port VLAN ID"
+  Priority: 2  Active: True
+  Port VLAN ID:     2</code>
+
+
+taprvio141
+----------
+<code>entstat -all ent6 | grep -iE "Priority|Port VLAN ID"
+  Priority: 2  Active: False
+  Port VLAN ID:     1</code>
+<code>entstat -all ent7 | grep -iE "Priority|Port VLAN ID"
+  Priority: 1  Active: False
+  Port VLAN ID:     2</code>
+
+
+
+
+
+Create the Shared Ethernet Adapter for vlans=48,  406,  450
+
+<code>mkvdev -sea ent4 -vadapter ent6 -default ent6 -defaultid 1 -attr ha_mode=auto ctl_chan=ent8 largesend=1 large_receive=yes
+ent10 Available
+en10
+et10</code>
+
+
+Create the Shared Ethernet Adapter for vlans=49,  451,  460
+
+<code>mkvdev -sea ent5 -vadapter ent7 -default ent7 -defaultid 2 -attr ha_mode=auto ctl_chan=ent9 largesend=1 large_receive=yes
+ent11 Available
+en11
+et11</code>
+	
+Configure IP on front end SEA (ent10) 
+
+<code>smitty tcpip</code>
+
+
+Increase paging space to 16Gig on hd6 device
+
+<code>chps -s 32 hd6</code>
+
+**paap3p01-mmd - Fiber Configuration**
+
+  taprvio140:Adapter_ID=6 paap3p01-mmd:Adapter_ID=4
+  taprvio140:Adapter_ID=7 paap3p01-mmd:Adapter_ID=5
+  taprvio141:Adapter_ID=6 paap3p01-mmd:Adapter_ID=6
+  taprvio141:Adapter_ID=7 paap3p01-mmd:Adapter_ID=7
+
+<code>vfcmap -vadapter vfchost0 -fcp fcs0</code>
+<code>vfcmap -vadapter vfchost1 -fcp fcs1</code>
+
+

@@ -1,0 +1,29 @@
+====== Migrating AS400s over to Pure ======
+
+4 main steps
+
+  - Stop Hitachi replication
+  - Overwrite existing drives with copies
+  - IPL the partition
+  - Change zoning for the tape drives
+
+[[unix:as400migrationcommands | Specific commands for AS400 Migration]]
+
+===== Stop Hitachi replication =====
+  - Log into CDCPILLX151 as storage
+  - '' pairsplit -ISI5 -g <groupname>'' \\
+This is necessary to ensure the disks are not corrupted partial copies from the Hitachi to the Pure.
+===== Overwrite existing drives with copies =====
+  - From CDCPILLX151 as storage, ssh into taprpur003
+  - Issue the copy commands \\ ''purevol copy --overwrite ORIG_<AS400name>_VSCSI## <AS400name>_VSCSI##''\\ The overwrite portion will destructively ruin the destination drive, but this is OK and desired.  The ORIG disks are the copies from the Hitachi.
+===== IPL the partition =====
+  - From CDCPILHMC010, activate the <AS400name>new partition, making sure to choose the saved profile, not the current profile.  This should ensure you have the latest changes to the profile.
+  - Double-check the memory, CPU and VLANS for the Ethernet adapters match the original partition profile.
+===== Change zoning for the tape drives =====
+  - From CDCPILLX151 as storage, swap all the device aliases for the moved partition.
+  - ''no device-alias <name> pwwn <oldpwwn>\\ 
+device-alias <name> pwwn <newpwwn>''
+
+===== Troubleshooting tips =====
+  * List out Pure volumes to double-check names with ''purevol list ORIG_*''
+  * Fail back easily by activating the old partition. \\  - Log into CDCPILHMC010 \\  - Shutdown the new partition. "<AS400name>new"\\  - Activate the old partition "AS400name"  

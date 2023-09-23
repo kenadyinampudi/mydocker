@@ -1,0 +1,39 @@
+<html>
+ <head>
+   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+   <script type="text/javascript">
+     google.load("visualization", "1", {packages:["corechart"]});
+     google.setOnLoadCallback(drawChart);
+     function drawChart() {
+       var data = google.visualization.arrayToDataTable([
+['Date','EFD','FC','SATA'],
+['2017-11-22',   1,  376,  25],
+['2017-11-23',   1,  385,  16],
+['2017-11-24',   1,  384,  16],
+['2017-11-25',   1,  384,  16],
+['2017-11-26',   0,  385,  16],
+['2017-11-27',   0,  184,  217]
+        ]);
+        var options = {
+          title: 'VMAX FAST association report for pahydb02_SG',
+          chartArea:{left:50,top:50},vAxis:{title:'Gigabytes'},hAxis:{title:'DateTime'}
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="chart_div" style="width: 1500px; height: 900px;"></div>
+  </body>
+</html>
+
+
+^Date^EFD^FC^SATA^
+|2017-11-27|0|184|217|
+|2017-11-26|0|385|16|
+|2017-11-25|1|384|16|
+|2017-11-24|1|384|16|
+|2017-11-23|1|385|16|
+|2017-11-22|1|376|25|

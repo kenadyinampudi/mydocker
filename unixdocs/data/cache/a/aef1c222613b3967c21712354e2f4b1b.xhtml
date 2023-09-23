@@ -1,0 +1,314 @@
+
+<h1 class="sectionedit1" id="dgasdb01_migration_from_dmx4_to_v9000">dgasdb01 Migration from DMX4 to V9000</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> dgasdb01 current config.</div>
+<ol>
+<li class="level2"><div class="li"> Disks from from taprvio60 &amp; 70</div>
+<ol>
+<li class="level3"><div class="li"> taprvio60<pre class="code">hdiskpower89:138105:dgasdb01:N/A:vhost7:00f72d6743801288:000190103339:1316
+hdiskpower90:138105:dgasdb01:N/A:vhost7:00f72d674381c853:000190103339:1326
+hdiskpower91:34526:dgasdb01:N/A:vhost7:00f72d6743741743:000190103339:18DE
+hdiskpower92:34526:dgasdb01:N/A:vhost7:00f72d674375c65e:000190103339:18E2
+hdiskpower93:34526:dgasdb01:N/A:vhost7:00f72d6743779f5c:000190103339:18E6
+hdiskpower94:34526:dgasdb01:N/A:vhost7:00f72d6743796f1f:000190103339:18EA
+hdiskpower95:34526:dgasdb01:N/A:vhost7:00f72d67437b16f8:000190103339:18EE
+hdiskpower96:34526:dgasdb01:N/A:vhost7:00f72d67437ca555:000190103339:18F2
+hdiskpower97:34526:dgasdb01:N/A:vhost7:00f72d67437e3bdb:000190103339:18F6
+hdiskpower98:34526:dgasdb01:N/A:vhost7:00f72d6743804935:000190103339:18FA
+hdiskpower99:34526:dgasdb01:N/A:vhost7:00f72d674372f428:000190103339:18FE
+hdiskpower100:34526:dgasdb01:N/A:vhost7:00f72d674374d29c:000190103339:1902</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> taprvio70<pre class="code">hdiskpower38:138105:dgasdb01:N/A:vhost7:00f72d6743801288:000190103339:1316
+hdiskpower39:138105:dgasdb01:N/A:vhost7:00f72d674381c853:000190103339:1326
+hdiskpower40:34526:dgasdb01:N/A:vhost7:00f72d6743741743:000190103339:18DE
+hdiskpower41:34526:dgasdb01:N/A:vhost7:00f72d674375c65e:000190103339:18E2
+hdiskpower42:34526:dgasdb01:N/A:vhost7:00f72d6743779f5c:000190103339:18E6
+hdiskpower43:34526:dgasdb01:N/A:vhost7:00f72d6743796f1f:000190103339:18EA
+hdiskpower44:34526:dgasdb01:N/A:vhost7:00f72d67437b16f8:000190103339:18EE
+hdiskpower45:34526:dgasdb01:N/A:vhost7:00f72d67437ca555:000190103339:18F2
+hdiskpower46:34526:dgasdb01:N/A:vhost7:00f72d67437e3bdb:000190103339:18F6
+hdiskpower47:34526:dgasdb01:N/A:vhost7:00f72d6743804935:000190103339:18FA
+hdiskpower48:34526:dgasdb01:N/A:vhost7:00f72d674372f428:000190103339:18FE
+hdiskpower49:34526:dgasdb01:N/A:vhost7:00f72d674374d29c:000190103339:1902</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Need to present the following disks from V9000 to taprvio60 &amp; 70.<pre class="code">2    *    138GB
+10    *    34GB</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "dgasdb01 Migration from DMX4 to V9000" [1-2075] -->
+<h1 class="sectionedit2" id="migration">Migration</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> On taprvio60, scan and allocate PVIDs and change disk attributes for round robin.<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.1</pre>
+
+<p>
+cfgmgr
+</p>
+<pre class="code">sudo cfgmgr</pre>
+<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.2</pre>
+
+<p>
+Find the new LUNs
+</p>
+<pre class="code">diff lsdiskcfg.out.1 lsdiskcfg.out.2</pre>
+
+<p>
+The result looks like this
+</p>
+<pre class="code">x1kxk630 on taprvio60:/home/x1kxk630 $ diff lsdiskcfg.out.1 lsdiskcfg.out.2
+213a214,225
+&gt; hdisk57:138105:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:800000000000028
+&gt; hdisk62:138105:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:800000000000029
+&gt; hdisk122:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:80000000000002A
+&gt; hdisk123:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:80000000000002B
+&gt; hdisk142:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:80000000000002C
+&gt; hdisk143:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:80000000000002D
+&gt; hdisk144:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:80000000000002E
+&gt; hdisk145:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:80000000000002F
+&gt; hdisk146:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:800000000000030
+&gt; hdisk147:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:800000000000031
+&gt; hdisk156:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:800000000000032
+&gt; hdisk157:34526:taprvio60:N/A:N/A:none:IBM-v9000-600507680C80817DF:800000000000033</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Change disk attributes &amp; allocate pvid on taprvio60<pre class="code">sudo chdev -l hdisk57 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk62 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk122 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk123 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk142 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk143 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk144 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk145 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk146 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk147 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk156 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve
+sudo chdev -l hdisk157 -a pv=yes -a algorithm=round_robin -a reserve_policy=no_reserve</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On taprvio70, scan and allocate PVIDs and change disk attributes for round robin.<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.1</pre>
+
+<p>
+cfgmgr
+</p>
+<pre class="code">sudo cfgmgr</pre>
+<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.2</pre>
+
+<p>
+Find the new LUNs
+</p>
+<pre class="code">diff lsdiskcfg.out.1 lsdiskcfg.out.2</pre>
+
+<p>
+The result looks like this
+</p>
+<pre class="code">x1kxk630 on taprvio70:/home/x1kxk630 $ diff lsdiskcfg.out.1 lsdiskcfg.out.2
+213a214,225
+&gt; hdisk17:138105:taprvio70:N/A:N/A:00f72d67c4399a1f:IBM-v9000-600507680C80817DF:800000000000028
+&gt; hdisk22:138105:taprvio70:N/A:N/A:00f72d67c4399e2b:IBM-v9000-600507680C80817DF:800000000000029
+&gt; hdisk71:34526:taprvio70:N/A:N/A:00f72d67c439a1ee:IBM-v9000-600507680C80817DF:80000000000002A
+&gt; hdisk72:34526:taprvio70:N/A:N/A:00f72d67c439a5bc:IBM-v9000-600507680C80817DF:80000000000002B
+&gt; hdisk77:34526:taprvio70:N/A:N/A:00f72d67c439a989:IBM-v9000-600507680C80817DF:80000000000002C
+&gt; hdisk78:34526:taprvio70:N/A:N/A:00f72d67c439ad71:IBM-v9000-600507680C80817DF:80000000000002D
+&gt; hdisk79:34526:taprvio70:N/A:N/A:00f72d67c439b164:IBM-v9000-600507680C80817DF:80000000000002E
+&gt; hdisk80:34526:taprvio70:N/A:N/A:00f72d67c439b54f:IBM-v9000-600507680C80817DF:80000000000002F
+&gt; hdisk81:34526:taprvio70:N/A:N/A:00f72d67c439b930:IBM-v9000-600507680C80817DF:800000000000030
+&gt; hdisk82:34526:taprvio70:N/A:N/A:00f72d67c439bd16:IBM-v9000-600507680C80817DF:800000000000031
+&gt; hdisk83:34526:taprvio70:N/A:N/A:00f72d67c439c0f1:IBM-v9000-600507680C80817DF:800000000000032
+&gt; hdisk84:34526:taprvio70:N/A:N/A:00f72d67c439c4d9:IBM-v9000-600507680C80817DF:800000000000033</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Change disk attributes &amp; allocate pvid on taprvio70<pre class="code">sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk17
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk22
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk71
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk72
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk77
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk78
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk79
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk80
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk81
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk82
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk83
+sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdisk84</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On taprvio60, add disks to dgasdb01.</div>
+<ol>
+<li class="level2"><div class="li"> Find out the vhost<pre class="code">grep dgasdb01 lsdiskcfg.out.1 | awk -F: &#039;{print $5}&#039; | sort -u</pre>
+
+<p>
+The result should look like. If you see more vhosts, check with Sr. members of the Unix team
+</p>
+<pre class="code">x1kxk630 on taprvio60:/home/x1kxk630 $ grep dgasdb01 lsdiskcfg.out.1 | head -1  | awk -F: &#039;{print $5}&#039;
+vhost7</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Switch to padmin and map the disks from taprvio60 to vhost7.<pre class="code">sudo su - padmin</pre>
+
+<p>
+Map
+</p>
+<pre class="code">mkvdev -vdev hdisk57 -vadapter vhost7</pre>
+
+<p>
+I got a warning like this
+</p>
+<pre class="code">mkvdev  -vdev hdisk17 -vadapter vhost7
+vtscsi12 Available
+To see the newly added disk, client partition needs reboot.</pre>
+
+<p>
+This means, the characteristics of two different storage subsystems are not supported on a single vSCSI. We have seen this problem before, hence we dedicate a vSCSI for a specific storage array.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> The corrective action here is to create a new pair of vSCSI adapters for dgasdb01 from taprvio60 &amp; 70. There are documentations available in unixdocs on how to do so. In this case, we created vhost19 on taprvio60 &amp; 70 for the V9000 disks.</div>
+</li>
+<li class="level2"><div class="li"> Hence mapping to vhost19 on taprvio60<pre class="code">sudo su - padmin</pre>
+
+<p>
+Map
+</p>
+<pre class="code">mkvdev -vdev hdisk57 -vadapter vhost19
+mkvdev -vdev hdisk62 -vadapter vhost19
+mkvdev -vdev hdisk122 -vadapter vhost19
+mkvdev -vdev hdisk123 -vadapter vhost19
+mkvdev -vdev hdisk142 -vadapter vhost19
+mkvdev -vdev hdisk143 -vadapter vhost19
+mkvdev -vdev hdisk144 -vadapter vhost19
+mkvdev -vdev hdisk145 -vadapter vhost19
+mkvdev -vdev hdisk146 -vadapter vhost19
+mkvdev -vdev hdisk147 -vadapter vhost19
+mkvdev -vdev hdisk156 -vadapter vhost19
+mkvdev -vdev hdisk157 -vadapter vhost19</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On taprvio70, add disks to dgasdb01.</div>
+<ol>
+<li class="level2"><div class="li"> Find out the vhost<pre class="code">grep dgasdb01 lsdiskcfg.out.1 | awk -F: &#039;{print $5}&#039; | sort -u</pre>
+
+<p>
+The result should look like. If you see more vhosts, check with Sr. members of the Unix team
+</p>
+<pre class="code">x1kxk630 on taprvio60:/home/x1kxk630 $ grep dgasdb01 lsdiskcfg.out.1 | head -1  | awk -F: &#039;{print $5}&#039;
+vhost7</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Switch to padmin and map the disks from taprvio70 to vhost7<pre class="code">sudo su - padmin</pre>
+
+<p>
+Map
+</p>
+<pre class="code">mkvdev -vdev hdisk17 -vadapter vhost19
+mkvdev -vdev hdisk22 -vadapter vhost19
+mkvdev -vdev hdisk71 -vadapter vhost19
+mkvdev -vdev hdisk72 -vadapter vhost19
+mkvdev -vdev hdisk77 -vadapter vhost19
+mkvdev -vdev hdisk78 -vadapter vhost19
+mkvdev -vdev hdisk79 -vadapter vhost19
+mkvdev -vdev hdisk80 -vadapter vhost19
+mkvdev -vdev hdisk81 -vadapter vhost19
+mkvdev -vdev hdisk82 -vadapter vhost19
+mkvdev -vdev hdisk83 -vadapter vhost19
+mkvdev -vdev hdisk84 -vadapter vhost19</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Now login to the guest (dgasdb01 ) and discover the PVs<pre class="code">lspv &gt; lspv.out.1
+sudo cfgmgr
+lspv &gt; lspv.out.2</pre>
+
+<p>
+Find the new disks
+</p>
+<pre class="code">diff lspv.out.1 lspv.out.2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the 34G LUNs to datavg01 and start mirroring.<pre class="code">sudo extendvg datavg01 hdisk14 hdisk15 hdisk16 hdisk17 hdisk18 hdisk19 hdisk20 hdihdisk22 hdisk23</pre>
+
+<p>
+Mirror
+</p>
+<pre class="code">sudo mirrorvg datavg01 hdisk14 hdisk15 hdisk16 hdisk17 hdisk18 hdisk19 hdisk20 hdihdisk22 hdisk23</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> After the migration, unmirror and remove the old devices<pre class="code">sudo unmirrorvg datavg01 hdisk2 hdisk3 hdisk4 hdisk5 hdisk6 hdisk7 hdisk8 hdisk9 hdisk10 hdisk11</pre>
+
+<p>
+Remove them
+</p>
+<pre class="code">sudo reducevg datavg01 hdisk2 hdisk3 hdisk4 hdisk5 hdisk6 hdisk7 hdisk8 hdisk9 hdisk10 hdisk11</pre>
+
+<p>
+Delete them
+</p>
+<pre class="code">echo &quot;hdisk2 hdisk3 hdisk4 hdisk5 hdisk6 hdisk7 hdisk8 hdisk9 hdisk10 hdisk11&quot; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mirror rootvg too<pre class="code">export LVM_HOTSWAP_BOOTDISK=1
+sudo extendvg rootvg hdiskY
+sudo mirrorvg rootvg hdiskY
+sudo bosboot -ad /dev/hdiskX
+sudo bosboot -ad /dev/hdiskY
+sudo bootlist -m normal hdiskY
+sudo unmirrorvg rootvg hdiskX
+sudo reducevg rootvg hdiskX
+sudo bosboot -ad /dev/hdiskY</pre>
+
+<p>
+Create a new alt_disk
+</p>
+<pre class="code">sudo alt_disk_install -X altinst_rootvg
+sudo rmdev -dl hdisk1
+sudo rmdev -dl hdisk0
+sudo alt_disk_copy -g -B -d hdisk13</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove these disks from taprvio60<pre class="code">hdiskpower89:138105:dgasdb01:N/A:vhost7:00f72d6743801288:EMC-SYMM/CLAR-000190103339:1316
+hdiskpower90:138105:dgasdb01:N/A:vhost7:00f72d674381c853:EMC-SYMM/CLAR-000190103339:1326
+hdiskpower91:34526:dgasdb01:N/A:vhost7:00f72d6743741743:EMC-SYMM/CLAR-000190103339:18DE
+hdiskpower92:34526:dgasdb01:N/A:vhost7:00f72d674375c65e:EMC-SYMM/CLAR-000190103339:18E2
+hdiskpower93:34526:dgasdb01:N/A:vhost7:00f72d6743779f5c:EMC-SYMM/CLAR-000190103339:18E6
+hdiskpower94:34526:dgasdb01:N/A:vhost7:00f72d6743796f1f:EMC-SYMM/CLAR-000190103339:18EA
+hdiskpower95:34526:dgasdb01:N/A:vhost7:00f72d67437b16f8:EMC-SYMM/CLAR-000190103339:18EE
+hdiskpower96:34526:dgasdb01:N/A:vhost7:00f72d67437ca555:EMC-SYMM/CLAR-000190103339:18F2
+hdiskpower97:34526:dgasdb01:N/A:vhost7:00f72d67437e3bdb:EMC-SYMM/CLAR-000190103339:18F6
+hdiskpower98:34526:dgasdb01:N/A:vhost7:00f72d6743804935:EMC-SYMM/CLAR-000190103339:18FA
+hdiskpower99:34526:dgasdb01:N/A:vhost7:00f72d674372f428:EMC-SYMM/CLAR-000190103339:18FE
+hdiskpower100:34526:dgasdb01:N/A:vhost7:00f72d674374d29c:EMC-SYMM/CLAR-000190103339:1902</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove these disks from taprvio70<pre class="code">hdiskpower38:138105:dgasdb01:N/A:vhost7:00f72d6743801288:EMC-SYMM/CLAR-000190103339:1316
+hdiskpower39:138105:dgasdb01:N/A:vhost7:00f72d674381c853:EMC-SYMM/CLAR-000190103339:1326
+hdiskpower40:34526:dgasdb01:N/A:vhost7:00f72d6743741743:EMC-SYMM/CLAR-000190103339:18DE
+hdiskpower41:34526:dgasdb01:N/A:vhost7:00f72d674375c65e:EMC-SYMM/CLAR-000190103339:18E2
+hdiskpower42:34526:dgasdb01:N/A:vhost7:00f72d6743779f5c:EMC-SYMM/CLAR-000190103339:18E6
+hdiskpower43:34526:dgasdb01:N/A:vhost7:00f72d6743796f1f:EMC-SYMM/CLAR-000190103339:18EA
+hdiskpower44:34526:dgasdb01:N/A:vhost7:00f72d67437b16f8:EMC-SYMM/CLAR-000190103339:18EE
+hdiskpower45:34526:dgasdb01:N/A:vhost7:00f72d67437ca555:EMC-SYMM/CLAR-000190103339:18F2
+hdiskpower46:34526:dgasdb01:N/A:vhost7:00f72d67437e3bdb:EMC-SYMM/CLAR-000190103339:18F6
+hdiskpower47:34526:dgasdb01:N/A:vhost7:00f72d6743804935:EMC-SYMM/CLAR-000190103339:18FA
+hdiskpower48:34526:dgasdb01:N/A:vhost7:00f72d674372f428:EMC-SYMM/CLAR-000190103339:18FE
+hdiskpower49:34526:dgasdb01:N/A:vhost7:00f72d674374d29c:EMC-SYMM/CLAR-000190103339:1902</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Migration" [2076-] -->

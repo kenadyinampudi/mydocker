@@ -1,0 +1,172 @@
+====== Detailed technical plan for Change control - 04-04-2013 ======
+
+===== Shutdown applications and lpars =====
+
+** 4/3 - Wednesday 4 PM **
+
+  * Take pggpap01 out of the logon group for PLM. (Make sure the CI has enough memory)
+
+** 4/4 - Thursday 7 AM **
+
+  * Shutdown ETL application on tgdvetl1
+  * Shutdown SAP on pgadap01,dahrap01 and qahrap01
+  * Make sure no users are on pggpap01.
+  * Run the pre-upgrade script on these servers tgdvetl1 pgadap01 dahrap01 qahrap01 pggpap01.
+  * Shutdown and de-activate lpars<code>for host in tgdvetl1 pgadap01 dahrap01 qahrap01 pggpap01
+do
+   echo "sudo ssh -t ${host} shutdown -F &"
+done</code>Execute the resulting commands from taitc118.
+
+===== Upgrade taprvio16 (Robert Bieniek) =====
+
+  * Upgrade VIOS and install EMC ODM on taprvio16<code>sudo bootlist -m normal hdisk6</code>Reboot<code>sudo shutdown -Fr</code>
+  * Upgrade firmware on taprvio16 as padmin.<code>ldfware -file /usr/sys/inst.images/blade_microcode/ibm_fw_bios_aa730.094.035_anyos_ppc64.img</code>
+  * Re-configure the network switches for VLAN tagging (LAN Team)<code>Bladecentre2 - switch1 - port 14 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre2 - switch2 - port 14 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre2 - switch3 - port 14 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre2 - switch4 - port 14 - trunk , no native vlan, allowed VLANs 49,451</code>
+  * **Delete DNS entry for taprvio16 and taprvio16bck and assign new entry for taprvio16 in 10.0.4.xxx and get the network mask (non-standard)**
+  * Implement VLAN tagging on taprvio16.
+    * Follow this documentation. [[unix:bladeviovlantagging|VLAN Tagging on Blade VIO Server]]
+    * Create profile for pggpap01 **Do not add any network at this time - it speeds up the boot time**<code>hdisk2:34522:pggpap01:2:vhost0:000e651a9020ad3e:000190103471:0879
+hdisk3:138090:pggpap01:2:vhost0:00c9f3907bdd357c:000190103471:1824
+hdisk4:138090:pggpap01:2:vhost0:000e651a90246398:000190103471:0865</code><code>Processor Version: PV_7_Compat
+Number Of Processors: 2
+Processor Clock Speed: 3000 MHz
+CPU Type: 64-bit
+Kernel Type: 64-bit
+LPAR Info: 2 pggpap01
+Memory Size: 21504 MB
+Good Memory Size: 21504 MB
+Platform Firmware level: AA710_114
+Firmware Version: IBM,AA710_114
+Console Login: enable
+Auto Restart: true
+Full Core: false
+ 
+Network Information
+        Host Name: pggpap01
+        IP Address: 10.32.50.67
+        Sub Netmask: 255.255.255.0
+        Gateway: 10.32.50.1
+        Name Server: 10.32.8.53
+        Domain Name: eu.ten
+ 
+Paging Space Information
+        Total Paging Space: 47104MB
+        Percent Used: 1%
+</code>
+    * Bring up pggpap01 lpar.
+    * Correct the bootlist, disable NFS and shutdown pggpap01
+
+===== Unmap LUNs from source VIO servers =====
+
+  * Delete tgdvetl1 lpar from taprvio3 and delete the disks from ODM.<code>echo "hdisk1 hdisk2 hdisk3 hdisk8 hdisk11 hdisk13 hdisk14 hdisk15 hdisk16 hdisk17 hdisk18 hdisk28 hdisk30 hdisk31 hdisk32 hdisk36 hdisk37" | xargs -n1 sudo rmdev -dl</code>
+  * Delete pgadap01 lpar from taprvio4 and delete the disks from ODM.<code>echo "hdisk2 hdisk8 hdisk10 hdisk12 hdisk13 hdisk15 hdisk16 hdisk17 hdisk18 hdisk20 hdisk23 hdisk24 hdisk25 hdisk26 hdisk27 hdisk28 hdisk29 hdisk30 hdisk31 hdisk32" | xargs -n1 sudo rmdev -dl</code>
+  * Delete dahrap01 and qahrap01 lpars from taprvio5 and delete the disks from ODM.<code>echo "hdisk2 hdisk3 hdisk4 hdisk5 hdisk7 hdisk8 hdisk14" | xargs -n1 sudo rmdev -dl</code>
+
+===== Move the LUNs =====
+
+  * Swing tgdvetl1 LUNs from taprvio3 to taprvio14<code>1519 1884 1894 151D 1531 0E9D 0EA1 0EA5 0EA9 0E95 0E99 03D6 1A65 1A69 1A7D 1521 1525</code>
+  * Swing pgadap01 LUNs from taprvio4 to taprvio16<code>0E51 1754 0E59 0E5D 0E61 0E65 0E69 0E6D 0E71 067D 0591 0D29 0D2D 0D31 0D35 0D39 0D3D 0D1D 0D21 0D25</code>
+  * Swing qahrap01 and dahrap01 LUNs from taprvio5 to taprvio14<code>07D5 17B4 07C5 17A4 0E7D 0E81 1A6D</code>
+
+===== Create the LPARs on target VIO Server =====
+
+  * Create the LPARS on taprvio14<code>tgdvetl1 - 2c 9G
+dahrap01 - 4c 4G
+qahrap01 - 4c 4G</code>**Do not add network at this time**
+  * Create the lpar on taprvio16<code>pgadap01 - 4c 4G
+pgadap01 - 4c 4G</code>**Do not add network at this time**
+  * Update the console database for tgdvetl1, pgadap01, dahrap01, qahrap01<code>sudo vi /prod/images/etc/unix_sys_console</code>
+
+===== Map the disks to VIOCs =====
+
+  * Map the disks on taprvio14
+
+|hdisk1|34522|tgdvetl1|2|0000aaca32d99462 |000190103471 |1519 |
+|hdisk2|138090|tgdvetl1|2|0000aacaf4d8b21c |000190103471 |1884 |
+|hdisk3|138090|tgdvetl1|2|0000aacab2c050a8 |000190103471 |1894 |
+|hdisk8|34522|tgdvetl1|2|0000aaca32d994ac |000190103471 |151D |
+|hdisk11|34522|tgdvetl1|2|00c9f3a0fca34c5d |000190103471 |1531 |
+|hdisk13|34522|tgdvetl1|2|00c9f3a07e0992ce |000190103471 |0E9D |
+|hdisk14|34522|tgdvetl1|2|00c9f3a07e0a89d0 |000190103471 |0EA1 |
+|hdisk15|34522|tgdvetl1|2|00c9f3a07e11972f |000190103471 |0EA5 |
+|hdisk16|34522|tgdvetl1|2|00c9f3a07e0810b3 |000190103471 |0EA9 |
+|hdisk17|34522|tgdvetl1|2|0000aacaed3a6e51 |000190103471 |0E95 |
+|hdisk18|34522|tgdvetl1|2|0000aacaed3a6e0c |000190103471 |0E99 |
+|hdisk28|34522|tgdvetl1|2|0000aaca7ba5d421 |000190103471 |03D6 |
+|hdisk30|34522|tgdvetl1|2|0000aacae7862194 |000190103471 |1A65 |
+|hdisk31|34522|tgdvetl1|2|0000aacae786826a |000190103471 |1A69 |
+|hdisk32|34522|tgdvetl1|2|0000aaca4a2dd622 |000190103471 |1A7D |
+|hdisk36|34522|tgdvetl1|2|0000aaca32d994d8 |000190103471 |1521 |
+|hdisk37|34522|tgdvetl1|2|0000aaca32d99506 |000190103471 |1525 |
+|hdisk2|138090|dahrap01|2|0001248a360d111b |000190103471 |07D5 |
+|hdisk3|138090|dahrap01|2|0001248a547dd328 |000190103471 |17B4 |
+|hdisk4|138090|qahrap01|3|0001248a4fed7785 |000190103471 |07C5 |
+|hdisk5|138090|qahrap01|3|0001248a4fed77e8 |000190103471 |17A4 |
+|hdisk7|34522|dahrap01|2|0001248a3b81b485 |000190103471 |0E7D |
+|hdisk8|34522|qahrap01|3|0001248a4fed7813 |000190103471 |0E81 |
+|hdisk14|34522|qahrap01|3|00c9f3a02c4ae0de |000190103471 |1A6D |
+
+  * Map disks on taprvio16
+
+|hdisk2|34522|pgadap01 BASIS*Admin|5|0000aada9d2ad53f |000190103471 |0E51 |
+|hdisk8|138090|pgadap01 BASIS*Admin|5|0000aada4b48f9cd |000190103471 |1754 |
+|hdisk10|34522|pgadap01 BASIS*Admin|5|0000aada9d2b0eca |000190103471 |0E59 |
+|hdisk12|34522|pgadap01 BASIS*Admin|5|0000aada9d2b26da |000190103471 |0E5D |
+|hdisk13|34522|pgadap01 BASIS*Admin|5|0000aada9d2b3d71 |000190103471 |0E61 |
+|hdisk15|34522|pgadap01 BASIS*Admin|5|0000aada548366fb |000190103471 |0E65 |
+|hdisk16|34522|pgadap01 BASIS*Admin|5|0000aada54836726 |000190103471 |0E69 |
+|hdisk17|34522|pgadap01 BASIS*Admin|5|0000aada54836755 |000190103471 |0E6D |
+|hdisk18|34522|pgadap01 BASIS*Admin|5|0000aada54836780 |000190103471 |0E71 |
+|hdisk20|138090|pgadap01 BASIS*Admin|5|0000aadaaf82b75c |000190103471 |067D |
+|hdisk23|34522|pgadap01 BASIS*Admin|5|0000aadaafb94c60 |000190103471 |0591 |
+|hdisk24|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac5c8bd9 |000190103471 |0D29 |
+|hdisk25|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac61a518 |000190103471 |0D2D |
+|hdisk26|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac66cfbd |000190103471 |0D31 |
+|hdisk27|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac5cde75 |000190103471 |0D35 |
+|hdisk28|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac6208e4 |000190103471 |0D39 |
+|hdisk29|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac672285 |000190103471 |0D3D |
+|hdisk30|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac5bec7b |000190103471 |0D1D |
+|hdisk31|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac610ed7 |000190103471 |0D21 |
+|hdisk32|34522|pgadap01 BASIS*Admin|5|00c9f3a0ac6672d4 |000190103471 |0D25 |
+
+===== Bring up the lpars =====
+
+  * Get to console<code>sudo getconsole tgdvetl1
+sudo getconsole pgadap01
+sudo getconsole dahrap01
+sudo getconsole qahrap01
+sudo getconsole pggpap01</code>
+  * Boot the lpars
+  * Correct bootlist
+  * Disable NFS<code>sudo cp /etc/filesystems /etc/filesystems.OLD
+grep -v -p nfs /etc/filesystems > /var/tmp/filesystems.new
+sudo cp /var/tmp/filesystems.new /etc/filesystems
+sudo mv /etc/exports /etc/exports.old</code>
+  * Remove all network configuration<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+
+===== Configure network on all VIO Clients =====
+
+  * Shutdown all lpars
+  * Add network to all lpars on taprvio14<code>tgdvetl1 - 48 and 49
+dahrap01 - 48 and 49
+qahrap01 - 48 and 49</code>
+  * Add network to pgadap01 and pggpap01 on taprvio14<code>pgadap01 - 48 and 49
+pggpap01 - 450 and 451</code>
+  * Startup the LPARs and configure network on all of them.
+  * Enable NFS<code>sudo cp /etc/filesystems.OLD /etc/filesystems
+sudo mv /etc/exports.old /etc/exports</code>
+  * Check and make sure date & time are correct on all lpars.
+  * REboot
+===== Startup the LPARs and applications =====
+
+  * Startup ETL application on tgdvetl1
+  * Startup SAP on pgadap01,dahrap01,qahrap01 and add pggpap01 to the logon group

@@ -1,0 +1,23 @@
+====Reclamation====
+
+  * Receive confirmation from Unix/Wintel team that the LUN has been removed from the host.
+  * Login to taqa1d01 for managing DMX3, teprbk01 for managing DMX4.
+  * List the masking database for the given LUNs<code>sudo symmaskdb -sid 71 list assignment -dev abcd,efgh</code>This command will list the WWNs masked for these luns and the FAs they are mapped to.e.g.<code>Symmetrix ID : 000190103471
+
+Device  Identifier        Type   Dir:P     
+------  ----------------  -----  ----------------     
+194A 	10000000c9895ec9  FIBRE  FA-7A:1
+	10000000c9895256  FIBRE  FA-10A:1
+19B3	10000000c9895ec9  FIBRE  FA-7A:1
+	10000000c9895256  FIBRE  FA-10A:1</code>
+  * Remove masking<code>sudo symmask -sid 71 -wwn 10000000c9895ec9 -dir 7a -p 1 remove dev abcd,efgh
+sudo symmask -sid 71 -wwn 10000000c9895256 -dir 10a -p 1 remove dev abcd,efgh</code>
+  * Unmap the devices from the FAs if necessary
+    * Write disable the devices 
+      * On a specific FA(s)<code>sudo symdev -sid <sid> write_disable <dev> -SA <FA> -p <port></code>
+      * On all FA(s)<code>sudo symdev -sid <sid> write_disable <dev> -SA ALL</code>
+    * Create the unmap file syntax is here<code>unmap dev <dev> from dir <FA>:<port>;</code>
+    * Unmap the devices
+      * Preview<code>sudo symconfigure -sid <sid> -f <mapfile> preview</code>
+      * Commit<code>sudo symconfigure -sid <sid> -f <mapfile> commit</code>
+  * Refresh the FAs<code>sudo symmask -sid 71 refresh</code>

@@ -1,0 +1,102 @@
+
+<h1 class="sectionedit1" id="storage_migration_-_taglk055">Storage Migration - taglk055</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Storage Migration - taglk055" [1-44] -->
+<h2 class="sectionedit2" id="shutdown_applications">Shutdown Applications</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Run the RC script that brings down application<pre class="code">sudo /etc/rc.d/rc2.d/K02content
+sudo /etc/rc.d/rc2.d/K02plotmng
+sudo /etc/rc.d/rc2.d/K02UnicenterAT</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure applications are shutdown.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Shutdown Applications" [45-284] -->
+<h2 class="sectionedit3" id="fix_ntp">Fix NTP</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Fix NTP<pre class="code">sudo cp /etc/ntp.conf /etc/ntp.conf.07262014
+sudo cp /home/x1kxk630/sanmigration/ntp.conf /etc/ntp.conf
+sudo stopsrc -s xntpd
+sudo chrctcp -S -a xntpd
+date ; sudo ntpdate -u 10.1.1.1 ; date
+sudo xntpdc -l</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Fix NTP" [285-535] -->
+<h2 class="sectionedit4" id="start_the_rename_process">Start the Rename  process</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Rename old filesystems with a /OLD prefix and disable automount<pre class="code"> sudo ./home/x1cxs952/rename/rename_OLD.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the “OLD” filesystems <pre class="code">sudo ./home/x1cxs952/rename/mount_OLD.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Build the “NEW” filesystems <pre class="code"> sudo ./home/x1cxs952/rename/build-NEWFS.sh</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Start the Rename  process" [536-873] -->
+<h2 class="sectionedit5" id="start_the_copy_process">Start the Copy  process</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Start the copy processes</div>
+<ol>
+<li class="level2"><div class="li"> Thread 1<pre class="code">sudo /home/x1cxs92/sanmigration/thread1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Thread 2<pre class="code">sudo /home/x1cxs952/sanmigration/thread2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Thread 3<pre class="code">sudo /home/x1cxs952/sanmigration/thread3</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Thread 4<pre class="code">sudo /home/x1cxs952/sanmigration/thread4</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Thread 5<pre class="code">sudo /home/x1cxs952/sanmigration/thread5</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Start the Copy  process" [874-1279] -->
+<h2 class="sectionedit6" id="rename_mnd_mount_original_file_systems">Rename mnd Mount Original File Systems</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Unmount and Rename the new filesystems to the correct mount point.<pre class="code">sudo ./home/x1cxs952/rename/rename_ORIG.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the Original  filesystems<pre class="code">sudo sh /home/x1cxs952/rename/mount_ORIG.sh</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Rename mnd Mount Original File Systems" [1280-1551] -->
+<h2 class="sectionedit7" id="start_the_applications">Start the applications</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Run the RC start script<pre class="code">sudo /etc/rc.d/rc2.d/S99content
+S99UnicenterAT
+S99plotmng</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Start the applications" [1552-] -->

@@ -1,0 +1,65 @@
+====== Perform IT0 refresh on TA2 standby on VMAX ======
+
+** Some of the steps will be executed by Unix team, I wrote them together -- Kapil **
+
+  - Login to SYMCLI host pablsv01 and create pairing file
+    - Collect a list of devices from TA2 standby host peerdb98<code>ssh peerdb98 "sudo /usr/local/scripts/lsvpcfg.sh" > lsvpcfg.out.peerdb98</code>
+    - Collect a list of devices from IT0 system  host tedv2d01<code>ssh tedv2d01 "sudo /usr/local/scripts/lsvpcfg.sh" > lsvpcfg.out.tedv2d01</code>
+    - List of source and target luns<code>grep datavg lsvpcfg.out.peerdb98 | awk -F: '{print $4}' > ta2.stby.luns
+grep 000198700301 lsvpcfg.out.tedv2d01 | grep 122880 | awk -F: '{print $4}' > it0.luns</code>
+    - Create pairing file<code>paste ta2.stby.luns it0.luns > ta2.stby-it0.pairingfile</code>
+  - Offline the target devices. Login to tedv2d01<code>sudo lsvpcfg.sh > lsvpcfg.out.1
+grep 000198700301 lsvpcfg.out.1 | grep 122880 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -l</code>
+  - Request DBAs to bring down TA2 standby database on peerdb98
+  - Create a nocopy symclone. Login to SYMCLI host pablsv01<code>export SYMCLI_CLONE_COPY_ON_WRITE=ENABLED
+sudo symclone -sid 0301 -f ./ta2.stby-it0.pairingfile create -nocopy</code>
+  - Activate the clone<code>sudo symclone -sid 0301 -f ./ta2.stby-it0.pairingfile activate</code>
+  - Have DBAs bring up TA2 standby.
+  - Rename existing filesystems & VGs on IT0(DMX4 copy). Login to tedv2d01<code>for vg in $(lsvg | grep datavg )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount $fs
+      newname=$(echo ${fs} | sed "s;^;/DMX4;g")
+      sudo chfs -m ${newname} ${fs}
+   done
+   sudo varyoffvg ${vg}
+done</code>**If any filesystems stay mounted - the script will fail .. manually fix them**
+  - Import the cloned VGs. Now here, I am recreating the VG to avoid future PVID conflicts. Also the vgs will be named vmxdatavg??
+    - Login to tedv2d01. Get a copy of lsvpcfg from peerdb98<code>ssh peerdb98 "sudo /usr/local/scripts/lsvpcfg.sh" > lsvpcfg.out.peerdb98</code>
+    - Configure the devices on tedv2d01<code>grep 000198700301 lsvpcfg.out.1 | grep 122880 | awk -F: '{print $1}' | xargs -n1 sudo mkdev -l</code>
+    - Create another doc to disk<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>
+    - Create commands to perform recreatevg<code>for VG in $(grep datavg lsvpcfg.out.peerdb98 | awk -F: '{print $NF}' | sort -u)
+do
+   grep -w ${VG} lsvpcfg.out.peerdb98 | awk -F: '{print $2}' > ${VG}.pvids
+   PVS=$(grep -wf ${VG}.pvids lsvpcfg.out.2 | awk -F: '{print $1}' | tr "\n" " ")
+   echo "recreatevg -L/ -Y/ -y vmx${VG} ${PVS} " > recreatevg.${VG}.cmds
+done</code>**Carefully inspect *.cmds files and execute them one at a time **
+  - Change mount points of filesystems<code>for vg in $(lsvg | grep vmxdatavg )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      newfs=$(echo ${fs} | sed "s;TA2;IT0;g" )
+      sudo chfs -m ${newfs} ${fs}
+   done
+done</code>
+  - Run fsck on filesystems<code>for vg in $(lsvg | grep vmxdatavg )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo fsck -y ${fs} &
+   done
+done</code>** Wait for all fsck processes to complete **
+  - Mount and correct permissions<code>for vg in $(lsvg | grep vmxdatavg )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mount ${fs}
+      if [ ${?} -eq 0 ]
+      then
+         sudo chown -R orait0:dba ${fs}
+      else
+         echo "Unable to mount ${fs} - please fix and don't forget to change the permissions using chown -R orait0:dba ${fs}"
+      fi
+   done
+done</code>

@@ -1,0 +1,138 @@
+
+<h1 class="sectionedit1" id="what_to_do_when_you_get_a_ticket_for_filesystem_expansion_-_rhel">What to do when you get a ticket for filesystem expansion - RHEL</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Request would look like<pre class="code">Please make /oracle/client 1.5 GB on daerap01h</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The first step to do is, find out if this is a VM or a physical system.<pre class="code">sudo dmesg | grep -i &quot;Hypervisor detected&quot;</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> If the output is empty, it is a physical system. We don&#039;t have many of them, but pablsv01 is one.</div>
+</li>
+<li class="level2"><div class="li"> If the output shows something like below, it is a VM under VMWARE.<pre class="code">[    0.000000] Hypervisor detected: VMware</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "What to do when you get a ticket for filesystem expansion - RHEL" [1-531] -->
+<h2 class="sectionedit2" id="virtual_vmware_systems">Virtual (VMWARE) systems</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check the filesystem<pre class="code">df -h /oracle</pre>
+<pre class="code">Filesystem                          Size  Used Avail Use% Mounted on
+/dev/mapper/datavg01-oracle_client  976M  153M  757M  17% /oracle/client</pre>
+<pre class="code">mount | grep oracle</pre>
+<pre class="code">/dev/mapper/datavg01-oracle_client on /oracle/client type ext4 (rw,relatime,seclabel,data=ordered)</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> From this you now know<pre class="code">VG Name       : datavg01
+LV Name       : oracle_client
+Existing Size : 976M
+FS Type       : ext4</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check if the volume group has free space<pre class="code">sudo vgs datavg01</pre>
+<pre class="code">  VG       #PV #LV #SN Attr   VSize  VFree
+  datavg01   1  11   0 wz--n- 34.00g 4.50g</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> In this case, we have 4.5G of free space. Skip this section and move to expand the filesystem<a href="#expand_the_filesystem" title="unix:filesystemexpansion-rhel ↵" class="wikilink1">expand_the_filesystem</a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If the VG has not enough space, ( /oracle/client has to be made 10G )</div>
+<ol>
+<li class="level2"><div class="li"> Being on VMWARE, it doesn&#039;t make sense to add multiple virtual disks and complicate things(atleast for now, may be later we will change this when it comes to bigger systems)</div>
+</li>
+<li class="level2"><div class="li"> Conceptually, we plan to increase the size of the PV that is used to construct datavg01</div>
+</li>
+<li class="level2"><div class="li"> Figure out the disk that belongs to datavg01<pre class="code">sudo pvs  | grep datavg01</pre>
+<pre class="code">  /dev/sdc   datavg01 lvm2 a--  34.00g    4.50g</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> From the above output, we now know<pre class="code">Disk(PV) :   /dev/sdb
+Size     :   34G</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Double check the disk size<pre class="code">sudo fdisk -l /dev/sdc</pre>
+<pre class="code">Disk /dev/sdc: 36.5 GB, 36507222016 bytes, 71303168 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes</pre>
+
+<p>
+It does report 36.5GB, It has something to do with the way fdisk and pvs commands display the output capacity.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> ”/dev/sdc” is the 3rd disk on this system i.e.<pre class="code">sudo fdisk -l | grep /dev/sd.:</pre>
+
+<p>
+In this case
+</p>
+<pre class="code">Disk /dev/sda: 75.2 GB, 75161927680 bytes, 146800640 sectors ( Hard Disk 0 )
+Disk /dev/sdb: 68.7 GB, 68719476736 bytes, 134217728 sectors ( Hard Disk 0 )
+Disk /dev/sdc: 36.5 GB, 36507222016 bytes, 71303168 sectors ( Hard Disk 0 )</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Login to the respective vSphere server –&gt; Select the VM –&gt; Edit settings –&gt; Select the 3rd Disk “Hard Disk 3” –&gt; Change the size from 34GB to 44GB –&gt; Click Ok. ( Documented in detailed elsewhere )</div>
+</li>
+<li class="level2"><div class="li"> Come back to the server&#039;s putty session and rescan the device<pre class="code">echo &quot;1&quot; | sudo tee /sys/block/sdc/device/rescan</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run fdisk and make sure the size has changed<pre class="code">sudo fdisk -l | grep /dev/sd.:</pre>
+
+<p>
+In this case
+</p>
+<pre class="code">Disk /dev/sda: 75.2 GB, 75161927680 bytes, 146800640 sectors ( Hard Disk 0 )
+Disk /dev/sdb: 68.7 GB, 68719476736 bytes, 134217728 sectors ( Hard Disk 0 )
+Disk /dev/sdc: 46.5 GB, 36507222016 bytes, 71303168 sectors ( Hard Disk 0 )</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Resize the PV so the new size can be seen to the VG<pre class="code">sudo pvresize /dev/sdc</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> At this time, you should be able to go ahead and expand the filesystem <a href="#expand_the_filesystem" title="unix:filesystemexpansion-rhel ↵" class="wikilink1">expand_the_filesystem</a></div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Virtual (VMWARE) systems" [532-3572] -->
+<h2 class="sectionedit3" id="physical_systems">Physical systems</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Will do later</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Physical systems" [3573-3624] -->
+<h2 class="sectionedit4" id="expand_the_filesystem">Expand the filesystem</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Expand the logical volume<pre class="code">sudo lvextend -L 1.5g /dev/datavg01/oracle_client</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Expand the filesystem</div>
+<ol>
+<li class="level2"><div class="li"> ext3 and ext4 <pre class="code">sudo /usr/sbin/resize2fs /dev/datavg01/oracle_client</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> xfs <pre class="code">sudo /usr/sbin/xfs_growfs /dev/datavg01/oracle_client</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Expand the filesystem" [3625-] -->

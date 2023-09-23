@@ -1,0 +1,60 @@
+
+<h1 class="sectionedit1" id="the_following_procedure_outlines_steps_to_setup_secure_ftp_account_on_paft3p01_02">The Following procedure outlines steps to setup secure ftp account on paft3p01/02</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create UNIX account via the Entitlement Request</div>
+</li>
+<li class="level1"><div class="li"> Once the account has been created do the following:</div>
+<ol>
+<li class="level2"><div class="li"> set new password - use complex passwords</div>
+</li>
+<li class="level2"><div class="li"> remove ADMCHG from /etc/security/passwd file<pre class="code"> sudo pwdadm -c &lt;usrname&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add maxage = 0 and rlogin = false to the user section in /etc/security/user file<pre class="code"> sudo chuser maxage=0 &lt;username&gt;</pre>
+<pre class="code">sudo chuser rlogin=&#039;false&#039; &lt;username&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> change user shell:<pre class="code">sudo usermod -s /usr/sbin/sftp-server &lt;username&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> change primary group: <pre class="code">sudo usermod -g taedigrp &lt;username&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> change user home directory<pre class="code">sudo usermod -d /secftp_home/&lt;username&gt; -m &lt;username&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> create in and out subdirectories inside the home dir</div>
+</li>
+<li class="level2"><div class="li"> change ownership and permissions:<pre class="code">sudo chown -R &lt;username&gt;:taedigrp &lt;username&gt;</pre>
+<pre class="code">sudo chmod -R 775 &lt;username&gt;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> As root, configure the forwarder script that picks up files from $HOME/out directory and moves them to /taedi61/gentran/fil0/ for EDI processing</div>
+<ol>
+<li class="level2"><div class="li"> <pre class="code">cd /taedi61/gentran/fwder/</pre>
+<pre class="code">sudo cp advanftp-fwd.sh &lt;username&gt;-fwd.sh</pre>
+<pre class="code">sudo chmod 755 &lt;username&gt;-fwd.sh</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> vi &lt;username&gt;-fwd.sh and change line#5 OWNER=&lt;username&gt; and line#8 PATTERN=myfile* (whatever patter to look for)</div>
+</li>
+<li class="level2"><div class="li"> Add the following line to /etc/inittab:</div>
+<ol>
+<li class="level3"><div class="li"> &lt;username&gt;:23456789:respawn:/taedi61/gentran/fwder/&lt;username&gt;-fwd.sh</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Refresh init process<pre class="code">sudo init q</pre>
+<pre class="code">sudo init Q</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Repeat the same steps on the failover system paft3p02.tenneco.com except do not start the &lt;username&gt;-fwd.sh script as the script only runs on primary.</div>
+</li>
+</ol>
+
+</div>

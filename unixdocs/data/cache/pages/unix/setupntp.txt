@@ -1,0 +1,71 @@
+====== Setup NTP (Network Time Protocol) ======
+
+===== AIX =====
+
+  - Check the time server<code>sudo ntpdate -d server 10.0.48.12</code>If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+  - Edit the config file. First make a backup copy<code>sudo cp /etc/ntp.conf /etc/ntp.conf.$(date +%Y%m%d)</code>Now make the changes<code>sudo vi /etc/ntp.conf</code>Replace the file with this<code>driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server 10.0.48.12 prefer
+server 10.56.1.105
+</code>
+  - Start using the XNTPD daemon now and during system restart<code>sudo stopsrc -s xntpd</code><code>sudo chrctcp -S -a xntpd</code>
+  - Make sure it is running<code>lssrc -s xntpd</code>
+  - Check the date<code>date</code>
+  - If the time is not too far, adjuct the time. **DO NOT CHANGE TIME ON DATABASE SERVERS**<code>date ; sudo ntpdate -u 10.0.48.12 ; date</code>
+  - Ensure the timeserver is correct<code>sudo xntpdc -l
+client    penmsv01.emea.int.tenneco.com
+client    pgnmsv01.amer.int.tenneco.com
+</code>
+
+**Other usefull commands:**
+<code>chrctcp -S -a xntpd enable and start xntpd
+chrctcp -S -d xntpd disable and stop xntpd
+chrctcp -a xntpd enable but do not start xntpd
+chrctcp -d xntpd disable but do not stop xntpd</code>
+
+===== VIOS =====
+
+  - export PATH<code>export PATH=$PATH:/usr/sbin:/sbin:/etc:/usr/bin:/bin</code>Some VIOS root logins don't set PATH variable correct - need to check why
+  - Check the time server<code>sudo ntpdate -d server 10.0.48.12</code>If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+  - Edit the config file<code>sudo vi /home/padmin/config/ntp.conf</code>Add these to the end of the file<code># Customized for Tenneco
+server 10.0.48.12 prefer
+server 10.56.1.105
+</code>
+  - Start using the XNTPD daemon now and during system restart<code>sudo stopsrc -s xntpd</code><code>sudo chrctcp -S -a xntpd</code>
+  - Make sure it is running<code>lssrc -s xntpd</code>
+  - Check the date<code>date</code>
+  - If there is an offset, correct it<code>date ; sudo ntpdate -u 10.0.48.12 ; date</code>
+  - Ensure the timeserver is correct<code>sudo xntpdc -l
+client    penmsv01.emea.int.tenneco.com
+client    pgnmsv01.amer.int.tenneco.com
+</code>
+
+===== Linux =====
+
+==== SuSE ====
+
+  - Check the time server<code>sudo ntpdate -d server 10.0.48.12</code>If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+  - Edit the config file<code>sudo vi /etc/ntp.conf</code>Add these to the end of the file<code># Customized for Tenneco
+server 10.0.48.12
+server 10.56.1.105</code>
+  - Start using the XNTPD daemon<code>sudo chkconfig ntp 12345 on</code>Check it<code>sudo chkconfig --list ntp
+ntp                       0:off  1:on   2:on   3:on   4:on   5:on   6:off</code>Start it<code>sudo service ntp start</code>
+  - Make sure it is running<code>sudo service ntp status</code>
+  - Check the date<code>date</code>
+  - If there is an offset, correct it<code>sudo ntpdate -u server 10.0.48.12</code>
+
+==== Redhat ====
+
+  - Check the time server<code>sudo ntpdate -d server 10.0.48.12</code>If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+  - Replace the config file with this<code>sudo vi /etc/ntp.conf</code>Fill in these<code># Customized for Tenneco
+fudge   127.127.1.0 stratum 10
+driftfile /var/lib/ntp/drift
+keys /etc/ntp/keys
+server 10.0.48.12
+server 10.56.1.105</code>
+  - Start using the XNTPD daemon<code>sudo chkconfig --level 12345 ntpd on</code>Check it<code>sudo chkconfig --list ntpd
+ntp                       0:off  1:on   2:on   3:on   4:on   5:on   6:off</code>Start it<code>sudo service ntpd start</code>
+  - Make sure it is running<code>service ntpd status</code>e.g.<code>paitap01:~ # service ntpd status
+Checking for network time protocol daemon (NTPD):                     running</code>
+  - Check the date<code>date</code>
+  - If there is an offset, correct it<code>sudo ntpdate -u server 10.0.48.12</code>

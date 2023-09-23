@@ -1,0 +1,20 @@
+====== Writing your own service for System-D ======
+To use systemd to start and stop services in a newer system (and to enable it to start at runtime) do the following :\\ 
+\\ 
+
+  * Stick all your commands in a single script file and save it somewhere only root has access.\\  ''vi /usr/sbin/myservice.sh''
+  * Make sure that script is executable.\\ ''chmod +x /usr/sbin/myservice.sh''
+  * Create /etc/systemd/system/<name>.service\\ ''touch /etc/systemd/system/myservice.service''
+  * Edit the new service file with appropriate details. \\ <code>
+[Unit]
+Description=MyService
+
+[Service]
+ExecStart=/usr/sbin/myservice.sh
+
+[Install]
+WantedBy=multi-user.target
+</code>
+  * Test starting the service. \\ <code>
+systemctl start myservice; systemctl status myservice </code>
+  * If all is well, enable it for startup (if desired).\\ ''systemctl enable myservice''

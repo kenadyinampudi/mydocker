@@ -1,0 +1,65 @@
+====== SRM Go live backups - timefinder clone ======
+
+
+== Start background timefinder copy on VMAX at 03-06-2014 - 11:30 PM CST ==
+
+  - Login to CLI server ''pablsv01'' and make sure all source and target LUNs are free of any copy tasks<code>sudo symclone -sid 0301 -f /home/x1kxk630/srmclone/clone_pairingfile.srmvg01 query</code>
+  - Login to ''taqa1d01'' and rmdev the LUNs<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1
+sudo grep -f /home/x1kxk630/srmclone/target.luns.grepfile lsvpcfg.out.1 | tr ":" "\n" | grep hdisk | xargs -n1 sudo rmdev -dl</code>
+  - Start the cloning session from ''pablsv01''<code>sudo symclone -sid 0301 -f /home/x1kxk630/srmclone/clone_pairingfile.srmvg01 create -precopy</code>
+
+== Disable CIO, Activate timefinder clone, mount filesystems on taqa1d01 at 03-07-2014 - 7:00 AM CST ==
+
+  - Wait for DBA / Basis to shutdown applications ( PSR )
+  - Disable cio on database filesystems. Login to ''tspr1d01''<code>for fs in /oracle/PSR/sapdata1 /oracle/PSR/sapdata2 /oracle/PSR/sapdata3 /oracle/PSR/sapdata4
+do
+   sudo chfs -a options=rw ${fs}
+   sudo umount $fs
+   sudo mount $fs
+done</code>
+  - Activate timefinder clone. Login to ''pablsv01''<code>sudo symclone -sid 0301 -f /home/x1kxk630/srmclone/clone_pairingfile.srmvg01 activate -consistent</code>
+  - Login to ''taqa1d01'' and mount the filesystems
+    - Cfgmgr - configure disks<code>echo "fscsi0 fscsi1" | xargs -n1 sudo cfgmgr -l</code>
+    - Configure disks on powerpath<code>sudo powermt config</code>
+    - Import the Volume Group<code>sudo importvg -y srmvg01 00ce6b85c564c015 </code>
+    - Run fsck on all filesystems<code>for fs in $(sudo lsvgfs srmvg01)
+do
+   sudo fsck -y ${fs} &
+done</code>Wait for all background jobs to finish.
+    - Mount the filesystems<code>for fs in $(sudo lsvgfs srmvg01 | sort)
+do
+   sudo mkdir -p ${fs}
+   sudo mount ${fs}
+done</code>
+  - Handover to James Fort ( Data Pres ) for backups
+
+== Backups completed - restart the timefinder cloning session at 03-07-2014 - 13:00 PM CST ==
+
+  - Unmount filesystems from ''taqa1d01''<code>for fs in $(sudo lsvgfs srmvg01 | sort -r)
+do
+   sudo umount ${fs}
+done</code>
+  - Export the Volume group from ''taqa1d01''<code>sudo varyoffvg srmvg01
+sudo exportvg srmvg01</code>
+  - Delete the disks from ''taqa1d01''<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1
+sudo grep -f /home/x1kxk630/srmclone/target.luns.grepfile lsvpcfg.out.1 | tr ":" "\n" | grep hdisk | xargs -n1 sudo rmdev -dl</code>
+  - Re-start the cloning session from ''pablsv01''<code>sudo symclone -sid 0301 -f /home/x1kxk630/srmclone/clone_pairingfile.srmvg01 recreate -precopy</code>
+
+== Activate / Split the timefinder clone, mount filesystems on taqa1d01 at 03-07-2014 - 11:15 PM CST ==
+
+  - Wait for DBA / Basis to shutdown applications ( PSR )
+  - Activate timefinder clone. Login to ''pablsv01''<code>sudo symclone -sid 0301 -f /home/x1kxk630/srmclone/clone_pairingfile.srmvg01 activate -consistent</code>
+  - Login to ''taqa1d01'' and mount the filesystems
+    - Cfgmgr - configure disks<code>echo "fscsi0 fscsi1" | xargs -n1 sudo cfgmgr -l</code>
+    - Configure disks on powerpath<code>sudo powermt config</code>
+    - Import the Volume Group<code>sudo importvg -y srmvg01 00ce6b85c564c015 </code>
+    - Run fsck on all filesystems<code>for fs in $(sudo lsvgfs srmvg01)
+do
+   sudo fsck -y ${fs} &
+done</code>Wait for all background jobs to finish.
+    - Mount the filesystems<code>for fs in $(sudo lsvgfs srmvg01 | sort)
+do
+   sudo mkdir -p ${fs}
+   sudo mount ${fs}
+done</code>
+  - Handover to James Fort ( Data Pres ) for backups

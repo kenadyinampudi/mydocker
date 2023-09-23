@@ -1,0 +1,85 @@
+
+<h1 class="sectionedit1" id="turn_off_snmpd_public_and_private">Turn off SNMPD public and private</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> How to test this. </div>
+</li>
+<li class="level1"><div class="li"> Login to pablsv02 which has the snmpwalk executable</div>
+<ol>
+<li class="level2"><div class="li"> Version 1<pre class="code">[x1kxk630@pablsv02 ~]$ snmpwalk -v1 -c public panmsv02
+End of MIB</pre>
+
+<p>
+This would mean the public string on ON.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Version 2<pre class="code">[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+End of MIB</pre>
+
+<p>
+This would mean the public string on ON.
+</p>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+
+<h4 id="turning_off_public_and_private">Turning off public and private</h4>
+<div class="level4">
+
+</div>
+
+<h5 id="aix">AIX</h5>
+<div class="level5">
+<ol>
+<li class="level1"><div class="li"> Turning off the Version 2 public string<pre class="code">sudo vi /etc/snmpdv3.conf</pre>
+
+<p>
+And comment out this line
+</p>
+<pre class="code">COMMUNITY public    public     noAuthNoPriv 0.0.0.0    0.0.0.0         -</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Or simply copy the file from pgnmsv01<pre class="code">sudo scp pgnmsv01:/prod/images/etc/snmpdv3.conf /etc/</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> And restart snmpd ( refresh is not enough )<pre class="code">stopsrc -s snmpd ; sleep 1 ; startsrc -s snmpd</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Try the snmpwalk command from pablsv02 once more and you will see it does not respond anymore.<pre class="code">[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+Timeout: No Response from panmsv02</pre>
+</div>
+</li>
+</ol>
+
+</div>
+
+<h5 id="solaris_8">Solaris 8</h5>
+<div class="level5">
+<ol>
+<li class="level1"><div class="li"> Turning off the Version 2 public string<pre class="code">sudo vi /etc/snmpdv3.conf</pre>
+
+<p>
+And comment out this line
+</p>
+<pre class="code">COMMUNITY public    public     noAuthNoPriv 0.0.0.0    0.0.0.0         -</pre>
+
+<p>
+And restart snmpd ( refresh is not enough )
+</p>
+<pre class="code">stopsrc -s snmpd ; sleep 1 ; startsrc -s snmpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Try the snmpwalk command from pablsv02 once more and you will see it does not respond anymore.<pre class="code">[x1kxk630@pablsv02 ~]$ snmpwalk -v2c -c public panmsv02
+Timeout: No Response from panmsv02</pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,68 @@
+======  Migrate SDDPCM to AIXPCM ======
+===== Overview =====
+We have a script that we use to migrate SDDPCM to AIXPCM //rmSDDPCMandHA// which is located at <code>cdcvilax118://export/lpp_source/Remove_SDDPCMandHostAttachment/rmSDDPCMandHA.sh</code> //rmSDDPCMandHA// script de-install all installed SDDPCM and SDDPCM Host Attachment packages from AIX machine with AIX5.2, AIX5.3, AIX6.1, AIX7.1 or AIX7.2 OS installed or from VIO server
+
+==== Purpose ====
+
+Script rmSDDPCMandHA.sh can be used to remove SDDPCM and SDDPCM Host Attachment packages to switch to native AIX PCM
+
+
+==== Script Description ====
+
+rmSDDPCMandHA.sh script will automatically:
+     1. Put all the virtual target devices in Defined state
+     2. Unmount file systems and deactivate the volume groups that are created with SDDPCM devices
+     3. Remove all the SDDPCM devices
+     4. Stop the SDDPCM server
+     5. de-install all SDDPCM and all SDDPM Host Attachment packages
+        Note: 
+        a. if machines have multiple SDDPCM packages for different OS levels installed by mistakes, the script will de-install all the SDDPCM packages
+        b. the script de-installs both SDDPCM FCP and/or SAS Host Attachment packages if installed
+
+
+==== Detail procedures ====
+
+   To de-install SDDPCM and SDDPCM host attachment packages to switch to native AIX PCM
+       a) Create a directory /usr/sys/inst.images/Update_SDDPCM.
+       b) Copy rmSDDPCMandHA.sh into the
+          /usr/sys/inst.images/Update_SDDPCM directory and change the
+          permissions of the script files to allow execution.
+       c) Run rmSDDPCMandHA.sh
+       d) After the script is successfully run, verify SDDPCM and Host Attachment packages are de-installed successfully
+           I. "lslpp -l | grep sddpcm" 
+           II. "lslpp -l devices.fcp.disk.ibm.mpio.rte"
+           III."lslpp -l devices.sas.disk.ibm.mpio.rte" 
+          The following packages should NOT be installed
+               devices.sddpcm.*.rte 
+               devices.fcp.disk.ibm.mpio.rte
+               devices.sas.disk.ibm.mpio.rte
+       e) If your system is booting from SAN disk, run "lsdev -Cc disk" to check if your SAN disk is now displayed as "MPIO Other FC SCSI Disk Drive" or "MPIO other SAS IBM 1820 Disk".
+       f) reboot the system
+       g) When host system comes back from the reboot, check that all
+          hdisks are configured by native AIX PCM from the output of "lsdev -Cc disk"
+
+
+
+
+===== Manual Method without removing the packages just to switch to AIX PCM =====
+
+
+//From the man page for manage_disk_drivers//
+
+
+If the present driver attribute is set to NO_OVERRIDE, the AIX operating system selects an alternate path control module (PCM), such as Subsystem Device Driver Path Control Module (SDDPCM), if it is installed. To verify run <code>manage_disk_drivers -l</code> you will see "NO_OVERRIDE" as "Present Driver". To Switch to using AIXPCM run <code>manage_disk_drivers -d IBMSVC -o AIX_AAPCM</code>
+<html>
+<span style="color:red;font-size:100%;">Note : </span>For the change to take effect the system must be rebooted
+</html>
+
+After reboot, you will now see AIX_AAPCM as the present driver being used. Verify using <code>manage_disk_drivers -l</code>
+From here, you can do one of two things. Leave the SDDPCM driver installed, as this will allow for easy rollback should you experience performance issues, or other driver related problems. Or completely remove the SDDPCM driver from the LPAR.
+Things to keep in mind If you’ve modified the queue_depth attribute on the hdisk, this will be reset to the AIXPCM default of 20, you need to change it back.
+
+
+==== Rollback ====
+Should you need to go back to using SDDPCM as the driver, and haven’t removed it, you can use manage_disk_drivers to flip back and reboot.
+<code> manage_disk_drivers -d IBMSVC -o NO_OVERRIDE</code>
+<html>
+<span style="color:red;font-size:100%;">Note : </span>For the change to take effect the system must be rebooted
+</html>

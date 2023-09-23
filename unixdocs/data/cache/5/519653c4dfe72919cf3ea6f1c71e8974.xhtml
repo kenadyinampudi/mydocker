@@ -1,0 +1,74 @@
+
+<h1 class="sectionedit1" id="start_stop_hacmp_procedure">Start/Stop HACMP procedure</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Start/Stop HACMP procedure" [1-41] -->
+<h3 class="sectionedit2" id="stop_the_cluster">Stop the Cluster</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Enter <strong>sudo smit cl_admin</strong></div>
+</li>
+<li class="level1"><div class="li"> Select <strong>PowerHA® SystemMirror® Services</strong> &gt; <strong>Stop Cluster Services</strong> and press Enter.</div>
+</li>
+<li class="level1"><div class="li"> Enter field values in the SMIT panel as follows:<pre class="code">* Stop now, on system restart or both -- &gt; now
+  Stop Cluster Services on these nodes -- &gt; &quot;Select both nodes&quot;
+  BROADCAST cluster shutdown?         -- &gt; true
+* Select an Action on resource groups -- &gt; Bring resource groups Offline</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <span style="color:red"><b><i>Note:</i></b></span> Press <b>Esc+4</b> or <b>F4</b> for list and <b>F7</b> to select and use <b>Tab</b> button to move through options</div>
+</li>
+</ul>
+
+<p>
+<a href="/lib/exe/detail.php?id=kennedy%3Ahow-to-start_stop-hacmp_cluster&amp;media=kennedy:pasted:20221103-135230.png" class="media" title="kennedy:pasted:20221103-135230.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20221103-135230.png" class="mediacenter" alt="" width="800" /></a>
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Stop the Cluster" [42-721] -->
+<h3 class="sectionedit3" id="start_the_cluster">Start the Cluster</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Enter <strong>sudo smit cl_admin</strong></div>
+</li>
+<li class="level1"><div class="li"> Select <strong>PowerHA® SystemMirror® Services</strong> &gt; <strong>Start Cluster Services</strong> and press Enter.</div>
+</li>
+<li class="level1"><div class="li"> Enter field values in the SMIT panel as follows:</div>
+</li>
+</ul>
+
+<p>
+<a href="/lib/exe/detail.php?id=kennedy%3Ahow-to-start_stop-hacmp_cluster&amp;media=kennedy:pasted:20221103-135205.png" class="media" title="kennedy:pasted:20221103-135205.png"><img src="/lib/exe/fetch.php?w=800&amp;media=kennedy:pasted:20221103-135205.png" class="mediacenter" alt="" width="800" /></a>
+</p>
+
+</div>
+<!-- EDIT3 SECTION "Start the Cluster" [722-976] -->
+<h3 class="sectionedit4" id="validate_the_cluster">Validate the Cluster</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> To check the RG online status<pre class="code">clRGinfo -p</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> To check the cluster manager status on both nodes<pre class="code">lssrc -ls clstrmgrES</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <pre class="code">clshowsrv -v run this and check the state
+         ST_STABLE: cluster services running with resources online
+         NOT_CONFIGURED: cluster is not configured or node is not synced
+         ST_INIT: cluster is configured but not active on this node
+         ST_JOINING: cluster node is joining the cluster
+         ST_VOTING: cluster nodes are voting to decide event execution
+         ST_RP_RUNNING: cluster is running a recovery program
+         RP_FAILED: recovery program event script is failed
+         ST_BARRIER: clstrmgr is in between events waiting at the barrier
+         ST_CBARRIER: clstrmgr is exiting a recovery program
+         ST_UNSTABLE: cluster is unstable usually due to an event</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Validate by logging in all three nodes</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Validate the Cluster" [977-] -->

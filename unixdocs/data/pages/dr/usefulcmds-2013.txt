@@ -1,0 +1,131 @@
+
+  - IBM will recover these systems
+    * peerdb99
+    * tapr1d01
+    * teprbk01
+    * taqa1d01 
+  - Define this post install script in NIM<code>#!/usr/bin/ksh
+for file in /etc/filesystems /etc/exports /etc/hosts /etc/resolv.conf
+do
+  cp ${file} ${file}.copyforDR
+done
+
+cat /dev/null > /var/tmp/filesystems.modified
+for fs in $(lsvgfs rootvg)
+do
+   grep -p ${fs}: /etc/filesystems >> /var/tmp/filesystems.modified
+done
+
+grep -p proc /etc/filesystems >> /var/tmp/filesystems.modified
+
+#grep -p nfs /etc/filesystems >> /var/tmp/filesystems.modified
+
+cp /var/tmp/filesystems.modified /etc/filesystems
+
+mv /etc/resolv.conf /etc/resolv.conf.OLD
+
+cat /etc/exports | sed "s;bck;;g" > /var/tmp/exports.modified
+[[ ${?} -eq 0 ]] && cp /var/tmp/exports.modified /etc/exports
+
+rmitab cron</code>Define it as a resource<code></code>
+  - Copy the mksysbs , define them<code>for mksysb in $(cat list)
+do
+   cp <datadomain>/${file} /prod/nim/resources/mksysb/${file}
+done</code> --- Kapil will copy at 7:00 AM. Define them as resources.<code>for file in $(ls /prod/nim/resources/mksysb/* )
+do
+   host=$(echo ${file} | sed "s;bos.obj.;;g")
+   nim -o define -t mksysb -a server=master -a location=${file}
+done</code>
+  - Stop cron by editing inittab<code>rmitab cron</code>.
+  - Save files<code>for file in /etc/filesystems /etc/exports /etc/hosts /etc/resolv.conf
+do
+  cp ${file} ${file}.copyforDR
+  [[ ${?} -eq 0 ]] && echo "Backed up ${file} as ${file}.copyforDR" || echo "Something went wrong backing up ${file}"
+done</code>
+  - Change root and itocroot password<code>passwd itocroot
+passwd root</code>
+  - Enable telnet for root<code></code>
+  - Remove all non rootvg filesystems from /etc/filesystems except NFS<code>cat /dev/null > /var/tmp/filesystems.modified
+for fs in $(lsvgfs rootvg)
+do
+   grep -p ${fs}: /etc/filesystems >> /var/tmp/filesystems.modified
+done
+
+grep -p proc /etc/filesystems >> /var/tmp/filesystems.modified
+
+grep -p nfs /etc/filesystems >> /var/tmp/filesystems.modified
+
+cp /var/tmp/filesystems.modified /etc/filesystems</code>Worst case, you have a backup file in /etc
+  - Comment out all entries from /etc/resolv.conf (If we haven't automated this with NIM post install scripts)<code>mv /etc/resolv.conf /etc/resolv.conf.OLD</code>
+  - Fix /etc/exports<code>cat /etc/exports | sed "s;bck;;g" > /var/tmp/exports.modified
+[[ ${?} -eq 0 ]] && cp /var/tmp/exports.modified /etc/exports</code>
+  - Copy /etc/hosts(Another candidate for NIM post install)<code>copycopy</code>
+  - Configure and start AIO(Another candidate for NIM post install)<code>do and do</code>
+  - How do you resolve EMC serial numbers to hdiskpowers ?. Use this script<code>root on taitc118:/root> /usr/local/scripts/lsvpcfg.sh
+hdiskpower0:nimvg:000190103339:10D2:34526:hdisk30:hdisk3:00cb4f8d4593d1cf
+hdiskpower1:nimvg:000190103339:10D6:34526:hdisk31:hdisk5:00cb4f8d6a5e6df6
+hdiskpower2:nimvg:000190103339:10DA:34526:hdisk32:hdisk6:00cb4f8d6a57ef07
+hdiskpower3:nimvg:000190103339:10DE:34526:hdisk33:hdisk7:00cb4f8d6a507404
+hdiskpower4:nimvg:000190103339:10E2:34526:hdisk34:hdisk8:00cb4f8d6a584368
+hdiskpower5:nimvg:000190103339:10E6:34526:hdisk35:hdisk9:00cb4f8d6a50f5f6</code>
+
+====== Create NTP server on tepr2e01 ======
+
+  - Edit config file<code>sudo vi /etc/ntp.conf</code>Add these lines - replacing everything else<code>server 127.127.1.0
+fudge 127.127.1.0 stratum 9
+driftfile /etc/ntp.drift
+tracefile /etc/ntp.trace</code>
+  - Start NTP daemons<code>chrctcp -S -a xntpd</code>
+====== Do this after the mksysb restore ======
+
+** Make sure you are on the DR host **
+
+  - Change PS1 variabl<code>sudo vi /etc/profile</code>Add this<code>PS1='DR test -- $hname:$PWD>'</code>
+  - Get a copy of /etc/hosts from NIM server<code>sudo cp /etc/hosts /etc/hosts.Old
+sudo scp 10.39.11.37:/etc/hosts.dr.systems /etc/hosts</code>
+  - Enable NTP. Stop daemon<code>sudo stopsrc -s xntpd</code>Backup the config<code>sudo mv /etc/ntp.conf /etc/ntp.conf.DRtest</code>Put the new config<code>echo "driftfile /etc/ntp.drift" | sudo tee /etc/ntp.conf
+echo "tracefile /tmp/xntpd.trace" | sudo tee -a /etc/ntp.conf
+echo "server nim"  | sudo tee -a /etc/ntp.conf</code>Start the daemons<code>sudo chrctcp -S -a xntpd</code>Set the correct time from tepr2e01<code>date ; sudo ntpdate -u nim ; date</code>
+  - Check cron<code>ps -ef | grep cron</code>
+  - Add the NFS filesystems back<code>echo "" >> /etc/filesystems
+grep -p nfs /etc/filesystems.copyforDR | sed "s;bck;;g" >> /etc/filesystems</code>
+  - Add /proc filesystem<code>sudo crfs -v procfs -d /proc -A yes -m /proc -a check=false -a free=false -a vol="/proc"</code>Mount it<code>mount /proc</code>
+  - Check the timezone from filesystems.txt and make sure it matches<code>grep -i tz /usr/local/scripts/file_systems.txt
+date</code>
+  - Configure the second interface<code>sudo chdev -l en1 -a netaddr=10.39.1.XX -a netmask=255.255.255.0 -a state=up</code>
+  - Change itocroot password to abc123<code>sudo passwd itocroot
+sudo pwdadm -c itocroot</code>
+  - Create filesystems<code>egrep "^mkdir|^mount|^crfs|^chown|^chmod" /usr/local/scripts/file_systems.txt > /var/tmp/crfs.sh</code>Now execute the script<code>sudo ksh -x /var/tmp/crfs.sh</code>
+  - On database servers and SAP servers, enable AIO<code>paap3p01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=4096 -a maxservers=10 -a minservers=1
+pahrdb01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=4096 -a maxservers=10 -a minservers=1
+peerdb99 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=16384 -a maxservers=512 -a minservers=64
+taitc103 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=16384 -a maxservers=150 -a minservers=20
+tapr1d01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=8192 -a maxservers=512 -a minservers=64
+tepr2e01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=4096 -a maxservers=10 -a minservers=1
+tspr1d01 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=8192 -a maxservers=256 -a minservers=64
+tspr1d03 :::: chdev -l aio0 -a autoconfig=available -a maxreqs=8192 -a maxservers=256 -a minservers=64</code>Enable AIO<code>mkdev -l aio0</code>
+  - Perform a reboot<code>sudo shutdown -Fr</code>
+  - Mirror rootvg when required
+====== NFS mounts on each PTA app servers ======
+
+  - Remove stale / unwanted mounts<code>rmnfsmnt -f /expdump
+rmnfsmnt -f /commDir
+rmnfsmnt -f /oracle/stage
+rmnfsmnt -f /sapmedia
+rmnfsmnt -f /taedi53</code>
+  - Mount the ones from tapr1d01<code>echo "/sapmnt/PTA/exe /sapmnt/PTA/global /sapmnt/PTA/profile /usr/sap/trans /ADK " | xargs -n1 mount</code>
+  - When paap3p01 comes up do these as well<code>echo "/taedi61 /comm" | xargs -n1 mount</code>
+
+
+====== Lessons learned from Aug 2012 DR test ======
+
+^Ser. No^Item^Status^Notes^
+^1^/proc filesystem missing^Fixed the procedure^N/A^
+^2^bcks to be changed in /etc/filesystems^Fixed procedure^Need to document the procedure^
+^3^Time Synchronization^We may need to configure one of the servers (NIM?) as a time source^Need to document the steps^
+^4^AIO parameters^Add lsattr -El aio0 to file_systems.txt^Need to update script^
+^5^Many non-existant NFS filesystems in /etc/filesystems^Need to fix production^ ^
+^6^AIO needs to be configure on SAP app servers^Add to file_systems.txt ^ ^
+^7^Firewall on SuSE ^/sbin/SuSEfirewall2 off ^ ^
+^8^ ^ ^ ^
+^9^ ^ ^ ^

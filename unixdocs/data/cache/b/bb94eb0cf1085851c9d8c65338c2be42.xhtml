@@ -1,0 +1,39 @@
+<ol>
+<li class="level1"><div class="li"> Define the function<pre class="code">function mirror_migrate_rootvg {
+export LVM_HOTSWAP_BOOTDISK=1
+rootvgdisk=$(lsvg -p rootvg | grep ^hdisk | awk &#039;{print $1}&#039;)
+export disk=${1}
+echo &quot;$(date)  :  Migrating rootvg to ${disk} &quot;
+echo &quot;$(date)  :  Adding ${disk} to rootvg &quot;
+sudo extendvg rootvg ${disk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+echo &quot;$(date)  :  Mirroring rootvg to ${disk}&quot;
+sudo mirrorvg rootvg ${disk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+echo &quot;$(date)  :  Mirroring completed, Running bosboot on rootvg disks&quot;
+sudo bosboot -ad /dev/${rootvgdisk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+sudo bosboot -ad /dev/${disk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+echo &quot;$(date)  :  Setting bootlist ${disk} &quot;
+sudo bootlist -m normal ${disk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+echo &quot;$(date)  :  Unmirroring rootvg from ${rootvgdisk} &quot;
+sudo unmirrorvg rootvg ${rootvgdisk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+echo &quot;$(date)  :  Migrating any leftover PPs to from ${rootvgdisk}&quot;
+sudo migratepv ${rootvgdisk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+echo &quot;$(date)  :  Removing ${rootvgdisk} from rootvg&quot;
+sudo reducevg rootvg ${rootvgdisk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+echo &quot;$(date)  :  Mirroring completed, Running bosboot on rootvg disk&quot;
+sudo bosboot -ad /dev/${disk}
+[[ ${?} -ne 0 ]] &amp;&amp; return 2
+}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Execute the function to migrate the rootvg<pre class="code">mirror_migrate_rootvg hdiskX</pre>
+</div>
+</li>
+</ol>

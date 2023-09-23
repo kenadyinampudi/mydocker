@@ -1,0 +1,75 @@
+<code>#!/usr/bin/ksh
+#
+#       Who                     When            Why
+#
+#       Kapil                   12/12/2014      Implement additional OV monitoring for DMX4 errors
+#
+debug=No
+verbose=No
+#
+# Functions
+#
+function set_parms {
+[[ "${debug}" = "Yes" ]] && set -x
+export tmpfile01=/var/tmp/tmpfile01$$
+export tmpfile02=/var/tmp/tmpfile02$$
+#export emailaddr="giosstorageteam@tenneco.com"
+export emailaddr="kkoroth@tenneco.com" # For testing
+export array="39"
+export arraydesc="DMX4 -- 3339"
+export PATH=${PATH}:/opt/emc/SYMCLI/bin
+}
+#
+function send_alert {
+[[ "${debug}" = "Yes" ]] && set -x
+echo "From:${emailaddr}" > ${tmpfile01}
+echo "To:${emailaddr}" >> ${tmpfile01}
+echo "Subject:${arraydesc} Errors -- $(date) " >> ${tmpfile01}
+echo "" >> ${tmpfile01}
+cat ${tmpfiel02} >> ${tmpfile01}
+echo "" >> ${tmpfile01}
+echo "" >> ${tmpfile01}
+cat  ${tmpfile01} | sendmail -t
+}
+#
+function cleanup_tmpfiles {
+[[ "${debug}" = "Yes" ]] && set -x
+rm ${tmpfile01} ${tmpfile02} > /dev/null 2>&1
+}
+#
+function check_failed_disk {
+[[ "${debug}" = "Yes" ]] && set -x
+symdisk -sid ${array} list -failed > ${tmpfile01}
+grep -q "No devices were found" ${tmpfile01}
+if [ ${?} -ne 0 ]
+then
+   echo "Found failed disks at $(date) " >> ${tmpfile02}
+   cat ${tmpfile01} >> ${tmpfile02}
+fi
+}
+#
+function check_fa_status {
+[[ "${debug}" = "Yes" ]] && set -x
+symcfg -sid ${array} list -dir all | grep -v ^$ | egrep "DF|EA|FA" > ${tmpfile01}
+for director in $(awk '{print $1}' ${tmpfile01} )
+do
+   status=$(grep -w "${director}" ${tmpfile01} | awk '{print $NF}' )
+   if [ "${status}" != "Online" ]
+   then
+      echo "Found director errors at $(date) " >> ${tmpfile02}
+      cat ${tmpfile01} >> ${tmpfile02}
+   fi
+done
+}
+#
+# Let us do the work
+#
+[[ "${debug}" = "Yes" ]] && set -x
+set_parms
+check_failed_disk
+check_fa_status
+if [ -f ${tmpfile02} ]
+then
+   send_alert
+done
+cleanup_tmpfiles</code>

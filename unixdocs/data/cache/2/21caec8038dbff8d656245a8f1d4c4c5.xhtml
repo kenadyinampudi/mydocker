@@ -1,0 +1,23 @@
+
+<h1 class="sectionedit1" id="virtualbox_notes_-_tips_tricks">VirtualBox Notes - Tips &amp; Tricks</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Send control alt delete to a Guest<pre class="code">vboxmanage controlvm kaps-win7-vm01 keyboardputscancode 1d 38 53 9d b8 d8</pre>
+
+<p>
+In this case the VM&#039;s name is “kaps-win7-vm01”
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a route so that an external command can enter and get to the guest<pre class="code">VBoxManage setextradata kaps-sol-01 &quot;VBoxInternal/Devices/e1000/0/LUN#0/Config/ssh/HostPort&quot; 2222
+VBoxManage setextradata kaps-sol-01 &quot;VBoxInternal/Devices/e1000/0/LUN#0/Config/ssh/GuestPort&quot; 22
+VBoxManage setextradata kaps-sol-01 &quot;VBoxInternal/Devices/e1000/0/LUN#0/Config/ssh/Protocol&quot; TCP</pre>
+
+<p>
+Now if you ssh to the host machine on port “2222”, VirtualBox routes it to the guest&#039;s port 22. In this example the guest&#039;s name is <code>kaps-sol-01</code> <strong>You have to power off and power on the Guest for this to take effect.</strong>
+</p>
+</div>
+</li>
+</ol>
+
+</div>

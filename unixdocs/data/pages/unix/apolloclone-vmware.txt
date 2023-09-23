@@ -1,0 +1,228 @@
+====== Apollo Clone build - Linux ======
+
+===== Build the VM =====
+
+  - The entire VMs or at least the boot disks are cloned over from the original.
+  - All of those VMs need to be imported from the NFS datastore's.
+
+===== Setup console database =====
+
+  - Login to the DRiV NIM server ''pcdcunxaxap01''
+  - Export a variable to store the system and vCenter hostname<code>export vcenter=cdcvilms156.driv.com</code>
+  - Export a variable pointing to the hostname to be built<code>export tgtsystem=name_of_the_system</code>
+  - Add the system to console database<code>echo "${tgtsystem}:std-vmware-vsphere:${vcenter}:ADACCOUNT" | sudo tee -a /prod/images/etc/unix_sys_console</code>
+
+===== Power on the VM and change the hostname and remove Network configs =====
+
+  - Login to vCenter ''cdcvilms156.driv.com''
+    - Select the VM -> Edit settings -> 
+      - Remove the NIC(s).
+      - Adjust CPU and memory parameters according to the checklist.
+  - Power on the VM and access console, login as root.
+  - Change hostname
+    - RHEL<code>hostname <new_host_name>
+echo "new_host_name" > /etc/hostname</code>
+    - SLES<code>hostnamectl set-hostname <new_host_name>
+echo "new_host_name" > /etc/hostname</code>
+  - Remove network definitions
+    - RHEL<code>rm -i /etc/sysconfig/network-scripts/ifcfg-e*</code>
+    - ELSE<code>rm -i /etc/sysconfig/network/ifcfg-e*</code>
+  - Disable DNS
+    - Rename resolv.conf<code>mv /etc/resolv.conf /etc/resolv.conf.$(date +%Y%m%d)</code>
+    - Edit nsswitch.conf<code>sudo vi /etc/nsswitch.conf</code>Make sure the line that starts with hosts is as follows<code>hosts:          files</code>**It should not have ''dns''**
+    - SLES
+      - Disable Netconfig control over resolv.conf<code>sudo cp /etc/sysconfig/network/config /etc/sysconfig/network/config.$(date +%m%d%y)
+sudo ex -sc "/NETCONFIG_DNS_POLICY/s/auto//|x" /etc/sysconfig/network/config</code>
+  - Disable crond
+    - RHEL<code>systemctl disable crond</code>
+    - SLES11<code>chkconfig cron off</code>
+    - SLES12 and above<code>systemctl disable cron</code>
+  - Shutdown the server<code>init 0</code>
+
+==== Add the NICs and boot the system ====
+
+  - Add two virtual NICs on VLAN 775
+  - Once done -- Power on the VM
+
+==== Access console and configure network interfaces. ====
+
+  - Login as root and temporarily assign IP address
+    - List the interfaces<code>ip link show</code>You should see something like this<code>1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: ens224: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether 00:50:56:98:42:78 brd ff:ff:ff:ff:ff:ff
+3: ens225: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether 00:50:56:98:42:78 brd ff:ff:ff:ff:ff:ff</code>
+    - The second interface "ens224" is the primary NIC
+    - Configure IP address<code>ifconfig ens224 a.b.c.d/24 up</code>
+    - Configure gateway<code>route add -net 0.0.0.0 gw a.b.c.1</code>
+
+==== Tasks from the NIM server ====
+
+  - Login to DRiV NIM server pcdcunxaxap01 and define a variable pointing to the system you are building<code>export tgtsystem=<host_name></code>
+  - Push Apollo clone hosts file<code>sudo scp /prod/images/etc/hosts.apollo.clones ${tgtsystem}:/etc/hosts</code>
+  - Enable <code>sudo scp /prod/images/etc/ntp.conf.linux.apollo ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com "ntpdate -u plddntplxap02"
+sudo ssh ${tgtsystem}.driv.com "systemctl restart ntpd"</code>
+
+==== Post installation - generic tasks from the host ====
+
+** May need adjustments for SuSE **
+
+  - Login to the host<code>ssh ${tgtsystem}</code>
+  - Configure the primary interface<code>my_ip=$(grep $(uname -n) /etc/hosts | awk '{print $1}' )
+my_iface=$(sudo ip link show | grep ^2: | awk '{print $2}'  | sed "s;:;;g")
+my_network=$(echo ${my_ip} | awk -F "." '{print $1"."$2"."$3".0"}')</code>
+    - RHEL<code>echo "DEVICE=${my_iface}"        | sudo tee    /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "BOOTPROTO=static"          | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "IPADDR=${my_ip}"           | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "NETMASK=255.255.255.0"     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "NETWORK=${my_network}"     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "ONBOOT=yes"                | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}</code>
+    - SLES<code>echo "DEVICE=${my_iface}"        | sudo tee    /etc/sysconfig/network/ifcfg-${my_iface}
+echo "BOOTPROTO=static"          | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo "IPADDR=${my_ip}"           | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo "NETMASK=255.255.255.0"     | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo "NETWORK=${my_network}"     | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo "STARTMODE=auto"            | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}</code>
+  - Configure default gateway
+    - RHEL<code>echo ${my_ip} | awk -F "." '{print "GATEWAY="$1"."$2"."$3".1" }' | sudo tee /etc/sysconfig/network</code>
+    - SLES<code>echo ${my_ip} | awk -F "." '{print "default "$1"."$2"."$3".1 - eth0" }' | sudo tee /etc/sysconfig/network/ifroute-eth0</code>
+  - Configure the fake interface<code>my_ip="" # Take the IP address from the checklist
+my_iface=$(sudo ip link show | grep ^3: | awk '{print $2}'  | sed "s;:;;g")
+my_network=192.168.1.0</code>
+    - RHEL<code>echo "DEVICE=${my_iface}"        | sudo tee    /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "BOOTPROTO=static"          | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "IPADDR=${my_ip}"           | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "NETMASK=255.255.255.0"     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "NETWORK=${my_network}"     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}
+echo "ONBOOT=yes"                | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${my_iface}</code>
+    - SLES<code>echo "DEVICE=${my_iface}"        | sudo tee    /etc/sysconfig/network/ifcfg-${my_iface}
+echo "BOOTPROTO=static"          | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo "IPADDR=${my_ip}"           | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo "NETMASK=255.255.255.0"     | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo "NETWORK=${my_network}"     | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}
+echo "STARTMODE=auto"            | sudo tee -a /etc/sysconfig/network/ifcfg-${my_iface}</code>
+    - Restart network services<code>sudo systemctl restart network</code>
+  - Remove cron jobs for application accounts
+    - RHEL<code>for file in $(sudo ls -1 /var/spool/cron/ | egrep -v "^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$")
+do
+   sudo rm -i /var/spool/cron/${file} # Remove the -i if you are confident
+done</code>
+    - SLES<code>for file in $(sudo ls -1 /var/spool/cron/tabs | egrep -v "^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$")
+do
+   sudo rm -i /var/spool/cron/tabs/${file} # Remove the -i if you are confident
+done</code>
+  - Prevent systems from talking back to their source systems
+    - RHEL make sure we configure the routes on secondary/fake interface. create the file and define the routes<code>sudo touch /etc/sysconfig/network-scripts/route-ens224
+cat << EOF | sudo tee -a /etc/sysconfig/network-scripts/route-ens224
+134.238.142.0/24 via 192.168.1.1 dev ens224
+10.135.48.0/24 via 192.168.1.1 dev ens224
+134.238.106.0/24 via 192.168.1.1 dev ens224
+10.128.114.0/24 via 192.168.1.1 dev ens224
+134.238.148.0/24 via 192.168.1.1 dev ens224
+10.128.44.0/24 via 192.168.1.1 dev ens224
+10.128.81.0/24 via 192.168.1.1 dev ens224
+10.128.45.0/24 via 192.168.1.1 dev ens224
+10.128.80.0/24 via 192.168.1.1 dev ens224
+10.135.2.0/24 via 192.168.1.1 dev ens224
+10.0.48.0/24 via 192.168.1.1 dev ens224
+10.128.10.0/24 via 192.168.1.1 dev ens224
+10.128.13.0/24 via 192.168.1.1 dev ens224
+10.128.47.0/24 via 192.168.1.1 dev ens224
+10.128.73.0/24 via 192.168.1.1 dev ens224
+10.129.24.0/24 via 192.168.1.1 dev ens224
+10.131.23.0/24 via 192.168.1.1 dev ens224
+10.131.24.0/24 via 192.168.1.1 dev ens224
+10.135.49.0/24 via 192.168.1.1 dev ens224
+10.135.52.0/24 via 192.168.1.1 dev ens224
+10.135.56.0/24 via 192.168.1.1 dev ens224
+10.217.32.0/24 via 192.168.1.1 dev ens224
+10.26.24.0/24 via 192.168.1.1 dev ens224
+10.3.124.0/24 via 192.168.1.1 dev ens224
+10.32.50.0/24 via 192.168.1.1 dev ens224
+10.32.52.0/24 via 192.168.1.1 dev ens224
+10.32.8.0/24 via 192.168.1.1 dev ens224
+10.34.69.0/24 via 192.168.1.1 dev ens224
+10.36.208.0/24 via 192.168.1.1 dev ens224
+10.58.148.0/24 via 192.168.1.1 dev ens224
+10.58.20.0/24 via 192.168.1.1 dev ens224
+10.72.107.0/24 via 192.168.1.1 dev ens224
+10.76.148.0/24 via 192.168.1.1 dev ens224
+134.238.101.0/24 via 192.168.1.1 dev ens224
+134.238.107.0/24 via 192.168.1.1 dev ens224
+134.238.125.0/24 via 192.168.1.1 dev ens224
+134.238.143.0/24 via 192.168.1.1 dev ens224
+134.238.150.0/24 via 192.168.1.1 dev ens224
+153.2.72.0/24 via 192.168.1.1 dev ens224
+153.2.73.0/24 via 192.168.1.1 dev ens224
+155.56.96.0/24 via 192.168.1.1 dev ens224
+157.133.26.0/24 via 192.168.1.1 dev ens224
+172.27.74.0/24 via 192.168.1.1 dev ens224
+192.55.165.0/24 via 192.168.1.1 dev ens224
+37.209.24.0/24 via 192.168.1.1 dev ens224
+EOF</code>
+    - SLES<code>sudo cp /etc/sysconfig/network/routes /etc/sysconfig/network/routes.$(date +%m%d%y)
+cat << EOF | sudo tee -a /etc/sysconfig/network/routes
+134.238.142.0 192.168.1.1 255.255.255.0 -
+10.135.48.0 192.168.1.1 255.255.255.0 -
+134.238.106.0 192.168.1.1 255.255.255.0 -
+10.128.114.0 192.168.1.1 255.255.255.0 -
+134.238.148.0 192.168.1.1 255.255.255.0 -
+10.128.44.0 192.168.1.1 255.255.255.0 -
+10.128.81.0 192.168.1.1 255.255.255.0 -
+10.128.45.0 192.168.1.1 255.255.255.0 -
+10.128.80.0 192.168.1.1 255.255.255.0 -
+10.135.2.0 192.168.1.1 255.255.255.0 -
+10.0.48.0 192.168.1.1 255.255.255.0 -
+10.128.10.0 192.168.1.1 255.255.255.0 -
+10.128.13.0 192.168.1.1 255.255.255.0 -
+10.128.47.0 192.168.1.1 255.255.255.0 -
+10.128.73.0 192.168.1.1 255.255.255.0 -
+10.129.24.0 192.168.1.1 255.255.255.0 -
+10.131.23.0 192.168.1.1 255.255.255.0 -
+10.131.24.0 192.168.1.1 255.255.255.0 -
+10.135.49.0 192.168.1.1 255.255.255.0 -
+10.135.52.0 192.168.1.1 255.255.255.0 -
+10.135.56.0 192.168.1.1 255.255.255.0 -
+10.217.32.0 192.168.1.1 255.255.255.0 -
+10.26.24.0 192.168.1.1 255.255.255.0 -
+10.3.124.0 192.168.1.1 255.255.255.0 -
+10.32.50.0 192.168.1.1 255.255.255.0 -
+10.32.52.0 192.168.1.1 255.255.255.0 -
+10.32.8.0 192.168.1.1 255.255.255.0 -
+10.34.69.0 192.168.1.1 255.255.255.0 -
+10.36.208.0 192.168.1.1 255.255.255.0 -
+10.58.148.0 192.168.1.1 255.255.255.0 -
+10.58.20.0 192.168.1.1 255.255.255.0 -
+10.72.107.0 192.168.1.1 255.255.255.0 -
+10.76.148.0 192.168.1.1 255.255.255.0 -
+134.238.101.0 192.168.1.1 255.255.255.0 -
+134.238.107.0 192.168.1.1 255.255.255.0 -
+134.238.125.0 192.168.1.1 255.255.255.0 -
+134.238.143.0 192.168.1.1 255.255.255.0 -
+134.238.150.0 192.168.1.1 255.255.255.0 -
+153.2.72.0 192.168.1.1 255.255.255.0 -
+153.2.73.0 192.168.1.1 255.255.255.0 -
+155.56.96.0 192.168.1.1 255.255.255.0 -
+157.133.26.0 192.168.1.1 255.255.255.0 -
+172.27.74.0 192.168.1.1 255.255.255.0 -
+192.55.165.0 192.168.1.1 255.255.255.0 -
+37.209.24.0 192.168.1.1 255.255.255.0 -
+EOF</code>
+    - Restart network subsystem and verify the network routes<code>sudo systemctl restart network</code><code>netstat -rn</code>
+  - Enable cron
+    - RHEL<code>sudo systemctl enable crond</code>
+    - SLES<code>sudo systemctl enable cron</code>
+  - NFS mounts 
+    - Remove all NFS mounts from fstab<code>sudo cp /etc/fstab /etc/fstab.$(date +%m%d%Y)
+cat /etc/fstab | grep -v nfs > 1
+sudo cp 1 /etc/fstab</code>Check fstab<code>cat /etc/fstab</code>
+    - Add any NFS mounts requested. A sample entry is here<code>qaerdb01:/sapmnt/FTA/exe /sapmnt/FTA/exe nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp</code>Add this to /etc/fstab and mount each filesystem
+  - NFS exports
+    - Add any NFS exports requested<code>sudo vi /etc/exports</code>A sample entry would be<code>/sapmnt/PS1 pcdcps1axdb01(rw,no_root_squash)</code>
+  - Perform a final reboot<code>sudo /sbin/init 6</code>
+  - Perform validations
+    - Check and make sure DNS is not working
+    - Check and make sure you are unable to ping to source systems
+    - Check all the IP configurations are working.

@@ -1,0 +1,958 @@
+==== Things to setup during/after NBU installation ====
+Table of contents:
+  - License keys [[#Lic_keys|steps]]
+  - Veritas SmartMeter registration keys for NBU version 8.1.2 and greater [[dp:nbusmartmeter|steps]]
+  - PATH environmental variable [[#PATH_ENVIRONMENTAL_VARIABLE|steps]]
+  - Standard naming convention for policies and schedules [[#Standard_naming_convention_for_policies_and_schedules|steps]]
+  - Standard naming convention for volume pools [[#Standard_naming_convention_for_volume_pools|steps]]
+  - Standard naming convention for tape drives [[#Standard_naming_convention_for_tape_drives|steps]]
+  - Standard naming convention for Disk Staging Storage Units (DSSU)[[#Standard_naming_convention_for_Disk_Staging_Storage_Units_(DSSU)|steps]]
+  - Name resolution [[#Name_resolution|steps]]
+  - Local users needed for NBU installation and group membership [[#users|steps]]
+  - Servers, clients should be using only FQDN [[#Servers,_clients_should_be_using_only_FQDN|steps]]
+  - Barcode rules [[#Barcode_rules|steps]]
+  - Media ID generation [[#Media_ID_generation|steps]]
+  - Retention periods [[#Retention_periods|steps]]
+  - Tunning information [[#Tunning_information|steps]]
+  - GFS rotation [[#GFS_rotation|steps]]
+  - Allow media Overwrite [[#Allow_media_Overwrite|steps]]
+  - Storage unit multiplexing, reduce fragment size [[#Storage_unit_multiplexing_reduce_fragment_size|steps]]
+  - Exclude list for backup clients [[#Exclude_list_for_backup_clients|steps]]
+  - Increase the Activity Monitor reports period to 720 hours [[#Increase_the_Activity_Monitor_reports_period_to_720_hours|steps]]
+  - Hot catalog backup [[#Hot_catalog_backup|steps]]
+  - Client Attributes – Windows Open File Backup [[#Client_Attributes_Windows_Open_File_Backup|steps]]
+  - *NIX client installation [[#NIX|steps]]
+  - Enabling BMR on master server [[#BMR|steps]]
+  - SAP HANA client configuration [[SAPHANA|steps]]
+  - To add OpsCenter servers the newly created NBU domain [[#To_add_OpsCenter_servers_the_newly_created_NBU_domain|steps]]
+  - Automated scripts for tapes exchange [[#Automated_scripts_for_tapes_exchange|steps]]
+  - NBU5240 appliance needs for shaping purpose [[#NBU5240_needs|steps]]
+  - Update ours environment, ie. OpsCenter geographic location, tape library web site [[#env|steps]]
+  - If it is a NBU applaince follow this [[#NBU_app_keys|steps]]
+  - Home made NBU device [[#NBU_HM|steps]]
+==== Lic_keys ====
+For NBU installation please use the license keys stored on our [[https://tenneco.sharepoint.com/sites/COUSGI/DPT/Document%20Library/Forms/AllItems.aspx?web=1&RootFolder=%2Fsites%2FCOUSGI%2FDPT%2FDocument%20Library%2FStandards&FolderCTID=0x012000E67D8A6615DE4A4CA60DE10825C0998B|share point]] - it is there only as share point is providing user access control.
+
+==== PATH_ENVIRONMENTAL_VARIABLE ==== 
+
+It is common that backup servers do not have this set. It is really needed for scripts and the software management. Please always add to the %PATH% such entries 
+(of course replace the <Install dir> with appropriate settings)<code>
+<Install dir>\volmgr\bin;<Install dir>\Netbackup\bin;<Install dir>\
+Netbackup\bin\admincmd;<Install dir>\Netbackup\bin\goodies</code>
+For Linux based <code>/usr/openv/volmgr/bin:/usr/openv/Netbackup/bin:/usr/openv/Netbackup/bin/admincmd:/usr/openv/Netbackup/bin/goodies</code>
+Live example from one of systems (on bold variables in regards of NBU) – of course this is only one line on that system!
+<code>D:\Program Files\Veritas\NetBackup>echo %PATH%
+D:\Program Files\EMC\PowerCommon\;D:\Program Files\EMC\PowerPath\;D:\Program Files\EMC\RSA\CST\lib\;D:\Program Files\CA\DCS\CAWIN\;D:\Program Files\HP\NCU;
+D:\WINDOWS\system32;D:\WINDOWS;D:\WINDOWS\System32\Wbem;D:\PROGRA~1\CA\SHARED~1\CAM\bin;D:\CA_APPSW;D:\Program Files\Veritas\volmgr\bin;D:\Program Files\Veritas\Netbackup\bin;
+D:\Program Files\Veritas\Netbackup\bin\admincmd;D:\Program Files\Veritas\Netbackup\bin\goodies;D:\Program Files\HP OpenView\bin;D:\Program Files\HP OpenView\bin\OpC;
+D:\Program Files\HP OpenView\bin\;D:\Program Files\HP OpenView\lib\;E:\IOS\eTrust\CA\Common\ScanEngine;D:\Program Files\HP\Brocade\Util;D:\Program Files\EMC\Navisphere CLI</code>
+==== Standard_naming_convention_for_policies_and_schedules ====
+In TENNECO we do use a special naming convention to have self-explanatory policies. Policy name should have XXX_YYYYYY_ZZZZ_QQQ, where:
+  * XXX stands for policy type (well signs before first underscore):
+    * WIN – file system backup for wintel based OSes
+    * STD – file system backup for UNIX based OSes
+    * ORA – Oracle DB backup not using RMAN, with two schedules ORA_ and ARC_ instance name, first for full backup the second for the archive logs offload
+    * SAP – SAP DB backup using specialized NBU agent for SAP, with two schedules SAP_ and BRA_ instance name, first for full backup the second for the archive logs offload
+    * RMAN – Oracle DB backup using specialized NBU for Oracle 
+    * VM_WARE_site-code – backup of vmware machines residing on ESX host – image level backup, site_code is made of three letters
+    * MSSQL – MS SQL DB backup using specialized NBU for MS SQL agent
+    * NDMP_movername_filesystem
+    * HOT_XXX – this is for hot backup
+    * HYP_ site-code – this is for hyper-v based backups
+    * MSP_server_name – this is for Microsoft SharePoint policy type.
+    * DB2_hostname_DBname – this one is for IBM DB2 policy type.
+    * TD_hostname - this one is for Teradata policy type.
+
+  * YYYYYY stands for 
+    * Hostname for WIN_ and STD_ policy type
+    * DB instance name for ORA, SAP, RMAN policies types
+    * Hostname for MSSQL policy type
+
+  * ZZZZZ stands for
+    * Hostname in SAP_/RMAN_/ORA_ policy types
+  
+  * QQQ stands for
+    * NBU (optional) Only used with SAP, RMAN policy types where this job is being scheduled by NBU - not user initiated backup
+    * DMZ (optional) Only when given client sits in DMZ
+    * RMT (optional) Only when given client is being backed up from remote site (ie. talak001 is backed up in LDC but it resides in LAK) - this will help us to quickly distinguish in between local and remote clients.
+
+
+All policies starting with WIN_ or STD are having up to four schedules inside:
+Schedule:          WIN_TAXXXYYY_DAILY – 10 days retention period, incremental cumulative backup
+Schedule:          WIN_TAXXXYYY_YEARLY – 10 years retention period, full backup
+Schedule:          WIN_TAXXXYYY_MONTHLY – 1 year retention period, full backup
+Schedule:          WIN_TAXXXYYY_WEEKLY – 1 month retention period, full backup 
+
+==== Standard_naming_convention_for_volume_pools ====
+In each site there should be such volume pools created:
+  * XXX_DAILY – for daily backups, here should be directed all daily schedules with 10 days retention period;
+  * XXX_WEEKLY – for weekly backups, here should be directed all weekly schedules with 1 month retention period;
+  * XXX_MONTHLY – for monthly backups, here should be directed all monthly schedules with 1 year retention period;
+  * XXX_YEARLY – for yearly backups, here should be directed all daily schedules with 10 yearss retention period;
+  * XXX_SCRATCH – for scratch pool
+  * XXX_CATALOG – for catalog backups
+XXX stands for site code, ie EDE_PROD, EDE_WEEKLY, EDE_MONTHLY, EDE_YERLY. Sample batch file which can be used to create such - copy below code to vm_pools.bat file and execute, ie vm_pools.bat PAW
+is site code would have been PAW:<code>@echo off
+@rem Author: Pawel Tkaczyk, ptkaczyk@tenneco.com
+@echo this script is to create the volume pools during new installation
+@echo It requires one parameter - the site code - three letters
+@if not "%1" == "" goto GoodParams
+@echo %DATE% vm_pools.bat script expects at least 1 parameters: site code: %* 
+@goto EndMain
+
+:GoodParams
+
+@vmpool -create -pn %1_DAILY -description "For daily backups - kept for 1 week"
+@vmpool -create -pn %1_WEEKLY -description "For weekly full backups - kept for 1 month"
+@vmpool -create -pn %1_MONTHLY -description "For Monthly full backups - kept for 1 year"
+@vmpool -create -pn %1_YEARLY -description "For Yearly full backups - kept for 10 years"
+@vmpool -create -pn %1_SCRATCH -description "Scratch pool"
+@vmpool -set_scratch %1_SCRATCH
+@rem uncomment below once there is SAP volume pool needed
+@rem vmpool -create -pn %1_SAP
+@vmpool -create -pn %1_IMPORTED_BE
+@vmpool -create -pn %1_CATALOG -description "For catalog backups"
+@vmpool -set_catalog_backup %1_CATALOG
+@vmpool -unset_scratch SCRATCH_POOL
+@vmpool -set_scratch %1_SCRATCH
+
+:EndMain</code>
+
+==== Standard_naming_convention_for_tape_drives ====
+Each tape drive in NBU domain should have unique name. To achieve that goal here is the naming convention:
+XXX_DRVY – where XXX stands for side code, and Y means the robot drive 1st in the library, ie EDE_DRV1:
+
+<code>E:\>vmoprcmd
+
+                           HOST STATUS
+Host Name                                  Version   Host Status
+=========================================  =======   ===========
+taitc138                                   772000    ACTIVE
+inxnbu5230amd                              772000    ACTIVE
+
+                                PENDING REQUESTS
+
+
+                                    <NONE>
+
+                                  DRIVE STATUS
+
+Drive Name               Label   Ready  RecMID  ExtMID  Wr.Enbl.  Type
+    Host                       DrivePath                            Status
+=============================================================================
+INX_DRV1                 No      No                     No        hcart
+    taitc138                   {3,0,0,0}                            SCAN-TLD
+    inxnbu5230amd              /dev/nst0                            TLD
+
+INX_DRV2                 No      No                     No        hcart
+    taitc138                   {5,0,0,0}                            SCAN-TLD
+    inxnbu5230amd              /dev/nst1                            TLD
+
+INX_DRV3                 No      No                     No        hcart
+    taitc138                   {6,0,0,0}                            TLD
+</code>
+
+==== Standard_naming_convention_for_Disk_Staging_Storage_Units_(DSSU) ====
+More and more we are creating DSSUs. To work efficiently with them at OpsCenter we need to have a naming convention in place. We do have the following disk staging unit types:
+Basic disk	–> BD
+Advanced disk –> AD
+Pure disk –> PD
+Data Domain –> DD
+While creating such storage unit we should name it as follow:
+XXX_YY_DSSUz:
+Where 
+XXX –> stands for 3 letters site code
+YY –> for storage unit type (BD, AD, PD, DD)
+Z –> next number of DSU, ie:
+INX_PD_DSSU1
+INX_AD_DSSU2
+LDC_DD_DSSU1
+
+For NBU 52x0 applianaces let's follow their wizard and their names will look like:
+<code>stu_adv_ldcnbu5230amd
+stu_disk_ldcnbu5230amd
+stu_adv_ldcnbu5230bmd
+stu_disk_ldcnbu5230bmd</code>
+Where adv - stands for advanced disk and disk for Media Server Deduplication pool.
+Etc…
+
+==== Name_resolution ====
+Make 100% sure that the server and all clients names are resolvable by DNS system – forward and reverse look ups, ie:
+<code>D:\>nslookup taede003bck
+Server:  taeqip003.emea.int.tenneco.com
+Address:  170.64.108.18
+
+Name:    taede003bck.eu.ten
+Address:  10.58.3.50
+
+
+D:\>nslookup 10.58.3.50
+Server:  taeqip003.emea.int.tenneco.com
+Address:  170.64.108.18
+
+Name:    taede003bck.eu.ten
+Address:  10.58.3.50</code>
+
+Bare in mind that the lower/upper case do matter!
+**New NBU domains, added clients in exisitng domains should be only added via FQDN**
+
+==== Users ====
+Make sure that the user scvbackup is in local administrator group<code>net localgroup administrators|findstr /i svcbackup</code>If not found add it!!<code>net localgroup administrators domain-name\svcbackup /add</code>
+Create local user ID for NBU 8.0<code>net user nbwebsvc <oursPassword> /comment:"User needed by NetBackup from version 8" /PASSWORDCHG:NO /add
+wmic useraccount where name='nbwebsvc' set passwordExpires=false
+net localgroup nbwebgrp /comment:"Group needed by NetBackup from version 8" /add
+net localgroup nbwebgrp nbwebsvc /add</code>
+  - Create a test folder on c: drive<code>mkdir c:\test
+cd /d c:\test</code>Export current setting of security user/groups by executing the following<code>secedit /export /cfg security_policy_config.db /verbose /log export.log
+secedit /export /cfg user_rights_conf.db /areas USER_RIGHTS /quiet /verbose /log userexport.txt
+notepad user_rights_conf.db</code>In this notepad search for these privileges: **SeServiceLogonRight**; **SeTcbPrivilege** and **SeAssignPrimaryTokenPrivilege** - at the end of each add such users: nbwebsvc, nbwebgrp, domain\svcbackup (where domain is EMEA, ASPA, AMER - respectively on the site you work on)<code>secedit /configure /db security_policy_config.db /cfg user_rights_conf.db /overwrite /areas USER_RIGHTS /verbose /log merge.txt</code>Review the merge.txt file with notepad. If there was a failure check for a USER IDs and remove these from this file user_rights_conf.db Example failures:<code>	Configure S-1-5-6.
+	Configure Virtual Machines.
+Error 1332: No mapping between account names and security IDs was done.
+ 	Cannot find Virtual Machines.	Configure NT SERVICE\NT SERVICE.
+Error 1332: No mapping between account names and security IDs was done.
+ 	Cannot find NT SERVICE\NT SERVICE.</code>So now you have to open this file user_rights_conf.db and remove these two users from it: NT SERVICE\NT SERVICE and Virtual Machines <code>notepad user_rights_conf.db</code>and rerun the last command<code>secedit /configure /db security_policy_config.db /cfg user_rights_conf.db /overwrite /areas USER_RIGHTS /verbose /log merge.txt</code>Again check the merge.log to see if there are no errors, if no continue with upgrade **immediatelly** as the gpupdate can overwrite those setting and if you will be unlucky the upgrade will fail due to this on step SetupWMC.bat.
+
+
+==== Servers,_clients_should_be_using_only_FQDN ====
+Please in any new NBU domain start using FQDN instead of short name. This is regarding clients as well backup servers. Reminder FQDN stands for Fully Qualified Domain Name
+==== Barcode_rules ====
+
+==== Media_ID_generation ====
+This is for barcodes with 8 characters in length to report to NBU only first 6 characters, we are rather not interested with barcode suffixes like L2, L3, L4 or L5.
+{{ :dp:media_id_generation.png |}}
+
+==== Retention_periods ==== 
+** ONLY for NEW installations. ** 
+Do not change retention levels for already configured sites. This can have tremendous negative impact – some backups could have been expired sooner then anticipated.
+Retention periods are set in this window:
+{{ :dp:retention_period.png |}}
+I know there are sites having their own requirements, please always make sure you are applying not worst retention periods then required by local team.
+Here under is ours standard for retention periods:
+  Level  Days  Label
+    0      10  10 days
+    1      14  2 weeks
+    2      21  3 weeks
+    3      31  1 month
+    4      62  2 months
+    5      93  3 months
+    6     186  6 months
+    7     279  9 months
+    8     365  1 year
+    9   24855  infinity
+   10    3650  10 years 
+   11   24855  infinity
+   12   24855  infinity
+   13   24855  infinity
+   14   24855  infinity
+   15   24855  infinity
+   16   24855  infinity
+   17   24855  infinity
+   18   24855  infinity
+   19   24855  infinity
+   20   24855  infinity
+   21   24855  infinity
+   22   24855  infinity
+   23   24855  infinity
+   24   24855  infinity
+==== Tunning_information ====
+In folder <INSTALL_DIR>\NetBackup\db\config create following files:
+|File name|File content|
+|NUMBER_DATA_BUFFERS|128|
+|NUMBER_DATA_BUFFERS_RESTORE|128|
+|SIZE_DATA_BUFFERS|262144|
+|SIZE_DATA_BUFFERS_DISK|262144|
+|SIZE_DATA_BUFFERS_NDMP|262144|
+
+==== GFS_rotation ====
+In most sites we are following Grandfather, Father and Son backup rotation. This should be setup as follows:
+  * Yearly schedule executed at very first weekend of the year, retention period 10 years, full backup;
+  * Monthly schedule executed at very firs weekend of each month of the year except January (you must put manual exclusion for this in this schedule), retention 1 year, full backup;
+  * Weekly schedule executed at each weekend of the month except first one, retention period 1 month, full backup;
+  * Daily schedule executed from Mon to Thu, retention period 10 days, cumulative incremental backup.
+Live example of this implementation:<code>
+C:\Users\q1pawetk>bppllist WIN_TAPAL001 -U
+------------------------------------------------------------
+
+Policy Name:       WIN_TAPAL001
+
+  Policy Type:         MS-Windows
+  Active:              yes
+  Effective date:      01/01/1970 00:00:00
+  Backup network drvs: no
+  Collect TIR info:    no
+  Mult. Data Streams:  no
+  Client Encrypt:      no
+  Checkpoint:          yes
+       Interval:       15
+  Policy Priority:     0
+  Max Jobs/Policy:     Unlimited
+  Disaster Recovery:   0
+  Collect BMR info:    no
+  Residence:           tapal001-hcart3-robot-tld-0
+  Volume Pool:         PAL_DAILY
+  Server Group:        *ANY*
+  Keyword:             (none specified)
+  Data Classification:       -
+  Residence is Storage Lifecycle Policy:    no
+  Application Discovery:      no
+  Discovery Lifetime:      0 seconds
+  ASC Application and attributes: (none defined)
+
+  Granular Restore Info:  no
+  Ignore Client Direct:  no
+  Use Accelerator:  no
+  Optimized Backup:  no
+  HW/OS/Client:  Windows-x64   Windows2008   tapal001.emea.int.tenneco.com
+
+  Include:  ALL_LOCAL_DRIVES
+
+  Schedule:              WIN_TAPAL001_YEARLY
+    Type:                Full Backup
+    Calendar sched: Enabled
+     Included Dates-----------
+      SPECIFIC DATE 0 - 01/06/2012
+      SPECIFIC DATE 1 - 01/04/2013
+      SPECIFIC DATE 2 - 01/03/2014
+      SPECIFIC DATE 3 - 01/02/2015
+      SPECIFIC DATE 4 - 01/01/2016
+      SPECIFIC DATE 5 - 01/06/2017
+      SPECIFIC DATE 6 - 01/05/2018
+      SPECIFIC DATE 7 - 01/04/2019
+         No days of week entered
+     Excluded Dates----------
+        No specific exclude dates entered
+        No exclude days of week entered
+    Synthetic:           0
+    Checksum Change Detection: 0
+    PFI Recovery:        0
+    Maximum MPX:         4
+    Retention Level:     10 (10 years)
+    Number Copies:       1
+    Fail on Error:       0
+    Residence:           tapal001-hcart3-robot-tld-0
+    Volume Pool:         PAL_YEARLY
+    Server Group:        (same as specified for policy)
+    Residence is Storage Lifecycle Policy:         0
+    Daily Windows:
+          Friday     18:00:00  -->  Friday     24:00:00
+
+  Schedule:              WIN_TAPAL001_MONTHLY
+    Type:                Full Backup
+    Calendar sched: Enabled
+     Included Dates-----------
+        Friday, Week 1
+     Excluded Dates----------
+      EXCLUDE DATE 0 - 01/06/2012
+      EXCLUDE DATE 1 - 01/04/2013
+      EXCLUDE DATE 2 - 01/03/2014
+      EXCLUDE DATE 3 - 01/02/2015
+      EXCLUDE DATE 4 - 01/01/2016
+      EXCLUDE DATE 5 - 01/06/2017
+      EXCLUDE DATE 6 - 01/05/2018
+      EXCLUDE DATE 7 - 01/04/2019
+        No exclude days of week entered
+    Synthetic:           0
+    Checksum Change Detection: 0
+    PFI Recovery:        0
+    Maximum MPX:         4
+    Retention Level:     8 (1 year)
+    Number Copies:       1
+    Fail on Error:       0
+    Residence:           tapal001-hcart3-robot-tld-0
+    Volume Pool:         PAL_MONTHLY
+    Server Group:        (same as specified for policy)
+    Residence is Storage Lifecycle Policy:         0
+    Daily Windows:
+          Friday     18:00:00  -->  Friday     24:00:00
+
+  Schedule:              WIN_TAPAL001_WEEKLY
+    Type:                Full Backup
+    Calendar sched: Enabled
+     Included Dates-----------
+      SPECIFIC DATE 0 - 03/19/2016
+        Friday, Week 2
+        Friday, Week 3
+        Friday, Week 4
+        Friday, Week 5
+     Excluded Dates----------
+        No specific exclude dates entered
+        No exclude days of week entered
+    Synthetic:           0
+    Checksum Change Detection: 0
+    PFI Recovery:        0
+    Maximum MPX:         4
+    Retention Level:     3 (1 month)
+    Number Copies:       1
+    Fail on Error:       0
+    Residence:           tapal001-hcart3-robot-tld-0
+    Volume Pool:         PAL_WEEKLY
+    Server Group:        (same as specified for policy)
+    Residence is Storage Lifecycle Policy:         0
+    Daily Windows:
+          Friday     18:00:00  -->  Friday     24:00:00
+          Saturday   14:00:00  -->  Saturday   20:00:00
+
+  Schedule:              WIN_TAPAL001_DAILY
+    Type:                Cumulative Incremental Backup
+    Calendar sched: Enabled
+     Included Dates-----------
+        Monday, Week 1
+        Tuesday, Week 1
+        Wednesday, Week 1
+        Thursday, Week 1
+        Monday, Week 2
+        Tuesday, Week 2
+        Wednesday, Week 2
+        Thursday, Week 2
+        Monday, Week 3
+        Tuesday, Week 3
+        Wednesday, Week 3
+        Thursday, Week 3
+        Monday, Week 4
+        Tuesday, Week 4
+        Wednesday, Week 4
+        Thursday, Week 4
+        Monday, Week 5
+        Tuesday, Week 5
+        Wednesday, Week 5
+        Thursday, Week 5
+     Excluded Dates----------
+      EXCLUDE DATE 0 - 04/06/2015
+        No exclude days of week entered
+    Synthetic:           0
+    PFI Recovery:        0
+    Maximum MPX:         4
+    Retention Level:     0 (10 days)
+    Number Copies:       1
+    Fail on Error:       0
+    Residence:           (specific storage unit not required)
+    Volume Pool:         PAL_DAILY
+    Server Group:        (same as specified for policy)
+    Residence is Storage Lifecycle Policy:         0
+    Daily Windows:
+          Monday     18:00:00  -->  Monday     24:00:00
+          Tuesday    18:00:00  -->  Tuesday    24:00:00
+          Wednesday  18:00:00  -->  Wednesday  24:00:00
+          Thursday   18:00:00  -->  Thursday   24:00:00
+</code>
+
+Bare in mind that in policy should be only type of schedules (either calendar or frequency) but this should not be mixed. For specific dates remember to have open Daily Windows for the same day! 
+
+==== Allow_media_Overwrite ====
+{{ :dp:allow_media.png |}}
+==== Storage_unit_multiplexing_reduce_fragment_size ====
+{{ :dp:stu.png |}}
+Multiplexing should be set always to 4 (later on in the schedule of any policy you should have the same setting to allow couple of jobs to write to the same drive),
+the fragment size is dependant on the tape drive type. I am suggesting such values:
+  * LTO2 – 20480
+  * LTO3 – 40960
+  * LTO4 – 40960
+  * LTO5 – 81920 
+  * LTO6 - 81920
+ 
+
+==== Exclude_list_for_backup_clients ====
+In the client exclude list you should always put (this also includes backup server):<code>*.tmp
+pagefile.sys</code>
+For lotus notes server there should be more entiers, ie (X: needs to be replace with actual drive letter where LN is installed):<code>X:\Lotus\Domino\Data\*.ft
+X:\Lotus\Domino\Data\mail*.box
+X:\Lotus\Domino\Data\mail\*.ft</code>
+Altiris related drive letter should have been excluded as this data is redundant and available and each ane every site!
+For Oracle/MAXDB/MSSQL database server please liaise with the DBA to know what to safely exclude from standard OS backup.
+Any deviation from the above exclude list should be consulted with the data owner.
+Example from live system:<code>
+C:\>bpgetconfig -M tapal001 exclude
+exclude = *.tmp
+exclude = C:\Windows\Temp
+exclude = E:\Lotus\Domino\Data\*.ft
+exclude = E:\Lotus\Domino\Data\mail*.box
+exclude = E:\Lotus\Domino\Data\mail\*.ft
+exclude = E:\NBU_DSU
+exclude = E:\Program Files\Veritas\NetBackup\bin\*.lock
+exclude = E:\Program Files\Veritas\NetBackup\bin\bprd.d\*.lock
+exclude = E:\Program Files\Veritas\NetBackup\bin\bpsched.d\*.lock
+exclude = E:\Program Files\Veritas\NetBackupDB\data\*
+exclude = E:\Program Files\Veritas\Volmgr\misc\*
+exclude = P:\
+exclude = pagefile.sys</code>So you can create a file named excludeus.txt similar to above one and then run this<code>bpsetconfig -h client_name excludeus.txt</code>
+==== Increase_the_Activity_Monitor_reports_period_to_720_hours ====
+By default there are reported only 78 hours in Activity Monitor. To be fully aware what is going on with this NBU domain please increase this to 720 – max value. Command to achieve that is:
+<code>C:\>echo KEEP_JOBS_HOURS = 720 | bpsetconfig
+C:\>echo KEEP_JOBS_SUCCESSFUL_HOURS = 720 | bpsetconfig
+C:\>bpgetconfig |findstr KEEP_JOBS
+KEEP_JOBS_SUCCESSFUL_HOURS = 720
+KEEP_JOBS_HOURS = 720 </code>
+
+==== Hot_catalog_backup ==== 
+There should be always setup hot-catalog backup. Ideally it should be written to basic disk storage unit which is later on staged to tape. 
+**For NBU 8.1 onwards there has to be password set to protect NBU catalog. Please use ours password but very first three letters in capital.**
+<code>To set the passphrase for the disaster recovery package, do one of the following:
+* In the NetBackup Administration Console, expand Security Management > Global Security Settings. On the Disaster Recovery tab, set the passphrase.
+* Use the nbseccmd -drpkgpassphrase command.</code> Only after doing so NBU HOT CATALOG backup will be successful and will not fail with EC 2524.
+I am running it on daily basis, sometime during the business hours where no other backups should run. Policy name should be HOT_XXX, where XXX is site code.
+Example policy might look like:
+<code>
+C:\>bppllist HOT_PAL -U
+------------------------------------------------------------
+
+Policy Name:       HOT_PAL
+
+  Policy Type:         NBU-Catalog
+  Active:              yes
+  Effective date:      08/10/2012 13:19:30
+  Mult. Data Streams:  no
+  Client Encrypt:      no
+  Checkpoint:          no
+  Policy Priority:     0
+  Max Jobs/Policy:     1
+  Disaster Recovery:   0
+  Collect BMR info:    no
+  Residence:           tapal001.emea.int.tenneco.com-disk
+  Volume Pool:         CatalogBackup
+  Server Group:        *ANY*
+  Keyword:             (none specified)
+  Data Classification:       -
+  Residence is Storage Lifecycle Policy:    no
+  Application Discovery:      no
+  Discovery Lifetime:      0 seconds
+  ASC Application and attributes: (none defined)
+
+  Granular Restore Info:  no
+  Ignore Client Direct:  no
+  Use Accelerator:  no
+  HW/OS/Client:  Windows-x64   Windows2008   tapal001.emea.int.tenneco.com
+
+  Include:  CATALOG_DRIVEN_BACKUP
+
+  Schedule:              HOT_PAL_ONDEMAND
+    Type:                Full Backup
+    Calendar sched: Enabled
+     Included Dates-----------
+         No days of week entered
+     Excluded Dates----------
+        No specific exclude dates entered
+        No exclude days of week entered
+    PFI Recovery:        0
+    Maximum MPX:         1
+    Retention Level:     3 (1 month)
+    Number Copies:       1
+    Fail on Error:       0
+    Residence:           tapal001-hcart3-robot-tld-0
+    Volume Pool:         CatalogBackup
+    Server Group:        (same as specified for policy)
+    Residence is Storage Lifecycle Policy:         0
+    Daily Windows:
+
+  Schedule:              HOT_PAL_FULL
+    Type:                Full Backup
+    Calendar sched: Enabled
+     Included Dates-----------
+        Monday, Week 1
+        Tuesday, Week 1
+        Wednesday, Week 1
+        Thursday, Week 1
+        Friday, Week 1
+        Monday, Week 2
+        Tuesday, Week 2
+        Wednesday, Week 2
+        Thursday, Week 2
+        Friday, Week 2
+        Monday, Week 3
+        Tuesday, Week 3
+        Wednesday, Week 3
+        Thursday, Week 3
+        Friday, Week 3
+        Monday, Week 4
+        Tuesday, Week 4
+        Wednesday, Week 4
+        Thursday, Week 4
+        Friday, Week 4
+        Monday, Week 5
+        Tuesday, Week 5
+        Wednesday, Week 5
+        Thursday, Week 5
+        Friday, Week 5
+     Excluded Dates----------
+        No specific exclude dates entered
+        No exclude days of week entered
+    PFI Recovery:        0
+    Maximum MPX:         1
+    Retention Level:     0 (10 days)
+    Number Copies:       1
+    Fail on Error:       0
+    Residence:           (specific storage unit not required)
+    Volume Pool:         (same as policy volume pool)
+    Server Group:        (same as specified for policy)
+    Residence is Storage Lifecycle Policy:         0
+    Daily Windows:
+          Monday     10:00:00  -->  Monday     12:30:00
+          Tuesday    10:00:00  -->  Tuesday    12:30:00
+          Wednesday  10:00:00  -->  Wednesday  12:30:00
+          Thursday   10:00:00  -->  Thursday   12:30:00
+          Friday     10:00:00  -->  Friday     12:30:00
+          Saturday   10:00:00  -->  Saturday   12:30:00
+
+Catalog Disaster Recovery Configuration:
+  Email Address:   giosdatapresalerts@tenneco.com
+  Disk Path:       E:\NBU_DSU
+  User Name:       (none specified)
+  Pass Word:       (none specified)
+  Critical policy: (none specified)</code>Pay attention to<code>Email Address:   giosdatapresalerts@tenneco.com</code> this is the email address on which information should be coming from hot catalog backups. No more individuals email addresses.
+The path<code>Disk Path:       E:\NBU_DSU</code> is local to each and every server... Good practice says it should be on the other drive then NBU is installed, but in ours env this sometime cannot be met.
+For windows based installtion, in order to receive emails after hot catalog backup is made - there is a need to create such file in <install dir>\Netbackup\bin\nbmail.cmd with such content:<code>@IF "%~4"=="" (@blat %3 -s %2 -t %1 -i giosdatapresalerts@tenneco.com -server tenneco-com.mail.protection.outlook.com -q
+) ELSE (
+@blat %3 -s %2 -t %1 -i giosdatapresalerts@tenneco.com -server tenneco-com.mail.protection.outlook.com -q -attach %4
+)</code>
+Of course the binary file blat.exe should be donwloaded from [[http://www.blat.net/]] or use this<code>copy \\taitc138\c$\windows\system32\blat* c:\windows\system32\</code>and the files put into a location to which already is pointing path environmental varialble, ie: C:\Windows\System32, the smtp server should match the location of the server,
+so for emea and aspa it will be smtp.emea.int.tenneco.com for amer taitc027.amer.int.tenneco.com. 
+Please check if blat is alredy configured properly<code>E:\>blat -profile
+Blat v3.2.17 (build : Aug 10 2016 22:32:51)
+64-bit Windows, Full, Unicode
+
+Profile(s) for all users of this computer --
+SMTP: smtp.emea.int.tenneco.com "giosdatapresalerts@tenneco.com" 3 25</code> If it looks similar to above skip the below, if not run this<code>blat -install tenneco-com.mail.protection.outlook.com giosdatapresalerts@tenneco.com 3 25</code> Again the emea needs to be replaced with the actual domain.
+Please make sure that the given smtp server does exist. If not use the closest one either emea or amer. New mail relay server is:<code>tenneco-com.mail.protection.outlook.com</code> Please use this one instead of others in new builds. To test if this script is working please execute this<code>cd <install dir>\Netbackup\bin\
+nbmail.cmd giosdatapresalerts@tenneco.com test_subject_%computername% ..\version.txt ..\version.txt</code> Then please check if such email was delivered... Or run the hot catalog policy which should provide you the DR information via email.
+==== Client_Attributes_Windows_Open_File_Backup ====
+For every wintel client please adjust it properties as shown below (bare in mind the OS version, below is example for w2k3 and above):
+Location to access these properties is: **NetBackup Management\Host Properties\Master Servers\Client Attributes**
+Same can be achieved by running this code - of course replace clinet_name with actual client name<code>bpclient -client client-name -add -WOFB_enabled 1 -WOFB_FIM 1 -WOFB_usage 0 -WOFB_error 1 -client_direct 1</code>
+{{ :dp: nbu_client1.png | }}
+
+For the NBU domains where we do client side deduplication - mostly with NBU 52x0 appliances this is alos needed:
+{{ :dp: nbu_client2.png | }}
+
+Also from **NetBackup Management\Host Properties\Clients\Client-name\Windows Client\Client Settings** set as follows:
+{{ :dp: NBU_Client_use-change_journal.png | }}
+==== BMR ====
+Within NetBackup we can collect so called BMR (Bare Metal Restore) data. In order to do it BMR functionality has to be enabled on master server. Please see how to enable that on:
+  * UNIX box
+To create the BMR database and setup the BMR master server
+  - Log on as the root user on the system on which the NetBackup master server is installed.
+  - Run the following command to configure the BMR database:<code>%NB_INSTALL_DIR%/bin/bmrsetupmaster</code>
+After you have setup the BMR master server, you can configure backup policies to collect BMR required information from NetBackup clients. To start collecting BMR data from supported clients (always double check if given client OS is supported by Vertias) open MS-Windows or Standard policy type and check the box next to BMR as shown {{:dp:bmr_policy.png?linkonly|here}}. From now on that policy will have the parent job which is responsible for BMR data collection. Pay attention if these is exiting with EC=0. Of course given client should be protected in terms of 'backup selection list' ALL_LOCAL_DRIVES - with some minor exclude list as agreed in this document. If you won't be backing up %SYSTEMDRIVE% nor SYSTEM_STATE this option does not make sense. So please use with awareness.
+  * WINDOWS box
+To set up the BMR master server on a Windows system
+  - On the Windows BMR master server, select Programs > Veritas NetBackup > Bare Metal Restore -- Master Server Setup from the Start menu.
+The Master Server Setup Wizard Welcome panel :{{:dp:bmr_setup_master.png?linkonly|appears}}
+  - Follow the prompts to set up the BMR master server. You do not have to enter any information; the wizard performs all the steps required to set up the master server.
+  * NBU appliance (Veritas made)
+Enabling BMR from the NetBackup Appliance Web Console
+You can enable Bare Metal Restore (BMR) from Manage > Hosts > Advanced in the NetBackup Appliance Web Console when the appliance is configured as a master server.
+If you want to disable BMR on the appliance, you must run the appropriate NetBackup commands. Note that BMR is disabled by default.
+To enable BMR from the NetBackup Appliance Web Console
+  - Log on to the NetBackup Appliance Web Console. Note that the appliance must be configured as a master server.
+  - Select Manage > Host > Advanced tab.
+  - Check Enable BMR on this appliance to enable BMR on the appliance.
+  - Click Save.
+
+Once done we do have the BMR data being collected. Now in order to use we would need to setup BMR boot servers. This can be tricky as in some sites ours master server its protecting only itself and in such case I do not see any value added to configure BMR. But in sites where there are other clients this is making more sense.
+Configuring BMR Boot Server
+The BMR boot server software is installed when you install the NetBackup client. No separate installation is required. However, you must register the boot server. Every NetBackup server includes the NetBackup client software by default. Therefore, you can run a BMR boot server on either a NetBackup server or a client (if BMR supports that platform). Boot servers provide the environment that is required to rebuild a protected client, including resources such as shared resource trees (SRT). **//Note//**: The BMR master server needs to be configured on the NetBackup master server before the BMR boot server is configured.
+
+For further details how to setup BMR boot server please read the Veritas NetBackup™ Bare Metal Restore™ Administrator's Guide for the NBU version you do run. I do strongly encourage you to get familiar with this white paper to fully understand the process, be aware about its limitations etc.
+
+Please also read the tech notes for this piece of software, ie:
+
+Veritas NetBackup™ Bare Metal Restore™ Administrator's Guide
+UNIX, Windows, Linux
+Release 8.1
+Disclaimer: In this release, NetBackup Bare Metal Restore functionality is not supported for restoring the clients which have NetBackup version 8.1 installed. You can, however, still use Bare Metal Restore for restoring the clients which have NetBackup version 8.0 and earlier installed. While restoring 8.0 and earlier clients, Veritas recommends that you use Shared Resource Tree (SRT) having 8.0 and earlier client version.
+==== To_add_OpsCenter_servers_the_newly_created_NBU_domain ====
+When installing new NBU domain you do have a chance to add OpsCenter server during installation. Please add this opscenter server taitc054.emea.int.tenneco.com during installation. 
+If you will skip this step of adding opscenter server you can always do it later on by issuing this command:
+nbregopsc.exe -add taitc054.emea.int.tenneco.com
+Despite of this please add these three servers into newly created NBU domain, this will allow opscenter agent and server to communicate properly. Servers are:
+taitc054.emea.int.tenneco.com
+taitc138.emea.int.tenneco.com
+taitc009.amer.int.tenneco.com
+{{ :dp: NBU_srv.png | }}
+
+Once this was done run the following on newly setup master server:<code>
+nbregopsc -add taitc054.emea.int.tenneco.com</code>
+
+==== Automated_scripts_for_tapes_exchange ====
+All scripts participating in this are in this 7zipped file:{{:dp:eject_scripts.7z|}}. I do believe that all these scripts are self explanatory. These were designed for windows based OSes. 
+This should be extracted in install dir under scripts folder, ie: D:\Progra~1\Veritas\NetBackup\scripts. Please do not remove any file/directory from this folder as it is NBU default one, 
+also used by NBU. The .bat files require only some adjustment to fit them into particular site. Everything else was taken care. Once this would have been copied there you can create a scheduled 
+task to be executed twice a week. On Monday and Friday: first occurrence to eject weekly/monthly full saves from library, on Friday to make sure there would be enough tapes to 
+accodomate weekly/monthly full saves.
+Here is a command line to create such tasks:<code>schtasks /s server_name /create /ru aspa\svcbackup /rp oursPASSWORD /SC WEEKLY /D MON /ST 08:00 /tn tapes_exchange /tr "e:\program files\Veritas\netbackup\scripts\au.bat "</code>
+once created please adjust it using gui.
+Main file is au.bat, which is calling two others:
+tapes_exchange.bat and tapes_in_vmpools.bat. All three should be edited to fit into particular site. An outcome of this script is then being sent via blat.exe to setup recipients.
+File tapes_exchange.bat is checking what tapes from _WEEKLY, _MONTHLY and _YEARLY volume pool is inside library – these tapes have to go out. Also it’s looking after tapes being in 
+scratch pool outside (to be brought back) and inside library (this gives an idea if full backup will be written to tapes avoiding 96 exit code). The other file tapes_in_vmpools.bat 
+is only for informational purposes (as well some ‘little DR’ activities if NBU catalog will be lost).
+
+
+Variables to setup in these batch files – on blue live examples!:
+From automated_notification_tapes_2_exchange.bat
+@rem Sender should be giosdatapresalerts@tenneco.com
+@set SENDER=giosdatapresalerts@tenneco.com
+
+@rem RECECIP should be internet style email address, it can be comma separated if more then one is desired, ie ptkaczyk@tenneco.com
+@set RECEIP=ptkaczyk@tenneco.com
+
+@rem SERVER is the server name, ie TAEDE024
+@set SERVER=TAEDE024
+
+@rem INSTALLDIR is the varialble where NBU is installed, ie D:\Progra~1\Veritas
+@set INSTALLDIR=D:\Progra~1|Veritas
+
+@REM ROBOTNUMBER - this usually should be 0, if in your site its different than change this to reflect your situation
+@set ROBOTNUMBER=0
+
+From tapes_exchange.bat
+@rem site prefix Variable - here should be only site prefix, ie EDE
+@set SITE_PREFIX=EDE
+
+From tapes_in_vmpools.bat
+@rem site variable - only site prefix, ie EDE
+@set SITE_PREXIX=EDE
+
+**For NBU appliances such two files needs to be created**<code>
+hodnbu5240ams:/home/maintenance # cat /usr/local/bin/tapes_exchange.ksh
+#!/bin/ksh
+#This is script will select all tape from Weekly, Monthy and Yearly volume pools residing in library
+
+#variables definition
+VMQUERY=/usr/openv/volmgr/bin/vmquery
+BPMEDIALIST=/usr/openv/netbackup/bin/admincmd/bpmedialist
+DATE=`date +"%D"`
+HOSTNAME=`uname -n`
+SITE_CODE=<here you do put three letters of sit code>
+VMPOOLS_ALL="${SITE_CODE}_DAILY ${SITE_CODE}_WEEKLY ${SITE_CODE}_MONTHLY ${SITE_CODE}_YEARLY ${SITE_CODE}_CATALOG NetBackup"
+
+echo "Please exchange the following tapes in library connected to $HOSTNAME on $DATE"
+echo "If there is more scratch tapes than free slots put only as many as free slots."
+echo "Please check to see if there is a tape in the tape drive."
+echo "If there is PLEASE DO NOT use its source slot!"
+echo "Automatic inventory on NetBackup end will be run 7 times with 30 minutes delays."
+echo "This gives you 3.5 hour to exchange tapes in robot. If you will fail to do so,"
+echo "within this time period please contact anyone from DATAPRESERVATION to run manual inventory on $HOSTNAME"
+echo
+echo "TAPES TO BE EJECTED FROM LIBRARY"
+for i in $VMPOOLS_ALL; do
+        echo Following tapes from $i volume pool
+        $VMQUERY -pn $i -b|grep TLD |awk '{print $1,"in slot",$5}'|sort -n -k 4
+        echo ----------------------
+done
+
+echo "TAPES TO BE RETURNED TO THE LIBRARY"
+echo "Scratch (pool) tapes external to library: "
+
+$VMQUERY -pn ${SITE_CODE}_SCRATCH -b|grep NONE |sort -n -k 8 |awk '{print $1, $8}'
+echo ----------------------
+
+echo "Scratch (pool) tapes available in library: "
+$VMQUERY -pn ${SITE_CODE}_SCRATCH -b|grep TLD |sort -n -k 8
+
+echo ===================================
+
+echo
+echo
+echo Information about all tapes divied by volume pool
+for i in $VMPOOLS_ALL ; do
+        echo Tapes from $i volume pool
+        #$BPMEDIALIST -p $i -summary -owner $HOSTNAME
+        $BPMEDIALIST -p $i
+        echo ----------------------
+done
+hodnbu5240ams:/home/maintenance #
+hodnbu5240ams:/home/maintenance # cat /usr/local/bin/eject_tapes.sh
+#!/bin/ksh
+#Author Pawel Tkaczyk ptkaczyk@tenneco.com
+#Script to automatically send emails about which tapes should be ejeceted from library and which ones should return to it
+#Some variables
+
+DATE=`date +"%D"`
+DATE1=`date +'%y%m%d'`
+HOSTNAME=`uname -n`
+MAILREC="<here you do put the names of recipients in internet style email addresses comma separated plus breports@tenneco.com for DR>"
+WORKDIR=/tmp/EJECT-ORIGS
+FILE2SEND=tapes_exchange.$DATE1
+BPIMAGELIST=/usr/openv/netbackup/bin/admincmd/bpimagelist
+BPMEDIA=/usr/openv/netbackup/bin/admincmd/bpmedia
+
+#we need to make sure the WORKDIR do exist if not let's create it
+if [ ! -e $WORKDIR ]
+        then mkdir $WORKDIR
+fi
+
+#Let's run inventory prior selection of tapes to be ejected - to reflect any changes
+/usr/openv/volmgr/bin/vmupdate -rt tld -rn 0 > /dev/null
+#main script which do selects the approriate tapes
+/usr/local/bin/tapes_exchange.ksh > $WORKDIR/$FILE2SEND
+#send outcome to MAILREC
+mailx -n -r giosdatapresalerts@tenneco.com -s "WINTEL tapes that should be ejected from library $HOSTNAME on $DATE1" $MAILREC < $WORKDIR/$FILE2SEND >/dev/null
+#perform 7 times inventory of library with 30 mins delay
+for i in 1 2 3 4 5 6 7 ; do
+        /usr/openv/volmgr/bin/vmupdate -rt tld -rn 0 > /dev/null
+        sleep 1800;
+done
+hodnbu5240ams:/home/maintenance #</code>
+Once done editing add executable permissions by executing:<code>
+hodnbu5240ams:/home/maintenance # chmod +x /usr/local/bin/tapes_exchange.ksh
+hodnbu5240ams:/home/maintenance # chmod +x /usr/local/bin/eject_tapes.sh</code>
+And add this line to crontab<code>
+10 10 * * 3 /usr/local/bin/eject_tapes.sh > /dev/null 2>&1
+
+hodnbu5240ams:/home/maintenance # crontab -l
+*/15 * * * * /sbin/service nbapp-wan status_q || /sbin/service nbapp-wan restart 2>&1 >/dev/null
+*/15 * * * * /opt/NBUAppliance/bin/perl -I/opt/NBUAppliance/scripts/ /opt/NBUAppliance/scripts/cron.pl
+5 0 * * * /opt/NBUAppliance/bin/perl -I/opt/NBUAppliance/scripts/ /opt/NBUAppliance/scripts/liveupdate-clients.pl -c
+45 7 * * * /home/maintenance/BacklogCheck.ksh -a -m ptkaczyk@tenneco.com > /dev/null 2>&1
+10 10 * * 3 /usr/local/bin/eject_tapes.sh > /dev/null 2>&1
+hodnbu5240ams:/home/maintenance #
+</code>
+
+==== NBU5240_needs =====
+For shaping purpose please have this xlsx being fullfilled: {{:dp:nbu_5240_app_needs.xlsx|}}
+
+==== ENV =====
+Once new domain was set, please:
+  * perform validation if all standard things are in place;
+  * notify OpsCenter admin to create|modify the OpsCenter geographic location for new site & move newly created NBU master server there. Please provide Continent, Country, Site and server name;
+  * Have the tape libraries informaiton being updated in [[https://tenneco.sharepoint.com/sites/COUSGI/DPT/Lists/Library_links/AllItems.asx|here]];
+  * Update maintenace contract information for newly introduced NBU appliance [[https://tenneco.sharepoint.com/sites/COUSGI/DPT/NBU%20appliance%20information/Home.aspx|here]] and library [[https://tenneco.sharepoint.com/sites/COUSGI/DPT/_layouts/15/guestaccess.aspx?guestaccesstoken=1WORGoWPQIFwrsFHmFXqkwtgBvkS08SuAVqwM2kUItM%3d&docid=2_1d14df2116be34577bc19cdc242ec2e2b&rev=1|here]]
+
+==== NBU_app_keys ====
+  * Add these public keys to authorized_keys file on newly installed NBU appliance<code>
+ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAwR/4SxLhf/k3RXm3xmsLnmNabWRyzp7OGal6NXPle8Hbdu2k3Pvnd1HngRw/INexgjOZhsQDye6X9uUL9yixt6DyiHa/fySwjgSDxlylnMByYdi+u87lwaizGfdWgK+5SP8NAf9qu6e+rPx6ImlFE7ggSbNbPYn4CfN1emSjx/E= rsa-key-20070822
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC1O9eh1LeDkZKOHAcFT9Rfz1m3tQNyOjsVor8igIvpHH2K6KLCxuvcOi1RCNnEgBwtVnrkbv79D7nXPXhozEYQWAE8oqO/OpWo+AxubHRKRxH/L8WUtt7tuvGxMOB9GlwKu3nSrYZ66UBXeQZJT1rlsZHRtFFEpC9+STZj6g4E+5RCoua6alqcuoCAnlWEXoOE6bZErsAiP11a1f/60qphyS6HE7qcDZ02V9H27unZZw64jzLZ5+gXPPXU9a6bHs35pO8h+ZEFPh1xn9/R47dChdSkupPTd19aBOo/ApWxqxdHMgZSEU+aafX/oLM67kKdcBSbsztyN9vXOVl1BnTj x1kxk630@kaps-fedora-dt01
+ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAzaGoL8l7oTkLA/XqyTd5wuVSdrIHs3h/DoaA9NJ/UGtTPydtl27efFimXCof+oBMCw24XgVmHyW7Rft1AoMzfg8vO/rjmG7xRLagiHZhCrBryhqg16kxOE2Hfi6BJjwGZxuvkJrN/rov/spIVAZKFsTbF2QpkgtBxibldKCYViKvxtRz9E6R7zgFA5tFnJI1trxUWDNuxeiuDBWg9o7IAuR5m5KdtalZKwDBL0QEOJjCQtzP8Jc1J3TbCVbDvvWXXIAp+ay4Fj7g86qgmQ66ZNG2na/vuEVg6ldTpVOexQHECeu0XTDq7CYIDQ4pR1fA8ZpdohTYWF88vGgkB0TbEQ== rsa-key-20140328
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn8ylGCM2GQ4iY9giSU27AQNWoXkiCkwy1nn3gKgdeIjX3Qjxt4fAvSJaYyZmEx5ehhEJ/l0o+laykMmT1t0tZWfpQHOZo5l65TUqFhEH4l/twwYIE/aCqY19D2nmtMTh4vwQlNvj4nUhZrxc/3IzSKfmEnz0AYuy7VzyM3I1pBcri4DSWK+XL4ScnqZJm/bHyPVJgb69iLSaz/rzbyl//reqBJ1NolMYCmgOfXJkpH/nNxN2K66sKAVoy+tH0ns646MSO0Ls0tFg5+6uRqVS6NofS9nldEufhjjIHtSnr60OUNzRZooIxlYcQQbrVdVPfrEdcm4PVKSSXokATSJd8w== x1nithsa@pgunap01</code>
+  * Create a local CLI user with ID: snowscannbu <code>glwnbu5230ams.Main_Menu> Manage
+Entering appliance management view...
+
+Certificates  Manage Certificates credentials.
+Exit          Log out and exit from the current shell.
+FibreChannel  Manage Fibre Channel.
+Libraries     Manage Robotic Tape Libraries.
+License       License Administration.
+MountPoints   Manage remote mount points.
+NetBackupCLI  Execute NetBackup Commands.
+OpenStorage   Manage OpenStorage plugins.
+Return        Return to the previous menu.
+Shell         Shell operations.
+Software      Manage Software Updates.
+Storage       Manage Storage.
+Tapes         Manage Tape Media.
+
+glwnbu5230ams.Manage> NetBackupCLI
+Entering NetBackup CLI view...
+
+Create          Create a local NetBackup CLI administrator.
+Delete          Delete a local NetBackup CLI administrator.
+Exit            Log out and exit from the current shell.
+List            List of local NetBackup CLI administrators.
+PasswordExpiry  Password expiry information.
+Return          Return to the previous menu.
+Shell           Shell operations.
+
+glwnbu5230ams.NetBackupCLI> Create snowscannbu</code> I have to recall password and share it with you...
+
+After NBU appliance upgrade follow these steps:<code>cd ~admin
+mkdir .ssh
+vi .ssh/authorized_keys
+chown -R admin:admin .ssh
+cd /var/sshkeys/
+mkdir admin
+ln -s ~admin/.ssh/authorized_keys admin/authorized_keys</code> While editing authorized_keys add keys from above in this section.
+
+==== NBU_HM ====
+  * Install NBU - ours current standard on this linux
+  * Add to PATH environmental variable the following<code>/usr/openv/netbackup/bin/:/usr/openv/netbackup/bin/admincmd/:/usr/openv/netbackup/bin/goodies/:/usr/openv/volmgr/bin/:/usr/openv/pdde/pdcr/bin/</code>
+  * edit /usr/openv/java/auth.conf - and add ours team's user IDs to that file so we can use JAVA GUI<code>vi /usr/openv/java/auth.conf
+pawetkac ADMIN=ALL JBP=ALL
+jhf1625 ADMIN=ALL JBP=ALL
+raghk ADMIN=ALL JBP=ALL
+rajhsubr ADMIN=ALL JBP=ALL</code>
+  * Create disk storage units: 
+  - Advanced one with name: dp_adv_hostname, 
+  - Deduplication one: dp_disk_hostname (credentials: root, Ten@2018#05) - Storage path /msdp/data/dp1/pdvol, Deduplication database path /msdp/cat (these should be two different FSes)
+{{:dp:storage_server_summary.png?linkonly|}}
+  * Execute this to create a policy of msdp catalog backup<code>echo Getting client name
+clnt=`/usr/openv/netbackup/bin/admincmd/bpgetconfig CLIENT_NAME|awk '{print $NF}'`
+echo ============================================================================================================
+
+echo Client name is $clnt
+echo ============================================================================================================
+
+echo Gathering Advanced Disk Pool name
+STUADV=`/usr/openv/netbackup/bin/admincmd/bpstulist |grep adv |awk '{print $1}'`
+
+echo Gathering backup selection list to protect MSDP
+backup_selection=`/usr/openv/pdde/pdcr/bin/pddeDR list_dr`
+echo Backup Selection list is $backup_selection
+echo ============================================================================================================
+
+echo Creating new policy with below command
+echo /usr/openv/netbackup/bin/admincmd/bppolicynew NBA_Dedupe_Catalog_${clnt} -reason "Creating a NetBackup Deduplication catalog backup policy."
+/usr/openv/netbackup/bin/admincmd/bppolicynew NBA_Dedupe_Catalog_${clnt} -reason "Creating a NetBackup Deduplication catalog backup policy."
+echo ============================================================================================================
+
+echo Changing the policy type to Standard
+echo /usr/openv/netbackup/bin/admincmd/bpplinfo NBA_Dedupe_Catalog_${clnt} -modify -pt Standard -keyword "NetBackup Deduplication Catalog" -reason "Creating a NetBackup Deduplication catalog backup policy." -active -residence ${STUADV}
+/usr/openv/netbackup/bin/admincmd/bpplinfo NBA_Dedupe_Catalog_${clnt} -modify -pt Standard -keyword "NetBackup Deduplication Catalog" -reason "Creating a NetBackup Deduplication catalog backup policy." -active -residence ${STUADV}
+echo ============================================================================================================
+
+echo Adding client to policy NBA_Dedupe_Catalog_${clnt}
+echo /usr/openv/netbackup/bin/admincmd/bpplclients NBA_Dedupe_Catalog_${clnt} -reason "Creating a NetBackup Deduplication catalog backup policy." -add ${clnt} Linux  RedHat2.6.18
+/usr/openv/netbackup/bin/admincmd/bpplclients NBA_Dedupe_Catalog_${clnt} -reason "Creating a NetBackup Deduplication catalog backup policy." -add ${clnt} Linux RedHat2.6.18
+echo ============================================================================================================
+
+echo Adding backup selection list to policy
+echo /usr/openv/netbackup/bin/admincmd/bpplinclude NBA_Dedupe_Catalog_${clnt} -reason "Creating a NetBackup Deduplication catalog backup policy." -add ${backup_selection}
+/usr/openv/netbackup/bin/admincmd/bpplinclude NBA_Dedupe_Catalog_${clnt} -reason "Creating a NetBackup Deduplication catalog backup policy." -add ${backup_selection}
+echo ============================================================================================================
+
+echo Creating schedules for full and DINC backup
+/usr/openv/netbackup/bin/admincmd/bpplsched NBA_Dedupe_Catalog_${clnt} -add Full -reason "Creating a NetBackup Deduplication catalog backup policy - Full schedule." -window 21600 43200 -st FULL -rl 3 -freq 604800
+/usr/openv/netbackup/bin/admincmd/bpplsched NBA_Dedupe_Catalog_${clnt} -add Differential-Inc -reason "Creating a NetBackup Deduplication catalog backup policy - DINC schedule." -window 21600 43200 -st INCR -rl 0 -freq 86400</code>
+  * Add credentails for VMWARE farm<code>tpconfig -add -virtual_machine taitc150.emea.int.tenneco.com -vm_user_id emea\svcbackup -vm_type 1 -password ourspwd</code>
+  * Define Resource Limit per Datastore for VMWARE application - to do not create too many IOs on vm farm.
+  * Create exlude list for MSDP and ADV disk pools - in case anyone would have created policy for backing up NBU server.
+  * To see iSCSI based LUNs - ask wintel team to present luns to ours iSCSI initiator:<code>root on mognbuhmams:/root $ cat /etc/iscsi/initiatorname.iscsi
+InitiatorName=iqn.1994-05.com.redhat:4f63561a792f
+root on mognbuhmams:/root $  iscsiadm -m discovery -t sendtargets -p 192.168.0.100
+192.168.0.100:3260,1 iqn.2003-10.com.lefthandnetworks:mog-vsa-managment-grp:37:vsa-lun-01-sas
+root on mognbuhmams:/root $  iscsiadm -m node -T iqn.2003-10.com.lefthandnetworks:mog-vsa-managment-grp:37:vsa-lun-01-sas --login
+Logging in to [iface: default, target: iqn.2003-10.com.lefthandnetworks:mog-vsa-managment-grp:37:vsa-lun-01-sas, portal: 192.168.0.100,3260] (multiple)
+Login to [iface: default, target: iqn.2003-10.com.lefthandnetworks:mog-vsa-managment-grp:37:vsa-lun-01-sas, portal: 192.168.0.100,3260] successful.
+root on mognbuhmams:/root $ lsblk
+NAME                    MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+sda                       8:0    0 838.3G  0 disk
+├─sda1                    8:1    0   512M  0 part /boot/efi
+├─sda2                    8:2    0     1G  0 part /boot
+└─sda3                    8:3    0 836.9G  0 part
+  ├─sysvg-root          253:0    0    90G  0 lvm  /
+  ├─sysvg-swap          253:1    0     8G  0 lvm  [SWAP]
+  ├─sysvg-tmp           253:10   0    10G  0 lvm  /tmp
+  ├─sysvg-home          253:11   0     1G  0 lvm  /home
+  └─sysvg-opt           253:12   0     6G  0 lvm  /opt
+sdb                       8:16   0    18T  0 disk
+├─datavg01-inst         253:2    0    50G  0 lvm  /inst
+├─datavg01-log          253:3    0   128G  0 lvm  /log
+├─datavg01-usr_openv    253:4    0   128G  0 lvm  /usr/openv
+├─datavg01-config       253:5    0   128G  0 lvm  /config
+├─datavg01-usr_openv_db 253:6    0   128G  0 lvm  /usr/openv/netbackup/db
+├─datavg01-msdp_advol   253:7    0     1T  0 lvm  /advanceddisk/dp1/advol
+├─datavg01-msdp_pdvol   253:8    0    10T  0 lvm  /msdp/data/dp1/pdvol
+└─datavg01-msdp_cat     253:9    0    20G  0 lvm  /msdp/cat
+sdd                       8:48   0    14T  1 disk
+└─sdd1                    8:49   0    14T  1 part
+root on mognbuhmams:/root $</code>
+To list active iscsi sessions:<code>iscsiadm -m session</code>
+To delete iscsi LUN:<code> iscsiadm -m node -o delete -T iqn.2003-10.com.lefthandnetworks:mun-vsa-management-grp:155:mun-vsa-lun01-sas
+iscsiadm: This command will remove the record [iface: default, target: iqn.2003-10.com.lefthandnetworks:mun-vsa-management-grp:155:mun-vsa-lun01-sas, portal: 192.168.0.90,3260], but a session is using it. Logout session then rerun command to remove record.
+iscsiadm: Could not execute operation on all records: session exists
+
+iscsiadm -m node -T iqn.2003-10.com.lefthandnetworks:mun-vsa-management-grp:155:mun-vsa-lun01-sas -p 192.168.0.90:3260 -u
+Logging out of session [sid: 2, target: iqn.2003-10.com.lefthandnetworks:mun-vsa-management-grp:155:mun-vsa-lun01-sas, portal: 192.168.0.90,3260]
+Logout of [sid: 2, target: iqn.2003-10.com.lefthandnetworks:mun-vsa-management-grp:155:mun-vsa-lun01-sas, portal: 192.168.0.90,3260] successful.
+</code>
+
+
+

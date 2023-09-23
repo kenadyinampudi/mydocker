@@ -1,0 +1,329 @@
+
+<h1 class="sectionedit1" id="setup_ntp_network_time_protocol">Setup NTP (Network Time Protocol)</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Setup NTP (Network Time Protocol)" [1-49] -->
+<h2 class="sectionedit2" id="aix">AIX</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d time.amer.int.tenneco.com</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the config file. First make a backup copy<pre class="code">sudo cp /etc/ntp.conf /etc/ntp.conf.$(date +%Y%m%d)</pre>
+
+<p>
+Now make the changes
+</p>
+<pre class="code">sudo vi /etc/ntp.conf</pre>
+
+<p>
+Remove all lines in this file and replace with the following.
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> For North American servers - Replace the file with this<pre class="code">driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server time.amer.int.tenneco.com prefer
+server time.emea.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> For European servers - Replace the file with this<pre class="code">driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server time.emea.int.tenneco.com prefer
+server time.amer.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon now and during system restart<pre class="code">sudo stopsrc -s xntpd</pre>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure it is running<pre class="code">lssrc -s xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If the time is not too far, adjuct the time. <strong>DO NOT CHANGE TIME ON DATABASE SERVERS</strong><pre class="code">date ; sudo ntpdate -u time.amer.int.tenneco.com ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ensure the timeserver is correct<pre class="code">sudo xntpdc -l
+client    taitc533.amer.int.tenneco.com
+client    10.56.1.53
+client    taitc535.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong>Other usefull commands:</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Enable and start NTPD<pre class="code">sudo chrctcp -S -a xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable and stop NTPD<pre class="code">sudo chrctcp -S -d xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable but do not start NTPD<pre class="code">sudo chrctcp -a xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable but do not stop NTPD<pre class="code">sudo chrctcp -d xntpd</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "AIX" [50-1778] -->
+<h2 class="sectionedit3" id="vios">VIOS</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> export PATH<pre class="code">export PATH=$PATH:/usr/sbin:/sbin:/etc:/usr/bin:/bin</pre>
+
+<p>
+Some VIOS root logins don&#039;t set PATH variable correct - need to check why
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d server 10.0.48.12</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the config file<pre class="code">sudo vi /home/padmin/config/ntp.conf</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> For North American servers - Replace the file with this<pre class="code">driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server time.amer.int.tenneco.com prefer
+server time.emea.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> For European servers - Replace the file with this<pre class="code">driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server time.emea.int.tenneco.com prefer
+server time.amer.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon now and during system restart<pre class="code">sudo stopsrc -s xntpd</pre>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure it is running<pre class="code">lssrc -s xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If there is an offset, correct it<pre class="code">date ; sudo ntpdate -u time.amer.int.tenneco.com ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ensure the timeserver is correct<pre class="code">sudo xntpdc -l
+client    taitc533.amer.int.tenneco.com
+client    10.56.1.53
+client    taitc535.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "VIOS" [1779-3154] -->
+<h2 class="sectionedit4" id="linux">Linux</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT4 SECTION "Linux" [3155-3173] -->
+<h3 class="sectionedit5" id="suse">SuSE</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d time.amer.int.tenneco.com</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the config file<pre class="code">sudo vi /etc/ntp.conf</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> North American servers, Add these to the end of the file<pre class="code"># Customized for Tenneco
+server time.amer.int.tenneco.com prefer
+server time.emea.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> European servers, Add these to the end of the file<pre class="code"># Customized for Tenneco
+server time.emea.int.tenneco.com prefer
+server time.amer.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon<pre class="code">sudo chkconfig ntp 12345 on</pre>
+
+<p>
+Check it
+</p>
+<pre class="code">sudo chkconfig --list ntp
+ntp                       0:off  1:on   2:on   3:on   4:on   5:on   6:off</pre>
+
+<p>
+Start it
+</p>
+<pre class="code">sudo service ntp start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure it is running<pre class="code">sudo service ntp status</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If there is an offset, correct it<pre class="code">sudo ntpdate -u time.amer.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "SuSE" [3174-4266] -->
+<h3 class="sectionedit6" id="redhat">Redhat</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d time.amer.int.tenneco.com</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Need to install ntp in RHEL7<pre class="code">sudo yum install ntp -y</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Replace the config file with this. Make a backup<pre class="code">sudo cp /etc/ntp.conf /etc/ntp.conf.$(date +%Y%m%d)</pre>
+
+<p>
+Edit the file
+</p>
+<pre class="code">sudo vi /etc/ntp.conf</pre>
+
+<p>
+Remove all lines in this file and replace with the following.
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> North American servers Fill in these<pre class="code"># Customized for Tenneco
+fudge   127.127.1.0 stratum 10
+driftfile /var/lib/ntp/drift
+keys /etc/ntp/keys
+server time.amer.int.tenneco.com prefer
+server time.emea.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> European servers Fill in these<pre class="code"># Customized for Tenneco
+fudge   127.127.1.0 stratum 10
+driftfile /var/lib/ntp/drift
+keys /etc/ntp/keys
+server time.emea.int.tenneco.com prefer
+server time.amer.int.tenneco.com
+server time.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon</div>
+<ol>
+<li class="level2"><div class="li"> For RHEL6</div>
+<ol>
+<li class="level3"><div class="li"> Enable NTPD<pre class="code">sudo chkconfig --level 12345 ntpd on</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Check it<pre class="code">sudo chkconfig --list ntpd
+ntp                       0:off  1:on   2:on   3:on   4:on   5:on   6:off</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Start it<pre class="code">sudo service ntpd start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Make sure it is running<pre class="code">service ntpd status</pre>
+
+<p>
+e.g.
+</p>
+<pre class="code">paitap01:~ # service ntpd status
+Checking for network time protocol daemon (NTPD):                     running</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> For RHEL7</div>
+<ol>
+<li class="level3"><div class="li"> Enable NTPD<pre class="code">sudo systemctl enable ntpd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Check it<pre class="code">sudo systemctl status ntpd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Start it<pre class="code">sudo systemctl start ntpd</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Make sure its running<pre class="code">sudo systemctl status ntpd</pre>
+
+<p>
+For e.g.
+</p>
+<pre class="code">● ntpd.service - Network Time Service
+   Loaded: loaded (/usr/lib/systemd/system/ntpd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Mon 2016-11-21 11:10:04 CST; 1s ago
+  Process: 10607 ExecStart=/usr/sbin/ntpd -u ntp:ntp $OPTIONS (code=exited, status=0/SUCCESS)
+ Main PID: 10608 (ntpd)
+   CGroup: /system.slice/ntpd.service
+           └─10608 /usr/sbin/ntpd -u ntp:ntp -g
+
+Nov 21 11:10:04 xaerap02 ntpd[10608]: ntp_io: estimated max descriptors: 1024, initial socket boundary: 16
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listen and drop on 0 v4wildcard 0.0.0.0 UDP 123
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listen and drop on 1 v6wildcard :: UDP 123
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listen normally on 2 lo 127.0.0.1 UDP 123
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listen normally on 3 eth0 10.32.6.202 UDP 123
+Nov 21 11:10:04 xaerap02 ntpd[10608]: Listening on routing socket on fd #20 for interface updates
+Nov 21 11:10:04 xaerap02 ntpd[10608]: 0.0.0.0 c016 06 restart
+Nov 21 11:10:04 xaerap02 ntpd[10608]: 0.0.0.0 c012 02 freq_set kernel 0.000 PPM
+Nov 21 11:10:04 xaerap02 ntpd[10608]: 0.0.0.0 c011 01 freq_not_set
+Nov 21 11:10:05 xaerap02 ntpd[10608]: 0.0.0.0 c614 04 freq_mode</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If there is an offset, correct it<pre class="code">sudo ntpdate -u time.amer.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ensure the timeserver is correct<pre class="code">sudo ntpdc -l
+client    taitc533.amer.int.tenneco.com
+client    10.56.1.53
+client    taitc535.aspa.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Redhat" [4267-] -->

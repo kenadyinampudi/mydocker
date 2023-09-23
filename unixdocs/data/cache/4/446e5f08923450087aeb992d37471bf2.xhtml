@@ -1,0 +1,116 @@
+
+<h1 class="sectionedit1" id="install_lotus_notes_traveler_on_rhel">Install Lotus Notes Traveler on RHEL</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create a standard Linux VM with the folowing configuration<pre class="code">1 core
+4G - RAM
+50G - Boot
+20G - Data
+1 - NIC (E1000B)
+SCSI Controller
+Virtual floppy, cdrom etc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:buildredhat" class="wikilink1" title="unix:buildredhat">Install Redhat 6.3 64 bit using the Linux build procedure here</a></div>
+</li>
+<li class="level1"><div class="li"> Create user and group<pre class="code">sudo groupadd notes
+sudo useradd -g notes -m notes</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure user limits<pre class="code">sudo vi /etc/security/limits.conf</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">notes soft nofile 65535
+notes hard nofile 65535</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the datavg<pre class="code">sudo pvcreate /dev/sdb
+sudo vgcreate datavg /dev/sdb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">sudo lvcreate -L15 datavg
+sudo lvcreate -L5 datavg
+sudo mkfs -t ext4 /dev/datavg/lvol0
+sudo mkfs -t ext4 /dev/datavg/lvol1
+echo &quot;/dev/mapper/datavg-lvol0   /lotus/domino/data               ext4    defaults        1 2&quot; &gt;&gt; /etc/fstab
+echo &quot;/dev/mapper/datavg-lvol1   /opt/ibm/lotus                   ext4    defaults        1 2&quot; &gt;&gt; /etc/fstab</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount and set permissions for filesystems<pre class="code">echo &quot;/opt/ibm/lotus /lotus/domino/data&quot; | xargs -n1 sudo mkdir -p
+echo &quot;/opt/ibm/lotus /lotus/domino/data&quot; | xargs -n1 sudo mount
+echo &quot;/opt/ibm/lotus /lotus/domino/data&quot; | xargs -n1 sudo chown notes:notes</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure yum so we can install 32 bit libraries<pre class="code">sudo vi /etc/yum.conf</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">multilib_policy=all</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install pre-requisites<pre class="code">sudo yum -y  install libgcc-4.4.6-4.el6.i686 libstdc++-4.4.6-4.el6.i686 glibc-2.12-1.7.el6.i686 \
+libXtst-1.0.99.2-3.el6.i686 libXmu-1.0.5-1.el6.i686 \
+libXp-1.0.0-15.1.el6.i686 libXft-2.1.13-4.1.el6.i686 libXi-1.3-3.el6.i686</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install VNC server and Xterm<pre class="code">sudo yum -y install tigervnc-server xterm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Java<pre class="code">sudo yum -y install java</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:lotus-startup-scr" class="wikilink1" title="unix:lotus-startup-scr">Install this startup script as /etc/init.d/domino</a></div>
+</li>
+<li class="level1"><div class="li"> Configure startup scripts<pre class="code">sudo chmod +x /etc/init.d/domino
+sudo ln -s /etc/init.d/domino /etc/rc0.d/K10domino
+sudo ln -s /etc/init.d/domino /etc/rc2.d/S99domino
+sudo ln -s /etc/init.d/domino /etc/rc3.d/S99domino</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the lotus installables from pgnmsv01<pre class="code">sudo rsync -avv pgnmsv01:/prod/images/applications/Domino/ /var/tmp/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Domino server<pre class="code">cd /var/tmp/domino8
+sudo tar xvf /var/tmp/domino8/lotus_domino853_xlinux_en.tar
+sudo /var/tmp/linux/domino/domino8/install</pre>
+
+<p>
+Work with the Lotus notes Guru and complete the questionnaire.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Traveler from a VNC connection<pre class="code">sudo vncserver :1</pre>
+
+<p>
+Connect to taitc059:1 from a VNC viewer and perform these steps
+</p>
+</div>
+<ul>
+<li class="level2"><div class="li"> Install<pre class="code">mkdir /var/tmp/853
+cd /var/tmp/853
+tar xvf /var/tmp/LOTNOTS_TRAVELR_853_LIN_XS_ML.tar
+./TravelerSetup</pre>
+
+<p>
+Work with the Lotus notes Guru and complete the questionnaire.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Install traveler patch<pre class="code">mkdir /var/tmp/8533
+cd /var/tmp/8533
+tar xvf /var/tmp/LOTUS_TRAVELER_8533_LIN_ML.tar
+./TravelerSetup</pre>
+
+<p>
+Work with the Lotus notes Guru and complete the questionnaire.
+</p>
+</div>
+</li>
+</ul>
+</li>
+</ol>
+
+</div>

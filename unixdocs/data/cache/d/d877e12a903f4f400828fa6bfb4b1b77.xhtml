@@ -1,0 +1,26 @@
+
+<h1 class="sectionedit1" id="driv_-_change_sidadm_password_to_default_for_driv_clones">DRiV - Change sidadm password to default for DRiV Clones</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to <code>pcdcunxaxap01</code> and run this script to change their password to something that they know <code>or atleast Leandro knows</code><pre class="code">for host in $(cat /prod/images/etc/allhosts.driv )
+do
+   echo &quot;Working on ${host} &quot;
+   ping -c1 -w1 ${host} &gt; /dev/null 2&gt;&amp;1
+   if [ ${?} -eq 0 ]
+   then
+      type_os=$(ssh ${host} uname )
+      [[ &quot;${type_os}&quot; = &quot;AIX&quot; ]] &amp;&amp; export CHPASSWD=&quot;/usr/bin/chpasswd&quot; || export CHPASSWD=&quot;/usr/sbin/chpasswd&quot;
+      for sidadm in $(ssh ${host} &quot;cat /etc/passwd &quot; | awk -F: &#039;{print $1}&#039;  | grep &quot;...adm$&quot; )
+      do
+         echo &quot;Changing password ${host} - ${sidadm} &quot;
+         ssh ${host} &quot;echo ${sidadm}:sa28HPVPB90d. | sudo ${CHPASSWD} -e&quot;
+         [[ &quot;${type_os}&quot; = &quot;AIX&quot; ]] &amp;&amp; ssh ${host} &quot;sudo /usr/bin/pwdadm -c ${sidadm}&quot;
+      done
+   fi
+done
+</pre>
+</div>
+</li>
+</ol>
+
+</div>

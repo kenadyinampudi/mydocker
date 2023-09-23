@@ -1,0 +1,60 @@
+====== Installation -- Pure storage ======
+
+  - Add a line to pgunap01:/prod/storageteam/etc/allstgarrays<code>ssh pgunap01</code><code>sudo vi /prod/storageteam/etc/allstgarrays</code>
+  - Find out the serial number<code>pureuser@LDCPM70V1> purehw list --type ct --all
+Name  Status  Identify  Slot  Index  Speed  Temperature  Voltage  Type        Handle                  Parent
+CT0   ok      off       -     0      -      -            -        controller  PLATSASB_PCTFL16360084  M_SERIES_PCHFL1634003B
+CT1   ok      off       -     1      -      -            -        controller  PLATSASB_PCTFL163600CD  M_SERIES_PCHFL1634003B</code>The last 5 digits at the end **4003B** is the serial number here. Then update the following documentation
+    - Update ''https://storagedocs/doku.php?id=san:sanstoragemaintenance''.
+  - Complete the design document with Pure SE and perform physical installation.
+  - Please configure portcfgfillword for the ports connected to Pure arrays
+    - Login to the fabric switches<code>portcfgfillword 8 3</code>Where 8 is the port number and "3" is the setting.
+  - Change the default password for pureuser.<code>ssh pureuser@inxpm20v1</code>Then<code>pureadmin setattr --password pureuser</code>You should see an output similar to this<code>pureuser@INXPM20V1> pureadmin setattr --password pureuser
+Enter old password:
+Enter new password:
+Retype new password:
+Name
+pureuser
+pureuser@INXPM20V1></code>
+  - Implement monitoring
+    - Ping NNM monitoring for the following IP addresses. Low alert to GIOS STorage team<code>inxpm20v1    Virtual IP address for Pure Storage array
+inxpm20ct0    Controller 0 IP Address for Pure Storage array
+inxpm20ct1    Controller 0 IP Address for Pure Storage array</code>
+    - Download ( from GUI -> System Configuration -> SNMP) and send the MIB to Monitoring team. Then configure traps<code>puresnmp create --host 10.32.8.187 --community SNMPMGR1</code>Enter "oicu812" and hit enter ( I guess -- this could be wrong )
+  - Make sure contract database is uptodate with the inventory and warranty expiry - work with VMO
+  - Update the storage team inventory page. ''[[san:sanstorageinventory]]''
+  - configure NTP servers on array as follow<code>pureuser@INXPM20V1> purearray setattr --ntpserver pgntpap01.amer.int.tenneco.com,pgntpap02.emea.int.tenneco.com,pgntpap03.aspa.int.tenneco.com
+pureuser@INXPM20V1> purearray list --ntpserver
+NTP Server
+time.emea.int.tenneco.com
+time.amer.int.tenneco.com
+time.aspa.int.tenneco.com</code>
+  - Enable SMI-S<code>puresmis enable</code>
+  - Enable syslog to syslog server<code>purelog create --uri udp://pglgsv01.amer.int.tenneco.com LOGSERVER1</code>
+  - Configure syslog to accept logs
+    - Login to pglgsv01<code>ssh pglgsv01</code>
+    - Edit syslog ng config<code>sudo vi /etc/syslog-ng/syslog-ng.conf</code>
+    - Add filters<code>filter rf_ldcpm70ct0 { host(LDCPM70CT0); };
+filter rf_ldcpm70ct1 { host(LDCPM70CT1); };
+filter rf_ldcpm70v1 { host(LDCPM70V1); };</code>
+    - Add rules<code>log { source(r_sys); filter(rf_ldcpm70ct0); destination(rd_sanstgarrays); };
+log { source(r_sys); filter(rf_ldcpm70ct1); destination(rd_sanstgarrays); };
+log { source(r_sys); filter(rf_ldcpm70v1); destination(rd_sanstgarrays); };</code>
+    - Restart syslog-ng<code>sudo service syslog-ng restart</code>
+  - Add public key for sanmontr user<code>echo "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA9U677qdQ1zLB4nO+WYrYOrZ4zCzhGQUNRo8OMTPI22O5fXU8hcD/mu73GzDAhxe0aSpbKy0z+JxDtehYj/VVUiPKAECiDaYyxVunOjPOBiJhIMvXuWDgarqGaihjlYTCX4ei0ukvryl7+405OjfmH4x7EompeIG1Iv66CoQc2bu/SM50ChRg6BEp1Pn+lIx6I3QXz93QL0lpG+5h2DAiiRMPNmbHL2QH7jH8xttwysQMF8/we3d6mFVoovMbhc3RuW0ONfoC7Vx5BdRYZiUtgNpg2oF1lPAXm6ImV+Of6p4P3AL9fnPevc+kuuzLLVejY1Kb5CZZViFvFtC2PWmD5Q== sanmontr@pablsv01" | pureadmin setattr --publickey pureuser</code>
+
+==== Add to reporting and performance collectors ====
+
+  - Add to https://stor2rrd
+  - Login to pgunap01 and add the following scripts for the new storage array<code>ssh pgunap01</code>Switch to ''sanmontr'' account<code>sudo su - sanmontr</code>Add the following to crontab<code>crontab -e</code>Add the following -- make changes for specific location<code># Interxion
+00 5 * * * /prod/storageteam/scripts/storage.report.pure inxpm20v1 Interxion > /dev/null 2>&1
+00 5 * * * /prod/storageteam/scripts/storage.report.pure-byhost inxpm20v1 Interxion > /dev/null 2>&1</code>
+
+==== Best practices for AIX ( Email this to Unix team) ====
+
+  - Enable Fast Fail and Dynamic tracking<code>sudo chdev -l fscsi0 -a fc_err_recov=fast_fail -a dyntrk=yes -P</code>
+
+==== Best practices for VMWARE ====
+
+  - On each ESXi host, execute this command<code>esxcli storage nmp satp rule add -s "VMW_SATP_ALUA" -V "PURE" -M "FlashArray" -P "VMW_PSP_RR" -O "iops=1"</code>
+  - More information is available at ''https://support.purestorage.com/Solutions/Virtualization/VMware''

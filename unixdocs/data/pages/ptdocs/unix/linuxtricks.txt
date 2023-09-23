@@ -1,0 +1,46 @@
+====== Linux tricks and tips ======
+
+====== Redhat Linux ======
+
+  * Configuring hostname and default gateway<code>sudo vi /etc/sysconfig/network</code>Add this following<code>NETWORKING=yes
+HOSTNAME=pablsv01
+GATEWAY=10.32.50.1</code>
+  * Configure eth0 interface<code>sudo vi /etc/sysconfig/network-scripts/ifcfg-eth0</code>And add these values<code>DEVICE=eth0
+BOOTPROTO=static
+IPADDR=10.32.50.59
+NETMASK=255.255.255.0
+ONBOOT=yes</code>
+  * Restart the network services<code>sudo service network restart</code>
+  * Mounting AIX NFS on Redhat<code>sudo mount -o ro,vers=2 pgnmsv01:/prod/images/cds/redhat /mnt/images</code>
+  * [[unix:setupresolv.conf|Setup DNS client as other Unix servers]]
+  * [[unix:setupntp&#redhat_5|Setup NTP client as other Unix servers]]
+  * Loopback mounting an iso<code>sudo mount -r -t iso9660 -o loop -v /mnt/images/rhel-server-6.3-i386-dvd.iso /mnt/cdrom</code>
+
+====== SuSE Linux ======
+
+  - Install an RPM
+    - The SuSE DVDs SP3 are available here<code>root on pgnmsv01:/root>sudo ls -l /prod/images/cds/SLES/*
+-rwxr-xr-x    1 root     system   2147484648 May 20 2008  /prod/images/cds/SLES/SLES-10-SP1-x86_64-DVD1.iso
+-rw-r-----    1 root     system   3030702080 Oct 18 21:14 /prod/images/cds/SLES/SLES-10-SP3-DVD-x86_64-GM-DVD1.iso
+-rw-r-----    1 root     system   3238070272 Oct 18 21:15 /prod/images/cds/SLES/SLES-10-SP3-DVD-x86_64-GM-DVD2.iso
+-rw-r--r--    1 root     system   6268772352 Oct 18 21:20 /prod/images/cds/SLES/SLES-10-SP3-DVD-x86_64.iso</code>
+    - Mount the DVD as a filesystem on pgnmsv01<code>loopmount -i /prod/images/cds/SLES/SLES-10-SP1-x86_64.iso -l loop0 -o "-V cdrfs -o ro" -m /cdrom</code>
+    - Export the filesystem<code>exportfs -i -o sec=sys:none,ro /cdrom</code>
+    - Mount the filesystem on the target server<code>mount -o ro pgnmsv01:/cdrom /cdrom</code>
+    - Install the RPM from here<code>rmp -Uvh /cdrom/suse/x86_64/glibc-2.4-31.74.1.x86_64.rpm</code>
+    - Cleanup on the target<code>umount /cdrom</code>
+    - Cleanup on pgnmsv01<code>exportfs -u /cdrom
+loopumount -l loop0 -m /cdrom</code>
+  - Configure network<code>/etc/sysconfig/network/ifcfg-ethX</code>Restart the network stack<code>service network restart</code>
+  - Change hostname<code>vi /etc/HOSTNAME</code>
+  - Discover a newly added LUN - VMWare<code>echo "- - -" > /sys/class/scsi_host/host0/scan</code>
+  - LVM Info
+    - Create a PV<code>pvcreate /dev/sdX</code>
+    - Create a VG<code>vgcreate datavg /dev/sdX</code>
+    - Create an LV<code>lvcreate -n <lvname> <vgname> -L <size></code>
+    - Create a filesystem<code>mkfs -t reiserfs /dev/<vgname>/<lvname></code>
+    - Mount a filesystem.
+      - Add it to fstab<code>/dev/<vgname>/<lvname>   <mountpoint>          reiserfs   acl,user_xattr        1 2</code>
+      - Create mountpoint<code>mkdir <mountpoint></code>
+      - Mount it<code>mount <mountpoint></code>
+    - entstat for Linux<code>ethtool ethX</code>

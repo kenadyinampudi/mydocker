@@ -1,0 +1,53 @@
+
+<h1 class="sectionedit1" id="ftp1tennecocom_user_setup">FTP1.TENNECO.COM User Setup</h1>
+<div class="level1">
+<pre class="code"> After Entitlement creates the user id on the server thwy will send the UNIX Team a ticket to allow the user id FTP access to the server. 
+ Make the following changes to the user id substitute actual user name and uid where applicable 
+ 
+ Check the ticket for a Preferred Password. If one is present set the password to that password and then insure it does not change </pre>
+<pre class="code"> pwdadm -c user-login-here </pre>
+<ol>
+<li class="level1"><div class="li"> Change the user shell from /usr/bin/ksh to /usr/sbin/sftp-server <pre class="code"> chuser shell=&#039;/usr/sbin/sftp-server&#039; user-logon-here </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Change the users home directory from /home/user to /prod/ftp/user <pre class="code"> chuser home=&#039;/prod/ftp/1cxs952&#039; user-login-here </pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Move the users home directory to /prod/ftp <pre class="code"> cd /prod/ftp </pre>
+<pre class="code"> mv /home/user-login-id . </pre>
+</div>
+</li>
+</ol>
+
+<p>
+   Add a group that is unique to this user.
+</p>
+<ol>
+<li class="level1"><div class="li"> User can only see his own data <pre class="code"> mkgroup -&#039;A&#039; id=&#039;user-uid-here&#039; users=&#039;user-login-id&#039; user-login-id </pre>
+</div>
+</li>
+</ol>
+
+<p>
+   Modify sshd config file to further harden the user id and server. Add the user to the appropriate stanza in /etc/ssh/sshd_config
+</p>
+<ol>
+<li class="level1"><div class="li"> Create a backup copy of sshd_config  where yyy = current year, mm = current month, dd = current day, .yn = your initials </div>
+</li>
+</ol>
+<pre class="code"> cd /etc/ssh </pre>
+<pre class="code"> cp -p  sshd_confid sshd_config-yyyy-mm-dd.yn </pre>
+<pre class="code"> vi sshd_config </pre>
+
+<p>
+ Add the username to the end of the stanza “Example of overriding settings on a per-user basis”
+</p>
+<ol>
+<li class="level1"><div class="li"> Save the file and restart the ssh daemon so the change takes effect <pre class="code"> kill -HUP $(lssrc -a |grep sshd | awk &#039;{print $3}&#039;</pre>
+</div>
+</li>
+</ol>
+<pre class="code"> Now test the user id with FileZilla from your pc to insure that the user can access the server as requested. 
+ Attach a screen shot of the access from your pc to the ticket as proof of access to the server. </pre>
+
+</div>

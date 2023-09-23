@@ -1,0 +1,29 @@
+
+<h1 class="sectionedit1" id="configuring_iocp_aix">Configuring IOCP (AIX)</h1>
+<div class="level1">
+
+<p>
+Procedure
+</p>
+<pre class="code">  Enter the lslpp command to check whether the IOCP module is installed on your system.</pre>
+<pre class="code">   $ lslpp -l bos.iocp.rte</pre>
+<pre class="code">  The resulting output should be similar to the following example:</pre>
+<pre class="code">  Fileset                     Level     State       Description
+  ----------------------------------------------------------------------------
+  Path: /usr/lib/objrepos
+    bos.iocp.rte              5.3.9.0   APPLIED     I/O Completion Ports API</pre>
+<pre class="code">  Path: /etc/objrepos
+    bos.iocp.rte              5.3.0.50  COMMITTED   I/O Completion Ports API</pre>
+<pre class="code">  Enter the lsdev command to check whether the status of the IOCP port is Available.</pre>
+<pre class="code">  $ lsdev -Cc iocp</pre>
+<pre class="code">  The resulting output should match the following example:</pre>
+<pre class="code">   iocp0 Available  I/O Completion Ports</pre>
+<pre class="code">  If the IOCP port status is Defined, change the status to Available.
+      Log in to the server as root and issue the following command:</pre>
+<pre class="code">      # smitty iocp</pre>
+<pre class="code">      Select Change / Show Characteristics of I/O Completion Ports.
+      Change the configured state at system restart from Defined to Available. For this change to take effect, either perform a system reboot or **issue the cfgmgr command**.
+      Enter the lsdev command again to confirm that the status of the IOCP port has changed to Available</pre>
+
+</div>
+<!-- EDIT1 SECTION "Configuring IOCP (AIX)" [2-] -->

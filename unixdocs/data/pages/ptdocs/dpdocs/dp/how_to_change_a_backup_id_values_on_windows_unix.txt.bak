@@ -1,0 +1,16 @@
+Recently on one of my site, the NetBackup jobID values are resetted automatically ( eg: from 4900 to 0)
+This can cause irregularities in reporting. Then I have searched and found the way to reset back again 
+
+On Windows based servers :
+  - NBU services to be stopped during this change to ensure that new jobs will use the edited jobid file.
+  - Go to E:\Program Files\Veritas\NetBackup\db\jobs at windows based server.
+  - Open the job ID file with notepad.
+  - Edit the value in the jobid file to a value larger than the last known job ID.
+  - Start the NBU services and test one job
+
+On Linux/Unix based servers :
+  - NBU services needs to be stopped.
+  - On UNIX and Linux, the jobid file can be found in the /usr/openv/netbackup/db/jobs  directory.
+Open the file and change the values(to a value larger than the last known job ID) accordingly.
+
+Technote : https://www.veritas.com/support/en_US/article.000008456

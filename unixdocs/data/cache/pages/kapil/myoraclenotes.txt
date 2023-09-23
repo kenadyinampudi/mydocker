@@ -1,0 +1,50 @@
+====== Oracle Notes ======
+
+Oracle 11.2.0.3 binaries for aix 64 bit are stored under panmsv02:/prod/images/Oracle/11203. They are full installations.
+
+===== Installing ASM & Grid infrastructure on AIX =====
+
+  - Create oracle user and group<code>mkgroup "id=202" dba
+mkuser "pgrp=dba" "id=302" "home=/home/oracle" "gecos=Oracle Owner account" "shell=/usr/bin/ksh" oracle</code>
+  - Create the oracle ASM home filesystem<code>mklv -tjfs2 -y asmlv01 asmsoftvg01 20
+crfs -vjfs2 -A yes -t no -m /oracle/ASM -d asmlv01
+mount /oracle/ASM</code>
+  - Create oratab<code>echo "+ASM:/oracle/ASM/1120:N" >> /etc/oratab</code>
+  - Run the installer to create the response-file.
+
+Notes to follow
+Try to automate with a response file.
+
+
+===== Storage configuration for ASM =====
+
+Create lvs and asm disks
+Create ASM DG
+dismount, mount,
+
+
+===== Install Oracle on ASM =====
+
+Notes to follow.
+
+
+===== Cloning on ASM disks. =====
+
+
+
+===== Create an oracle 11g database for test purposes =====
+
+  * Copy the oracle binary to a path
+  * create an oracle account and chown ORACLE_HOME  to it.
+  * login as the id , set oracle home, path and 'relink all'
+  * Create a init.ora and startup the db nomount.
+  * Create the database<code>CREATE DATABASE clone CONTROLFILE REUSE  MAXLOGFILES 255 MAXLOGMEMBERS 3 MAXLOGHISTORY 1000 MAXDATAFILES 254 MAXINSTANCES 50 NOARCHIVELOG CHARACTER SET UTF8 NATIONAL CHARACTER SET UTF8 DATAFILE '/oracle/testclone/sapdata1/system_1/system.data1' SIZE 500M REUSE AUTOEXTEND ON NEXT 20M MAXSIZE 10000M EXTENT MANAGEMENT LOCAL DEFAULT TEMPORARY TABLESPACE PSAPTEMP TEMPFILE '/oracle/testclone/sapdata2/temp_1/temp.data
+1' SIZE 1000M REUSE AUTOEXTEND ON NEXT 20M MAXSIZE 10000M UNDO TABLESPACE PSAPUNDO DATAFILE '/oracle/testclone/sapdata2/undo_1/undo.data1' SIZE 1000M REUSE AUTOEXTEND
+ON NEXT 20M MAXSIZE 10000M SYSAUX DATAFILE '/oracle/testclone/sapdata1/sysaux_1/sysaux.data1' SIZE 200M REUSE AUTOEXTEND ON NEXT 20M MAXSIZE 10000M
+LOGFILE GROUP 1 ('/oracle/testclone/origlogA/log_g11m1.dbf', '/oracle/testclone/mirrlogA/log_g11m2.dbf') SIZE 50M  REUSE , GROUP 2 ('/oracle/testclone/origlogB/log_g12m1.dbf', '/oracle/testclone/mirrlogB/log_g12m2.dbf') SIZE 50M  REUSE ,
+GROUP 3 ('/oracle/testclone/origlogA/log_g13m1.dbf', '/oracle/testclone/mirrlogA/log_g13m2.dbf') SIZE 50M  REUSE , GROUP 4 ('/oracle/testclone/origlogB/log_g14m1.dbf', '/oracle/testclone/mirrlogB/log_g14m2.dbf') SIZE 50M  REUSE ; </code>
+  * Run these post install scripts<code>@?/rdbms/admin/catalog.sql
+@?/rdbms/admin/catproc.sql
+@?/sqlplus/admin/pupbld.sql
+EXIT</code>
+

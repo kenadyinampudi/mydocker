@@ -1,0 +1,10 @@
+====== Redhat Enterprise Linux 7 ( RHEL7) - Tips ======
+
+  - init no longer exists. It has been replaced with systemd. Process looks like<code>root         1     0  0 12:03 ?        00:00:01 /usr/lib/systemd/systemd --switched-root --system --deserialize 21</code>
+  - Services are controlled using ''systemd.service''. This means ''chkconfig'' ''service'' commands are being depreciated<code>sudo systemctl start httpd</code>
+  - Doesn't user grub anymore, replaced by grub2
+  - Netcat is replaced with ncat.
+  - iptables is replaced with firewalld
+  - xfs is the preferred filesystem
+    - Supports filesystem sizes up to 500TB, ext4 supports up to 50TB
+    - xfs does not support shrinking filesystem ( even unmounted ) - so we continue to use ext4.

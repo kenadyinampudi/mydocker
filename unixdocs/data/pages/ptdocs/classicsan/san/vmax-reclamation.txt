@@ -1,0 +1,43 @@
+====== VMAX Storage reclamation procedure ======
+
+===== Remove a LUN or multiple LUNs from VMAX =====
+
+  - Make sure and double check the devices are correct and have been removed from the OS.
+  - Remove the LUN and unmap<code>sudo symaccess -sid 0301 -name <storage_grp_name> -type storage remove dev aaaa,bbbb,cccc,dddd -unmap</code>This **unmap** will save you a lot of headache later.
+  - Unbind the LUNs<code>sudo symdev -sid 0301 -dev aaaa,bbbb,cccc,dddd unbind </code>.
+  - Unbinding takes a very very very long time... So I normally leave it for another day.
+
+===== Remove a host completely =====
+
+  - Document the masking view<code>sudo symaccess -sid 0301 show view xnpr3d01_MV > /var/tmp/xnpr3d01_MV.out</code>
+  - Delete the masking view<code>sudo symaccess -sid 0301 delete view -name xnpr3d01_MV -unmap</code>This **unmap** will save you a lot of headache later
+  - Delete the Initiator Group<code>sudo symaccess -sid 0301 delete -name xnpr3d01_IG -type initiator -force</code>
+  - Remove the storage group from FAST policy<code>sudo symfast -sid 0301 list -association  | grep xnpr3d01_SG</code>Make a note of the FAST Policy name.Disassociate FAST policy<code>sudo symfast -sid 0301 -fp_name Bronze disassociate -sg xnpr3d01_SG</code>
+  - Delete the LUNs and storage group
+    - Remove LUNs them from the storage group<code>sudo symaccess -sid 0301 -name xnpr3d01_SG -type storage remove dev xxxx,yyyy,zzzz</code>
+    - Delete the storage group<code>sudo symaccess -sid 0301 delete -name xnpr3d01_SG -type storage</code>
+  - Unbind the devices<code>sudo symdev -sid 0301 -dev abcd,defg........unbind</code>
+
+===== Remove the unmasked LUNs =====
+
+  - There are times when after a long time, you look at the VMAX & you find a lot of unallocated LUNs.
+  - It is a pain to remove the LUNs. 
+  - Here is the procedure to get to it, if you ever ran into this one.
+  - First get a list of devices mapped to atleast one port<code>sudo symdev -sid 0301 list -forstport -nomember | grep TDEV > allmappeddevices</code>
+  - Get the devices into a variable "comma" separated.<code>devices=$(awk '{printf $1","}' allmappeddevices | sed "s;,$;;g" )</code>
+  - Get devices mapped but not masked<code>sudo symaccess -sid 0301 list assignment -dev ${devices} | grep ' - ' > allmappeddevices.unmasked</code>
+  - Unmap the devices<code>cat /dev/null > unmap.dev.txt</code><code>for dev in $(awk '{print $1}' allmappeddevices.unmasked )
+do
+   echo "unmap dev ${dev} from dir ALL:ALL;" >> unmap.dev.txt
+done</code><code>sudo symconfigure -sid 0301 -f ./unmap.dev.txt preview -nop</code>If no errors<code>sudo symconfigure -sid 0301 -f ./unmap.dev.txt commit -nop</code>
+  - Unbind the devices<code>cat /dev/null > unbind.dev.txt</code><code>for dev in $(awk '{print $1}' allmappeddevices.unmasked )
+do
+   echo "unbind tdev ${dev} from pool VP_FC15_MIR2;" >> unbind.dev.txt
+done</code><code>sudo symconfigure -sid 0301 -f ./unbind.dev.txt preview -nop</code>If no errors<code>sudo symconfigure -sid 0301 -f ./unbind.dev.txt commit -nop</code>**This step will take a very long time to complete the background tasks, so you may want to check the status after 30 mins or so<code>for dev in $(awk '{print $1}' allmappeddevices.unmasked )
+do
+   echo "${dev} $(sudo symdev show ${dev} | grep "Bound Pool Name" | awk -F: '{print $2}' )"
+done</code>
+  - Dissolve the meta LUNs<code>cat /dev/null > dissolve.dev.txt</code><code>for dev in $(awk '{print $1}' allmappeddevices.unmasked )
+do
+   echo "dissolve meta dev ${dev};" >> dissolve.dev.txt
+done</code><code>sudo symconfigure -sid 0301 -f ./dissolve.dev.txt preview -nop</code>If no errors<code>sudo symconfigure -sid 0301 -f ./dissolve.dev.txt commit -nop</code>

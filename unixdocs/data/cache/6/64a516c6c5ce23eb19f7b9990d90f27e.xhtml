@@ -1,0 +1,102 @@
+
+<h1 class="sectionedit1" id="mins_prior_to_the_outage_--_capture_the_state_and_disable_nfs_and_create_alt_disk_copy">30 mins prior to the outage -- Capture the state and disable NFS and create alt disk copy</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Login to the NIM server, and collect the information</div>
+<ol>
+<li class="level2"><div class="li"> Set a variable for the server or servers<pre class="code">export servers=&quot;host1 host2 ......&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a temp work directory<pre class="code">mkdir -p pttmigration</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Collect details and copy the Actifio package to the server<pre class="code">for host in ${servers}
+do
+   ssh ${host} &quot;ifconfig -a&quot; &gt; pttmigration/${host}.ifconfiga
+   ssh ${host} &quot;df -k&quot;       &gt; pttmigration/${host}.dfk
+   ssh ${host} &quot;mount&quot;       &gt; pttmigration/${host}.mount
+   sudo scp /prod/images/Actifio/connector-AIX-latestversion.bff ${host}:/tmp
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the respective server(s)<pre class="code">for host in ${servers}
+do
+   ssh ${host}
+done</pre>
+
+<p>
+Perform the following steps on each serverValidate the code generated a workable file
+</p>
+<pre class="code">sudo cat /root/configure_ips.cmds</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Disable NIM client<pre class="code">sudo rmitab  nimclient</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Disable NFS<pre class="code">nfsfilesystems=$(grep -p nfs /etc/filesystems | grep : | sed &quot;s;:;;g&quot; | tr &quot;\n&quot; &quot; &quot; )
+
+for nfsfs in ${nfsfilesystems}
+do
+   sudo /usr/local/scripts/manage_auto_mount_nfs disable ${nfsfs}
+done
+
+sudo mv /etc/exports /etc/exports.move2cdc</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Capture and create commands for re-creating the network<pre class="code">cat /dev/null | sudo tee /root/configure_ips.cmds
+
+host_name=$(uname -n)
+my_ip=$(host ${host_name} | awk &#039;{print $3}&#039; | sed &quot;s;,;;g&quot; )
+
+nics=$(ifconfig -a | grep ^en | awk &#039;{print $1}&#039;  | sed &quot;s;:;;g&quot; | tr &quot;\n&quot; &quot; &quot; )
+
+for nic in ${nics}
+do
+   ip_addr=$(lsattr -El ${nic} -a netaddr | awk &#039;{print $2}&#039; )
+   if [ &quot;${ip_addr}&quot; = &quot;${my_ip}&quot; ]
+   then
+      master_nic=${nic}
+      netmask=$(lsattr -El ${master_nic} -a netmask | awk &#039;{print $2}&#039; )
+      gateway=$(lsattr -El inet0 -a route | awk -F&quot;,&quot; &#039;{print $6}&#039; | awk &#039;{print $1}&#039; )
+
+      echo &quot;sudo /usr/sbin/mktcpip -h ${host_name} -a ${my_ip} -m ${netmask} -i en0 -g ${gateway} -A no -s &quot; | sudo tee -a /root/configure_ips.cmds
+
+      additional_ips=$(ifconfig ${master_nic} | grep inet | grep -v ${my_ip} | awk &#039;{print $2}&#039; | tr &quot;\n&quot; &quot; &quot; )
+      for alias_ip in ${additional_ips}
+      do
+
+         echo &quot;sudo ifconfig en0 alias ${alias_ip} netmask ${netmask} up&quot;   | sudo tee -a /root/configure_ips.cmds
+
+      done
+   else
+      netmask=$(lsattr -El ${nic} -a netmask | awk &#039;{print $2}&#039; )
+      echo &quot;sudo chdev -l en1 -a netaddr=${ip_addr} -a netmask=${netmask} -a state=up&quot;   | sudo tee -a /root/configure_ips.cmds
+      additional_ips=$(ifconfig ${nic} | grep inet | grep -v ${ip_addr} | awk &#039;{print $2}&#039; | tr &quot;\n&quot; &quot; &quot; )
+      for alias_ip in ${additional_ips}
+      do
+         echo &quot;sudo ifconfig en1 alias ${alias_ip} netmask ${netmask} up&quot;    | sudo tee -a /root/configure_ips.cmds
+      done
+   fi
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run an adhoc alt_disk_copy</div>
+<ol>
+<li class="level3"><div class="li"> Find out the alt_disk<pre class="code">altdisk=$(lspv | grep -w altinst_rootvg | awk &#039;{print $1}&#039;)</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Remove the existing alt_disk<pre class="code">sudo alt_rootvg_op -X altinst_rootvg</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Create an alt_disk<pre class="code">sudo alt_disk_copy -B -d ${altdisk}</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,54 @@
+====== Configuring sudo ======
+
+
+
+{{:unix:sudomakemeasandwich.jpg?500|}}
+
+
+===== Instructions to modify sudoers =====
+
+  - Discuss and make sure what users ask for is legit.
+  - Login to NIM server pgnmsv01
+  - Backup the master file.
+    - Check if anybody else is working on sudoers<code>[[ -f /var/tmp/I_am_working_on_sudoers ]] && banner DONT</code>**If you see any output here, someone else is working on sudoers -- Do not proceed**
+    - Tell others that I am working on sudoers<code>touch /var/tmp/I_am_working_on_sudoers</code>
+    - Automating the backup file<code>export backupfile="/apps/logs/pgnmsv01-sudoers-files/pgnmsv01-sudoers-files.$(date +%m%d%y%H%M)"</code>Make a backup copy<code>sudo cp -p /prod/images/etc/sudoers ${backupfile}</code>
+  - Edit the master file on pgnmsv01 Here is the link to the visido manual for reference [[https://www.sudo.ws/man/1.8.16/visudo.man.html| visudo manual]]<code>sudo visudo -f/prod/images/etc/sudoers</code>
+  - Make the changes, Check the file <code>sudo visudo -f/prod/images/etc/sudoers -c </code> Look for line in output <code>/prod/images/etc/sudoers file parsed OK</code>
+  - Diff the files to make sure there are no additional changes or typos we accidentally might have made<code>sudo diff /prod/images/etc/sudoers ${backupfile}</code>
+    - copy the sudoers to a test system i.e. atlasdr, panmsv02 etc and test if the file is ok. If there is a typo, it will fail on syntax.
+    - Push the file<code>sudo scp /prod/images/etc/sudoers saerdb01:/etc/sudoers</code>
+    - Test it on panmsv02<code>ssh saerdb01</code>Test it<code>sudo ls -ld /tmp</code>
+  - Tell others that I am done<code>rm /var/tmp/I_am_working_on_sudoers</code>
+  - Once tested, copy the file to all the systems. As root,<code>for host in $(cat /prod/images/etc/allhosts.tenneco)
+do
+   echo "Copying to ${host} .."
+   sudo scp -o Batchmode=yes /prod/images/etc/sudoers ${host}:/etc/sudoers
+done</code>Ignore the errors unless it is the server you want it to go.
+
+===== Copy to DRiV systems =====
+
+  - Until split, also copy the sudoers to DRiV NIM server and DRiV hosts
+    - Copy to DRiV NIM<code>sudo scp /prod/images/etc/sudoers pcdcunxaxap01:/prod/images/etc/sudoers</code>
+    - Login to DRiV NIM<code>ssh pcdcunxaxap01</code>
+    - Copy to all DRiV servers<code>for host in $(cat /prod/images/etc/allhosts.driv | grep .cdc | grep -v vilp)
+do
+   echo "Copying to ${host} .."
+   sudo scp -o Batchmode=yes /prod/images/etc/sudoers ${host}:/etc/sudoers
+done</code>Ignore the errors unless it is the server you want it to go.
+
+===== Standing instructions for sudo =====
+
+
+  - Please push back on technical teams requesting "sudo su -". Instead,
+    - Ask them what commands they want to run as root.
+    - Add those commands to the respective sudoers section.
+  - Never create or modify "itocroot" accounts
+
+
+===== If all of the above fails, and you have an approval from Unix Team Manager =====
+
+** Enabling a user for sudo su - access **
+
+  - Login to pgnmsv01 
+  - Enable xxx user for yyy host<code>sudo /prod/images/scripts/manage_sudo enable xxx yyy</code>

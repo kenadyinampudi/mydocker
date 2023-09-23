@@ -1,0 +1,31 @@
+
+====== Install IBM Endpoint Manager Agent on AIX Servers.  ======
+
+  * Installed on the following servers TEPR2E01, daap3p01, dagi3p01, paap3p01, pagi3p01, qaap3p01, tedv2e01, tgdvetl1, tgpretl1
+  * No ipl or reboot of the systemsi required at this time. 
+  * Login to the target server and create the following directory if it does not already exist. <code> sudo mkdir -p /etc/opt/BESClient </code>
+  * Mount the soure for the License Tool <code> sudo mkdir -p /mnt/ilmt ; sudo mount pgnmsv01:/prod/images/IBM-License-Tool /mnt/ilmt </code>
+  * Change directory to the latest vesion. <code>cd /mnt/ilmt/latest</code>
+  * Install the applicaton <code> sudo installp -agqYXd  ./BESAgent-9.2.xxx.x.ppc_aixxx.pkg  BESClient </code> The results should look like this <code>
+	Installation Summary
+	--------------------
+	Name                        Level           Part        Event       Result
+	-------------------------------------------------------------------------------
+	BESClient                   9.2.1.48        USR         APPLY       SUCCESS
+	BESClient                   9.2.1.48        ROOT        APPLY       SUCCESS </code>
+  * Copy the config file to the location. <code> sudo cp -p ./actionsite.afxm /etc/opt/BESClient/actionsite.afxm </code>
+  * Start the License Tool Client <code> sudo /etc/rc.d/rc2.d/SBESClientd start </code> Server will reteun the following <code> Starting IBM Endpoint Manager: BESClient </code>
+  * Confirm the application has started sucessfully <code>ps -aef | grep -v grep | grep BESClient </code> If applicatio has started successfully the results should look someting like this <code> root  5898376        1   7 13:44:39      -  0:59 /opt/BESClient/bin/BESClient </code>
+  * Change directory back to your home dicectory and unmount the file system used for installation <code> cd $HOME; sudo umount /mnt/ilmt </code>
+  * Let Rob Michuda know you have installed the software on the server so he can start the monitoring process.
+
+====== Deinstall IBM Endpoint Manager Agent on AIX Servers.  ======
+  
+  * You must first stop the agent process before removing it, and you will have to manually remove directories left behind. 
+
+  * To stop the applicaion <code> sudo  /etc/rc.d/rc2.d/SBESClientd stop </code>
+  * To uninstall the TEM Client on non-Windows systems the simplest method is using the built in package managers <code> sudo  installp -u BESClient </code>
+  * Because this is a non standard IBM Licensed Program Product and does not compleatly deinstall by removing all files it has created you will have to manually remove directories left behind. <code> sudo rm -rf /etc/opt/BESClient/ /var/opt/BESClient </code>
+
+
+

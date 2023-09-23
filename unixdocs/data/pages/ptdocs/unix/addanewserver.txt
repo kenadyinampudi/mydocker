@@ -1,0 +1,39 @@
+====== Adding a new server ======
+This is old document and its need to be updated
+General outline:
+  * [[unix:addanewserver#Get permission|Get permission]]
+  * [[unix:addanewserver#Get IPs|Get IPs]]
+  * [[unix:addanewserver#Create server|Create server]]
+  * [[unix:addanewserver#Validate backups|Validate backups]]
+  * [[unix:addanewserver#Validate IPs resolve correctly|Validate IPs resolve correctly]]
+  * [[unix:addanewserver#Close change control|Close change control]]
+
+=== Get permission ===
+Most new server additions require an approved change control to start the build process.\\
+Most change controls require at least the Infrastructure Manager to email approval then attaching that approval to the change control before submitting the change control for approval.\\
+[[\\cdcpilns013.federalmogul.com\sandocumentation\reference\action required change control approval.oft|Approval Email Template]]\\
+\\
+=== Get IPs ===
+  - [[https://10.131.2.22/ui/|Log into InfoBlox]] and search the IP subnet to see what's available.
+  - Find an available name and IP
+  - Attempt a ping to the IP just to make sure.
+  - Add the name and IP to CDCPILLX055:/etc/hosts file
+  - Send an email to someone at Microsoft team to add the server name into the pt.int.tenneco.com domain
+  - Create a ticket to Networking team to add the IPs into InfoBlox to reserve the IPs.
+    - PCC1:  Communications
+    - PCC2:  LAN
+    - PCC3:  Service Request
+    - PCC4:  New Request
+    - FM_ISD_PT_LAN_WAN
+
+=== Create server ===
+  * Use whatever method you want to get the server built.  Make sure it's in the correct VM Cluster.  (Redhat/Suse for Unix managed servers, Infrastructure or whatever for Appliances.)
+
+=== Validate backups ===
+  * Get the server added to a backup policy and validate that the backup completes successfully.
+
+=== Validate IPs resolve correctly ===
+  * Use either %%ping%% or %%nslookup%% to validate the DNS resolution is working.
+
+=== Close change control ===
+  * Attach all the proof that you said you would provide in the testing section.

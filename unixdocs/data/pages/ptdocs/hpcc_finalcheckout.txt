@@ -1,0 +1,87 @@
+  * [[hpcc_build|HPCC Build]]
+  * [[hpcc_postinstall|HPCC Post-installation tasks]]
+  * [[hpcc_finalcheckout|HPCC final checkout]]
+
+
+<markdown>
+# Final checkout for all things HPCC
+Once a server is up and running, there are a few things to verify before passing the server over to the HPCC gang.
+
+## If Physical box
+
+### Raid1 for root volume
+The root volume should have a hardware mirror on it.  Probably best to check by catching the RAID Bios setup during the boot process.
+
+### One physical volume for /data
+For data and scratch, prioritze space over redundancy or speed.  
+Double-check as much space as possible is allocated.
+
+### One physical volume for /scratch
+For data and scratch, prioritze space over redundancy or speed.  
+Double-check as much space as possible is allocated.
+
+### Hyperthreading disabled in BIOS
+This is set in the BIOS.  Catch the BIOS loading screen after a reboot.
+
+### DRAC configured, racadm software working
+Watch the boot screen to make sure the DRAC is configured and working.
+After logging in, make sure that racadm works.  
+`` racadm getsysinfo ``
+
+### NVidia Tesla driver installed & configured
+Check the nvidia driver version to verify the installed driver matches the HPCC request.  Check the permissions on the device files again.
+
+`` nvidia-smi -q ``
+
+## General 
+
+### LDAP authentication is working
+Verify the domain controller you've selected is valid by trying to do an LDAP search.  
+`` ldapsearch -x -h $(local_domaincontroller) -b 'dc=fedmog,dc=federalmogul,dc=com' -D '$(your_ad_login)@fedmog' -W "(anr=lsfadmin*)" ``  
+Substitute `$(local_domaincontroller)` with the local domain controller IP, and `$(your_ad_login)` with an AD account you know, most likely your own.  
+
+This should return a lot of information about the login `lsfadmin` from Active Directory.  
+  
+Next, check that SSS is configured correctly with getent.  
+`` getent -s sss passwd lsfadmin ``  
+
+This should return a userid that is stored in Active Directory.  
+You can contrast this with a local account.  
+`` getent passwd root ``  
+  
+### NFS mounts up and running
+Each HPCC cluster seems to do things slightly different.  
+NFS mounts are especially divergent as each site has decided on different methods for storage, and therefore presentation of storage.  
+  
+In general, Chicago uses CDCPILNS013, Nuremburg uses exports from NBRGDELX019, and Shanghai uses exports from SHNHCNLX034.  
+  
+Make sure mounts are listed in fstab and survive a reboot.
+
+### Transparent huge pages disabled
+This is needed for speed.
+
+## If Compute Node
+
+### /data /scratch proper permissions
+The "users" group and lsfadmin should be able to access the /data and /scratch directories.
+
+
+## If Head Node
+
+### /etc/init/lsf start up script
+This script will probably need to be copied from another source.  Additionally, there needs to be a systemd-compliant way of starting lsf.  
+The configuration channel in SuSE manager should have properly configured start scripts.
+
+### /etc/lsf.sudoers created
+This is a last minute add-on to accomodate the new quirkiness of SuSE 12.x in the HPCC environment.
+
+### Can su over to lsfadmin
+This should work with LDAP.
+
+### lsfadmin can reach all computer nodes with passwordless ssh
+lsfadmin id_rsa.pub key needs to be added to the authorized_keys of all the compute nodes of the cluster.  This is a prerequisite for the app.
+
+## Final Final
+Pass it over to the cluster owner and make any changes they recommend.
+
+</markdown>

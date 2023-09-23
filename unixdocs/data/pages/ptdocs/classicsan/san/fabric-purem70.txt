@@ -1,0 +1,73 @@
+====== Fabric zoning servers - Lincolnshire ( Pure storage M70 ) ======
+
+===== Physical cabling of Pure M70 storage array =====
+
+
+^Storage array^Port Name      ^Switch Name^Port No^Fabric  ^Alias name       ^WWN                    ^Zoning target^
+|ldcpm70v1    |ct0-slot0-port0|ldcds5300a1|77     |Fabric A|ldcpm70v1_0_0_0  |52:4a:93:72:5e:d5:63:02|A1 and B1    |
+|ldcpm70v1    |ct0-slot0-port1|ldcds6510b1|28     |Fabric B|ldcpm70v1_0_0_1  |52:4a:93:72:5e:d5:63:03|A2 and B2    |
+|ldcpm70v1    |ct0-slot2-port0|ldcds6510a1|28     |Fabric A|ldcpm70v1_0_2_0  |52:4a:93:72:5e:d5:63:00|A2 and B2    |
+|ldcpm70v1    |ct0-slot2-port1|ldcds5300b1|77     |Fabric B|ldcpm70v1_0_2_1  |52:4a:93:72:5e:d5:63:01|A1 and B1    |
+|ldcpm70v1    |ct1-slot0-port0|ldcds5300a1|78     |Fabric A|ldcpm70v1_1_0_0  |52:4a:93:72:5e:d5:63:12|A1 and B1    |
+|ldcpm70v1    |ct1-slot0-port1|ldcds6510b1|29     |Fabric B|ldcpm70v1_1_0_1  |52:4a:93:72:5e:d5:63:13|A2 and B2    |
+|ldcpm70v1    |ct1-slot2-port0|ldcds6510a1|29     |Fabric A|ldcpm70v1_1_2_0  |52:4a:93:72:5e:d5:63:10|A2 and B2    |
+|ldcpm70v1    |ct1-slot2-port1|ldcds5300b1|78     |Fabric B|ldcpm70v1_1_2_1  |52:4a:93:72:5e:d5:63:11|A1 and B1    |
+
+
+** Fabric A **
+
+^Storage array^Port Name      ^Switch Name^Port No^Fabric  ^Alias name       ^WWN                    ^Zoning target^
+|ldcpm70v1    |ct0-slot0-port0|ldcds5300a1|77     |Fabric A|ldcpm70v1_0_0_0  |52:4a:93:72:5e:d5:63:02|A1 and B1    |
+|ldcpm70v1    |ct0-slot2-port0|ldcds6510a1|28     |Fabric A|ldcpm70v1_0_2_0  |52:4a:93:72:5e:d5:63:00|A2 and B2    |
+|ldcpm70v1    |ct1-slot0-port0|ldcds5300a1|78     |Fabric A|ldcpm70v1_1_0_0  |52:4a:93:72:5e:d5:63:12|A1 and B1    |
+|ldcpm70v1    |ct1-slot2-port0|ldcds6510a1|29     |Fabric A|ldcpm70v1_1_2_0  |52:4a:93:72:5e:d5:63:10|A2 and B2    |
+
+
+** Fabric B **
+
+^Storage array^Port Name      ^Switch Name^Port No^Fabric  ^Alias name       ^WWN                    ^Zoning target^
+|ldcpm70v1    |ct0-slot0-port1|ldcds6510b1|28     |Fabric B|ldcpm70v1_0_0_1  |52:4a:93:72:5e:d5:63:03|A2 and B2    |
+|ldcpm70v1    |ct0-slot2-port1|ldcds5300b1|77     |Fabric B|ldcpm70v1_0_2_1  |52:4a:93:72:5e:d5:63:01|A1 and B1    |
+|ldcpm70v1    |ct1-slot0-port1|ldcds6510b1|29     |Fabric B|ldcpm70v1_1_0_1  |52:4a:93:72:5e:d5:63:13|A2 and B2    |
+|ldcpm70v1    |ct1-slot2-port1|ldcds5300b1|78     |Fabric B|ldcpm70v1_1_2_1  |52:4a:93:72:5e:d5:63:11|A1 and B1    |
+
+
+===== Check to which switches host is connected =====
+
+  - [[san:stats:tennecosanswitchwwns|Tenneco Switches documentation]]
+
+===== Zoning - Systems connected to LDCDS5300A1 / LDCDS5300B1 servers =====
+
+==== Fabric A ====
+
+  - Login to the principal switch ldcds5300a1<code>ssh admin@ldcds5300a1</code>
+  - Create zoning and add to config<code>zonecreate "taitc118_551e26__ldcpm70v1_0_0_0__1_0_0","taitc118_551e26;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+cfgadd "fab_a_act_config","taitc118_551e26__ldcpm70v1_0_0_0__1_0_0"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+
+==== Fabric B ====
+
+  - Login to the principal switch ldcds5300b1<code>ssh admin@ldcds5300b1</code>
+  - Create zoning and add to config<code>zonecreate "taitc118_538915__ldcpm70v1_0_2_1__1_2_1","taitc118_538915;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+cfgadd "fab_b_act_config","taitc118_538915__ldcpm70v1_0_2_1__1_2_1"
+cfgsave
+cfgenable "fab_b_act_config"</code>
+
+===== Fabric A Zoning - Systems connected to LDCDS6510A1 / LDCDS6510B1 servers =====
+
+==== Fabric A ====
+
+  - Login to the principal switch ldcds5300a1<code>ssh admin@ldcds5300a1</code>
+  - Create zoning and add to config<code>zonecreate "pocafasv02_bd000c__ldcpm70v1_0_2_0__1_2_0","pocafasv02_bd000c;ldcpm70v1_0_2_0;ldcpm70v1_1_2_0"
+cfgadd "fab_a_act_config","pocafasv02_bd000c__ldcpm70v1_0_2_0__1_2_0"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+
+==== Fabric B ====
+
+  - Login to the principal switch ldcds5300b1<code>ssh admin@ldcds5300b1</code>
+  - Create zoning and add to config<code>zonecreate "pocafasv02_bd000e__ldcpm70v1_0_0_1__1_0_1","pocafasv02_bd000e;ldcpm70v1_0_0_1;ldcpm70v1_1_0_1"
+cfgadd "fab_b_act_config","pocafasv02_bd000e__ldcpm70v1_0_0_1__1_0_1"
+cfgsave
+cfgenable "fab_b_act_config"</code>

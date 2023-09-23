@@ -1,0 +1,87 @@
+====== Oracle Forms cutover plan ======
+
+  - Unmount original filesystems on pcdcforaxdb01<code>sudo umount /oracle/PFOR/12102
+sudo umount /oracle/PFOR/forms
+sudo umount /oracle/PFOR/reorg
+sudo umount /oracle/PFOR/origlogC
+sudo umount /oracle/PFOR/origlogB
+sudo umount /oracle/PFOR/origlogA
+sudo umount /oracle/PFOR/mirrlogC
+sudo umount /oracle/PFOR/mirrlogB
+sudo umount /oracle/PFOR/mirrlogA
+sudo umount /oracle/PFOR/data3
+sudo umount /oracle/PFOR/data2
+sudo umount /oracle/PFOR/data1
+sudo umount /oracle/PFOR/archive
+sudo umount /oracle/PFOR</code>
+  - Change mountpoints for original filesystems<code>sudo chfs -m /OLD/oracle/PFOR /oracle/PFOR
+sudo chfs -m /OLD/oracle/PFOR/archive /oracle/PFOR/archive
+sudo chfs -m /OLD/oracle/PFOR/data1 /oracle/PFOR/data1
+sudo chfs -m /OLD/oracle/PFOR/data2 /oracle/PFOR/data2
+sudo chfs -m /OLD/oracle/PFOR/data3 /oracle/PFOR/data3
+sudo chfs -m /OLD/oracle/PFOR/mirrlogA /oracle/PFOR/mirrlogA
+sudo chfs -m /OLD/oracle/PFOR/mirrlogB /oracle/PFOR/mirrlogB
+sudo chfs -m /OLD/oracle/PFOR/mirrlogC /oracle/PFOR/mirrlogC
+sudo chfs -m /OLD/oracle/PFOR/origlogA /oracle/PFOR/origlogA
+sudo chfs -m /OLD/oracle/PFOR/origlogB /oracle/PFOR/origlogB
+sudo chfs -m /OLD/oracle/PFOR/origlogC /oracle/PFOR/origlogC
+sudo chfs -m /OLD/oracle/PFOR/forms /oracle/PFOR/forms</code>
+  - Login to pafodb01 as x1vasuna and copy the filesystems to pcdcforaxdb01
+    - Thread 1<code>date
+sudo rsync --delete -ax /oracle/PFOR/          pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/
+sudo rsync --delete -ax /oracle/PFOR/mirrlogA/ pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/mirrlogA/
+sudo rsync --delete -ax /oracle/PFOR/mirrlogB/ pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/mirrlogB/
+sudo rsync --delete -ax /oracle/PFOR/mirrlogC/ pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/mirrlogC/
+sudo rsync --delete -ax /oracle/PFOR/origlogA/ pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/origlogA/
+sudo rsync --delete -ax /oracle/PFOR/origlogB/ pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/origlogB/
+sudo rsync --delete -ax /oracle/PFOR/origlogC/ pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/origlogC/
+sudo rsync --delete -ax /oracle/PFOR/forms/    pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/forms/
+date</code>
+    - Thread 2<code>date
+sudo rsync --delete -ax /oracle/PFOR/data1/    pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/data1/
+date</code>
+    - Thread 3<code>date
+sudo rsync --delete -ax /oracle/PFOR/data2/    pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/data2/
+date</code>
+    - Thread 4<code>date
+sudo rsync --delete -ax /oracle/PFOR/data3/    pcdcforaxdb01.driv.com:/NEW/oracle/PFOR/data3/
+date</code>
+  - Login to pcdcforaxdb01 and unmount the /NEW filesystems<code>sudo umount /NEW/oracle/PFOR/forms
+sudo umount /NEW/oracle/PFOR/origlogC
+sudo umount /NEW/oracle/PFOR/origlogB
+sudo umount /NEW/oracle/PFOR/origlogA
+sudo umount /NEW/oracle/PFOR/mirrlogC
+sudo umount /NEW/oracle/PFOR/mirrlogB
+sudo umount /NEW/oracle/PFOR/mirrlogA
+sudo umount /NEW/oracle/PFOR/data3
+sudo umount /NEW/oracle/PFOR/data2
+sudo umount /NEW/oracle/PFOR/data1
+sudo umount /NEW/oracle/PFOR/archive
+sudo umount /NEW/oracle/PFOR</code>
+  - Rename the /NEW filesystems to original names<code>sudo chfs -m /oracle/PFOR /NEW/oracle/PFOR
+sudo chfs -m /oracle/PFOR/archive /NEW/oracle/PFOR/archive
+sudo chfs -m /oracle/PFOR/data1 /NEW/oracle/PFOR/data1
+sudo chfs -m /oracle/PFOR/data2 /NEW/oracle/PFOR/data2
+sudo chfs -m /oracle/PFOR/data3 /NEW/oracle/PFOR/data3
+sudo chfs -m /oracle/PFOR/forms /NEW/oracle/PFOR/forms
+sudo chfs -m /oracle/PFOR/mirrlogA /NEW/oracle/PFOR/mirrlogA
+sudo chfs -m /oracle/PFOR/mirrlogB /NEW/oracle/PFOR/mirrlogB
+sudo chfs -m /oracle/PFOR/mirrlogC /NEW/oracle/PFOR/mirrlogC
+sudo chfs -m /oracle/PFOR/origlogA /NEW/oracle/PFOR/origlogA
+sudo chfs -m /oracle/PFOR/origlogB /NEW/oracle/PFOR/origlogB
+sudo chfs -m /oracle/PFOR/origlogC /NEW/oracle/PFOR/origlogC</code>
+  - Mount the filesystems<code>sudo mount /oracle/PFOR
+sudo mount /oracle/PFOR/archive
+sudo mount /oracle/PFOR/data1
+sudo mount /oracle/PFOR/data2
+sudo mount /oracle/PFOR/data3
+sudo mount /oracle/PFOR/mirrlogA
+sudo mount /oracle/PFOR/mirrlogB
+sudo mount /oracle/PFOR/mirrlogC
+sudo mount /oracle/PFOR/origlogA
+sudo mount /oracle/PFOR/origlogB
+sudo mount /oracle/PFOR/origlogC
+sudo mount /oracle/PFOR/forms</code>
+  - Mount the filesystems we did not refresh<code>sudo mount /oracle/PFOR/12102
+sudo mount /oracle/PFOR/reorg</code>
+  - Handover to DBA/Middleware.

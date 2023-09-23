@@ -1,0 +1,113 @@
+
+<h2 class="sectionedit1" id="steps_to_delete_multipath_disk_device_from_linux_server">Steps to delete multipath disk device from Linux server</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Below are the disk device which needs to be deleted from cdcpillx075 server.<pre class="code">3624a9370388f90324cca45010002b84f dm-5 PURE,FlashArray size=50G features=&#039;0&#039; hwhandler=&#039;1 alua&#039; wp=rw     
+3624a9370388f90324cca45010002b850 dm-8 PURE,FlashArray size=50G features=&#039;0&#039; hwhandler=&#039;1 alua&#039; wp=rw    
+3624a9370388f90324cca45010002b853 dm-6 PURE,FlashArray size=500G features=&#039;0&#039; hwhandler=&#039;1 alua&#039; wp=rw </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Each of the above disks have 8 paths: - You can get this info by running “multipath -ll” command.<pre class="code">3624a9370388f90324cca45010002b84f dm-5 PURE,FlashArray
+size=50G features=&#039;0&#039; hwhandler=&#039;1 alua&#039; wp=rw
+`-+- policy=&#039;service-time 0&#039; prio=50 status=active
+  |- 1:0:0:3  sdc  8:32   active ready running
+  |- 1:0:1:3  sdk  8:160  active ready running
+  |- 1:0:2:3  sdr  65:16  active ready running
+  |- 1:0:3:3  sdy  65:128 active ready running
+  |- 3:0:0:3  sdaf 65:240 active ready running
+  |- 3:0:1:3  sdam 66:96  active ready running
+  |- 3:0:2:3  sdat 66:208 active ready running
+  `- 3:0:3:3  sdaz 67:48  active ready running
+
+3624a9370388f90324cca45010002b850 dm-8 PURE,FlashArray
+size=50G features=&#039;0&#039; hwhandler=&#039;1 alua&#039; wp=rw
+`-+- policy=&#039;service-time 0&#039; prio=50 status=active
+  |- 1:0:0:5  sdf  8:80   active ready running
+  |- 1:0:1:5  sdl  8:176  active ready running
+  |- 1:0:2:5  sds  65:32  active ready running
+  |- 1:0:3:5  sdz  65:144 active ready running
+  |- 3:0:0:5  sdag 66:0   active ready running
+  |- 3:0:1:5  sdan 66:112 active ready running
+  |- 3:0:2:5  sdav 66:240 active ready running
+  `- 3:0:3:5  sdbb 67:80  active ready running
+
+
+3624a9370388f90324cca45010002b853 dm-6 PURE,FlashArray
+size=500G features=&#039;0&#039; hwhandler=&#039;1 alua&#039; wp=rw
+`-+- policy=&#039;service-time 0&#039; prio=50 status=active
+  |- 1:0:0:7  sdg  8:96   active ready running
+  |- 1:0:1:7  sdn  8:208  active ready running
+  |- 1:0:2:7  sdv  65:80  active ready running
+  |- 1:0:3:7  sdab 65:176 active ready running
+  |- 3:0:0:7  sdai 66:32  active ready running
+  |- 3:0:1:7  sdao 66:128 active ready running
+  |- 3:0:2:7  sdaw 67:0   active ready running
+  `- 3:0:3:7  sdbd 67:112 active ready running</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Removing a multipath device.</div>
+<ol>
+<li class="level2"><div class="li"> View all the paths to the device using the following command:<pre class="code">multipath -ll</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Flush the I/O and remove the multipath device:<pre class="code"> multipath -f &lt;multipath-device or dm device&gt;</pre>
+
+<p>
+ In our case below are full commands;
+</p>
+<pre class="code">multipath -f 3624a9370388f90324cca45010002b84f
+multipath -f 3624a9370388f90324cca45010002b850
+multipath -f 3624a9370388f90324cca45010002b853</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Removing SAN paths by nulling the devices.</div>
+<ol>
+<li class="level2"><div class="li"> If you are removing a <abbr title="Small Computer System Interface">SCSI</abbr> device, remove each path to the device from the <abbr title="Small Computer System Interface">SCSI</abbr> subsystem. Need more care while doing the below steps.<pre class="code">echo 1 &gt; /sys/block/&lt;device-name&gt;/device/delete</pre>
+
+<p>
+<strong>Example: # For LUN ID 3624a9370388f90324cca45010002b84f dm-5</strong>
+</p>
+<pre class="code">echo 1 &gt; /sys/block/sdc/device/delete
+echo 1 &gt; /sys/block/sdk/device/delete
+echo 1 &gt; /sys/block/sdr/device/delete
+echo 1 &gt; /sys/block/sdy/device/delete
+echo 1 &gt; /sys/block/sdaf/device/delete
+echo 1 &gt; /sys/block/sdam/device/delete
+echo 1 &gt; /sys/block/sdat/device/delete
+echo 1 &gt; /sys/block/sdaz/device/delete</pre>
+
+<p>
+<strong>For LUN ID 3624a9370388f90324cca45010002b850 dm-8</strong>
+</p>
+<pre class="code">echo 1 &gt; /sys/block/sdf/device/delete
+echo 1 &gt; /sys/block/sdl/device/delete
+echo 1 &gt; /sys/block/sds/device/delete
+echo 1 &gt; /sys/block/sdz/device/delete
+echo 1 &gt; /sys/block/sdag/device/delete
+echo 1 &gt; /sys/block/sdan/device/delete
+echo 1 &gt; /sys/block/sdav/device/delete
+echo 1 &gt; /sys/block/sdbb/device/delete</pre>
+
+<p>
+<strong>For LUN ID 3624a9370388f90324cca45010002b853 dm-6</strong>
+</p>
+<pre class="code">echo 1 &gt; /sys/block/sdg/device/delete
+echo 1 &gt; /sys/block/sdn/device/delete
+echo 1 &gt; /sys/block/sdv/device/delete
+echo 1 &gt; /sys/block/sdab/device/delete
+echo 1 &gt; /sys/block/sdai/device/delete
+echo 1 &gt; /sys/block/sdao/device/delete
+echo 1 &gt; /sys/block/sdaw/device/delete
+echo 1 &gt; /sys/block/sdbd/device/delete</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Verify the deletion of  multipath device.<pre class="code">multipath -ll</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

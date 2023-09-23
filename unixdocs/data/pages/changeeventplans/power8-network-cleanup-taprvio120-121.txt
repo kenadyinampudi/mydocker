@@ -1,0 +1,53 @@
+====== Convert 1Gig links to 10Gig - Power8 VIOS - taprvio120-121 ======
+
+===== taprvio120 =====
+
+  - Check the current status<code>sudo entstat -d ent6 | grep ^"Physical Port Speed"</code>
+  - Put the SEA on standby<code>sudo chdev -l ent6 -a ha_mode=standby</code>
+  - Check pings to hosts from pgnmsv01<code>for host in pgnmsv01 pgdmr057 pgsnap03 pocafasv02 sggtdb01 pafodb01 dgsodb01 pgbcdb98 pocsndb01
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   fi
+done</code>
+  - Ask network team to make changes<code>FEX109 - Port 23 
+FEX109 - Port 24</code>
+  - Check the current Speed and aggregation status<code>sudo entstat -d ent6 | grep -e^"Physical Port Speed" -e ^"Aggregation status:"</code>
+  - Change SEA mode back to shared<code>sudo chdev -l ent6 -a ha_mode=sharing</code>
+  - Check pings to hosts from pgnmsv01<code>for host in pgnmsv01 pgdmr057 pgsnap03 pocafasv02 sggtdb01 pafodb01 dgsodb01 pgbcdb98 pocsndb01
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   fi
+done</code>
+
+** Take a 30 minutes break **
+
+===== taprvio121 =====
+
+  - Check the current status<code>sudo entstat -d ent6 | grep ^"Physical Port Speed"</code>
+  - Put the SEA on standby<code>sudo chdev -l ent6 -a ha_mode=standby</code>
+  - Check pings to hosts from pgnmsv01<code>for host in pgnmsv01 pgdmr057 pgsnap03 pocafasv02 sggtdb01 pafodb01 dgsodb01 pgbcdb98 pocsndb01
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   fi
+done</code>
+  - Ask network team to make changes<code>FEX110 - Port 23 
+FEX110 - Port 24</code>
+  - Check the current Speed and aggregation status<code>sudo entstat -d ent6 | grep -e^"Physical Port Speed" -e ^"Aggregation status:"</code>
+  - Change SEA mode back to shared<code>sudo chdev -l ent6 -a ha_mode=sharing</code>
+  - Check pings to hosts from pgnmsv01<code>for host in pgnmsv01 pgdmr057 pgsnap03 pocafasv02 sggtdb01 pafodb01 dgsodb01 pgbcdb98 pocsndb01
+do
+   ping -c1 ${host} > /dev/null 2>&1
+   if [ ${?} -ne 0 ]
+   then
+      echo "Problem with ${host} "
+   fi
+done</code>

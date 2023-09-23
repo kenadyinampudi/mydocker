@@ -1,0 +1,33 @@
+====== Adding VMWare host - Pure ======
+
+The first thing is to work out the proper ports.\\
+We use a [[\\cdcpilns013.federalmogul.com\sandocumentation\engineering\hds\f1500\f1500 20514 port documentation.xlsx | port documentation Excel sheet]] to figure out a range of where things should go.\\ 
+Then I can use [[http://cdcpilla023.federalmogul.com:22015/DeviceManager/ | Replication Manager ]] to roughly guess which ports of the range are least used and choose that.\\ 
+The temptation will be to just choose the same port everything else uses.  This could lead to overloading a port. Try to spread the load out evenly, even if this means some ports are more densely assigned than others.\\ 
+
+
+Next, I hop onto CDCPILLX151 to create the zoning scripts.\\
+See the [[:newlpar#[Zoning Example] | existing example]] for LPARs.
+
+Apply these to each switch, remembering to save afterwards.\\ 
+
+==== Create HostGroups ====
+Get the list of WWNs for a host and clear out all colons and other punctuation.\\ 
+Use capitalization for the hostname.\\ 
+  purehost create --wwnlist "20000025B5A8000D,20000025B5B8000D" CDCPILVM204
+
+Go back and change the host group "personality" to match the server.  This enables the correct set of SCSI commands for the host.\\ 
+  purehost setattr --personality esxi CDCPILVM204
+
+Create a 50G root volume and mount on LUN 1.  (Pure doesn't allow LUN 0)\\ 
+Use the hostname_LUN naming scheme for the volume.\\ 
+  purevol create --size 50G CDCPILVM204_1
+  
+Connect the volume to the host.\\ 
+  purehost connect --vol CDCPILVM204_1 --lun 1 CDCPILVM204
+  
+As a bonus, you can put the server into a hostgroup which will present all the cluster LUNs to the host in one swoop.\\ 
+  purehgroup setattr --addhostlist CDCPILVM204 INFRASTRUCTURE
+  
+Done and done.
+  

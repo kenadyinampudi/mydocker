@@ -1,0 +1,89 @@
+
+<h1 class="sectionedit1" id="oracle_notes">Oracle Notes</h1>
+<div class="level1">
+
+<p>
+Oracle 11.2.0.3 binaries for aix 64 bit are stored under panmsv02:/prod/images/Oracle/11203. They are full installations.
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Oracle Notes" [1-151] -->
+<h2 class="sectionedit2" id="installing_asm_grid_infrastructure_on_aix">Installing ASM &amp; Grid infrastructure on AIX</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create oracle user and group<pre class="code">mkgroup &quot;id=202&quot; dba
+mkuser &quot;pgrp=dba&quot; &quot;id=302&quot; &quot;home=/home/oracle&quot; &quot;gecos=Oracle Owner account&quot; &quot;shell=/usr/bin/ksh&quot; oracle</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the oracle ASM home filesystem<pre class="code">mklv -tjfs2 -y asmlv01 asmsoftvg01 20
+crfs -vjfs2 -A yes -t no -m /oracle/ASM -d asmlv01
+mount /oracle/ASM</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create oratab<pre class="code">echo &quot;+ASM:/oracle/ASM/1120:N&quot; &gt;&gt; /etc/oratab</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the installer to create the response-file.</div>
+</li>
+</ol>
+
+<p>
+Notes to follow
+Try to automate with a response file.
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Installing ASM & Grid infrastructure on AIX" [152-723] -->
+<h2 class="sectionedit3" id="storage_configuration_for_asm">Storage configuration for ASM</h2>
+<div class="level2">
+
+<p>
+Create lvs and asm disks
+Create ASM DG
+dismount, mount,
+</p>
+
+</div>
+<!-- EDIT3 SECTION "Storage configuration for ASM" [724-824] -->
+<h2 class="sectionedit4" id="install_oracle_on_asm">Install Oracle on ASM</h2>
+<div class="level2">
+
+<p>
+Notes to follow.
+</p>
+
+</div>
+<!-- EDIT4 SECTION "Install Oracle on ASM" [825-878] -->
+<h2 class="sectionedit5" id="cloning_on_asm_disks">Cloning on ASM disks.</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT5 SECTION "Cloning on ASM disks." [879-915] -->
+<h2 class="sectionedit6" id="create_an_oracle_11g_database_for_test_purposes">Create an oracle 11g database for test purposes</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Copy the oracle binary to a path</div>
+</li>
+<li class="level1"><div class="li"> create an oracle account and chown ORACLE_HOME  to it.</div>
+</li>
+<li class="level1"><div class="li"> login as the id , set oracle home, path and &#039;relink all&#039;</div>
+</li>
+<li class="level1"><div class="li"> Create a init.ora and startup the db nomount.</div>
+</li>
+<li class="level1"><div class="li"> Create the database<pre class="code">CREATE DATABASE clone CONTROLFILE REUSE  MAXLOGFILES 255 MAXLOGMEMBERS 3 MAXLOGHISTORY 1000 MAXDATAFILES 254 MAXINSTANCES 50 NOARCHIVELOG CHARACTER SET UTF8 NATIONAL CHARACTER SET UTF8 DATAFILE &#039;/oracle/testclone/sapdata1/system_1/system.data1&#039; SIZE 500M REUSE AUTOEXTEND ON NEXT 20M MAXSIZE 10000M EXTENT MANAGEMENT LOCAL DEFAULT TEMPORARY TABLESPACE PSAPTEMP TEMPFILE &#039;/oracle/testclone/sapdata2/temp_1/temp.data
+1&#039; SIZE 1000M REUSE AUTOEXTEND ON NEXT 20M MAXSIZE 10000M UNDO TABLESPACE PSAPUNDO DATAFILE &#039;/oracle/testclone/sapdata2/undo_1/undo.data1&#039; SIZE 1000M REUSE AUTOEXTEND
+ON NEXT 20M MAXSIZE 10000M SYSAUX DATAFILE &#039;/oracle/testclone/sapdata1/sysaux_1/sysaux.data1&#039; SIZE 200M REUSE AUTOEXTEND ON NEXT 20M MAXSIZE 10000M
+LOGFILE GROUP 1 (&#039;/oracle/testclone/origlogA/log_g11m1.dbf&#039;, &#039;/oracle/testclone/mirrlogA/log_g11m2.dbf&#039;) SIZE 50M  REUSE , GROUP 2 (&#039;/oracle/testclone/origlogB/log_g12m1.dbf&#039;, &#039;/oracle/testclone/mirrlogB/log_g12m2.dbf&#039;) SIZE 50M  REUSE ,
+GROUP 3 (&#039;/oracle/testclone/origlogA/log_g13m1.dbf&#039;, &#039;/oracle/testclone/mirrlogA/log_g13m2.dbf&#039;) SIZE 50M  REUSE , GROUP 4 (&#039;/oracle/testclone/origlogB/log_g14m1.dbf&#039;, &#039;/oracle/testclone/mirrlogB/log_g14m2.dbf&#039;) SIZE 50M  REUSE ; </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run these post install scripts<pre class="code">@?/rdbms/admin/catalog.sql
+@?/rdbms/admin/catproc.sql
+@?/sqlplus/admin/pupbld.sql
+EXIT</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT6 SECTION "Create an oracle 11g database for test purposes" [916-] -->

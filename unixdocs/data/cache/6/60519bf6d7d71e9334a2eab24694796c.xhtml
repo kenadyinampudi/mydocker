@@ -1,0 +1,17 @@
+
+<h1 class="sectionedit1" id="customization_for_network_monitoring_performance_center_servers">Customization for Network Monitoring Performance Center servers</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">sudo fdisk -l | grep ^Disk | grep /dev/sd
+sudo pvcreate -f /dev/sdb
+sudo vgcreate datavg01 /dev/sdb
+sudo lvcreate -n opt_CA -L 60GB datavg01
+sudo mkfs -t ext4 /dev/datavg01/opt_CA
+echo &quot;/dev/mapper/datavg01-opt_CA   /opt/CA                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+sudo mkdir -p /opt/CA
+sudo mount /opt/CA</pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,36 @@
+====== Upgrading Red Hat servers from RHEL 7 to RHEL 8 ======
+
+This is a multistep process and is not guaranteed to work.
+
+Generic article showing upgrade strategies:\\ 
+[[https://access.redhat.com/articles/4263361]] \\
+\\ 
+This shows a demo of how to upgrade RHEL from 7.x to 8.x using the "leapp" tool to check the upgrade and "boom" to configure a roll-back process: \\ 
+[[https://www.redhat.com/en/blog/upgrading-rhel-7-rhel-8-leapp-and-boom]] \\ 
+[[unix:using_boom | Procedures for using BOOM at Federal-Mogul]]\\ 
+\\ 
+Specific article detailing the upgrade process:\\ 
+[[https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/upgrading_from_rhel_7_to_rhel_8/index]]
+\\ 
+
+----
+==== General Steps (needs editing) ====
+  * Register system to Satellite
+  * Run the auto-attach process twice to ensure the system picks up the right 
+  * Double-check you have the right subscriptions
+    * Extra, Optional and Satellite6.7
+  * Set version (in Satellite) to 7Server
+    * Set current version to 7.8
+  * Upgrade and reboot.
+  * Install leapp
+    * There are mandatory config files which also need to be copied
+    * Add repositories
+    * Remove the subscription-manager version
+  * Run leapp preupgrade
+    * Perform the recommendations
+      * Remove any excess kernel_devs
+      * Change sshd.config
+  * Remove the version in os with subscription-manager release unset
+  * Remove version in Satellite
+  * Set Satellite to "default" to get everything
+  * Run leapp upgrade and hope.

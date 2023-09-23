@@ -1,0 +1,111 @@
+
+<h1 class="sectionedit1" id="aix_recovery_instructions">AIX recovery instructions</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "AIX recovery instructions" [1-41] -->
+<h3 class="sectionedit2" id="perform_the_nim_installation">Perform the NIM installation</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Pick your server, update the DR database for the server&#039;s Restore base operating system task to <code>In Progress</code>.</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server to SMS - make sure you select DEFAULT PROFILE - NOT CURRENT CONFIGURATION,</div>
+</li>
+</ol>
+
+<p>
+<a href="/lib/exe/detail.php?id=chris%3Adr%3Aunixrecoverycmdsaix-2018&amp;media=dr:boot-server-hardware-management-console.png" class="media" title="dr:boot-server-hardware-management-console.png"><img src="/lib/exe/fetch.php?media=dr:boot-server-hardware-management-console.png" class="media" alt="" /></a>
+</p>
+<pre class="code">5. Select Boot Options, 1. Select Install/Boot Device, 5. List all Devices. wait for all devices to be scanned, this will take some time, select the device number with the output similiar to the following &lt;code&gt;         1      148 GB   FC Harddisk, part=2 (AIX 7.2.0)&lt;/code&gt;
+- {{:dr:areyousure.png?100|}}
+- {{:dr:really-are-you-sure-about-that.jpg?200|}}
+- ** Are you really sure you are on the DR host ??? **
+- Continue ......
+- Login as root on the console.
+- Change PS1 variable. Make a backup copy&lt;code&gt;sudo cp /etc/profile /etc/profile.copyforDR&lt;/code&gt;Then&lt;code&gt;sudo vi /etc/profile&lt;/code&gt;Add this towards the end ( last line )&lt;code&gt;HOST=$(uname -n)</pre>
+
+<p>
+PS1=&#039;DR test – $HOST:$PWD&gt;&#039;
+readonly PS1&lt;/code&gt;
+</p>
+<ol>
+<li class="level1"><div class="li"> Enable NTP. Stop daemon. <pre class="code">sudo stopsrc -s xntpd</pre>
+
+<p>
+Backup the config
+</p>
+<pre class="code">sudo mv /etc/ntp.conf /etc/ntp.conf.DRtest</pre>
+
+<p>
+Put the new config
+</p>
+<pre class="code">cat &lt;&lt; EOF &gt;&gt; /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server pcdcunxaxap01
+EOF</pre>
+
+<p>
+Start the daemons
+</p>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+
+<p>
+Set the correct time from NIM server
+</p>
+<pre class="code">date ; sudo ntpdate -u nim ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove cron entry from inittab <pre class="code">rmitab cron </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check cron<pre class="code">ps -ef | grep cron</pre>
+
+<p>
+It should not be running. If cron is runing kill it. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Change itocroot password<pre class="code">echo &quot;itocroot:ka95aLbJ7WER6&quot; | chpasswd -e
+pwdadm -c itocroot</pre>
+
+<p>
+Password will now be “abcd1234”
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the timezone from filesystems.txt and make sure it matches<pre class="code">grep TZ /etc/environment</pre>
+
+<p>
+Now compare it to the filesystems.txt
+</p>
+<pre class="code">grep -i tz /usr/local/scripts/file_systems.txt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If your are recovering an Oracle database server, configure IOCP<pre class="code">sudo chdev -l iocp0 -a autoconfig=available</pre>
+
+<p>
+Make it available
+</p>
+<pre class="code">sudo mkdev -l iocp0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> When in doubt, ask </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=chris%3Adr%3Aunixrecoverycmdsaix-2018&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+</p>
+
+<p>
+<strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremly careful ) </strong>
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Perform the NIM installation" [42-] -->

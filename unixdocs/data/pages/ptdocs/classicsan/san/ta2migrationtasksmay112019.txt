@@ -1,0 +1,111 @@
+====== TA2 Migration weekend - Storage tasks - Wave 4 - 05-11-2019 ======
+
+===== Unmirror peerap99's nfsvg01 =====
+
+  - Unmirror V9K disks<code>ssh peerap99
+sudo unmirrorvg nfsvg01 hdisk40 hdisk41 hdisk42 hdisk43 hdisk44 hdisk46
+sudo reducevg nfsvg01 hdisk40 hdisk41 hdisk42 hdisk43 hdisk44 hdisk46</code>
+
+===== Snapshot =====
+
+  - Connect to LDCPM70<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+  - Export list of hosts<code>export hosts="pearfs01 pgdmr055 peerap98 peerap99 itcap001 tspr1d01 pgadap01 pgaidb01 pgsodb01 tepr2e01 taitc122"</code>
+  - Export suffix<code>export suffix=$(date +%b%d%Y%H%M)</code>
+  - Add volumes to PG<code>for host in ${hosts}
+do
+   volumes=$(${SSH2PURE} purevol list | grep ^${host}_ | awk '{print $1}'|tr "\n" "," | sed "s;,$;;g")
+   echo "Adding ${volumes} to autobahn-ldc-cdc-ptt protection group"
+   ${SSH2PURE} purepgroup setattr --addvollist ${volumes} autobahn-ldc-cdc-ptt
+done</code>
+  - Store Wintel volumes<code>export wintel_luns="wintel_esx_wave2_007 wintel_esx_wave3_009 wintel_sap_wave_001"
+export wintel_luns_comma=$(echo ${wintel_luns} | sed "s; ;,;g" )</code>
+  - Add Wintel volumes to protection group<code>${SSH2PURE} purepgroup setattr --addvollist ${wintel_luns_comma} autobahn-ldc-cdc-ptt</code>
+  - Adhoc replication<code>${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt</code>
+
+===== Provision =====
+
+  - Connect to PT array<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+  - Check status of PG<code>${SSH2PURE} purevol list --total --snap --transfer --pgrouplist LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix}</code>
+  - Store snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix} > snapshots.mp</code>
+  - Allocate Wintel LUNs<code>for volume in ${wintel_luns}
+do
+   snapshot=$(grep ${volume} snapshots.mp | awk '{print $1}' )
+   ${SSH2PURE} purevol copy ${snapshot} ${volume}
+done
+
+${SSH2PURE} purevol connect --hgroup INFRASTRUCTURE wintel_esx_wave2_007 
+${SSH2PURE} purevol connect --hgroup PROD-MS2 wintel_esx_wave3_009
+${SSH2PURE} purevol connect --hgroup PROD-REDHAT1 wintel_sap_wave_001</code>
+  - Define this function<code>function copysnapshots {
+for host in ${*}
+do
+   grep "${host}_" snapshots.mp > ${host}.snapshots
+   for snapshot in $(awk '{print $1}' ${host}.snapshots )
+   do
+      volumename=$(echo ${snapshot} | awk -F"." '{print $NF}' )
+      ${SSH2PURE} purevol copy ${snapshot} ${volumename}
+   done
+   volumes=$(awk '{print $1}' ${host}.snapshots | awk -F"." '{print $NF}' | tr "\n" " " )
+   ${SSH2PURE} purevol connect --host ${host} ${volumes}
+done
+}</code>
+  - Allocate AIX storage<code>copysnapshots ${hosts}</code>
+  - Create the hostgroup for peerap00<code>${SSH2PURE} purehgroup create --hostlist peerap98,peerap99 peerap00</code>
+  - Allocate storage<code>for volume in peerap00_100 peerap00_101 peerap00_102 peerap00_103 peerap00_104 peerap00_105
+do
+   snapshot=$(grep ${volume} snapshots.mp | awk '{print $1}' )
+   ${SSH2PURE} purevol copy ${snapshot} ${volume}
+done
+
+${SSH2PURE} purevol connect --hgroup peerap00 peerap00_100 peerap00_101 peerap00_102 peerap00_103 peerap00_104 peerap00_105</code>
+  - Add production systems to DR scope<code>export dr_hosts="peerap99 itcap001 tspr1d01 peerdb99 pgaidb01 pgsodb01 tepr2e01 taitc122"</code>
+  - And<code>for host in ${dr_hosts}
+do
+   ${SSH2PURE} purepgroup setattr --addhostlist ${host} dr-powervm-fdc
+done</code>
+  - Email Andy, Nathan and Bob to create these hosts in DR frame<code>peerap99 itcap001 tspr1d01 peerdb99 pgaidb01 pgsodb01 tepr2e01 taitc122</code>
+===== Recreate peerdb99's DB =====
+
+  - Change IPs and hostname from xeerdb99 to peerdb99.
+  - Configure primary Virtual IPs on peerdb99.
+  - Connect to PTT array<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+  - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist peerdb98 peerdb98-peerdb99</code>
+  - Prepare DBAs.
+  - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix stby peerdb98-peerdb99</code>
+  - Provision storage<code>${SSH2PURE} purevol list --notitle --snap --pgrouplist peerdb98-peerdb99.stby > snapshots.mp
+ssh peerdb98 "sudo /usr/local/scripts/lsvpcfg.sh" > lsvpcfg.out.peerdb98 
+cat lsvpcfg.out.peerdb98 | grep -v -e rootvg -e sanpagevg -e binvg01 | awk -F: '{print $3$4}' | sed "s;PURE-FLASH-;;g" | grep -v ^$ > lsvpcfg.out.peerdb98.luns
+
+${SSH2PURE} purevol list | grep ^peerdb98 | grep -f lsvpcfg.out.peerdb98.luns | awk '{print $1}' > lsvpcfg.out.peerdb98.vols
+
+count=200
+vollist=""
+
+for volume in $(cat lsvpcfg.out.peerdb98.vols )
+do
+   snapshot=$(grep ${volume} snapshots.mp | awk '{print $1}' )
+   ${SSH2PURE} purevol copy ${snapshot} peerdb99_${count}
+   count=$(echo "${count} + 1 " | bc )
+   vollist="${vollist} peerdb99_${count}"
+done
+
+${SSH2PURE} purevol connect --host peerdb99 ${vollist}</code>
+  - Import VG and mount filesystems<code>ssh peerdb99
+
+sudo cfgmgr
+
+ssh peerdb98 lspv | grep -v -e rootvg -e sanpagevg -e binvg01 > lspv.out.peerdb98
+
+for vg in $(awk '{print $3}' lspv.out.peerdb98 | sort -u )
+do
+   grep -w ${vg} lspv.out.peerdb98 | awk '{print $2}' > ${vg}.pvids
+   disks=$(lspv | grep -f ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   sudo recreatevg -L/ -Y/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done   
+done</code>
+  - Handover to DBA

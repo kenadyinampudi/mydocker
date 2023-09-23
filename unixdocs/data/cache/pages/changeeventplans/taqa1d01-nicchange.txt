@@ -1,0 +1,65 @@
+====== taqa1d01 - Network IP changes. ======
+
+==== During the change ====
+
+** VLAN 460 **
+
+  - Deconfigure VLAN 460<code>sudo ifconfig en9 down detach</code>
+  - Configure LACP pair for VLAN 60<code>sudo mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names='ent17,ent18' -a mode='8023ad' -a netaddr='10.32.60.1' -a num_retries='3' -a retry_time='1'
+sudo cfgmgr
+sudo chdev -l en22 -a netaddr=10.32.60.12 -a netmask=255.255.255.0 -a state=up</code>
+  - Test VLAN 460
+
+** VLAN 48 **
+
+  - Deconfigure VLAN 48<code>sudo ifconfig en8 down detach</code>
+  - Configure LACP pair for VLAN 48<code>sudo mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names='ent20,ent19'  -a mode='8023ad'  -a netaddr='10.0.48.1'  -a num_retries='3'  -a retry_time='1'
+sudo cfgmgr
+sudo chdev -l en23 -a netaddr=10.0.48.127 -a netmask=255.255.255.0 -a state=up</code>
+  - Test VLAN 48
+
+** VLAN 49 **
+
+  - Deconfigure VLAN 49<code>sudo ifconfig en7 down detach</code>
+  - Configure LACP pair for VLAN 49<code>sudo mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names='ent21,ent16' -a mode='8023ad' -a netaddr='10.0.49.1' -a num_retries='3' -a retry_time='1'
+sudo cfgmgr
+sudo chdev -l en24 -a netaddr=10.0.49.127 -a netmask=255.255.255.0 -a state=up</code>
+  - Test VLAN 49
+
+** Re-read inet0 from ODM -- Do this anytime you change anything on the interface that has the default router **
+
+  - Re-read inet0<code>sudo mkdev -l inet0</code>
+
+==== Backout plan ====
+
+  - Remove IPs from the existing adapters<code>sudo ifconfig en22 down detach
+sudo ifconfig en23 down detach
+sudo ifconfig en24 down detach</code>
+  - Configure IPs on the old ones.<code>sudo mkdev -l en7
+sudo mkdev -l en8
+sudo mkdev -l en9</code>
+  - Re-read ODM definitions for inet0<code>sudo mkdev -l inet0</code>
+==== Cleanup plan (After a couple of days ) ====
+
+  - Remove ent7 - VLAN 49 etherchannel -- ent3 + ent6<code>for dev in 7 6 3
+do
+   sudo rmdev -dl en$dev
+   sudo rmdev -dl ent$dev
+   sudo rmdev -dl et$dev
+done</code>
+  - Remove ent8 - VLAN 48 etherchannel -- ent1 + ent4<code>for dev in 8 4 1
+do
+   sudo rmdev -dl en$dev
+   sudo rmdev -dl ent$dev
+   sudo rmdev -dl et$dev
+done</code>
+  - Remove ent9 - VLAN 60 etherchannel -- ent2 + ent5<code>for dev in 9 5 2
+do
+   sudo rmdev -dl en$dev
+   sudo rmdev -dl ent$dev
+   sudo rmdev -dl et$dev
+done</code>
+  - Remove those adapters from IVE.<code>GUI work on HMC</code>
+  - Remove the Virtual NIC - ent0 as well.<code>sudo rmdev -dl en0
+sudo rmdev -dl ent0
+sudo rmdev -dl et0</code>Then remove from taqa1d01 profile<code>GUI work on HMC</code>

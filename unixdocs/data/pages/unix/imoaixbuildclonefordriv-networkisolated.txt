@@ -1,0 +1,191 @@
+====== IMO Project clones - DRiV - AIX build documentation -- Mock build - cloned boot disk ======
+
+  * In most cases , the DNS name and IP addresses are already secured.
+  * Until a proper firewall is in place, IMO builds are DNS disabled to prevent corruption to production.
+  * Build AIX systems on these frames 
+
+^HMC                          ^Frame                     ^
+|cdcvilhmc003.fmmotorparts.com|Powervm39-9040-MR9-78AAE8X|
+|cdcvilhmc003.fmmotorparts.com|Powervm40-9040-MR9-78AAE7X|
+|cdcvilhmc003.fmmotorparts.com|Powervm44-9009-42A-7823D20|
+|cdcvilhmc003.fmmotorparts.com|Powervm41-9009-42A-7823D40|
+|cdcvilhmc003.fmmotorparts.com|Powervm42-9009-42A-7823D50|
+|cdcvilhmc003.fmmotorparts.com|Powervm43-9009-42A-7823D30|
+
+
+===== Sizing guidelines =====
+
+  - Keep the same config as the source. The source LPARs must be on the PTT HMC''https://tgprhmc7.pt.int.tenneco.com''
+
+===== Build the LPAR on the frame chosen =====
+
+  - Use the HMC GUI to perform LPAR builds. Please don't define any NICs.
+  - Request a new DNS name for "bck" interface for the forseeable future (Request to Wintel team).
+    - If the hostname is pcdckapaxap01, request a name pcdckapaxap01bck.driv.com in the ''10.128.86.0/23'' VLAN
+  - Once done, email the  storage team for zoning with the name of the system and WWNs.
+  - Storage allocation
+    - IMO builds are mostly clones of existing servers. That being the case, please request GIOS Storage team for a 'crash consistent copy of source system'
+
+===== Storage allocated - First Boot =====
+
+==== Setup console database ====
+
+  - Export a variable to store the system name<code>export hmc=cdcvilhmc003
+export tgtsystem=name_of_the_system</code>
+  - Add the system to console database
+    - The manual way<code>sudo vi /prod/images/etc/unix_sys_console</code>Add an entry similar to this<code>pcdcna3axap01.driv.com:lpar-ibm:cdcvilhmc003.fmmotorparts.com:Powervm42-9009-42A-7823D50:pcdcna3axap01::tauxrpt</code>
+    - Little bit of automation
+      - Export this function<code>function create_unixconsole {
+export hmc=$1
+export lpar=$2
+for frame in $(ssh ${hmc} lssyscfg -r sys -F name )
+do
+   ssh ${hmc} lssyscfg -r lpar -m ${frame} -F name,lpar_id | grep ^${lpar} > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      lpar_id=$(ssh ${hmc} lssyscfg -r lpar -m ${frame} --filter lpar_names=${lpar} -F lpar_id )
+      echo ${lpar}:lpar-ibm:${hmc}:${frame}:${lpar}:${lpar_id}:tauxrpt
+   fi
+done
+}</code>
+      - Prepare the output<code>create_unixconsole ${hmc} ${tgtsystem} | sudo tee -a /prod/images/etc/unix_sys_console</code>
+
+==== Power on the LPAR and change the hostname and remove Network configs ====
+
+  - Power on the system to SMS
+    - Find our the Frame and HMC, store them in variables<code>export frame=$(grep -i ^${tgtsystem} /prod/images/etc/unix_sys_console | awk -F: '{print $4}' )
+export hmc=$(grep -i ^${tgtsystem} /prod/images/etc/unix_sys_console | awk -F: '{print $3}' )</code>
+    - Power on the lpar<code>ssh ${hmc} "chsysstate -r lpar -o on -b sms -m ${frame} -n ${tgtsystem}"</code>
+  - Access console and look for boot devices and boot from one of the Bootable disks<code>sudo /usr/local/scripts/getconsole ${tgtsystem}</code>
+  - Login as root on the console
+  - First change the hostname to avoid any further confusions and accidentally doing harm to production<code> chdev -l inet0 -a hostname=<new_host_name></code>
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+
+==== Remove monitoring, cron and clean NFS  ====
+
+  - Remove openview software<code>/usr/lpp/OV/bin/opcagt -version | grep -q -e "^11." -e "^12."
+case ${?} in
+0)
+   /usr/lpp/OV/bin/OpC/install/oasetup.sh -remove
+   rm -rf /usr/lpp/OV /usr/lpp/perf /var/opt/OV /var/opt/perf
+   ;;
+*)
+   echo "Y" | /usr/lpp/perf/bin/ovpa.remove
+   /usr/lpp/OV/bin/OpC/install/opc_inst -r
+   rm -rf /usr/lpp/OV /usr/lpp/perf /var/opt/OV /var/opt/perf
+   ;;
+esac</code>
+  - Remove cron<code>rmitab cron</code>
+  - Disable NFS exports<code>[[ -f /etc/exports ]] && mv /etc/exports /etc/exports.imoclone</code>
+  - Configure fiber channel HBAs<code>for FSCSI in $(lscfg | grep fscsi | awk '{print $2}' )
+do
+   chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</code>
+  - Set the boot list<code>lspv | grep -w rootvg | awk '{print $1}' | xargs -n1 sudo bootlist -m normal</code>
+  - Disable DNS<code>mv /etc/resolv.conf /etc/resolv.conf.$(date +%Y%m%d)</code>
+  - Remove NFS filesystems
+    - Make a backup of filesystems<code>cp /etc/filesystems /etc/filesystems.$(date +%Y%m%d)</code>
+    - Remove NFS filesystems<code>for NFS in $(grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" )
+do
+   rmnfsmnt -f ${NFS}
+done</code>
+  - Shutdown the server<code>shutdown -F</code>
+
+==== Add the NICs and boot the system ====
+
+  - [[unix:driv:infrastructureservices|Subnets are documented here]]
+  - Access HMC GUI and add NIC(s)
+    - Primary NIC
+      - First NIC should be the one on which the hostname's IP resolves to.
+      - Add an additional NIC on VLAN ''892'' - This is for "bck" network.
+  - Once done -- Start the lpar.
+==== Access console and configure network interfaces. ====
+
+  - Connect to console<code>sudo getconsole <system name></code>
+  - Configure front end IP address.
+    - Configure the front end IP address on en0 interface<code>/usr/sbin/mktcpip -h <hostname> -a a.b.c.d -m 255.255.255.0 -i en0 -g a.b.c.d -A no -s</code>
+  - Cleanup MPIO devices in the ODM<code>lsdev -Cc disk | grep -i defined | awk '{print $1}' | awk '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+
+==== Post installation tasks from NIM server ====
+
+  - Login to pcdcunxaxap01 and define a variable pointing to the system you are building<code>export tgtsystem=<host_name></code>
+  - Install standard motd<code>sudo scp /prod/images/etc/motd.driv ${tgtsystem}:/etc/motd</code>
+  - Enable DNS<code>sudo scp /prod/images/etc/resolv.conf.driv ${tgtsystem}:/etc/resolv.conf</code>
+  - Install a poroper syslog.conf<code>sudo scp /prod/images/etc/syslog.conf.driv ${tgtsystem}:/etc/syslog.conf</code>
+  - Enable NTP<code>sudo scp /prod/images/etc/ntp.conf.aix.imoclone.driv ${tgtsystem}.driv.com:/etc/ntp.conf
+sudo ssh ${tgtsystem}.driv.com "chrctcp -S -a xntpd"
+sudo ssh ${tgtsystem}.driv.com "ntpdate -u cdcvildns001.fmmotorparts.com"</code>
+
+==== Post installation - generic tasks from the host ====
+
+  - Login to the host you are building<code>ssh ${tgtsystem}.driv.com</code>
+  - Fix hosts file<code>cat << EOF | sudo tee /etc/hosts
+127.0.0.1               loopback localhost
+EOF
+host $(uname -n) | awk '{print $3"\t"$1"\t"$1"h"}' | sed "s;,;;g" | sed "s;.driv.comh;;g" | sudo tee -a /etc/hosts</code>
+  - Adjust .information file<code>sudo ex -sc "/mksysbhost/s/pgnmsv01/pcdcunxaxap01/|x" /var/adm/.information
+sudo ex -sc "/location/s/Lincolnshire/Elk Grove - CDC - DRiV/|x" /var/adm/.information</code>
+  - Configure the backup network<code>sudo chdev -l en1 -a netaddr=$(host "$(uname -n)bck" | awk '{print $NF}') -a netmask=255.255.254.0 -a state=up</code>
+  - Remove cron jobs for application accounts<code>for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v "^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$")
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</code>
+  - Remove these unwanted cron jobs from root's cron<code>sudo crontab -e</code>Remove these<code>/usr/ibm/common/acsi/bin/collectbatch.sh > fsout.log 2>&1
+perl /opt/perf/bin/watchhpcs.pl
+/usr/local/scripts/rpt_config.sh 1>/dev/null 2>&1
+/var/adm/perfmgr/bin/verify.srm 1>/dev/null 2>&1
+/usr/local/scripts/chkstale 1>/dev/null 2>&1
+/usr/local/scripts/rmcore.sh >/dev/null 2>&1
+/usr/local/scripts/security.chk 1>/dev/null 2>&1
+/usr/local/scripts/listworldwritablefiles > /dev/null 2>&1
+/usr/local/scripts/ww_files.sh 1>/dev/null 2>&1
+/usr/local/bin/SymmMaskBKUP.ksh 1>/dev/null 2>/dev/null
+/usr/local/bin/read_info_symdev_masking.ksh 1>/dev/null 2>&1
+/usr/local/bin/read_info_symdev.ksh 1>/dev/null 2>&1
+/usr/local/nmon/nmon -s 900 -c 48 -ft -m /usr/local/log 1>/dev/null 2>&1
+su - fnsw -c /fnsw/srvlink/tidy_srvlink_log > /tmp/tidy_srvlink_log.log 2>&1
+delfile /usr/local/log '*.nmon' 8 1>/dev/null 2>&1
+cat /dev/null > /var/adm/cron/log
+crontab -l > /tmp/root_crontab.save
+/usr/local/scripts/locked_acct.sh 1>/dev/null 2>&1
+/usr/local/bin/userlist > /dev/null 2>&1
+/usr/bin/security.chk 1>/dev/null 2>&1
+/opt/csm/csmbin/cleanup.logs.csp  1>>/var/log/csm/csperror.log 2>>/var/log/csm/csperror.log
+/opt/csm/bin/cfmupdatenode -a 1>/dev/null 2>/dev/null
+/usr/sbin/acct/fwtmp < /var/adm/wtmp | tail -5000 > /var/adm/fwtmp.txt; /usr/sbin/acct/fwtmp -ic < /var/adm/fwtmp.txt > /var/adm/wtmp
+/usr/local/scripts/clear-edipta61-mail.sh 1>/dev/null 2>&1
+/usr/local/bin/TA2_backlog.sh 2>&1
+/opt/csm/bin/cfmupdatenode -a 1>/dev/null 2>/dev/null
+/opt/csm/csmbin/cleanup.logs.csp  1>>/var/log/csm/csperror.log 2>>/var/log/csm/csperror.log
+/usr/local/scripts/clean_open-scan.sh > /dev/null 2>&1</code>
+  - Enable cron<code>sudo mkitab cron:23456789:respawn:/usr/sbin/cron</code>
+  - Remove old mksysb files<code>sudo rm /bkpmksb/bos.obj.*</code>
+  - Setup the correct SMTP server<code>sudo cp /etc/sendmail.cf /etc/sendmail.cf.$(date +%d%m%Y)
+sudo ex -sc "/^DS/s/DS/DSsmtp.driv.com/|x" /etc/sendmail.cf</code>
+  - Setup alt_rootvg
+    - Look for another 138G device that is not allocated to any volume group<code>sudo /usr/local/scripts/lsvpcfg.sh</code>
+    - Remove existing alt_disk and Create a new alt_disk_copy<code>sudo alt_disk_install -X altinst_rootvg
+sudo alt_disk_copy -B -d hdiskX</code>
+  - Review the checklist and perform whatever work is needed, NFS mounts **NFS -- please make sure they are in /etc/filesystems ** etc.
+    - [[unix:imoaixbuildclonefordriv-networkisolated-accenturebasisusers-aix|If Accenture Basis users have been requested, create them]]
+    - In most cases, you will need to create an alias on en0. 
+      - On clustered systems ( ap99, ap98, db99, db98 ) -- these will go into the respective scripts in ''/root/cluster''
+      - On standalone systems, these will be permanent alias(s)<code>sudo chdev -l en0 -a alias4=a.b.c.d,255.255.255.0</code>
+  - Change hard coded hostnames from herald<code>sudo chsec -f /etc/security/login.cfg -s /dev/console -a herald=""
+sudo chsec -f /etc/security/login.cfg -s default -a herald=""</code>
+  - Create solarwinds account for monitoring<code>sudo mkuser id=6851 pgrp=staff groups=staff home=/home/solwinds shell=/usr/bin/ksh gecos="Solarwinds - ssh monitoring account" solwinds
+echo "solwinds:sa3qlTY77TwFs" | sudo chpasswd -e
+sudo pwdadm -c solwinds
+sudo chuser maxage=0 solwinds
+sudo /usr/local/scripts/unlockuser solwinds > /dev/null 2>&1</code>
+  - Perform a final reboot<code>sudo shutdown -Fr</code>
+  - Send an email to John Ziegler and Koushik to setup monitoring.
+  - Send an email to giosdatapres@tenneco.com to setup backups.

@@ -1,0 +1,127 @@
+
+<h1 class="sectionedit1" id="redhat_linux_installation_notes">Redhat Linux Installation notes</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> We only support Redhat Linux and only Virtual deployments. If you are building this on a physical machine, stop &amp; escalate.</div>
+</li>
+<li class="level1"><div class="li"> Please request Wintel team to configure the VM for Linux.</div>
+<ul>
+<li class="level2"><div class="li"> RHEL 5<pre class="code">Hello Wintel Team,
+Please configure the VM for Redhat Enter Prise Linux 5.
+Please set the Boot options --&gt; Boot Delay to &quot;10000&quot;
+Please change the SCSI controller type to &quot;LSI Logic Parallel&quot;
+Please change the Ethernet Adapter type to &quot;E1000&quot;.</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> RHEL 6<pre class="code">Hello Wintel Team,
+Please configure the VM for Redhat Enter Prise Linux 6.
+Please set the Boot options --&gt; Boot Delay to &quot;10000&quot;</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Add the server to the console database <strong>/prod/images/etc/unix_sys_console</strong> on taitc118.<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Sample entry would be
+</p>
+<pre class="code">taitc059:std-vmware-vsphere:taitc176:ADACCOUNT</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=kapil:notesesx" class="wikilink1" title="kapil:notesesx">Login to the respective VSphere Server</a></div>
+</li>
+<li class="level1"><div class="li"> Document the MAC address for the VM</div>
+<ul>
+<li class="level3"><div class="li"> Find the VM –&gt; Right click –&gt; Edit Settings –&gt; Select Network adapter 1 (Hardware Tab) –&gt; You will see the MAC address to the right.</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Add the server to cobbler</div>
+<ul>
+<li class="level2"><div class="li"> Login to pablsv01</div>
+</li>
+<li class="level2"><div class="li"> Choose the right profile for the system</div>
+</li>
+</ul>
+</li>
+</ul>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Profile</th><th class="col1">Description</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">rhel-5.8-i386</td><td class="col1">RHEL 5.8 32 bit for all intel hardware Tenneco support</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">rhel-5.8-x86_64</td><td class="col1">RHEL 5.8 64 bit for all intel hardware Tenneco support</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">rhel-6.3-i386</td><td class="col1">RHEL 6.3 32 bit for all intel hardware Tenneco support</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">rhel-6.3-x86_64</td><td class="col1">RHEL 6.3 64 bit for all intel hardware Tenneco support</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">rhel-6.4-x86_64</td><td class="col1">RHEL 6.4 64 bit for all intel hardware Tenneco support</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">rhel-6.6-x86_64</td><td class="col1">RHEL 6.6 64 bit for all intel hardware Tenneco support</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [1237-1692] --><ul>
+<li class="level1"><div class="li"> Define the system and assign the correct profile - Sample intranet</div>
+<ul>
+<li class="level3"><div class="li"> Command Line method<pre class="code">sudo cobbler system add \
+--name=&lt;hostname&gt; \
+--profile=rhel-6.6-x86_64 \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=amer.int.tenneco.com \
+--gateway=&lt;gateway&gt; \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=&lt;mac_address&gt; \
+--ip-address=&lt;ip_address&gt; \
+--netmask=255.255.255.0 \
+--server=pablsv01.amer.int.tenneco.com</pre>
+
+<p>
+Sample DMZ
+</p>
+<pre class="code">sudo cobbler system add \
+--name=&lt;hostname&gt; \
+--profile=rhel-6.6-x86_64 \
+--netboot-enabled=False \
+--name-servers=&lt;ip_address&gt; \
+--name-servers-search=tenneco.com, amer.int.tenneco.com \
+--gateway=&lt;gateway&gt; \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=&lt;mac_address&gt; \
+--ip-address=&lt;ip_address&gt; \
+--netmask=255.255.255.192 \
+--server=pablsv01.amer.int.tenneco.com</pre>
+
+<p>
+Check the return code
+</p>
+<pre class="code">echo ${?}</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> Create the Boot <abbr title="International Organization for Standardization">ISO</abbr> on pablsv01<pre class="code">sudo cobbler buildiso --systems=&quot;&lt;hostname&gt;&quot; --iso=/var/www/html/servers/&lt;hostname&gt;.iso</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Copy the iso file to pgnmsv01. Login to pgnmsv01<pre class="code">sudo rsync -avv pablsv01:/var/www/html/servers/&lt;hostname&gt;.iso /prod/images/bootisos/</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:vmware-install" class="wikilink1" title="unix:vmware-install">VMWare ? Click here </a></div>
+</li>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:standalone-install" class="wikilink1" title="unix:standalone-install">Standalone intel server ? Click here </a></div>
+</li>
+</ul>
+
+</div>

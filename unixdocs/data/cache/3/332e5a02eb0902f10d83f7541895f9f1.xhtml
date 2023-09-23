@@ -1,0 +1,133 @@
+
+<h1 class="sectionedit1" id="sudo_documentation_for_users">SUDO Documentation for Users</h1>
+<div class="level1">
+
+<p>
+sudo or as I call it “Super User Do” is a unix program that allows non-privileged users to execute some commands as root. sudo provides a rich set of features including monitoring, managing and alerting as compared to its competitors like setuid, proprietory RBAC or root equivalent user. 
+</p>
+
+<p>
+At Tenneco, we have identified the following teams as the ones who will need to run some programs as root.
+</p>
+<ul>
+<li class="level1"><div class="li"> <abbr title="Database Administrator">DBA</abbr> Team</div>
+</li>
+<li class="level1"><div class="li"> Data preservation Team</div>
+</li>
+<li class="level1"><div class="li"> SAP - Basis Team</div>
+</li>
+<li class="level1"><div class="li"> HP Openview Team.</div>
+</li>
+</ul>
+
+<p>
+We need to group servers
+</p>
+<ul>
+<li class="level1"><div class="li"> Production Servers</div>
+</li>
+<li class="level1"><div class="li"> Non production servers</div>
+</li>
+<li class="level1"><div class="li"> Backup servers</div>
+</li>
+<li class="level1"><div class="li"> Others</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "SUDO Documentation for Users" [1-633] -->
+<h2 class="sectionedit2" id="usage">Usage</h2>
+<div class="level2">
+
+<p>
+This is the easiest part. This is as simple as “prefix the command that you need to run as root with sudo”.
+</p>
+<pre class="code">sudo /oracle/SID/11203/root.sh</pre>
+
+<p>
+The above command runs as root.
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Usage" [634-837] -->
+<h2 class="sectionedit3" id="dos_don_t_s">Dos &amp; Don&#039;t(s)</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> There is no perfect security model. So there are ways around to break anything. May be, we should shutdown the <abbr title="Operating System">OS</abbr>, disconnect all cables, hide it, and kill the person who hid it. Even then there is still a chance. So is sudo, there are ways around and the methods are easily accessible.</div>
+</li>
+<li class="level1"><div class="li"> Be responsible. sudo gives great power on a Unix system. “With great power comes great responsibility, visibility and publicity”. Think before you hit enter on that command that you prefixed with sudo.</div>
+</li>
+<li class="level1"><div class="li"> Use sudo only when it really needed. It is not to be used for convenience. Do not fix a problem by “chmod 777” because you have the ability to do so for example.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "Dos & Don't(s)" [838-1528] -->
+<h2 class="sectionedit4" id="implementation_phase_1_nov_24th_2012">Implementation Phase 1 ( Nov 24th 2012 )</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Send communication to all GIOS users (OV, <abbr title="Database Administrator">DBA</abbr>, BASIS, Data proservation, Middleware).</div>
+</li>
+<li class="level1"><div class="li"> Enter change event for Nov 24th.</div>
+</li>
+<li class="level1"><div class="li"> Disable itocroot on all servers.</div>
+</li>
+<li class="level1"><div class="li"> Team members of the above teams will have the ability to run any command as root on all non-production unix servers.</div>
+</li>
+<li class="level1"><div class="li"> Unlimited sudo access for Data preservation team on all backup servers. </div>
+</li>
+<li class="level1"><div class="li"> Unix team will keep a close watch on Usage of sudo and make recommendations on best practices.</div>
+</li>
+<li class="level1"><div class="li"> Unix team will also learn patterns of sudo usage by various teams.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Implementation Phase 1 ( Nov 24th 2012 )" [1529-2114] -->
+<h2 class="sectionedit5" id="implementation_phase_2_jan_-_2013">Implementation Phase 2 ( Jan - 2013 )</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> By this time Unix team will come up with a properly fine tuned set of root commands for each team.</div>
+</li>
+<li class="level1"><div class="li"> Unix team will implement a new set of sudo rules that will rule out the need for a completely open sudo configuration. Individual teams will have the ability to run authorized programs as root using sudo.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT5 SECTION "Implementation Phase 2 ( Jan - 2013 )" [2115-2478] -->
+<h2 class="sectionedit6" id="management_and_ongoing_maintenance">Management and ongoing Maintenance</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> New projects, new applications OR new teams will need configuration changes to be made on sudo rules.</div>
+</li>
+<li class="level1"><div class="li"> Unix team will perform these sudo rule&#039;s management as part of the project. </div>
+</li>
+<li class="level1"><div class="li"> sudo rules will be maintained centrally, there will be no local changes allowed. By design, the local rules will be over written.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT6 SECTION "Management and ongoing Maintenance" [2479-2848] -->
+<h2 class="sectionedit7" id="limitations_of_sudo">Limitations of sudo</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Redirection is one limitation of sudo. i.e. <pre class="code">sudo echo &quot;something&quot; &gt; /etc/motd</pre>
+
+<p>
+For security reasons, sudo does not permit re-directions. Instead, this works
+</p>
+<pre class="code">echo &quot;something&quot; | sudo tee -a /etc/motd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> “cd” command i.e. <pre class="code">sudo cd /protected-directory</pre>
+
+<p>
+This will not work. Instead use
+</p>
+<pre class="code">sudo ls -l /protected-directory</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT7 SECTION "Limitations of sudo" [2849-] -->

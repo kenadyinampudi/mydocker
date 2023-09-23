@@ -1,0 +1,175 @@
+
+<h2 class="sectionedit1" id="work_to_do_after_plp_upgrade_to_fix_usr_sap_trans_issue">WORK TO DO AFTER PLP UPGRADE TO FIX /USR/SAP/TRANS ISSUE</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Ask Basis Team member to stop SAP on pcdcplplxap01, dcdcpldaxdb01, qcdcpltaxdb01, qcdcpltlxap01, and scdcplsaxdb01</div>
+</li>
+</ol>
+
+<p>
+	  -  on  pcdcplpaxdb01.driv.com make a copy of the /etc/filesystems file 
+</p>
+<pre class="code"> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S).cs</pre>
+<ol>
+<li class="level1"><div class="li">  on pcdcplpaxdb01.driv.com umount /usr/sap/tras and remove NFS file system <pre class="code">dpldci1a:/usr/sap/trans      48.00     35.95   26%     3666     1% /usr/sap/trans</pre>
+<pre class="code">sudo umount /usr/sap/trans </pre>
+<pre class="code">smit rmnfsmnt </pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li"> mount premade /usr/sap/file system on pcdcunxaxap01 <pre class="code">mount /usr/sap/trans </pre>
+<pre class="code">cd /usr/sap/trans </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> clear the old data from the file on pcdcunxaxap01 confirm server name in nim server <pre class="code"> uname -n</pre>
+
+<p>
+ Must be  
+</p>
+<pre class="code">pcdcunxaxap01</pre>
+
+<p>
+ confirm directory 
+</p>
+<pre class="code"> pwd </pre>
+
+<p>
+ must be 
+</p>
+<pre class="code">/usr/sap/trans </pre>
+
+<p>
+ If everything is OK clear the file - remove all entries so that is an empty file. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify a second time that there is no data in target (local) /usr/sap/trans file<pre class="code"> cd /usr/sap/trans; ls</pre>
+
+<p>
+Output should look similiar to this
+</p>
+<pre class="code">total 0
+    2 drwxrwxrwx    2 root     system          256 Oct 25 10:48 .
+190433 drwxr-xr-x    3 root     system          256 Oct 30 11:06 ..</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  If everthing is OK then copy the data from dpldci1a /usr/sap/trans to /usr/sap/tras on pcdcunxaxap01 <pre class="code">sudo rsync -avv dpldci1a:/usr/sap/trans/ . </pre>
+</div>
+</li>
+</ol>
+
+<p>
+-  compare count on dpldci1a:/usr/sap/trans/  with pcdcunxaxap01:/usr/sap/trans on, dcdcpldaxdb01 run
+</p>
+<pre class="code">ls -liatR | wc -l</pre>
+
+<p>
+on pcdcunxalap01 run
+</p>
+<pre class="code"> ls -liatR /usr/sap/trans| wc -l  </pre>
+
+<p>
+Both outputs from the ls command should be equal. If they are not recopy the data.
+</p>
+<ol>
+<li class="level1"><div class="li">  create /usr/sap/trans on PLP pcdcplpaxdb01.driv.com <pre class="code">sudo mkdir -p /usr/sap/trans 
+sudo chmod 755 /usr/sap/trans
+sudo crfs -g datavg01 -A yes -v jfs2 -m /usr/sap/trans -a size=100663296
+sudo mount /usr/sap/trans
+sudo chown plpadm:sapsys /usr/sap/trans
+sudo chmod 755 /usr/sap/trans</pre>
+</div>
+</li>
+</ol>
+<ol>
+<li class="level1"><div class="li">  create the /etc/exports entry on pcdcplpaxdb01.driv.com vi /etc/exports and add this <pre class="code">cw/usr/sap/trans -sec=sys:krb5p:krb5i:krb5:dh,rw,root=dcdcpldaxdb01:qcdcpltaxdb01:qcdcpltlxap01:pcdcplplxap01:pcdcpgwaxdb01:scdcplsaxdb01,access=dcdcpldaxdb01:qcdcpltaxdb01:qcdcpltlxap01:pcdcplplxap01:pcdcpgwaxdb01:scdcplsaxdb01 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> copy the data from pcdcunxaxap01:/usr/sap/trans to pcdcplpaxdb01.driv.com:/usr/sap/trans <pre class="code">sudo rsync -avv /usr/sap/trans/ pcdcplpaxdb01.driv.com:/usr/sap/trans/ </pre>
+</div>
+</li>
+<li class="level1"><div class="li">  compare count on pcdcplpaxdb01.driv.com:/usr/sap/trans  with count on dpldci1a:/usr/sap/trans/  both should be the same <pre class="code">ls -liatR | wc -l ==  ls -liatR | wc -l  </pre>
+</div>
+</li>
+<li class="level1"><div class="li">  change the ownership of files in /usr/sap/trans on pcdcplpaxdb01.driv.com from pltadm  to plpadm <pre class="code"> cd /usr/sap/tans </pre>
+<pre class="code">sudo chown -R plpman * </pre>
+</div>
+</li>
+<li class="level1"><div class="li">  to refresh the NFS Daemons after the changes, stop and start NFS on pcdcplpaxdb01 <pre class="code">stopsrc -g nfs</pre>
+<pre class="code">startsrc -g nfs</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  if all match then export the /usr/sap/trans from pcdcplpaxdb01.driv.com<pre class="code"> sudo exportfs -i /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  on dpldci1a umount /usr/sap/trans <pre class="code">sudo umount /usr/sap/trans </pre>
+</div>
+</li>
+<li class="level1"><div class="li">  rename  the file system - save it just in case <pre class="code">sudo chfs -m /usr/sap/trans-HOLD /usr/sap/trans </pre>
+</div>
+</li>
+<li class="level1"><div class="li">  mount the saved file system <pre class="code">sudo mount /usr/sap/trans-HOLD</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  make a copy of /etc/exports- just in case <pre class="code"> sudo cp -p /etc/exports /etc/exports-$(date +%Y%m%d-%H:%M:%S).cs</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  on dpldci1a edit and remove the entry in /etc/exports <pre class="code">/usr/sap/trans -sec=sys:krb5p:krb5i:krb5:dh,rw,root=pcdcplpaxdb01:qcdcpltaxdb01:qcdcpltlxap01:pcdcplplxap01:pcdcpgwaxdb01:scdcplsaxdb01,access=pcdcplpaxdb01:qcdcpltaxdb01:qcdcpltlxap01:pcdcplplxap01:pcdcpgwaxdb01:scdcplsaxdb01 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> make a copy of the /etc/filesystems file <pre class="code"> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S).cs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> add the NFS file definition to /etc/filesystems on dpldci1a and qcdcqimaxdb01.</div>
+</li>
+<li class="level1"><div class="li"> vi the /etc/filesystems file and add the following lines <pre class="code">/usr/sap/trans:
+        dev             = &quot;/usr/sap/trans&quot;
+        vfs             = nfs
+        nodename        = pplpci1a
+        mount           = true
+        options         = bg,soft,intr,sec=sys
+        account         = false</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> mount the new /usr/sap/trans <pre class="code"> sudo mount /usr/sap/trans</pre>
+
+<p>
+ results should look something like this 
+</p>
+<pre class="code">pplpci1a:/usr/sap/trans      48.00     35.95   26%     3666     1% /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> if all looks good on the nfs mount above make the changes on qcdcpltaxdb01 qcdcpltlxap01 pcdcplplxap01 scdcplsaxdb01</div>
+</li>
+<li class="level1"><div class="li"> make a copy of the /etc/filesystems file <pre class="code"> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S).cs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <pre class="code"> sudo vi /etc/filesystem&gt; </pre>
+
+<p>
+Find /usr/sap/trans and change the nodename From dpldci1a To pplpci1a
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+Name ⇒ pcdcplpaxdb01
+Name:   pplpci1a.driv.com
+Address: 10.128.44.50
+</p>
+
+<p>
+Name ⇒ qcdcpltaxdb01
+Name:   qpltci1a.driv.com
+Address: 10.128.72.12
+</p>
+
+<p>
+Name ⇒ dcdcpldaxdb01
+Name:   dpldci1a.driv.com
+Address: 10.128.72.62
+</p>
+
+</div>

@@ -1,0 +1,29 @@
+====== Issue ======
+We get a nasty-gram from security complaining that someone from CDCPILLX055 is trying to hack the servers by logging in as root.\\
+
+==== Cause ====
+This is the LPAR inventory script which attempts to automatically grab LPARs and pass the list off to IMS.  \\
+In the process, the script attempts to log in with ssh-keys to each LPAR and gather some AIX specific information.\\
+The legacy Tenneco servers don't have ssh-keys set up for our root account (my standards!) and consequently rightly deny the access attempt.  This generates a log entry, which bubbles up to the Spleunk server and causes a ServiceNow ticket to get generated, which is dutifully passed over to us.\\
+
+==== Steps to reproduce ====
+ *  Add a new Tenneco chassis to our environment.  The inventory script finds it and attempts a log in, causing the cascade of issues.\\
+
+==== Workaround ====
+The inventory script is at %%cdcpillx055:/scripts/inventory_script/getlparspecific%%.\\
+Copy the translation_matrix for safety, add entries for the new servers.\\
+  cdcpillx055:/scripts/inventory_script # cp translation-matrix.txt translation-matrix.txt.bak
+  cdcpillx055:/scripts/inventory_script # vi translation-matrix.txt
+  21-F075V,DoNotUse
+  pgdmr057,DoNotUse
+  taprvio160,DoNotUse
+  taprvio161,DoNotUse
+  itcap001,DoNotUse
+  pearfs01,DoNotUse
+  pgadap01,DoNotUse
+  pgdmr055,DoNotUse
+  taprvio100,DoNotUse
+  taprvio101,DoNotUse
+  tepr2e01,DoNotUse
+
+The translation matrix file was originally made to change LPAR names into ones that matched IMS to aid in correlating entries.  I also added a quick little function that "DoNotUse" as a substitute name stopped all processing for that LPAR.  I make use of this to stop polling to the legacy Tenneco LPARs.

@@ -1,0 +1,149 @@
+====== Cleanly remove / decommission a SAN connected Host ======
+
+  - In order to cleanly remove the given server from SAN it is not only matter or removing SAN zones, aliases but also clean up array side. Below is the example of removal of taitc025 server from SAN:
+  - Check what is defined on FC switches end, login to fabric A and B and execute the following:<code>ldcds5300a1:admin> alishow taitc025*
+ alias: taitc025_801b83
+                10:00:00:00:c9:80:1b:83
+
+ldcds5300a1:admin> zoneshow taitc025*
+ zone:  taitc025_801b83__vmax_0301_4f0
+                taitc025_801b83; vmax_0301_4f0
+ zone:  taitc025_801b83__vnx53001_spa0
+                taitc025_801b83; vnx53001_spa0
+ zone:  taitc025_801b83__vnx53001_spb0
+                taitc025_801b83; vnx53001_spb0
+ zone:  taitc025_801b83_ldcv9ac2n1_112fbf
+                taitc025_801b83; ldcv9ac2n1_112fbf
+ zone:  taitc025_801b83_ldcv9ac2n2_112fc0
+                taitc025_801b83; ldcv9ac2n2_112fc0
+ldcds5300a1:admin> cfgshow
+Defined configuration:
+ cfg:   fab_a_act_config
+(...)
+Effective configuration:
+ cfg:   fab_a_act_config
+(...)</code>
+  - From above we can tell that we need to remove the following zones:<code>taitc025_801b83__vmax_0301_4f0
+taitc025_801b83__vnx53001_spa0
+taitc025_801b83__vnx53001_spb0
+taitc025_801b83_ldcv9ac2n1_112fbf
+taitc025_801b83_ldcv9ac2n2_112fc0
+
+and this alias:
+
+taitc025_801b83</code>
+  - Remove the zoning configuration and aliases, zones etc<code>cfgremove "fab_a_act_config","taitc025_801b83__vmax_0301_4f0"
+cfgremove "fab_a_act_config","taitc025_801b83__vnx53001_spa0"
+cfgremove "fab_a_act_config","taitc025_801b83__vnx53001_spb0"
+cfgremove "fab_a_act_config","taitc025_801b83_ldcv9ac2n1_112fbf"
+cfgremove "fab_a_act_config","taitc025_801b83_ldcv9ac2n2_112fc0"
+
+zonedelete "taitc025_801b83__vmax_0301_4f0"
+zonedelete "taitc025_801b83__vnx53001_spa0"
+zonedelete "taitc025_801b83__vnx53001_spb0"
+zonedelete "taitc025_801b83_ldcv9ac2n1_112fbf"
+zonedelete "taitc025_801b83_ldcv9ac2n2_112fc0"
+
+alidelete "taitc025_801b83"
+
+cfgsave
+
+cfgenable fab_a_act_config</code>
+  - VNX cleanup, first thing is to figure out storage groups to which this host belong<code>[nasadmin@ldcvnx53001cs0 ~]$ /nas/sbin/navicli -h spa -Scope 0 storagegroup -list |grep "^Storage Group Name"
+Storage Group Name:    TAPRVIO7
+Storage Group Name:    TAITC025
+Storage Group Name:    TAPRVIO18
+Storage Group Name:    TAPRVIO70
+Storage Group Name:    TEDV2D03
+Storage Group Name:    TAPRVIO19
+Storage Group Name:    DGOMDB01
+Storage Group Name:    PGDMR057
+Storage Group Name:    TAITC122
+Storage Group Name:    DGGWDB01
+Storage Group Name:    TAITC111
+Storage Group Name:    TAPRVIO91
+Storage Group Name:    DMZ_VMWAREs
+Storage Group Name:    TAPRVIO15
+Storage Group Name:    XAHYDB01
+Storage Group Name:    TGDVETL1
+Storage Group Name:    TAPRVIO9
+Storage Group Name:    TAPRVIO41
+Storage Group Name:    DGAIDB01
+Storage Group Name:    TAITC121
+Storage Group Name:    QAERAP01
+Storage Group Name:    TAPRVIO17
+Storage Group Name:    DAERAP01
+Storage Group Name:    TAPRVIO16
+Storage Group Name:    DGSNDB01
+Storage Group Name:    DGJBDB01
+Storage Group Name:    PGDMR055
+Storage Group Name:    LDC_VMWAREs
+Storage Group Name:    TAITC114
+Storage Group Name:    QGJBDB01
+Storage Group Name:    TAPRVIO90
+Storage Group Name:    TAPRVIO50
+Storage Group Name:    PGNMSV01
+Storage Group Name:    QGSNAP01
+Storage Group Name:    TAPRVIO40
+Storage Group Name:    TAITC009
+Storage Group Name:    SAFOAP01
+Storage Group Name:    PABLSV01
+Storage Group Name:    TAITC118
+Storage Group Name:    TAPRVIO60
+Storage Group Name:    TNQA3D01
+Storage Group Name:    TAPRVIO51
+Storage Group Name:    QGAIDB01
+Storage Group Name:    PANMSV02
+Storage Group Name:    QAAP3P01
+Storage Group Name:    QGGWDB01
+Storage Group Name:    TAPRVIO12</code> 
+  - In above the given host did exist in only one STG called TAITC025. So let's see what are the luns and hosts in this STG<code>[nasadmin@ldcvnx53001cs0 ~]$ /nas/sbin/navicli -h spa -Scope 0 storagegroup -list TAITC025 -host
+
+Storage Group Name:    TAITC025
+Storage Group UID:     64:19:F5:72:FA:FF:E2:11:AA:BB:00:60:16:38:D5:AE
+HBA/SP Pairs:
+
+  HBA UID                                          SP Name     SPPort
+  -------                                          -------     ------ 
+  20:00:00:00:C9:80:1B:83:10:00:00:00:C9:80:1B:83   SP A         4
+Host name:             taitc025.amer.int.tenneco.com
+  20:00:00:00:C9:80:1B:83:10:00:00:00:C9:80:1B:83   SP B         4
+Host name:             taitc025.amer.int.tenneco.com
+
+HLU/ALU Pairs:
+
+  HLU Number     ALU Number
+  ----------     ----------
+    0               255
+    1               256
+    2               257
+    3               258
+    4               259
+    5               260
+    6               261
+    7               262
+    10              267
+    11              420
+    12              455
+    17              729
+    19              802
+    20              822
+    21              859
+    8               270
+Shareable:             YES
+
+[nasadmin@ldcvnx53001cs0 ~]$</code>
+  - As could be seen only one host did exist in this storage group and its having some LUNs which we are going to remove from this group. Do not remove these LUNs are these are part of other STGs as these are VMWARE related. So let's remove them only from this group<code>/nas/sbin/navicli -h spa -Scope 0 storagegroup -removehlu -gname TAITC025 -hlu 0 1 2 3 4 5 6 7 10 11 12 17 19 20 21 8</code>
+  - Once done, let's disconnet this host from that STG<code>/nas/sbin/navicli -h spa -Scope 0 storagegroup -disconnecthost -host taitc025.amer.int.tenneco.com -gname TAITC025</code>
+  - Destroy that group as that was the only member<code>/nas/sbin/navicli -h spa -Scope 0 storagegroup -destroy -o -gname TAITC025</code>
+  - Check to which ports this server was registed with to VNX<code>/nas/sbin/navicli -h spa -Scope 0 port -list</code>
+  - And once the zonning of FC switch is already removed then the server should not be anylonger logged into VNX then you can remove it from VNX side<code>[nasadmin@ldcvnx53001cs0 ~]$ /nas/sbin/navicli -h spa -Scope 0 port -removeHBA -host taitc025.amer.int.tenneco.com
+
+Remove the following initiator records for: taitc025.amer.int.tenneco.com
+20:00:00:00:C9:80:1B:83:10:00:00:00:C9:80:1B:83 SP A-4
+20:00:00:00:C9:80:1B:83:10:00:00:00:C9:80:1B:83 SP B-4
+
+Only logged out but registered initiator records will be removed.  Do you want to continue  (y/n)? y
+[nasadmin@ldcvnx53001cs0 ~]$</code>
+  - V9000 storage array. Please check if any disk is mapped to this host<code>lshostvdiskmap</code> Since for this one there were not disk mappings this is to be updated
+  - [[san:vmax-reclamation|Follow the instructions for VMAX.]]

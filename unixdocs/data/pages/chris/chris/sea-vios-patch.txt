@@ -1,0 +1,11 @@
+====== Install VIOS SEA Adapter iFix  ======
+
+    - Log in to the VIOS as the user padmin.
+    - Exit the restricted shell <code> oem_setup_env </code> <code> set -o vi </code>
+    - Run an adhoc alt_disk_copy
+      - Find out the alt_disk<code>altdisk=$(lspv | grep -w altinst_rootvg | awk '{print $1}')</code>
+      - Remove the existing alt_disk<code>sudo alt_rootvg_op -X altinst_rootvg</code>
+      - Create an alt_disk<code>sudo alt_disk_copy -B -d ${altdisk}</code>
+   - On the Server to be patched, NFS mount the SEA Adapter patch location <code> sudo mount pgnmsv01:/prod/images/vio/vios2/fixpacks /mnt</code>
+
+      -Install the iFix for SEA Adapters <code>cd /mnt</code>  <code> sudo  emgr -e ./IJ12143sCd.190221.VIOS2.2.6.30-32.epkg.Z</code> Output should be success

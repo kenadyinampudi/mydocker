@@ -1,0 +1,30 @@
+====== Allocating storage on a single VIO environment ======
+
+  - Find out the parent VIO server(s). In most cases a frame only one VIO server. If it has more than one - use the following script to find the parent VIO server. Login to one of the VIO server(s). In this case, the VIO client is taitc102 and the VIO servers are vio60/70.<code>export PS1="$LOGNAME on "`hostname`":"'$PWD> '
+/usr/local/scripts/lsdiskcfg > /var/tmp/viostgconfig.out</code>Look for the VIO guest<code>grep dehrdb01 /var/tmp/viostgconfig.out | head -4
+hdiskpower241:00f72d67fc48f4d2:000190103339:05C6:138105:9:vhost5:taitc102:hdisk524:hdisk558
+hdiskpower242:00f72d67fc47c897:000190103339:1226:138105:9:vhost5:taitc102:hdisk525:hdisk559
+hdiskpower243:00f72d67fc46f508:000190103339:188A:34526:9:vhost5:taitc102:hdisk526:hdisk560
+hdiskpower244:00f72d67fc45e258:000190103339:188E:34526:9:vhost5:taitc102:hdisk527:hdisk561</code>This means vio60 does provide storage to taitc102.
+  - Request for storage on the correct VIO server. Submit a request to the storage team requesting storage to be presented on the correct VIO server.
+  - Once the disks are presented, document the VIO storage config<code>/usr/local/scripts/lsdiskcfg > /var/tmp/viostgconfig.out</code>
+  - Assign pvid to the disks. DO NOT COPY PASTE THIS ONTO PUTTY !!<code>for disk in hdisk28 hdisk29 hdisk30 hdisk31
+do
+  chdev -l ${disk} -a pv=yes
+done</code>
+  - Find out the vhost number<code>grep -w dehrdb01 /var/tmp/viostgconfig.out | head -1 | awk -F: '{print $7}'
+vhost3</code>
+  - Assign the disks to VIO guest<code>for disk in hdisk28 hdisk29
+do
+  mkvdev -vdev ${disk} -vadapter vhost3
+done</code>
+  - Discover the devices on the VIO guest. Login to taitc102 as root<code>lspv > /var/tmp/lspv.before.out
+cfgmgr
+lspv > /var/tmp/lspv.after.out
+diff /var/tmp/lspv.before.out /var/tmp/lspv.after.out
+26a27,31
+> hdisk26         00f72d677fd958a4                    None
+> hdisk27         00f72d677fdab206                    None
+> hdisk28         00f72d677fdbcf5d                    None
+> hdisk29         00f72d677fcd7b7d                    None
+> hdisk30         00f72d677fce7abd                    None</code>Please make sure to check and match the pvids.

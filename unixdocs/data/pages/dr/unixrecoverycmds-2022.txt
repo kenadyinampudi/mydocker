@@ -1,0 +1,66 @@
+====== NA - PTCA & MPPS - Disaster Recovery Test instructions (2022) ======
+
+{{:dr:dr-test-lets-do-this_.jpg?600|}}
+
+**Service now Link for the unix related tasks - copy and paste in the browser**
+
+https://onetenneco.service-now.com/nav_to.do?uri=%2Fx_222594_dr_task_list.do%3Fsysparm_order_direction%3Dasc%26sysparm_order%3Drecovery_sequence%2520%26%3D%26sysparm_query%3DstateNOT%2BIN2%252C3%252C4%252C7%252C8%252C1%255Eassignment_groupDYNAMICd6435e965f510100a9ad2572f2b47744%255Edr_event.state%253DActive%255EEQ%26sysparm_userpref_module%3D93e36b21db025300522a711ebf9619cc%26sysparm_clear_stack%3Dtrue
+
+  - find my group dr active tasks.
+  - expand the configuration items and proceed further with the task present over there one by one. 
+
+===== HMC, VSphere & NIM/Jump =====
+
+^System        			^Type    ^Hostname     ^IP Address    ^Username    ^Password   ^Notes                                           ^
+|phlvpams005.driv.com		|ESXi    |N/A          |134.238.206.43|AD account  |AD Password|For MPPS https://phlvpams005.driv.com/ui/                |
+|usfdcxvc001.pt.int.tenneco.com |ESXi    |N/A          |172.16.33.34  |AD account  |AD Password|For PTCA https://usfdcxvc001.pt.int.tenneco.com/ui/      |
+|PS NIM/JUMP Server		|AIX/NIM |pcdcunxaxap01|10.128.41.10  |AD account  |AD Password|For PS Servers use this Jump server                      |
+|MP NIM/JUMP Server		|AIX/NIM |SFLDMIAX241  |10.135.48.70  |AD account  |AD Password|For MP Servers use this Jump server                      |
+|PTCA JUMP Server		|Linux   |cdcpillx055  |10.131.12.34  |AD account  |AD Password|For PTCA Servers use this Jump server                    |
+|phlypahmc005.fmmotorparts.com  |HMC     |N/A          |10.98.21.21   |AD account  |AD Password|For MP   https://phlypahmc005.fmmotorparts.com/          |
+|phlypahmc011.pt.int.tenneco.com|HMC     |N/A          |172.16.32.28  |AD account  |AD Password|For PTCA https://phlypahmc011.pt.int.tenneco.com/        |
+|phlypahmc007.fmmotorparts.com  |HMC     |N/A          |10.98.21.41   |AD account  |AD Password|For PS   https://phlypahmc007.fmmotorparts.com/          |
+
+
+===== What we have to do to get CoD ? =====
+
+  - Go to website https://www.ibm.com/servers/eserver/ess/index.wss
+    - Sign in with your IBM ID (everyone has their own ID)
+    - Select My entitled hardware
+    - Select Elastic CoD - Download existing codes
+    - Enter Machine Type Model and Machine Serial (for Power 9 server the Machine Type Model is 9040-MR9 and Machine Serial is 78AAECX)
+    - Note code for PPAY - On/Off CoD Enablement Code for Processors  and MPAY - CoD Enablement Code for Memory
+  - Go to HMC - phlypahmc007
+    - Go to PHPVM022-9040-MR9-78AAECX
+    - In General Settings on the left hand side select COD functions
+    - Select Enter COD Codes
+    - TCOD is Processor
+    - TMOD is memory
+  - During DR Test
+    - Indicate how long before DR test COD should be executed. Preferably it should be executed as a part of the Test - at least couple of days
+    - Execute steps 1 and 2 from procedure in case of real disaster
+    - After the test deactivate COD
+
+** When in doubt, ask **
+
+{{:dr:whenindoubtask.jpg?400|}}
+
+** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremly careful ) **
+
+===== Prerequisites =====
+
+**In this section provide what needs to be delivered by other teams**
+  * DNS server is up and running - AD DCs -  Wintel 
+  * NTP is up and running - Wintel and Network teams (either Infoblox or dedicated Linux NTP servers)
+  * FDC VPN credentials are provided and PA GP VPN up and running - Network Team
+  * LPAR capacity (RAM and Memory) is reduced - executed during the profile build  - Unix team - every server was build with 70% of capacity and COD must be activated. (Check COD document)
+  * AIX Jump boxes: Unix team to deliver pcdcunxaxap01 and sfldmiax241   to be recovered with the top priority - DR Coordinator
+  * SAN Storage to be provisioned (for AIX clusters, both nodes to be presented)
+  * NIM server with mysysb images is up and running - Unix (in case recovery from backup would be required)
+  * Mksysb images should be stored on NetBackup or Actifio - Data Preservation (in case recovery from backup would be required)
+  * ISO AIX image needs to be stored at FDC - they are on NIM servers
+
+**Procedures**
+  - [[dr:nimrecoverycmds-2022|North America - MPPS & PTCA Disaster Recovery Test - 2022 - AIX Recovery Instruction]]
+
+{{:unix:enjoy_you_deserve_it.jpg?500|}}

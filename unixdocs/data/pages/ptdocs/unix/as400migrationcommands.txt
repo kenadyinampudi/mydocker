@@ -1,0 +1,240 @@
+=========== COR400 ===============================
+--- Stop Hitachi replication from CDCPILLX151/root
+''pairsplit -ISI5  -g COR400_CG10''
+
+--- Overwrite existing drives with copies from CDCPILLX151/storage to taprpur003
+<code>purevol copy --overwrite ORIG_COR400_VTSCSI0     COR400_VTSCSI0     
+purevol copy --overwrite ORIG_COR400_VTSCSI1     COR400_VTSCSI1     
+purevol copy --overwrite ORIG_COR400_VTSCSI2     COR400_VTSCSI2     
+purevol copy --overwrite ORIG_COR400_VTSCSI3     COR400_VTSCSI3     
+purevol copy --overwrite ORIG_COR400_VTSCSI4     COR400_VTSCSI4     
+purevol copy --overwrite ORIG_COR400_VTSCSI5     COR400_VTSCSI5     
+purevol copy --overwrite ORIG_COR400_VTSCSI6     COR400_VTSCSI6     
+purevol copy --overwrite ORIG_COR400_VTSCSI7     COR400_VTSCSI7     
+purevol copy --overwrite ORIG_COR400_VTSCSI8     COR400_VTSCSI8     
+purevol copy --overwrite ORIG_COR400_VTSCSI9     COR400_VTSCSI9 </code>    
+
+--- IPL the partition from CDCPILHMC010/hscroot
+
+--- Change zoning for the tape drives from CDCPILLX151/storage
+--- ssh to MDS01
+<code>no  device-alias name COR400_1A pwwn c0:50:76:09:bb:68:00:03
+no  device-alias name COR400_1 pwwn c0:50:76:09:bb:68:00:02
+no  device-alias name COR400_2A pwwn c0:50:76:09:bb:68:00:05
+no  device-alias name COR400_2 pwwn c0:50:76:09:bb:68:00:04
+  device-alias name COR400_1 pwwn c0:50:76:09:bb:68:00:96
+  device-alias name COR400_1A pwwn c0:50:76:09:bb:68:00:97
+  device-alias name COR400_2 pwwn c0:50:76:09:bb:68:00:90
+  device-alias name COR400_2A pwwn c0:50:76:09:bb:68:00:91</code>
+--- ssh to MDS02
+<code>no  device-alias name COR400_0A pwwn c0:50:76:09:bb:68:00:01
+no  device-alias name COR400_0 pwwn c0:50:76:09:bb:68:00:00
+no  device-alias name COR400_3A pwwn c0:50:76:09:bb:68:00:07
+no  device-alias name COR400_3 pwwn c0:50:76:09:bb:68:00:06
+    device-alias name COR400_0 pwwn c0:50:76:09:bb:68:00:92
+    device-alias name COR400_0A pwwn c0:50:76:09:bb:68:00:93
+    device-alias name COR400_3 pwwn c0:50:76:09:bb:68:00:94
+    device-alias name COR400_3A pwwn c0:50:76:09:bb:68:00:95</code>
+
+
+=========== MAN400 ===============================
+--- Stop Hitachi replication from CDCPILLX151/root
+''pairsplit -ISI5  -g MAN400_CG10''
+
+--- Overwrite existing drives with copies from CDCPILLX151/storage to taprpur003
+<code>purevol copy --overwrite ORIG_MAN400_VTSCSI10    MAN400_VTSCSI10    
+purevol copy --overwrite ORIG_MAN400_VTSCSI11    MAN400_VTSCSI11    
+purevol copy --overwrite ORIG_MAN400_VTSCSI12    MAN400_VTSCSI12    
+purevol copy --overwrite ORIG_MAN400_VTSCSI13    MAN400_VTSCSI13    
+purevol copy --overwrite ORIG_MAN400_VTSCSI14    MAN400_VTSCSI14    
+purevol copy --overwrite ORIG_MAN400_VTSCSI15    MAN400_VTSCSI15    
+purevol copy --overwrite ORIG_MAN400_VTSCSI16    MAN400_VTSCSI16    
+purevol copy --overwrite ORIG_MAN400_VTSCSI17    MAN400_VTSCSI17    
+purevol copy --overwrite ORIG_MAN400_VTSCSI18    MAN400_VTSCSI18    
+purevol copy --overwrite ORIG_MAN400_VTSCSI19    MAN400_VTSCSI19  </code>  
+
+--- IPL the partition from CDCPILHMC010/hscroot
+
+--- Change zoning for the tape drives from CDCPILLX151/storage
+--- ssh to MDS01
+<code>no  device-alias name MAN400_1A pwwn c0:50:76:09:bb:68:00:0b
+no  device-alias name MAN400_1 pwwn c0:50:76:09:bb:68:00:0a
+no  device-alias name MAN400_2A pwwn c0:50:76:09:bb:68:00:0d
+no  device-alias name MAN400_2 pwwn c0:50:76:09:bb:68:00:0c
+    device-alias name MAN400_1 pwwn c0:50:76:09:bb:68:00:88
+    device-alias name MAN400_1A pwwn c0:50:76:09:bb:68:00:89
+    device-alias name MAN400_2 pwwn c0:50:76:09:bb:68:00:8e
+    device-alias name MAN400_2A pwwn c0:50:76:09:bb:68:00:8f</code>
+--- ssh to MDS02
+<code>no  device-alias name MAN400_0A pwwn c0:50:76:09:bb:68:00:09
+no  device-alias name MAN400_0 pwwn c0:50:76:09:bb:68:00:08
+no  device-alias name MAN400_3A pwwn c0:50:76:09:bb:68:00:0f
+no  device-alias name MAN400_3 pwwn c0:50:76:09:bb:68:00:0e
+    device-alias name MAN400_0 pwwn c0:50:76:09:bb:68:00:8a
+    device-alias name MAN400_0A pwwn c0:50:76:09:bb:68:00:8b
+    device-alias name MAN400_3 pwwn c0:50:76:09:bb:68:00:8c
+    device-alias name MAN400_3A pwwn c0:50:76:09:bb:68:00:8d</code>
+
+
+
+=========== S652A3AC ===============================
+--- Stop Hitachi replication from CDCPILLX151/root \\ 
+''pairsplit -ISI5  -g S652A3AC_CG10''
+
+--- Check to make sure it's done.  Look for "psus" status. \\ 
+''pairdisplay -ISI5  -g S652A3AC_CG10 -fcx -CLI''
+
+--- Overwrite existing drives with copies from CDCPILLX151/storage to taprpur003
+<code>purevol copy --overwrite ORIG_S652A3AC_VTSCSI30  S652A3AC_VTSCSI30  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI31  S652A3AC_VTSCSI31  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI32  S652A3AC_VTSCSI32  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI33  S652A3AC_VTSCSI33  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI34  S652A3AC_VTSCSI34  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI35  S652A3AC_VTSCSI35  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI36  S652A3AC_VTSCSI36  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI37  S652A3AC_VTSCSI37  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI38  S652A3AC_VTSCSI38  
+purevol copy --overwrite ORIG_S652A3AC_VTSCSI39  S652A3AC_VTSCSI39  </code>
+
+--- IPL the partition from CDCPILHMC010/hscroot
+
+--- Change zoning for the tape drives from CDCPILLX151/storage
+--- ssh to MDS01
+<code>no  device-alias name S652A3AC_1A pwwn c0:50:76:09:bb:68:00:1b
+no  device-alias name S652A3AC_1 pwwn c0:50:76:09:bb:68:00:1a
+no  device-alias name S652A3AC_2A pwwn c0:50:76:09:bb:68:00:1d
+no  device-alias name S652A3AC_2 pwwn c0:50:76:09:bb:68:00:1c
+    device-alias name S652A3AC_1 pwwn c0:50:76:09:bb:68:00:78
+    device-alias name S652A3AC_1A pwwn c0:50:76:09:bb:68:00:79
+    device-alias name S652A3AC_2 pwwn c0:50:76:09:bb:68:00:7e
+    device-alias name S652A3AC_2A pwwn c0:50:76:09:bb:68:00:7f</code>
+--- ssh to MDS02
+<code>no  device-alias name S652A3AC_0A pwwn c0:50:76:09:bb:68:00:19
+no  device-alias name S652A3AC_0 pwwn c0:50:76:09:bb:68:00:18
+no  device-alias name S652A3AC_3A pwwn c0:50:76:09:bb:68:00:1f
+no  device-alias name S652A3AC_3 pwwn c0:50:76:09:bb:68:00:1e
+    device-alias name S652A3AC_0 pwwn c0:50:76:09:bb:68:00:7a
+    device-alias name S652A3AC_0A pwwn c0:50:76:09:bb:68:00:7b
+    device-alias name S652A3AC_3 pwwn c0:50:76:09:bb:68:00:7c
+    device-alias name S652A3AC_3A pwwn c0:50:76:09:bb:68:00:7d</code>
+
+
+
+=========== SFAS1EDB ===============================
+--- Stop Hitachi replication from CDCPILLX151/root
+''pairsplit -ISI5  -g SFAS1EDB_CG10''
+
+--- Overwrite existing drives with copies from CDCPILLX151/storage to taprpur003
+<code>purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI20  SFAS1EDB_VTSCSI20  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI21  SFAS1EDB_VTSCSI21  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI22  SFAS1EDB_VTSCSI22  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI23  SFAS1EDB_VTSCSI23  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI24  SFAS1EDB_VTSCSI24  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI25  SFAS1EDB_VTSCSI25  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI26  SFAS1EDB_VTSCSI26  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI27  SFAS1EDB_VTSCSI27  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI28  SFAS1EDB_VTSCSI28  
+purevol copy --overwrite ORIG_SFAS1EDB_VTSCSI29  SFAS1EDB_VTSCSI29  </code>
+
+--- IPL the partition from CDCPILHMC010/hscroot
+
+--- Change zoning for the tape drives from CDCPILLX151/storage
+--- ssh to MDS01
+<code>no  device-alias name SFAS1EDB_1A pwwn c0:50:76:09:bb:68:00:13
+no  device-alias name SFAS1EDB_1 pwwn c0:50:76:09:bb:68:00:12
+no  device-alias name SFAS1EDB_2A pwwn c0:50:76:09:bb:68:00:15
+no  device-alias name SFAS1EDB_2 pwwn c0:50:76:09:bb:68:00:14
+    device-alias name SFAS1EDB_1 pwwn c0:50:76:09:bb:68:00:80
+    device-alias name SFAS1EDB_1A pwwn c0:50:76:09:bb:68:00:81
+    device-alias name SFAS1EDB_2 pwwn c0:50:76:09:bb:68:00:86
+    device-alias name SFAS1EDB_2A pwwn c0:50:76:09:bb:68:00:87</code>
+--- ssh to MDS02
+<code>no  device-alias name SFAS1EDB_0A pwwn c0:50:76:09:bb:68:00:11
+no  device-alias name SFAS1EDB_0 pwwn c0:50:76:09:bb:68:00:10
+no  device-alias name SFAS1EDB_3A pwwn c0:50:76:09:bb:68:00:17
+no  device-alias name SFAS1EDB_3 pwwn c0:50:76:09:bb:68:00:16
+    device-alias name SFAS1EDB_0 pwwn c0:50:76:09:bb:68:00:82
+    device-alias name SFAS1EDB_0A pwwn c0:50:76:09:bb:68:00:83
+    device-alias name SFAS1EDB_3 pwwn c0:50:76:09:bb:68:00:84
+    device-alias name SFAS1EDB_3A pwwn c0:50:76:09:bb:68:00:85</code>
+
+
+
+
+=========== SFLDAS10 ===============================
+--- Stop Hitachi replication from CDCPILLX151/root
+''pairsplit -ISI5  -g SFLDAS10_CG10''
+
+--- Overwrite existing drives with copies from CDCPILLX151/storage to taprpur003
+<code>purevol copy --overwrite ORIG_SFLDAS10_VTSCSI70  SFLDAS10_VTSCSI70  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI71  SFLDAS10_VTSCSI71  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI72  SFLDAS10_VTSCSI72  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI73  SFLDAS10_VTSCSI73  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI74  SFLDAS10_VTSCSI74  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI75  SFLDAS10_VTSCSI75  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI76  SFLDAS10_VTSCSI76  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI77  SFLDAS10_VTSCSI77  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI78  SFLDAS10_VTSCSI78  
+purevol copy --overwrite ORIG_SFLDAS10_VTSCSI79  SFLDAS10_VTSCSI79  </code>
+
+--- IPL the partition from CDCPILHMC010/hscroot
+
+--- Change zoning for the tape drives from CDCPILLX151/storage
+--- ssh to MDS01
+<code>no  device-alias name SFLDAS10_1A pwwn c0:50:76:09:bb:68:00:3b
+no  device-alias name SFLDAS10_1 pwwn c0:50:76:09:bb:68:00:3a
+no  device-alias name SFLDAS10_2A pwwn c0:50:76:09:bb:68:00:3d
+no  device-alias name SFLDAS10_2 pwwn c0:50:76:09:bb:68:00:3c
+    device-alias name SFLDAS10_1 pwwn c0:50:76:09:bb:68:00:58
+    device-alias name SFLDAS10_1A pwwn c0:50:76:09:bb:68:00:59
+    device-alias name SFLDAS10_2 pwwn c0:50:76:09:bb:68:00:5e
+    device-alias name SFLDAS10_2A pwwn c0:50:76:09:bb:68:00:5f</code>
+--- ssh to MDS02
+<code>no  device-alias name SFLDAS10_0A pwwn c0:50:76:09:bb:68:00:39
+no  device-alias name SFLDAS10_0 pwwn c0:50:76:09:bb:68:00:38
+no  device-alias name SFLDAS10_3A pwwn c0:50:76:09:bb:68:00:3f
+no  device-alias name SFLDAS10_3 pwwn c0:50:76:09:bb:68:00:3e
+    device-alias name SFLDAS10_0 pwwn c0:50:76:09:bb:68:00:5a
+    device-alias name SFLDAS10_0A pwwn c0:50:76:09:bb:68:00:5b
+    device-alias name SFLDAS10_3 pwwn c0:50:76:09:bb:68:00:5c
+    device-alias name SFLDAS10_3A pwwn c0:50:76:09:bb:68:00:5d</code>
+
+
+
+=========== USCAGS02 ===============================
+--- Stop Hitachi replication from CDCPILLX151/root
+''pairsplit -ISI5  -g USCAGS02_CG10''
+
+--- Overwrite existing drives with copies from CDCPILLX151/storage to taprpur003
+<code>purevol copy --overwrite ORIG_USCAGS02_VTSCSI40  USCAGS02_VTSCSI40  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI41  USCAGS02_VTSCSI41  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI42  USCAGS02_VTSCSI42  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI43  USCAGS02_VTSCSI43  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI44  USCAGS02_VTSCSI44  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI45  USCAGS02_VTSCSI45  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI46  USCAGS02_VTSCSI46  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI47  USCAGS02_VTSCSI47  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI48  USCAGS02_VTSCSI48  
+purevol copy --overwrite ORIG_USCAGS02_VTSCSI49  USCAGS02_VTSCSI49  </code>
+
+--- IPL the partition from CDCPILHMC010/hscroot
+
+--- Change zoning for the tape drives from CDCPILLX151/storage
+--- ssh to MDS01
+<code>no  device-alias name USCAGS02_1A pwwn c0:50:76:09:bb:68:00:23
+no  device-alias name USCAGS02_1 pwwn c0:50:76:09:bb:68:00:22
+no  device-alias name USCAGS02_2A pwwn c0:50:76:09:bb:68:00:25
+no  device-alias name USCAGS02_2 pwwn c0:50:76:09:bb:68:00:24
+    device-alias name USCAGS02_1 pwwn c0:50:76:09:bb:68:00:70
+    device-alias name USCAGS02_1A pwwn c0:50:76:09:bb:68:00:71
+    device-alias name USCAGS02_2 pwwn c0:50:76:09:bb:68:00:76
+    device-alias name USCAGS02_2A pwwn c0:50:76:09:bb:68:00:77</code>
+--- ssh to MDS02
+<code>no  device-alias name USCAGS02_0A pwwn c0:50:76:09:bb:68:00:21
+no  device-alias name USCAGS02_0 pwwn c0:50:76:09:bb:68:00:20
+no  device-alias name USCAGS02_3A pwwn c0:50:76:09:bb:68:00:27
+no  device-alias name USCAGS02_3 pwwn c0:50:76:09:bb:68:00:26
+    device-alias name USCAGS02_0 pwwn c0:50:76:09:bb:68:00:72
+    device-alias name USCAGS02_0A pwwn c0:50:76:09:bb:68:00:73
+    device-alias name USCAGS02_3 pwwn c0:50:76:09:bb:68:00:74
+    device-alias name USCAGS02_3A pwwn c0:50:76:09:bb:68:00:75</code>

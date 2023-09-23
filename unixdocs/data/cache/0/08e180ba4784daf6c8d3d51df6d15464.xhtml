@@ -1,0 +1,51 @@
+
+<h1 class="sectionedit1" id="vios_ivm_recovery">VIOS/IVM recovery</h1>
+<div class="level1">
+
+<p>
+We backup these on a VIOS server
+</p>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Item</th><th class="col1">Description</th><th class="col2">Script</th><th class="col3">Location</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">mksysb</td><td class="col1">Contains device drivers and things specific to the system.</td><td class="col2">/usr/local/scripts/mksysb.sh</td><td class="col3">/mksysb-images/ on mksysbhost</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">profdata</td><td class="col1">PowerVM LPAR definitions.</td><td class="col2">/usr/local/scripts/mksysb.sh</td><td class="col3">/mksysb-images/profdata on mksysbhost</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">viosbr</td><td class="col1">Virtual IO devices and config</td><td class="col2">/usr/local/scripts/mksysb.sh</td><td class="col3">/mksysb-images/profdata on mksysbhost</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [68-439] -->
+<p>
+<strong> Recovery </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> If recovery is on a IVM, Restore the profile data from prodfdata backup</div>
+</li>
+<li class="level1"><div class="li"> Restore VIOSBR using viosbr command.</div>
+</li>
+</ul>
+
+<p>
+** Reset Server Name and Serial number in NVRAM
+</p>
+<ul>
+<li class="level1"><div class="li"> This makes IVM Accessable <pre class="code">ifconfig en0 &lt;ip&gt; netmask &lt;up&gt;  </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Open a browser window to the VIO server  <pre class="code"> http://taprvioX </pre>
+
+<p>
+ Where X is the name of the VIO server 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Select  View/Modify System properties from the left side menu  nd update the system name - example Server-7998-61X-SN100AACA and click on eth APPLY button to save your entry</div>
+</li>
+</ul>
+
+</div>

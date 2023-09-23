@@ -1,0 +1,63 @@
+====== Dell Firmware Update ======
+\\
+These are current instructions for updating Dell Firmware. \\
+This makes use of the [[unix:dellrepositorymanager | Dell Repository Manager]] to generate an NFS share with all the Dell firmware drivers for use in the PTT/CA environment. \\
+==== Preupgrade ====
+  - Get permission to reboot the box.  All firmware updates (except the DRAC updates) will require the box to be rebooted to take effect.
+  - Reboot the DRAC\\ This is a preemptive reboot.  Firmware updates can fail in unusual ways if the DRAC had not been rebooted in a while.  Rebooting the DRAC is a non-disruptive task.
+  - Determine the current code level \\ 
+There are three states a server will be in: \\
+  * [[unix:dellfirmwareupdate#Current_iDRAC_Firmware | Current iDRAC version]]
+  * [[unix:dellfirmwareupdate#iDRAC_Firmware_2.41.40.40_or_Newer | 2.41.40.40 or newer]]
+  * [[unix:dellfirmwareupdate#iDRAC_Firmware_Older_than_2.41.40.40 | Older than 2.41.40.40]]
+
+=== Current iDRAC Firmware ===
+  * As of 12/10/2020, this means iDRAC is at version 2.65.65.65
+  * Nothing more needs to be done to iDRAC.  Proceed to update the firmware as indicated below.
+
+=== iDRAC Firmware 2.41.40.40 or Newer ===
+  * As of 12/10/2020, this means iDRAC is at version 2.41.40.40 or higher
+  * Proceed to update the firmware as indicated below. 
+  * Make sure to select the iDRAC firmware update as well.  This will add a couple of iDRAC reboots to the process.
+
+=== iDRAC Firmware Older than 2.41.40.40 ===
+  * As of 12/10/2020, this means iDRAC is less than version 2.41.41.40
+  * Manually update the firmware to version 2.41.41.40 first.
+    * Copy \\cdcpilns013.federalmogul.com\iso\drivers\hpcc\iDRAC_Firmware\iDRAC-2.41.40.40-intermediate-firmware.d7 locally to your computer.
+    * Go through the iDRAC "Update and Rollback" process.  
+    * Select "File".
+    * Choose the file you downloaded locally
+    * Wait for the reboot, then proceed with [[unix:dellfirmwareupdate#iDRAC_Firmware_2.41.40.40_or_Newer | 2.41.40.40 or newer]]
+
+==== iDRAC7 or iDRAC8 ====
+{{:unix:drac8_splash.png?nolink&400| iDRAC 7/8 Splash Screen}}
+==== iDRAC9 ====
+{{:unix:drac9_splash.png?nolink&400| iDRAC 7/8 Splash Screen}}
+==== Steps ====
+
+  - Reset the DRAC
+  - Log into the DRAC
+    - Get credentials from Secret Server
+=== For DRAC 7/8 ===
+    - Go to iDRAC Settings -> Update and Rollback \\ {{:unix:drac8_update.png?nolink&400|}}
+	- On "Update Tab", select "Network Share"
+	- Choose "NFS" \\ {{:unix:drac8_updatevariables.png?nolink&400|}}
+
+^ Variable ^ Value ^ 
+| IP Address | 172.16.33.51 | 
+| Share Name | dell | 
+
+	- Select all available updates.
+	- Click "Install and Reboot".  This will cause the box to reboot.
+
+=== For DRAC 9 ===
+    - Go to Maintenance -> System Update \\ {{:unix:drac9_update.png?nolink&400|}}
+	- Change "Location Type" to "Network Share"
+	- Change "Protocol" to "NFS"  \\  \\ {{:unix:drac9_updatevariables.png?nolink&400|}}
+
+^ Variable ^ Value ^
+| IP Address | 172.16.33.51 |
+| Share Name | dell |
+
+    - Click "Check for Updates"	
+	- Select all available updates, click "Install and Reboot" \\ This will cause a reboot of the whole box

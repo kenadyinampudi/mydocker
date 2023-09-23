@@ -1,0 +1,250 @@
+
+<h1 class="sectionedit1" id="restore_instructions_for_backups_taken_using_pure_storage_snapshots">Restore instructions for backups taken using Pure Storage snapshots</h1>
+<div class="level1">
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Instance Name</th><th class="col1">Server Name</th><th class="col2">Test Server Name</th><th class="col3">Oracle id</th><th class="col4">Group</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">IT0          </td><td class="col1 leftalign">tedv2d01   </td><td class="col2 leftalign">pocafasv01      </td><td class="col3 leftalign">orait0   </td><td class="col4 leftalign">dba  </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign">FTA          </td><td class="col1 leftalign">qaerdb01   </td><td class="col2 leftalign">pocafasv01      </td><td class="col3 leftalign">orafta   </td><td class="col4 leftalign">dba  </td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [84-266] -->
+</div>
+<!-- EDIT1 SECTION "Restore instructions for backups taken using Pure Storage snapshots" [1-267] -->
+<h2 class="sectionedit3" id="define_variables_depending_on_the_system_we_are_working_against">Define variables depending on the system we are working against</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the admin server<pre class="code">ssh pgunap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define some variables for ease of use</div>
+<ol>
+<li class="level2"><div class="li"> If doing IT0 refresh<pre class="code">export INSTANCE=&quot;IT0&quot;
+export SRCHOST=&quot;tedv2d01&quot;
+export ARRAY=&quot;ldcpm70v1&quot;
+export TESTHOST=&quot;pocafasv01&quot;
+export ORAUID=301</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If doing FTA refresh<pre class="code">export INSTANCE=&quot;FTA&quot;
+export SRCHOST=&quot;qaerdb01&quot;
+export ARRAY=&quot;ldcpm70v1&quot;
+export TESTHOST=&quot;pocafasv01&quot;
+export ORAUID=1082</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If doing H1D refresh<pre class="code">export INSTANCE=&quot;H1D&quot;
+export SRCHOST=&quot;dehrdb99&quot;
+export ARRAY=&quot;inxpm20v1&quot;
+export TESTHOST=&quot;pocpuresv01&quot;
+export ORAUID=&quot;3210&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If doing H1T refresh<pre class="code">export INSTANCE=&quot;H1T&quot;
+export SRCHOST=&quot;qehrdb01&quot;
+export ARRAY=&quot;inxpm20v1&quot;
+export TESTHOST=&quot;pocpuresv01&quot;
+export ORAUID=&quot;211&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> export some additional variables<pre class="code">export ADMHOST=&quot;pgunap01&quot;
+export PGRP=&quot;${INSTANCE}DAILYBKP&quot;
+export SSH2PURE=&quot;sudo -u sanmontr ssh pureuser@${ARRAY}&quot;
+export ORAOWNER=&quot;ora$(echo ${INSTANCE} | tr &#039;[A-Z]&#039; &#039;[a-z]&#039;)&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get the disk to vg map from source system<pre class="code">ssh ${SRCHOST} &quot;sudo /usr/local/scripts/lsvpcfg.sh&quot; &gt; lsvpcfg.out.${SRCHOST}</pre>
+
+<p>
+Copy to target system
+</p>
+<pre class="code">scp lsvpcfg.out.${SRCHOST} ${TESTHOST}:lsvpcfg.out.recovery</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Define variables depending on the system we are working against" [268-1542] -->
+<h2 class="sectionedit4" id="create_user_and_group_on_test_server">Create user and group on TEST SERVER</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create Database group <pre class="code">ssh ${TESTHOST} &quot;sudo mkgroup id=201 dba&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create Oracle DB Owner<pre class="code">ssh ${TESTHOST} &quot;sudo mkuser id=${ORAUID} pgrp=dba groups=dba home=/oracle/${INSTANCE} shell=/bin/csh gecos=\&quot;SAP Database Administrator\&quot; ${ORAOWNER}&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Create user and group on TEST SERVER" [1543-1865] -->
+<h2 class="sectionedit5" id="copy_snapshots_to_volumes_and_allocate_to_the_test_system">Copy snapshots to volumes and allocate to the test system</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Logout from the TEST HOST back in to to pgunap01</div>
+</li>
+<li class="level1"><div class="li"> List the available snapshots<pre class="code">${SSH2PURE} purepgroup list --snap ${PGRP}</pre>
+
+<p>
+The output should be like
+</p>
+<pre class="code">Name            Source       Created                
+IT0DAILYBKP.23  IT0DAILYBKP  2017-12-12 22:00:00 CST
+IT0DAILYBKP.22  IT0DAILYBKP  2017-12-11 22:00:00 CST
+IT0DAILYBKP.21  IT0DAILYBKP  2017-12-10 22:00:00 CST
+IT0DAILYBKP.20  IT0DAILYBKP  2017-12-09 22:00:00 CST
+IT0DAILYBKP.19  IT0DAILYBKP  2017-12-08 22:00:00 CST
+IT0DAILYBKP.18  IT0DAILYBKP  2017-12-07 22:00:00 CST
+IT0DAILYBKP.17  IT0DAILYBKP  2017-12-06 22:00:00 CST
+IT0DAILYBKP.16  IT0DAILYBKP  2017-12-05 22:00:00 CST
+IT0DAILYBKP.15  IT0DAILYBKP  2017-12-04 22:00:00 CST
+IT0DAILYBKP.14  IT0DAILYBKP  2017-12-03 22:00:00 CST</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Pick the last snapshot to restore to<pre class="code">export SNAP=&quot;IT0DAILYBKP.20&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List snapshot volumes<pre class="code">${SSH2PURE} purevol list --snap --pgrouplist ${SNAP}</pre>
+
+<p>
+The output should be like
+</p>
+<pre class="code">IT0DAILYBKP.22.it0dbdata_001  512G  it0dbdata_001  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADA
+IT0DAILYBKP.22.it0dbdata_002  512G  it0dbdata_002  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADB
+IT0DAILYBKP.22.it0dbdata_003  512G  it0dbdata_003  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADC
+IT0DAILYBKP.22.it0dbdata_004  512G  it0dbdata_004  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADD
+....
+lines deleted
+....
+IT0DAILYBKP.22.it0dbdata_037  512G  it0dbdata_037  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AFE
+IT0DAILYBKP.22.it0dbdata_038  512G  it0dbdata_038  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AFF
+IT0DAILYBKP.22.tedv2d01_001   138G  tedv2d01_001   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD1
+IT0DAILYBKP.22.tedv2d01_002   138G  tedv2d01_002   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD2
+IT0DAILYBKP.22.tedv2d01_003   102G  tedv2d01_003   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD7
+....
+lines deleted
+....
+IT0DAILYBKP.22.tedv2d01_007   102G  tedv2d01_007   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD3
+IT0DAILYBKP.22.tedv2d01_008   34G   tedv2d01_008   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD9
+IT0DAILYBKP.22.tedv2d01_009   34G   tedv2d01_009   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD8</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the snapshots to target volumes</div>
+<ol>
+<li class="level2"><div class="li"> Export a start number for volume<pre class="code">export vol_no=300</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Store the snapshot volumes in a variable<pre class="code">export snapshots=$(${SSH2PURE} purevol list --snap --pgrouplist ${SNAP} --notitle | grep -v 138G | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot;)</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Copy the snapshots to volumes<pre class="code">target_vols=&quot;&quot;
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${TESTHOST}_${vol_no}
+   target_vols=&quot;${target_vols} ${TESTHOST}_${vol_no}&quot;
+   vol_no=$((vol_no+1))
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Preserve the target volumes in a file<pre class="code">echo ${target_vols} &gt; ${INSTANCE}.poc.volumes</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Connect the volumes to TEST host<pre class="code">${SSH2PURE} purevol connect --host ${TESTHOST} ${target_vols}</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Copy snapshots to volumes and allocate to the test system" [1866-4921] -->
+<h2 class="sectionedit6" id="mount_the_filesystems_and_handover_to_dba_team">Mount the filesystems and handover to DBA team</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the target host<pre class="code">ssh ${TESTHOST}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of the existing disks<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Discover new devices<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of the new disks<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Recreate the VGs and change the PVIDs<pre class="code">cat lsvpcfg.out.recovery | grep hdisk | grep -v rootvg &gt; diskmap</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> fsck and mount them<pre class="code">for VG in $(awk -F: &#039;{print $NF}&#039; diskmap | sort -u )
+do
+   echo &quot;$(date) :: Working on ${VG}&quot;
+   grep &quot;:${VG}$&quot; diskmap | awk -F: &#039;{print $2}&#039; &gt; ${VG}.pvids
+   disks=$(lspv | grep -wf ${VG}.pvids | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot; )
+   echo &quot;$(date) :: Working on ${VG} -- recreatevg in progress&quot;
+   sudo recreatevg -Y/ -L/ -y ${VG} ${disks}
+   for fs in $(lsvgfs ${VG} | sort )
+   do
+   echo &quot;$(date) :: Working on ${VG} -- ${fs} fsck and mount in progress&quot;
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Handover the system  to <abbr title="Database Administrator">DBA</abbr> for recovery.</div>
+</li>
+<li class="level1"><div class="li"> <abbr title="Database Administrator">DBA</abbr> to recover DB on pocafasv01.</div>
+</li>
+<li class="level1"><div class="li"> <abbr title="Database Administrator">DBA</abbr> to shutdown the DB and hand it over to Unix/Storage team.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Mount the filesystems and handover to DBA team" [4922-6148] -->
+<h2 class="sectionedit7" id="cleanup_the_test_volumes">Cleanup the test volumes</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to admin server <code>pgunap01</code><pre class="code">ssh pgunap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="#define_variables_depending_on_the_system_we_are_working_against" title="chris:restorefromsnapshotspure ↵" class="wikilink1">Define variables depending on the system we are working against</a></div>
+</li>
+<li class="level1"><div class="li"> Remove fs, vg and devices from the target host.<pre class="code">ssh ${TESTHOST}</pre>
+<pre class="code">for VG in $(lsvg | grep -v rootvg | sort -r )
+do
+   echo &quot;$(date) -- Working on ${VG} &quot;
+   disks=$(lspv | grep -w ${VG} | awk &#039;{print $1}&#039; | tr &quot;\n&quot; &quot; &quot; )
+   for fs in $(lsvgfs ${VG} | sort -r )
+   do
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -uck ${fs}
+         sudo umount ${fs}
+      fi   
+   done      
+   sudo varyoffvg ${VG}
+   sudo exportvg ${VG}
+   echo ${disks} | xargs -n1 sudo rmdev -dl
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disconnect from target host<pre class="code">exit</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disconnect the volumes<pre class="code">${SSH2PURE} purevol disconnect --host ${TESTHOST} $(cat ${INSTANCE}.poc.volumes ) 
+${SSH2PURE} purevol destroy $(cat ${INSTANCE}.poc.volumes )</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Cleanup the test volumes" [6149-] -->

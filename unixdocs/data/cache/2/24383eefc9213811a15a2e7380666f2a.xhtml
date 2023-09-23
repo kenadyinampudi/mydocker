@@ -1,0 +1,404 @@
+
+<h1 class="sectionedit1" id="pta_db_ci_split_-_jan_12th_outage_plan">PTA DB/CI Split - Jan 12th Outage plan</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "PTA DB/CI Split - Jan 12th Outage plan" [1-54] -->
+<h2 class="sectionedit2" id="before_the_outage">Before the Outage</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create an alt_disk_copy of PTA Boot disks to the SAN disks allocated on tapr1d01<pre class="code">sudo alt_disk_copy -d &quot;hdisk8 hdisk9&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable all PTA related jobs – Email Suresh Cherody</div>
+</li>
+<li class="level1"><div class="li"> Perform rsync of CI filesystems – 08:00 PM</div>
+<ol>
+<li class="level2"><div class="li"> Login to tapr1d01. Execute these scripts<pre class="code">sudo ksh -x /home/x1kxk630/copyscripts/batcha
+sudo ksh -x /home/x1kxk630/copyscripts/batchb
+sudo ksh -x /home/x1kxk630/copyscripts/batchc
+sudo ksh -x /home/x1kxk630/copyscripts/batchd
+sudo ksh -x /home/x1kxk630/copyscripts/batche</pre>
+
+<p>
+<a href="/doku.php?id=unix:pta-split-work-cicopy" class="wikilink1" title="unix:pta-split-work-cicopy">For details Click here</a>
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform rsync of CI filesystems – 09:00 PM</div>
+<ol>
+<li class="level2"><div class="li"> Login to tapr1d01. Execute these scripts<pre class="code">sudo ksh -x /home/x1kxk630/copyscripts/batcha
+sudo ksh -x /home/x1kxk630/copyscripts/batchb
+sudo ksh -x /home/x1kxk630/copyscripts/batchc
+sudo ksh -x /home/x1kxk630/copyscripts/batchd
+sudo ksh -x /home/x1kxk630/copyscripts/batche</pre>
+
+<p>
+<a href="/doku.php?id=unix:pta-split-work-cicopy" class="wikilink1" title="unix:pta-split-work-cicopy">For details Click here</a>
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Inform Service Desk about PTA downtime starting in 15 minutes</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Before the Outage" [55-1127] -->
+<h2 class="sectionedit3" id="outage_starts">Outage starts</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> <a href="http://taitc212/cgi-bin/active_bo.cgi" class="urlextern" title="http://taitc212/cgi-bin/active_bo.cgi"  rel="nofollow">Verify all blackouts</a></div>
+</li>
+<li class="level1"><div class="li"> Stop Autosys application – Inform Moon Do</div>
+</li>
+<li class="level1"><div class="li"> Stop Connect Direct application – Inform Moon Do</div>
+</li>
+<li class="level1"><div class="li"> Stop EDI – Inform Shrikant</div>
+</li>
+<li class="level1"><div class="li"> Shutdown PTA application CI, DB and App servers. Also disable automatic startup of SAP on App servers.</div>
+</li>
+<li class="level1"><div class="li"> Validate all SAP processes are down<pre class="code">for host in tapr1d01 paerap01h paerap02h paerap03h paerap04h paerap05h
+do
+   echo &quot;Checking on ${host} ....... &quot;
+   echo &quot;&quot;
+   ssh 2&gt;/dev/null ${host} &quot;ps -ef | grep sap&quot;
+   echo &quot;&quot;
+   echo &quot;&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm PTA database is down – Inform Kempe</div>
+</li>
+<li class="level1"><div class="li"> <a href="https://storagedocs/doku.php?id=san:pta-splitwork&amp;#take_a_snapshot_of_pta_db_ci_server_-_tapr1d01" class="urlextern" title="https://storagedocs/doku.php?id=san:pta-splitwork&amp;#take_a_snapshot_of_pta_db_ci_server_-_tapr1d01"  rel="nofollow">After PTA is brought down, take a snapshot of tapr1d01</a></div>
+</li>
+<li class="level1"><div class="li"> Unmount PTA NFS from daap3p01 daerap01h<pre class="code">ssh daap3p01  sudo umount /usr/sap/trans
+ssh daerap01h sudo umount /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount PTA NFS from paap3p01 and daerap99<pre class="code">ssh paap3p01 sudo umount /sapmnt/PTA/global
+ssh paap3p01 sudo umount /sapmnt/PTA/profile
+ssh paap3p01 sudo umount /sapmnt/PTA/exe
+ssh paap3p01 sudo umount /sapcomm/PTA/ftpgis
+ssh daerap99 sudo umount /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount PTA NFS from qaerap01h and qaerdb01<pre class="code">ssh qaerap01h sudo umount /usr/sap/trans
+ssh qaerdb01  sudo umount /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify all NFS mounts are offline from tapr1d01<pre class="code">netstat -an | grep 2049 | grep ESTA</pre>
+
+<p>
+It should produce no output.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable NFS and stop exports on tapr1d01<pre class="code">sudo exportfs -ua
+sudo mv /etc/exports /etc/exports.01122019.cisplit</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform final rsync of CI filesystems</div>
+<ol>
+<li class="level2"><div class="li"> Login to tapr1d01. Execute these scripts<pre class="code">sudo ksh -x /home/x1kxk630/copyscripts/batcha
+sudo ksh -x /home/x1kxk630/copyscripts/batchb
+sudo ksh -x /home/x1kxk630/copyscripts/batchc
+sudo ksh -x /home/x1kxk630/copyscripts/batchd
+sudo ksh -x /home/x1kxk630/copyscripts/batche</pre>
+
+<p>
+<a href="/doku.php?id=unix:pta-split-work-cicopy" class="wikilink1" title="unix:pta-split-work-cicopy">For details Click here</a>
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove /comm, /sapmedia, /sapcomm/PTA/archive NFS mounts on tapr1d01.</div>
+<ol>
+<li class="level2"><div class="li"> First backup filesystems<pre class="code">sudo cp /etc/filesystems /etc/filesystems.01122019.cisplit</pre>
+
+<p>
+Remove NFS mounts
+</p>
+<pre class="code">sudo rmnfsmnt -f /comm
+sudo rmnfsmnt -f /sapmedia
+sudo rmnfsmnt -f /sapcomm/PTA/archive</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Unmount and disable auto mount SAP CI filesystems on tapr1d01<pre class="code">sudo umount /usr/sap/trans
+sudo umount /usr/sap/putdi
+sudo umount /usr/sap/put
+sudo umount /usr/sap/PTA/D00/sort
+sudo umount /usr/sap/DAA
+sudo umount /usr/ecc
+sudo umount /usr/TBS
+sudo umount /taedi53
+sudo umount /sapmnt
+sudo umount /opt/vertex
+sudo umount /edi
+sudo umount /sapcomm/PTA/ftpgis
+sudo umount /sapcomm/PTA/PWC
+sudo umount /sapcomm
+sudo umount /application
+sudo umount /taedi61
+sudo umount /users/unispool</pre>
+<pre class="code">sudo chfs -A no /usr/sap/trans
+sudo chfs -A no /usr/sap/putdi
+sudo chfs -A no /usr/sap/put
+sudo chfs -A no /usr/sap/PTA/D00/sort
+sudo chfs -A no /usr/sap/DAA
+sudo chfs -A no /usr/ecc
+sudo chfs -A no /usr/TBS
+sudo chfs -A no /taedi53
+sudo chfs -A no /sapmnt
+sudo chfs -A no /opt/vertex
+sudo chfs -A no /edi
+sudo chfs -A no /sapcomm/PTA/ftpgis
+sudo chfs -A no /sapcomm/PTA/PWC
+sudo chfs -A no /sapcomm
+sudo chfs -A no /application
+sudo chfs -A no /taedi61
+sudo chfs -A no /users/unispool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Boot from alt_disk_copy and sign off. Login to tapr1d01</div>
+<ol>
+<li class="level2"><div class="li"> Change Bootlist<pre class="code">sudo bootlist -m normal hdisk8 hdisk9</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Change the bootlist back to the original disks<pre class="code">sudo bootlist -m normal hdisk2 hdisk5</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove Openview on tapr1d01 – Inform John</div>
+</li>
+<li class="level1"><div class="li"> Rename and Re-IP tapr1d01 → paerdb99.</div>
+<ol>
+<li class="level2"><div class="li"> Change the hostname and front end IP address<pre class="code">/usr/sbin/mktcpip -h paerdb99 -a 10.0.48.213 -m 255.255.255.0 -i en8 -g 10.0.48.1 -A no -s</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Change the bck IP address<pre class="code">sudo chdev -l en9 -a netaddr=10.0.49.213 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Fix hosts file<pre class="code">sudo cp /etc/hosts /etc/hosts.01122019.backup</pre>
+<pre class="code">sudo cp /etc/hosts.01122019.new /etc/hosts</pre>
+
+<p>
+<strong>Unix team – Validate this file <code>/etc/hosts.01122019.new</code> </strong>
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform a reboot of paerdb99<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform <abbr title="Operating System">OS</abbr> upgrade on paerdb99 – Inform Chris</div>
+</li>
+<li class="level1"><div class="li"> Perform <abbr title="Operating System">OS</abbr> upgrade on PTA App servers paerap01h, paerap02h and update NFS mounts to be from paerap00 instead of tapr1d01 – Inform Shukant</div>
+</li>
+<li class="level1"><div class="li"> Perform <abbr title="Operating System">OS</abbr> upgrade on PTA App servers paerap03h, paerap04h, paerap05h  and update NFS mounts to be from paerap00 instead of tapr1d01 – Inform Vasu</div>
+</li>
+<li class="level1"><div class="li"> Configure the VIP on paerap99 for SAP Central instance and start NFS exports</div>
+<ol>
+<li class="level2"><div class="li"> Configure VIP<pre class="code">sudo ifconfig en0 alias 10.0.48.102 netmask 255.255.255.0 up</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Start NFS<pre class="code">sudo /usr/sbin/mknfs &#039;-B&#039;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Validate NFS daemons<pre class="code">lssrc -g nfs</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Validate NFS exports<pre class="code">sudo exportfs</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Re-configure SAP application to use the new Central Instance – Inform Saba</div>
+</li>
+<li class="level1"><div class="li"> Re-configure SAP application to use the new database connection ( paerdb00) – Inform Saba</div>
+</li>
+<li class="level1"><div class="li"> Add /sapmnt/PTA NFS mount on paerdb99<pre class="code">sudo vi /etc/filesystems</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">/sapmnt/PTA:
+        dev             = &quot;/sapmnt/PTA&quot;
+        vfs             = nfs
+        nodename        = paerap00
+        mount           = true
+        options         = rw,bg,soft,intr,sec=sys
+        account         = false</pre>
+
+<p>
+Then mount it
+</p>
+<pre class="code">sudo mkdir -p /sapmnt/PTA
+sudo mount /sapmnt/PTA</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run alias99.sh on paerdb99 and configure Virtual IP<pre class="code">sudo /root/cluster/alias99.sh</pre>
+
+<p>
+<strong>Please implement this script on tapr1d01 – It is not there</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Reconfigure Oracle to reflect the hostname changes and  Virtual IP address on paerdb99. – Inform Kempe</div>
+</li>
+<li class="level1"><div class="li"> Reconfigure the snapshot backups of PTA to use the new database servername (paerdb99). Login to taqa1d01</div>
+<ol>
+<li class="level2"><div class="li"> Backup the config file<pre class="code">sudo cp /admin/backups/etc/puresnap.PTA.config /admin/backups/etc/puresnap.PTA.config.01122019.cisplit</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the new configuration file<pre class="code">sudo cp /admin/backups/etc/puresnap.PTA.config.new.cicplit /admin/backups/etc/puresnap.PTA.config</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install Openview agent and deploy SAP PTA DB monitoring templates on paerdb99 – Inform John</div>
+</li>
+<li class="level1"><div class="li"> Start SAP PTA database on paerdb99</div>
+</li>
+<li class="level1"><div class="li"> Start up SAP PTA on paerap99 and paerap01 – Perform basis validation.</div>
+</li>
+<li class="level1"><div class="li"> Perform connection test - EDI . Start EDI, check coennectivity , shutdown EDI</div>
+</li>
+<li class="level1"><div class="li"> Start Autosys application but do not release any jobs</div>
+</li>
+<li class="level1"><div class="li"> Release a SAP PTA health check job on autosys</div>
+</li>
+<li class="level1"><div class="li"> Stop SAP PTA application on paerap99 [ only SAP, not database ]</div>
+</li>
+<li class="level1"><div class="li"> Backup the PTA SAP kernel for AIX and Linux</div>
+</li>
+<li class="level1"><div class="li"> Extract the new kernel for AIX and Linux</div>
+</li>
+<li class="level1"><div class="li"> Perform SAP Basis functional validation for kernel upgrade </div>
+</li>
+<li class="level1"><div class="li"> Validate Brtools configuration for SAP PTA on paerdb99</div>
+</li>
+<li class="level1"><div class="li"> Update netbackup configuration to reflect the hostname change and the policy name on NBU master server</div>
+</li>
+<li class="level1"><div class="li"> Modify utl files to reflect the correct hostname</div>
+</li>
+<li class="level1"><div class="li"> Create a snapshot of SAP PTA sapdata filesystems and present it to paerdb98</div>
+</li>
+<li class="level1"><div class="li"> Configure Oracle dataguard on paerdb98</div>
+</li>
+<li class="level1"><div class="li"> Perform switch-over testing for PTA database Oracle dataguard - leave the database running on paerdb98.</div>
+</li>
+<li class="level1"><div class="li"> Run the cluster script umount99.sh on paerap99<pre class="code">ssh paerap99 &quot;sudo ksh -x /root/cluster/umount99.sh&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the cluster script mount98.sh on paerap98<pre class="code">ssh paerap98 &quot;sudo ksh -x /root/cluster/mount98.sh&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the Unalias99.sh on paerdb99<pre class="code">ssh paerdb99 &quot;sudo ksh -x /root/cluster/unalias99.sh&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the Alias98 script on paerdb98<pre class="code">ssh paerdb98 &quot;sudo ksh -x /root/cluster/alias98.sh&quot;</pre>
+
+<p>
+Add /sapmnt/PTA NFS mount on paerdb98
+</p>
+<pre class="code">sudo vi /etc/filesystems</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">/sapmnt/PTA:
+        dev             = &quot;/sapmnt/PTA&quot;
+        vfs             = nfs
+        nodename        = paerap00
+        mount           = true
+        options         = rw,bg,soft,intr,sec=sys
+        account         = false</pre>
+
+<p>
+Then mount it
+</p>
+<pre class="code">sudo mkdir -p /sapmnt/PTA
+sudo mount /sapmnt/PTA</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start SAP PTA on paerap98 and paerap01</div>
+</li>
+<li class="level1"><div class="li"> Shutdown PTA application CI only</div>
+</li>
+<li class="level1"><div class="li"> Switch-over SAP PTA database from paerdb98 → paerdb99</div>
+</li>
+<li class="level1"><div class="li"> Run the unalias98.sh on paerdb98 to unconfigure the VIP<pre class="code">ssh paerdb98 &quot;sudo ksh -x /root/cluster/unalias98.sh&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the Alias99 script on paerdb99<pre class="code">ssh paerdb99 &quot;sudo ksh -x /root/cluster/alias99.sh&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remount PTA NFS and validate on daap3p01 daerap01h<pre class="code">ssh daap3p01  sudo mount /usr/sap/trans
+ssh daerap01h sudo mount /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remount PTA NFS and validate on paap3p01 and daerap99<pre class="code">ssh paap3p01 sudo mount /sapmnt/PTA/global
+ssh paap3p01 sudo mount /sapmnt/PTA/profile
+ssh paap3p01 sudo mount /sapmnt/PTA/exe
+ssh paap3p01 sudo mount /sapcomm/PTA/ftpgis
+ssh daerap99 sudo mount /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remount PTA NFS and validate on qehrap01h qaerdb01<pre class="code">ssh qaerap01h  sudo mount /usr/sap/trans
+ssh qaerdb01 sudo mount /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the cluster script umount98.sh on paerap98<pre class="code">ssh paerap98 &quot;sudo ksh -x /root/cluster/umount98.sh&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the cluster script mount99.sh on paerap99<pre class="code">ssh paerap99 &quot;sudo ksh -x /root/cluster/mount99.sh&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Validate PTA NFS mounts on daap3p01 daerap01h<pre class="code">ssh daap3p01  sudo ls -l /usr/sap/trans
+ssh daerap01h sudo ls -l /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Validate PTA NFS mounts on paap3p01 and daerap99<pre class="code">ssh paap3p01 sudo ls -l /sapmnt/PTA/global
+ssh paap3p01 sudo ls -l /sapmnt/PTA/profile
+ssh paap3p01 sudo ls -l /sapmnt/PTA/exe
+ssh paap3p01 sudo ls -l /sapcomm/PTA/ftpgis
+ssh daerap99 sudo ls -l /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Validate PTA NFS mounts on qehrap01h qaerdb01<pre class="code">ssh qaerap01h  sudo ls -l /usr/sap/trans
+ssh qaerdb01  sudo ls -l /usr/sap/trans</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start SAP PTA on paerap99 and rest of the app servers</div>
+</li>
+<li class="level1"><div class="li"> Start Connect Direct</div>
+</li>
+<li class="level1"><div class="li"> Start EDI</div>
+</li>
+<li class="level1"><div class="li"> Start Autosys application but do not release any jobs</div>
+</li>
+<li class="level1"><div class="li"> Enable SAP PTA Central instance Openview templates on paerap99</div>
+</li>
+<li class="level1"><div class="li"> Functional testing of SAP PTA application</div>
+</li>
+<li class="level1"><div class="li"> Release autosys jobs</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Outage starts" [1128-] -->

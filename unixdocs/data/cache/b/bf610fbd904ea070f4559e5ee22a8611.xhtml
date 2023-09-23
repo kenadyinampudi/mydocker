@@ -1,0 +1,131 @@
+
+<h1 class="sectionedit1" id="system_build_specifications_for_other_teams">System build specifications for Other teams</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "System build specifications for Other teams" [1-59] -->
+<h2 class="sectionedit2" id="standard_wintel_vm_build">Standard Wintel VM build</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Please make a request to the Wintel resource to create a VM for Redhat Linux.<pre class="code">Hello Wintel Team,
+Please configure a Virtual Machine with the following characteristics,
+
+Type         : Linux
+OS           : ( Mention Redhat Enterprise Linux 6 or 7 64 bit )
+Processors   : ( enter the number of procs needed )
+Memory       : ( enter the RAM in Gigabytes )
+Boot Disk    : 1 * 70G, thin provisioned
+Data disk(s) : ( details here )
+Virtual NIC  : ( Mention the VLAN or subnet here )
+Options      : ( Set Boot options to 10,000 ms)</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Standard Wintel VM build" [60-639] -->
+<h2 class="sectionedit3" id="sap_hana_esxi_build">SAP HANA ESXi Build</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT3 SECTION "SAP HANA ESXi Build" [640-672] -->
+<h3 class="sectionedit4" id="bios_settings">BIOS Settings</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> These settings must be performed by Wintel team.</div>
+</li>
+</ul>
+<div class="table sectionedit5"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Task</th><th class="col1">Description</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">Enable Intel VT Technology</td><td class="col1">Enable all BIOS virtualization technologies</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">Enable CPU Intel Turbo Boost</td><td class="col1">Allows automatic CPU overclocking (P-States)</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">Disable QPU Power Management</td><td class="col1">Static high power for QPI links</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">Enable Hyperthreading</td><td class="col1">Double logical CPU cores</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">Enable execute disable feature</td><td class="col1">Enable the NX-bit, required for vMotion</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">Disable node interleaving</td><td class="col1"> </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">Disable CIE Halt state</td><td class="col1">Disable Enhance C-States in BIOS</td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">Set Power Management to High Performance</td><td class="col1">No power saving modes (C-Statues</td>
+	</tr>
+	<tr class="row9">
+		<td class="col0">Disable unused BIOS features</td><td class="col1">On-board audio, modem, serial ports, etc.</td>
+	</tr>
+</table></div>
+<!-- EDIT5 TABLE [752-1342] -->
+</div>
+<!-- EDIT4 SECTION "BIOS Settings" [673-1343] -->
+<h3 class="sectionedit6" id="esxi_host_configuration">ESXi Host configuration</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> The following host configuration allows the transfer of host data to the virtual machine.<pre class="code">Using VMware vSphere Client:
+Select the host in the vSphere client window. 
+Choose the tab &quot;Configuration&quot;.
+In the list of software options, choose &quot;Advanced Settings&quot;.
+In &quot;Advanced Settings&quot;, choose &quot;Misc&quot;.
+Scroll down to Misc.GuestLibAllowHostInfo and set the value to 1.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Networking</div>
+<ol>
+<li class="level2"><div class="li"> Use: Virtual Distributed Switches (vDS) to connect all hosts that work together Define port groups that are dedicated to SAP HANA, management and vMotion traffic</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Storage</div>
+<ol>
+<li class="level2"><div class="li"> Use dedicated HBAs/<abbr title="Small Computer System Interface">SCSI</abbr> controller for DATA, LOG and ESXi Swap/Scratch partition.</div>
+</li>
+<li class="level2"><div class="li"> Separate log from data!</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Memory</div>
+<ol>
+<li class="level2"><div class="li"> Configure RAM hemisphere mode</div>
+</li>
+<li class="level2"><div class="li"> Distribute DIMM modules in a way to achieve best performance (hemisphere mode), use fastest DIMM modules available for the selected RAM size</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> CPU	</div>
+<ol>
+<li class="level2"><div class="li"> Populate all available CPU sockets, use glueless NUMA architecture</div>
+</li>
+<li class="level2"><div class="li"> To avoid Timer Synchronization Issues, use a multi-socket server that ensures NUMA node timer synchronization.</div>
+</li>
+<li class="level2"><div class="li"> NUMA systems that do not run synchronized will need to synchronize the timers on the hypervisor area, which is very costly”</div>
+</li>
+<li class="level2"><div class="li"> SAP Monitoring</div>
+<ol>
+<li class="level3"><div class="li"> Enable SAP monitoring on the host → Misc. GuestLibAllowHostInfo and set the value to 1. </div>
+</li>
+<li class="level3"><div class="li"> Details: <code><a href="http://service.sap.com/sap/support/notes/1409604" class="urlextern" title="http://service.sap.com/sap/support/notes/1409604"  rel="nofollow">http://service.sap.com/sap/support/notes/1409604</a></code></div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> Virtual Machine Monitor :- Allow vSphere to choose the best virtual machine monitor based on the CPU and guest operating system combination.</div>
+</li>
+<li class="level2"><div class="li"> CPU/MMU Virtualization Option = Automatic</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "ESXi Host configuration" [1344-] -->

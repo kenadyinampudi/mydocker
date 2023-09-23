@@ -1,0 +1,49 @@
+**Restoring an Oracle Database Manually Using RMAN with Actifio**
+**Manual recovery using mount of a point in time image:**
+
+**Recovering an Oracle Database to a Scheduled Backup Point or with archive log roll forward**
+
+1.	Mount the latest Database backup snapshot from Actifio back to oracle server
+2.	Restore parameter file and control file.
+3.	Catalog the database backup snapshot to RMAN
+4.	Restore and recover database using Actifio mounted backup.
+5.	Database will be recovered to point in time of backup snapshot. If the logs to the point of failure are available then database will be recovered to the point of failure.
+
+**Steps and commands for full or PIT recovery:**
+
+**For full recovery of an out-of-band Oracle database via the command line:**
+
+1.	Shut down the Oracle database.
+2.	From the Actifio Application Manager, mount the backup snapshot.
+3.	Set the database environment.
+4.	Start the database in no-mount state using the parameter file from the mounted volume: 
+sqlplus / as sysdba
+sql>startup nomount pfile='/act/mnt/Job_0113930_mountpoint_1361977788803/<sid>___backup.ora';
+5.	Create an spfile from the pfile: 
+sql> create spfile='$ORACLE_HOME/dbs/spfile<sid>.ora' from pfile='/act/mnt/Job_0113930_mountpoint_1361977788803/<sid>___backup.ora';
+6.	Start the database with spfile in no mount state: 
+sql> shutdown immediate; 
+sql> startup nomount;
+sql> quit 
+7.	Restore control file using RMAN from the Actifio mounted volume. 
+rman target /
+rman> restore controlfile from ' /act/mnt/Job_0113930_mountpoint_1361977788803/cf-D_<sid>-id_<id>.ctl' ;
+8.	Mount the database: rman> alter database mount; 
+9.	Catalog the datafile and archivelog folder from Actifio mounted volume to RMAN 
+rman> run
+{
+catalog start with ' /act/mnt/Job_0113930_mountpoint_1361977788803/datafile' noprompt; catalog start with ' /act/mnt/Job_0113930_mountpoint_1361977788803/archivelog' noprompt;
+}
+10.	Restore and recover the database:
+rman> run
+{
+NOTE : (if you want to recover to a point in time then run the below command. If not then just skip this step and go to the restore database command)
+set until time "to_date('2011-12-30:00:00:00', 'yyyy-mm-dd:hh24:mi:ss')";
+restore database ;
+recover database ;
+}
+Open the database with the reset log option:
+rman> alter database open resetlogs;
+The database is available for read and write.
+rman> alter database open resetlogs;
+The database is available for read and write.

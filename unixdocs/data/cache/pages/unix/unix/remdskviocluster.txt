@@ -1,0 +1,24 @@
+====== Reclaim storage from a dual VIO environment ======
+
+  * Make a note of the pvids of the disks that needs to be reclaimed from the VIO guest.<code>lspv | egrep "hdiskX|hdiskY......." > /var/tmp/pvstoremove</code>
+  * Copy that file to both the VIOS servers<code>sudo scp /var/tmp/pvstoremove taprvioXX:/var/tmp/pvstoremove
+sudo scp /var/tmp/pvstoremove taprvioYY:/var/tmp/pvstoremove</code>
+  * Remove the disks from the VIO guest<code>sudo rmdev -dl hdiskX</code>
+  * Find out the disks on the VIOS servers
+    * Document VIO disks map<code>sudo lsdiskcfg > /var/tmp/ldsiskcfg.out.1234</code>Run this on both the VIO servers.
+    * Get the pvids to be removed<code>awk '{print $2}' /var/tmp/pvstoremove > /var/tmp/pvstoremove.pvids</code>Run this on both the VIO servers
+    * Get the list of disks to unmap and remove<code>grep -f /var/tmp/pvstoremove.pvids /var/tmp/ldsiskcfg.out.1234 > /var/tmp/diskstounmapandremove</code>Run this on both the servers and make sure they both match ( devicenames, LUN numbers etc etc)
+  * Unmap LUNs from both VIO servers<code>for disk in $(awk -F: '{print $1}' /var/tmp/diskstounmapandremove)
+do
+   rmvdev -vdev ${disk}
+done</code>Run this on both the servers.
+  * Remove the devices from VIOS servers - Run this on both the VIOS servers.
+    * Powerpath
+      * Remove the powerpath devices<code>>/var/tmp/rmdev.out.1
+for disk in $(awk -F: '{print $1}' /var/tmp/diskstounmapandremove)
+do
+   sudo powermt display dev=${disk} | grep hdisk | sed "s;=; ;g" | tr " " "\n" | grep hdisk >> /var/tmp/rmdev.out.1
+   sudo powermt remove dev=${disk}
+   echo "Removed ${disk} "
+done</code>
+      * Remove the device files<code>cat /var/tmp/rmdev.out.1 | xargs -n1 sudo rmdev -dl</code>

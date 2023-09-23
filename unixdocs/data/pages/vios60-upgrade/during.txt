@@ -1,0 +1,180 @@
+Preserve disks for vio60
+<code>ssh taprvio60 "lspv" > lspv.taprvio60.before
+ssh taprvio60 "lsdev -Cc disk" >lsdev.taprvio60.before
+scp taprvio60:/usr/local/scripts/file_systems.txt file_systems.txt.taprvio60.before
+sudo ssh taprvio60 "/usr/ios/cli/ioscli lsmap -all" > lsmap.taprvio60.before
+sudo ssh taprvio60 "/usr/local/scripts/lsdiskcfg" > lsdiskcfg.taprvio60.before</code>
+
+Preserve disks for vio70
+<code>ssh taprvio70 "lspv" > lspv.taprvio70.before
+ssh taprvio70 "lsdev -Cc disk" >lsdev.taprvio70.before
+scp taprvio70:/usr/local/scripts/file_systems.txt file_systems.txt.taprvio70.before
+sudo ssh taprvio70 "/usr/ios/cli/ioscli lsmap -all" > lsmap.taprvio70.before
+sudo ssh taprvio70 "/usr/local/scripts/lsdiskcfg" > lsdiskcfg.taprvio70.before</code>
+
+Remove Disabled paths from all guests
+<code>sudo smitty mpio;  MPIO Path Management;  Remove Paths; Remove Paths under a Parent</code>
+
+make alt_disk_copy of the boot disk
+<code>sudo alt_disk_copy -d <target_hdiskxx></code>
+
+Disable cron based alt disks creations
+<code>sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</code>
+
+
+Reboot VIOS to make sure that the alt boot disk is good and boot back to original as padmin
+<code>shutdown -restart</code>
+
+Ignore these errors
+
+<code>Apr 15 20:02:19 dggpdb01 tenerrpt: 81453EE1 0416020817 T S vscsi0 Underlying transport error
+Apr 15 20:03:09 qggtdb01 tenerrpt: 81453EE1 0416010817 T S vscsi0 Underlying transport error
+Apr 15 20:03:38 sggpdb01 tenerrpt: 81453EE1 0416020817 T S vscsi1 Underlying transport error
+Apr 15 20:04:28 taitc102 tenerrpt: 6382B81C 0415201117 T S vscsi1 Temporary VSCSI software error
+Apr 15 20:04:28 dgimdb01 tenerrpt: 6382B81C 0416011117 T S vscsi1 Temporary VSCSI software error
+Apr 15 20:04:28 dgasdb01 tenerrpt: 6382B81C 0415201117 T S vscsi0 Temporary VSCSI software error
+Apr 15 20:04:28 qgimdb01 tenerrpt: 6382B81C 0416011117 T S vscsi0 Temporary VSCSI software error
+Apr 15 20:04:28 tsdv1d01 tenerrpt: 6382B81C 0415201117 T S vscsi2 Temporary VSCSI software error
+Apr 15 20:04:28 qggpdb01 tenerrpt: 6382B81C 0416021117 T S vscsi1 Temporary VSCSI software error</code>
+
+Put SEA's in standby mode
+<code>for i in `lsdev -Cc adapter | grep -i share | awk '{print $1}'`
+do
+sudo chdev -l $i -a ha_mode=standby
+done</code>
+
+Check SEA's
+<code>for i in `lsdev -Cc adapter | grep -i share | awk '{print $1}'`
+do
+sudo entstat -d $i | grep -e "  Priority" -e "Virtual Adapter" -e "  State:" -e "High Availability Mode"
+done</code>
+
+List all disk maps as padmin
+<code>lsmap -all | grep Backing | awk '{print $3}'</code>
+
+Save the output in the file /tmp/disks.txt
+<code>vi /tmp/disks.txt</code>
+
+As padmin unmap all devices
+<code>for i in `cat /tmp/disks.txt`
+do
+rmvdev -vdev $i
+done</code>
+
+Check lsmap to make sure nothing is mapped
+<code>lsmap -all | more</code>
+
+Stop the common and platform agents, run the following command as root:
+<code>sudo /opt/ibm/director/agent/bin/stopagent_vios 
+sudo cimserver -s</code>
+
+Mount VIOS fix pack 2.2.4.10
+<code>sudo mkdir -p /mnt/VIOS
+sudo mount pgnmsv01://prod/images/vio/vios2/fixpacks /mnt/VIOS</code>
+
+as root Create a link to openssl 
+
+<code>sudo ln -s /usr/bin/openssl /usr/ios/utils/openssl
+sudo ls -alL /usr/bin/openssl /usr/ios/utils/openssl</code>
+
+Perform the update as padmin
+<code>updateios -accept -dev /mnt/VIOS/VIOS_FP_2.2.4.10</code>
+If the update gets stuck on Restarting the CAS nonstop service................
+<code>x1rzb826 on taprvio31:/home/x1rzb826>ps -ef | grep nonstop
+    root 12714170  1442038   0 13:13:28      -  0:00 /bin/ksh /var/opt/tivoli/ep/runtime/nonstop/bin/cas_src.sh
+x1rzb826 12910728 26673156   0 13:39:00  pts/1  0:00 grep nonstop
+    root 24772778        1   0 13:13:29      -  0:00 bin/nonstop_aix @/var/opt/tivoli/ep/runtime/nonstop/config/nonstop.properties
+
+kill 24772778</code>
+
+<code>updateios -commit</code>
+
+To view the differences between system and the recommended settings, run the following:
+
+<code>rules -o diff -s -d</code>
+
+To deploy the VIOS recommended default settings, run the following:
+
+<code>rules -o deploy -d
+rulescfgset
+shutdown -restart</code>
+
+
+
+
+
+Get rid off all hdiskpowers and underlinks
+<code>for i in `lspv | grep power | awk '{print $1}'`
+do
+echo "sudo powermt remove dev=$i"
+echo "sudo rmdev -dl $i"
+sudo powermt display dev=$i | grep fscsi | awk '{print "sudo rmdev -dl "$3}'
+done  > /tmp/rmdevs.sh
+
+sh /tmp/rmdevs.sh</code>
+
+Remove any other EMC device (except boot if such)
+<code>for dev in $( lsdev -Ccdisk | grep EMC | awk '{print $1}' )
+do
+   sudo rmdev -dl ${dev}
+done</code>
+
+<code>for dev in $( lsdev -Ccdisk | grep Power | awk '{print $1}' )
+do
+   sudo rmdev -dl ${dev}
+done</code>
+
+Remove any other FC device (except boot if such)
+<code>lsdev -Ccdisk 
+for dev in $( lsdev -Ccdisk | grep FC | awk '{print $1}' )
+do
+   sudo rmdev -dl ${dev}
+done</code>
+
+
+Remove Powerpath software and EMC ODM
+<code>sudo installp -u EMC.Symmetrix.aix.rte EMC.Symmetrix.fcp.rte EMC.Symmetrix.iscsi.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMCpower.base EMCpower.encryption EMCpower.mpx
+sudo installp -u EMCpower.base EMCpower.encryption EMCpower.migration_enabler EMCpower.mpx</code>
+
+Reboot vio server
+<code>shutdown -restart</code>
+
+Install latest ODM drivers
+[[https://unixdocs/doku.php?id=unix:aixsaninitconfig]]
+
+Get rid of Defines devices
+<code>sudo lsdev -Cc disk | grep FC | grep Define | xargs -n1 rmdev -dl</code>
+
+Check reserve lock
+<code>for dev in $(lsdev -Ccdisk | egrep "FC" | awk '{print $1}' )
+do
+   lsattr -El ${dev} -a reserve_policy
+done</code>
+
+Remap based on pvid and saved configs
+To get pvids for a host:
+<code>grep qggpdb01 lsdiskcfg.taprvio70.before | cut -d : -f6</code>
+
+On VIOS get the hdisk names based of the pvids pasted into file j
+<code>lspv | grep -f j | awk '{print $1}' > /tmp/qggpdb01.txt</code>
+
+As padmin map
+<code>for i in `cat /tmp/qggpdb01.txt`
+do
+mkvdev -vdev $i -vadapter vhost999
+done</code>
+
+Enable paths on all guests (one at a time)
+<code>sudo cfgmgr -v</code>
+
+Put SEA's back in auto mode
+<code>for i in `lsdev -Cc adapter | grep -i share | awk '{print $1}'`
+do
+sudo chdev -l $i -a ha_mode=auto
+done</code>
+
+Check SEA's
+<code>for i in `lsdev -Cc adapter | grep -i share | awk '{print $1}'`
+do
+sudo entstat -d $i | grep -e "  Priority" -e "Virtual Adapter" -e "  State:" -e "High Availability Mode"
+done</code>

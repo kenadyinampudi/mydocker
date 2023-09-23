@@ -1,0 +1,38 @@
+
+<h1 class="sectionedit1" id="steps_to_bring_down_a_server_for_maintenance">Steps to bring down a server for maintenance</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Verify you have an approved change control if the system is running a production application</div>
+</li>
+<li class="level1"><div class="li"> Verify you have an active blackout for the server affected. If not, enter one.</div>
+<ol>
+<li class="level2"><div class="li"> <a href="http://taitc212/cgi-bin/active_bo.cgi" class="urlextern" title="http://taitc212/cgi-bin/active_bo.cgi"  rel="nofollow">Check to very if we have an active blackout</a></div>
+</li>
+<li class="level2"><div class="li"> <a href="http://taitc212/cgi-bin/blackout/login.cgi" class="urlextern" title="http://taitc212/cgi-bin/blackout/login.cgi"  rel="nofollow">Use this URL to enter a new one</a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Get on to the console. Login to taitc118<pre class="code">getconsole &lt;servername&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get a list of running processes<pre class="code">ps -ef &gt; /root/psef.$(date +%m%d%y)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get a list of mounted filesystems<pre class="code">df -k &gt; /root/mountedfs.$(date +%m%d%y)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get a list of disks and vgs pagingspace etc<pre class="code">lsvg &gt; /root/lsvg.$(date +%m%d%y)
+lspv &gt; /root/lspv.$(date +%m%d%y)
+lsps -a &gt; /root/lsps.$(date +%m%d%y)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the bootlist against the last booted device<pre class="code">bootlist -o -m normal &gt; /root/bootlist.$(date +%m%d%y)
+bootinfo -b &gt; /root/bootinfob.$(date +%m%d%y)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown the server<pre class="code">shutdown -F</pre>
+</div>
+</li>
+</ol>
+
+</div>

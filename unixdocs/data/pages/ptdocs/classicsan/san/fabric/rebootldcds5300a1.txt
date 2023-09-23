@@ -1,0 +1,28 @@
+====== Technical Plan for rebooting LDCDS5300A1 SAN Switch ======
+
+** Pre work **
+
+  - Have a EMC CE stage a brocade switch for replacement in case the old switch fails to boot up.
+  - Audit all AIX / VIOS systems and make sure default ODM templates are modified for reserve_lock policy off.
+  - Blackout all the affected servers except taitc113( This will be done by HP Openview. A comma delimited list of hosts has been attached to the CE)
+  - Blackout the syslogd template on taitc113.<code>sudo /opt/OV/bin/opctemplate -d OSSPI-HPUX-syslog</code>
+
+** During the change **
+
+  - Offline Netbackup media servers taitc009 and taitc025 - Data preservation team. These are the single connected hosts.
+  - Login to ldcds5300a1 as admin and disable the switch.<code>switchcfgpersistentdisable</code>
+  - Set the parameters as CE suggested
+    - Fillword<code>for ((i=0;i<80;i++)); do (echo $i;portcfgfillword $i 3); done</code>
+    - Bottleneck Monitor<code>bottleneckmon --cfgcredittools -intport -recover onLrOnly
+bottleneckmon –showcredittools</code>
+    - Clear stats<code>statsclear; slotstatsclear</code>
+  - reboot the switch<code>reboot</code>
+  - Verify the switch is back up
+  - Enable the switch<code>switchcfgpersistentenable</code>
+  - On taitc113, Remove error messages from syslog.<code>sudo vi /var/adm/syslog/syslog.log</code>
+  - On taitc113, Enable syslog monitoring template.<code>sudo /opt/OV/bin/opctemplate -e OSSPI-HPUX-syslog</code>
+
+** Post activities **
+
+  - Login to every system affected and make sure that the failed path is backup and certify the system.
+  - Remove the blackout.

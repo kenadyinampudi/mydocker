@@ -1,0 +1,38 @@
+====== SUDO Documentation for Users ======
+
+sudo or as I call it "Super User Do" is a unix program that allows non-privileged users to execute some commands as root. sudo provides a rich set of features including monitoring, managing and alerting as compared to its competitors like setuid, proprietory RBAC or root equivalent user. 
+
+At Tenneco, we have identified the following teams as the ones who will need to run some programs as root.
+
+  * DBA Team
+  * Data preservation Team
+  * SAP - Basis Team
+  * HP Openview Team.
+
+We need to group servers
+
+  * Production Servers
+  * Non production servers
+  * Backup servers
+  * Others
+===== Usage =====
+
+  * This is the easiest part. This is as simple as "prefix the command that you need to run as root with sudo".<code>sudo /oracle/SID/11203/root.sh</code>The above command runs as root.
+  * To list all the commands you are entitled to<code>sudo -l</code>
+  * 
+
+===== Dos & Don't(s) =====
+
+  * There is no perfect security model. So there are ways around to break everything. So is sudo, there are ways around and the methods are easily accessible.
+  * Be responsible. sudo gives great power on a Unix system. "With great power comes great responsibility, visibility and publicity". Think before you hit enter on that command that you prefixed with sudo. You are Superman !
+  * Use sudo only when it really needed. It is not to be used for convenience. Do not fix a problem by "chmod 777" because you have the ability to do so for example.
+  * When in doubt, use "CTRL + C" **do not hit enter**.
+
+===== Limitations of sudo =====
+
+  * Redirection is one limitation of sudo. i.e. <code>sudo echo "something" > /etc/motd</code>For security reasons, sudo does not permit re-directions. Instead, this works<code>echo "something" | sudo tee -a /etc/motd</code>
+  * "cd" command i.e. <code>sudo cd /protected-directory</code>This will not work. Instead use<code>sudo ls -l /protected-directory</code>
+
+===== sudo management =====
+
+  * All sudo commands are logged and sent to a central repository. Unix team, from time to time , when required , will audit the file for investigation purpose and/or misuse.

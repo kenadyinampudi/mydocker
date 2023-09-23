@@ -1,0 +1,32 @@
+====== Nvidia install (440) ======
+From [[https://developer.nvidia.com/cuda-10.2-download-archive?target_os=Linux&target_arch=x86_64&target_distro=RHEL&target_version=7&target_type=rpmlocal]]
+
+Enable the following repositories on the server first ...
+  subscription-manager repos --enable=rhel-7-server-optional-rpms (from Satellite)
+  subscription-manager repos --enable=rhel-7-server-extras-rpms (from Satellite)
+  epel/x86_64 (from internet)
+
+(You can enable EPEL with ''yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm'')
+
+You probably need to make sure the kernel headers are installed prior to doing the nvidia install.
+  yum install kernel-devel-$(uname -r) kernel-headers-$(uname -r)
+[[https://fedoraproject.org/wiki/EPEL#How_can_I_use_these_extra_packages.3F | EPEL repository instructions]] \\ 
+\\
+You might need to add the following to ''/etc/yum.conf'' \\
+<code>
+sslverify=false
+</code>
+Get the packages copied locally if possible.\\ <code>
+mount cdcpilns013.federalmogul.com:/linux/iso /mnt
+rsync -av --progress /mnt/drivers/cuda-repo-rhel7-10-2-local-10.2.* /tmp/.
+</code>
+ Then you should be able to run the following package installations.  (The second CUDA repository is a hotfix, not a full repository)\\
+''sudo yum localinstall -y /tmp/cuda-repo-rhel7-10-2-local-10.2.89-440.33.01-1.0-1.x86_64.rpm'' \\ 
+''sudo yum localinstall -y /tmp/cuda-repo-rhel7-10-2-local-10.2.1-1.x86_64.rpm'' \\ 
+''sudo yum clean all'' \\
+''sudo yum -y install nvidia-driver-latest-dkms cuda'' \\ 
+''sudo yum -y install cuda-drivers'' \\
+\\
+=== To remove ===
+  yum remove "*cublas*" "cuda*"
+  yum remove "*nvidia*"

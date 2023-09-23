@@ -1,0 +1,22 @@
+====== Capture packets when scanners fail to create objects inside a NAS share from VNX ======
+
+In some sites from time to time we do see that printer's scanners are unable to scan to UNC share which is hosted on EMC VNX.
+If such issue will arise do the following:
+
+
+  - Login to pgunap01<code>ssh pgunap01</code>
+  - Copy this file<code>sudo -u sanmontr scp /prod/storageteam/sanmontr/utils/tcpdump_loop_v2_2p.sh nasadmin@edevnx5400cs0:</code>
+  - Determine with server_df a file system with about 100GB of available storage.<code>server_df server_2  | grep -v "server_2:" |awk '{if(NF==1) {printf $0;getline;print $0} else print $0}'  | grep ^fs</code>i.e. Here it is /root_vdm_1/fs_050_data/tcpdump - folder tcpdump was created there by executing as root.
+    - Switch to root<code>su -</code>Create the directory<code>mkdir /nas/quota/slot_2/root_vdm_1/fs_050_data/tcpdump</code>
+  - Run this command against IP of example library where scanning is not working - have someone locally to try to scan from this printer/scanner<code>./tcpdump_loop_v2_2p.sh server_2 -start fsn0 -w /root_vdm_1/fs_050_data/tcpdump -host xxx.xxx.xxx.xxxx -t 50000 -n 30</code>
+  - If sniffing for this IP (printer/scanner) will not give any output run the following<code>./tcpdump_loop_v2_2p.sh server_2 -start fsn0 -w /root_vdm_1/fs_050_data/tcpdump -t 50000 -n 30</code>
+  - Create yet another folder<code>mkdir /nas/var/dump/SMBlog</code>
+  - Copy this {{:san:logrotate.zip|script}} to /nas/var/dump/SMBlog, unzip it there and run it every 5 mins via crontab<code>pscp logrotate.zip nasadmin@rybvnx5400cs:./
+unzip logrotate.zip
+cat logrotate.sh |sed "s/^M//" > /nas/var/dump/logrotate.sh
+chmod +x /nas/var/dump/logrotate.sh
+mkdir /nas/var/dump/SMBlog
+crontab -e
+*/5 * * * * /nas/var/dump/logrotate.sh</code>
+  - Open case with EMC and feed CE with these details - outcomes from tcpdump_loop_v2_2p.sh and these logrotate.sh
+  - Once done with trouble shooting - remove crontab entry, delete tcpdumps, and logrotate outcomes.

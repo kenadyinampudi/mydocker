@@ -1,0 +1,69 @@
+====== How to check the external authentication method ======
+
+There are three different types of authentication in use in our environments today.
+In general, there are:
+  * [[unix:ldapldap|LDAP.conf]]  (Very old)
+  * [[unix:sssdldap|sssd.conf]]  (Newer, SUSE approved)
+  * [[:redhatldap|realmd]]     (Redhat specific, very nice.)
+
+[[:finddccontrollers:How to find current DC controllers.]]
+
+
+===== Check for old LDAP =====
+This is generally in use in older SUSE 11.x systems.  This is really out of favor, as it relies on binaries with a number of known, unpatchable security holes.\\
+
+<code>
+brscdelx011:~ # grep ldap /etc/pam.d/common-*
+/etc/pam.d/common-account:account       required        pam_ldap.so     use_first_pass
+/etc/pam.d/common-account-pc:account    required        pam_ldap.so     use_first_pass
+/etc/pam.d/common-auth:auth     required        pam_ldap.so     use_first_pass
+/etc/pam.d/common-auth-pc:auth  required        pam_ldap.so     use_first_pass
+/etc/pam.d/common-password:password     required        pam_ldap.so     try_first_pass use_authtok
+/etc/pam.d/common-password-pc:password  required        pam_ldap.so     try_first_pass use_authtok
+/etc/pam.d/common-session:session       optional        pam_ldap.so
+/etc/pam.d/common-session-pc:session    optional        pam_ldap.so
+</code>
+\\
+Use [[unix:ldapldap|Old LDAP procedures]] to change or update systems still using the LDAP subsystem.
+
+===== Check for sssd =====
+Similarly, check for sss in pam config files.\\
+<code>
+brscdelx014:~ # grep sss /etc/pam.d/common-*
+/etc/pam.d/common-account:account     sufficient pam_sss.so use_first_pass
+/etc/pam.d/common-account-pc:#account   required        pam_sss.so      use_first_pass
+/etc/pam.d/common-auth:auth    sufficient       pam_sss.so      use_first_pass
+/etc/pam.d/common-auth-pc:auth    sufficient    pam_sss.so      use_first_pass
+/etc/pam.d/common-password:password     required        pam_sss.so      use_authtok
+/etc/pam.d/common-password-pc:password  required        pam_sss.so      use_authtok
+/etc/pam.d/common-session:session       sufficient      pam_sss.so
+/etc/pam.d/common-session-pc:#session   optional        pam_sss.so
+/etc/pam.d/common-sessionz:#session     optional        pam_sss.so
+</code>
+Use [[unix:sssdldap|sssd authentication procedures]] to change or update newer systems using the sssd subsystem.
+
+
+===== Check for realmd =====
+This is generally the method for Redhat installs, as Redhat has long since deprecated the old LDAP method and provides a very nice "realm join" utility for us.  Check for its existence and use it to verify.\\
+<code>
+[root@cdcpillx141 ~]# which realm
+/usr/sbin/realm
+[root@cdcpillx141 ~]# realm list
+fedmog.federalmogul.com
+  type: kerberos
+  realm-name: FEDMOG.FEDERALMOGUL.COM
+  domain-name: fedmog.federalmogul.com
+  configured: kerberos-member
+  server-software: active-directory
+  client-software: sssd
+  required-package: oddjob
+  required-package: oddjob-mkhomedir
+  required-package: sssd
+  required-package: adcli
+  required-package: samba-common-tools
+  login-formats: %U
+  login-policy: allow-permitted-logins
+  permitted-logins: leedsn16, lsfadmin, pt_unix_admins
+  permitted-groups:
+</code>
+Use [[:redhatldap|Redhat LDAP procedures]] to configure realmd.

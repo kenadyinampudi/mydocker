@@ -1,0 +1,72 @@
+
+<h1 class="sectionedit1" id="reclaim_storage_from_a_dual_vio_environment">Reclaim storage from a dual VIO environment</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Make a note of the pvids of the disks that needs to be reclaimed from the VIO guest.<pre class="code">lspv | egrep &quot;hdiskX|hdiskY.......&quot; &gt; /var/tmp/pvstoremove</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy that file to both the VIOS servers<pre class="code">sudo scp /var/tmp/pvstoremove taprvioXX:/var/tmp/pvstoremove
+sudo scp /var/tmp/pvstoremove taprvioYY:/var/tmp/pvstoremove</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the disks from the VIO guest<pre class="code">sudo rmdev -dl hdiskX</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the disks on the VIOS servers</div>
+<ul>
+<li class="level2"><div class="li"> Document VIO disks map<pre class="code">sudo lsdiskcfg &gt; /var/tmp/ldsiskcfg.out.1234</pre>
+
+<p>
+Run this on both the VIO servers.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Get the pvids to be removed<pre class="code">awk &#039;{print $2}&#039; /var/tmp/pvstoremove &gt; /var/tmp/pvstoremove.pvids</pre>
+
+<p>
+Run this on both the VIO servers
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Get the list of disks to unmap and remove<pre class="code">grep -f /var/tmp/pvstoremove.pvids /var/tmp/ldsiskcfg.out.1234 &gt; /var/tmp/diskstounmapandremove</pre>
+
+<p>
+Run this on both the servers and make sure they both match ( devicenames, LUN numbers etc etc)
+</p>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Unmap LUNs from both VIO servers<pre class="code">for disk in $(awk -F: &#039;{print $1}&#039; /var/tmp/diskstounmapandremove)
+do
+   rmvdev -vdev ${disk}
+done</pre>
+
+<p>
+Run this on both the servers.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the devices from VIOS servers - Run this on both the VIOS servers.</div>
+<ul>
+<li class="level2"><div class="li"> Powerpath</div>
+<ul>
+<li class="level3"><div class="li"> Remove the powerpath devices<pre class="code">&gt;/var/tmp/rmdev.out.1
+for disk in $(awk -F: &#039;{print $1}&#039; /var/tmp/diskstounmapandremove)
+do
+   sudo powermt display dev=${disk} | grep hdisk | sed &quot;s;=; ;g&quot; | tr &quot; &quot; &quot;\n&quot; | grep hdisk &gt;&gt; /var/tmp/rmdev.out.1
+   sudo powermt remove dev=${disk}
+   echo &quot;Removed ${disk} &quot;
+done</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Remove the device files<pre class="code">cat /var/tmp/rmdev.out.1 | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>

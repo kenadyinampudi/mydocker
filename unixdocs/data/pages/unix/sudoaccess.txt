@@ -1,0 +1,21 @@
+====== Granting sudo access for (l)users  ======
+
+  - We get entitlement request(s) to grant a specific user root ( sudo su - ) access, you should have the following data<code>Username : 
+Hostname : </code>
+  - An important rule.
+    - The username must be an individual account, ** not a service account like orata2, ta2adm, plsware etc etc **
+  - To grant access to a specific user on a host(s)<code>sudo /prod/images/scripts/manage_sudo enable <username> <host1> <host2></code>e.g.<code>sudo /prod/images/scripts/manage_sudo enable x1kxk630 panmsv02
+Granting omnipotent permission for x1kxk630 on panmsv02</code>
+  - To revoke the access<code>sudo /prod/images/scripts/manage_sudo disable <username> <host1> <host2></code>e.g.<code>sudo /prod/images/scripts/manage_sudo disable x1kxk630 panmsv02
+Taking away omnipotent like permissions from x1kxk630 on panmsv02</code>
+
+
+====== Granting temporary sudo access for somebody who needs it right away or projects which need longer retention ( exceptions ) ======
+
+  - We can use the above steps to grant the access as long as you have the exception approved by your team manager ''Robert''
+  - We often forget to take the temporary access back.
+  - The following step may also be used when you are on a project and the resource needs "sudo su -" access for an extended period of time + it is approved + is an exception approved by Robert.
+  - In all of the above conditions, please do this after you grant the access. This way, you don't have to remember to remove them manually.
+    - Disable after 1 day<code>echo "sudo /prod/images/scripts/manage_sudo disable x1kxk630 panmsv02 " | at now + 1 day</code>
+    - Disable after 1 hour<code>echo "sudo /prod/images/scripts/manage_sudo disable x1kxk630 panmsv02 " | at now + 1 hour</code>
+    - Disable after 10 days<code>echo "sudo /prod/images/scripts/manage_sudo disable x1kxk630 panmsv02 " | at now + 10 day</code>

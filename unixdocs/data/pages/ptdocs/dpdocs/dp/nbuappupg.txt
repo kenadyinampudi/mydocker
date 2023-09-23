@@ -1,0 +1,276 @@
+====== NBU appliances upgrades - appliance is MASTER server ======
+**Disclaimer - below procedure is provided as is and should be used in conjuction with common sense and good IT practice. Any harm made by it shall no blame its author.**
+  * Check on this [[https://sort.veritas.com/checklist/install|web site]] all prerequistes, required EEBs, release notes of version you are going to upgrade to, etc - do your due diligence! Especially if this upgrade is supported from current version to target one. Your helpful site is [[https://sort.veritas.com]] and specifically this [[https://sort.veritas.com/documents/doc_details/nbua-p-5220/3.0/NetBackup%20Appliance/ProductGuides/|one]]
+  * Read with understanding NBU upgrade guide for NBU appliances
+  * Have already in mind back out plans.
+  * Create CE - have it approved
+  * Validate if Parition Configuration is no smaller then 100GB<code>XXXnbu52Y0ams.Storage> Show ALL
+- [Info] Performing sanity check on disks and partitions... (5 mins approx)
+-----------------------------------------------------------------------
+Disk ID                    | Type   | Total      | Unallocated | Status
+-----------------------------------------------------------------------
+5E000000000000000000000000 | System |  930.39 GB |        -    | n/a
+7C1AA990001CAB93823ACC9A5C | Base   |   13.64 TB |     1.26 TB | In Use
+
+7C1AA990001CAB93823ACC9A5C (Base)
+---------------------------------
+AdvancedDisk       :      2 TB
+- 0                :      2 TB
+Configuration      :    100 GB
+- 0                :    100 GB
+MSDP               :     10 TB
+- 0                :     10 TB
+MSDP Catalog       :     39 GB
+- 0                :     39 GB
+NetBackup Catalog  :    250 GB
+- 0                :    250 GB
+
+----------------------------------------------------------------------------------
+Partition         | Total      | Available  | Used       | %Used | Status
+----------------------------------------------------------------------------------
+AdvancedDisk      | 2 TB       | 1.98 TB    | 21.92 GB   | 2     | Optimal
+Configuration     | 100 GB     | 92.61 GB   | 7.39 GB    | 8     | Optimal
+MSDP              | 10 TB      | 7.92 TB    | 2.08 TB    | 21    | Optimal
+MSDP Catalog      | 39 GB      | 38.54 GB   | 467.43 MB  | 2     | Optimal
+NetBackup Catalog | 250 GB     | 242.33 GB  | 7.67 GB    | 4     | Optimal
+Share             | 0 GB       | 0 GB       | 0 GB       | 0     | Not Configured
+Unallocated       | 1.26 TB    | -          | -          | -     | -
+
+AdvancedDisk
+-------------------------------------------------------------------
+Partition | Total      | Available  | Used       | %Used | Status
+-------------------------------------------------------------------
+0         |       2 TB |    1.98 TB |   21.92 GB |     2 | Mounted
+
+Configuration
+-------------------------------------------------------------------
+Partition | Total      | Available  | Used       | %Used | Status
+-------------------------------------------------------------------
+0         |     100 GB |   92.61 GB |    7.39 GB |     8 | Mounted
+
+MSDP
+-------------------------------------------------------------------
+Partition | Total      | Available  | Used       | %Used | Status
+-------------------------------------------------------------------
+0         |      10 TB |    7.92 TB |    2.08 TB |    21 | Mounted
+</code>If it is smaller then 100GB, than please resize it by executing this command (assumption is there is enough of unallocated space):<code>XXXnbu52Y0ams.Storage> Resize Configuration 100 GB</code>
+  * download patch to appliance<code>XXXnbu52Y0ams.Software> List AvailablePatch
+SYMC_NBAPP_update-3.0-1.x86_64.rpm    4.7G
+XXXnbu52Y0ams.Software> Download SYMC_NBAPP_update-3.0-1.x86_64.rpm</code>
+  * prior patching reboot appliance - good practice
+  * test appliance<code>XXXnbu52Y0ams.Support> Test Hardware
+XXXnbu52Y0ams.Support> Test Software</code>If any of these tests will fail, stop and try to solve errors out. Contact Pawel and/or VRTS support.
+  * disable call home<code>XXXnbu52Y0ams.Settings> Alerts
+Entering Alerts view...
+
+CallHome  Call Home setting.
+Email     Add/Delete Hardware/Software Admin Accounts.
+Exit      Log out and exit from the current shell.
+Hardware  Diskspacethreshold value.
+Return    Return to the previous menu.
+Shell     Shell operations.
+SNMP      SNMP related Settings.
+
+XXXnbu52Y0ams.Alerts> CallHome Disable
+Successfully disabled Callhome
+XXXnbu52Y0ams.Alerts></code>
+  * Disable OpsCenter monitoring - get in touch with Pawel or Ragha to do it for you on taitc054 server
+  * Disable all policies - make note which were inactive already, as you will need later on activate back only the ones which were active
+  * Disable SLPs, check the current backlog - nbstlutil report command ran from CLISH will show this.
+  * Run hot catalog backup and the Dedupe catalog backup, make note where it was stored. If not on tape make sure it will be easily reachable
+  * Make sure ipmi console is reachable to you by logging to it on its website https://XXXnbu52Y0amsipmi and checking remote control if its working.
+  * Start actual upgrade<code>sXXXnbu52Y0ams.Software> Install SYMC_NBAPP_update-3.0-1.x86_64.rpm
+You are about to begin the upgrade to NetBackup appliance software version 3.0.
+Before you continue, be aware of the following changes and behavior that occur during and after the upgrade:
+ -During the upgrade, NetBackup services and the Appliance Web Console are unavailable.
+ -After the upgrade, any existing user checkpoints and pre/post upgrade checkpoiare lost.
+ -The appliance restarts automatically as part of the upgrade process.
+ >> Do you want to continue? [yes, no] (no) yes
+- [Info] Appliance restart days check passed.
+- [Info] System clock check passed.
+- [Info] Appliance software version check passed.
+- [Info] Appliance hardware model check passed.
+- [Info] Version compatibility check passed.
+- [Info] The NetBackup deduplication configuration check passed.
+- [Info] Disk firmware version check passed.
+- [Info] System space check passed.
+- [Info] Volume Group system check passed.
+- [Info] USB drive check passed.
+- [Info] Check SDCS IPS policy state.
+- [Info] NetBackup config partition allocated size check passed.
+- [Info] NetBackup config partition space check passed.
+- [Info] NFS share mount point check passed.
+ >> The upgrade pre-flight checks are complete and the system is ready to begin the upgrade. Do you want to continue? [yes, no] (yes) yes
+Starting the upgrade. Use the 'upgrade status' command to monitor the upgrade progress.
+- [Info] Comparing the currently installed version with the target version.
+Verify whether the software update, SYMC_NBAPP_update-3.0-1.x86_64.rpm has been installed on compute node, stnnbu5230ams. ... ok
+ok
+- [Info] Patch install requirement check passed.
+ >>
+This software update requires a reboot of the appliance after the installation process completes. Do you want to continue? (yes/no) yes
+- [Info] The software upgrade operation has started. Depending on your appliance configuration, the upgrade process may take 2.5 hours or longer to complete.
+XXXnbu52Y0ams.Software></code>If PreFlight checks will **not be OK** stop immediatelly and ask for help Pawel and/or VRTS support.
+  * To monitor upgrade status run below<code>XXXnbu52Y0ams.Software> UpgradeStatus
+
+The appliance is running self-test on stnnbu5230ams...
+XXXnbu52Y0ams.Software> UpgradeStatus
+
+The target version is: 3.0
+
+The software installation has begun and it is 1% complete.</code>
+  * Once upgrade is complete, revert back what was changed, activate back policies, enable call home, SLPs, opscenter monitoring etc...
+  * make sure all backups are working, backup images are still available, etc.
+  * Install NBU client binaries for wintel and any other client supported at given site - so these can be directly downloaded from appliance's web site. Use this [[https://www.veritas.com/support/en_US/article.000011514|web site]] and do the needful. Client packages are available [[https://www.veritas.com/docs/000116013|here]] for version 3.0.<code>XXXnbu52Y0ams.Software> List Downloaded
+Validating update 'SYMC_NBAPP_addon_nbwin-8.0-0165.x86_64.rpm' ...    ok
+Software updates downloaded:
+Patch_Name                                Size  Release_Date      NBU_Version
+SYMC_NBAPP_addon_nbwin-8.0-0165.x86_64.rpm
+                                          1.2G  Thu Nov 10 2016   8.0
+XXXnbu52Y0ams.Software> Install SYMC_NBAPP_addon_nbwin-8.0-0165.x86_64.rpm
+ >>
+Do you want to proceed with the installation of this addon?(yes/no)yes
+Acquiring appliance exclusive lock ...                                ok
+Checking the add-on 'SYMC_NBAPP_addon_nbwin-8.0-0165.x86_64.rpm' ...  ok
+Checking whether the add-on is already installed ...                  no
+Proceeding to install the update ...                                  ok
+- [Info] Successfully installed the add-on SYMC_NBAPP_addon_nbwin-8.0-0165.x86_64.rpm.
+XXXnbu52Y0ams.Software></code>Check the installed add ons:<code>XXXnbu52Y0ams.Software> List AddOns
+List of installed AddOns:
+SYMC_NBAPP_addon_nbwin-8.0-0165.x86_64
+XXXnbu52Y0ams.Software></code>
+  * Check on taitc009 location E:\GIOS\Soft\EEBs\NBU_APP_ver_3.* to see if there are any EEBs to be applied on NBU. Read its home pages before applying. Up to date there are three patches available, ie:<code>C:\Users\q1pawetk>dir E:\GIOS\Soft\EEBs\NBU_APP_ver_3.0
+ Volume in drive E is Data
+ Volume Serial Number is 9E29-92F1
+
+ Directory of E:\GIOS\Soft\EEBs\NBU_APP_ver_3.0
+
+06/09/2017  06:17 AM    <DIR>          .
+06/09/2017  06:17 AM    <DIR>          ..
+05/31/2017  03:30 AM               259 article_000125965_NBAPP_EEB_ET3913599-3.0.0.0-2.x86_64.url
+05/31/2017  02:54 AM               145 article_000126389_NBAPP_EEB_ET3912472-3.0.0.0-3.x86_64.url
+05/31/2017  03:00 AM               145 article_000126557_NBAPP_EEB_ET3916413-3.0.0.0-1.x86_64.url
+05/31/2017  02:54 AM         2,202,696 NBAPP_EEB_ET3912472-3.0.0.0-3.x86_64.rpm
+05/31/2017  03:17 AM       480,404,922 NBAPP_EEB_ET3913599-3.0.0.0-2.x86_64.rpm
+05/31/2017  03:02 AM         7,824,233 NBAPP_EEB_ET3916413-3.0.0.0-1.x86_64.rpm
+               6 File(s)    490,432,400 bytes
+               2 Dir(s)  154,981,212,160 bytes free</code>So please download these to NBU app:<code>XXXnbu52Y0ams.Software> List Downloaded
+Validating update 'NBAPP_EEB_ET3913599-3.0.0.0-2.x86_64.rpm' ...      ok
+Validating update 'NBAPP_EEB_ET3916413-3.0.0.0-1.x86_64.rpm' ...      ok
+Validating update 'NBAPP_EEB_ET3912472-3.0.0.0-3.x86_64.rpm' ...      ok
+Software updates downloaded:
+Patch_Name                                Size  Release_Date      NBU_Version
+NBAPP_EEB_ET3913599-3.0.0.0-2.x86_64.rpm
+                                          459M  Wed Mar 22 2017
+NBAPP_EEB_ET3916413-3.0.0.0-1.x86_64.rpm
+                                          7.5M  Thu May 04 2017
+SYMC_NBAPP_addon_nbwin-8.0-0165.x86_64.rpm
+                                          1.2G  Thu Nov 10 2016   8.0
+NBAPP_EEB_ET3912472-3.0.0.0-3.x86_64.rpm
+                                          2.2M  Fri Apr 28 2017</code>Execute above to see them there. Below I will show one example installation process:<code>
+XXXnbu52Y0ams.Software> Install NBAPP_EEB_ET3916413-3.0.0.0-1.x86_64.rpm
+Acquiring appliance exclusive lock ...                                ok
+Checking the EEB 'NBAPP_EEB_ET3916413-3.0.0.0-1.x86_64.rpm' ...       ok
+Checking whether the EEB is already installed ...                     no
+Checking for active NetBackup jobs ...                                ok
+Proceeding to install the update ...                                  ok
+- [Info] The install is currently in progress. Please do not interrupt this installation. It may take a few minutes to complete.
+
+This program performs an installation for files related to
+PET3916410, SET3916413, EEB1 on platform linuxR_x86.
+
+DISCLAIMER:
+-----------
+NOTE: These binaries are pre-release. As such, they are intended solely for
+the recipient and shall not be further distributed to other parties. Their
+use is subject to the terms and conditions of your VERITAS NetBackup
+license and agreement. They have not been fully tested by VERITAS
+Technologies and, as such, are being provided "as is" without any guarantee
+or warranty of any kind, either express or implied. VERITAS reserves the
+right to require the removal of these binaries in order to troubleshoot and/or
+resolve any subsequent issues that are reported.
+
+Do you acknowledge this disclaimer?   [y,n] (y) y
+
+Veritas Bug ID: 3916413
+NBAPP_3.0 linuxR_x86
+
+Deliverables:
+--
+/opt/NBUAppliance/scripts/license.pl
+/opt/SYMCnbappws/appliancews.war
+
+Additional notes:
+--
+1. To avoid an EEB installation failure, you must stop all NetBackup jobs before
+installation.
+2. This EEB must be installed on both the master server and all associated media server
+appliances.
+3. A reboot is not required after EEB installation.
+4. If you upgrade your appliance after installing this EEB, you must reinstall the EEB
+that is associated with the upgraded software version.
+5. Do not attempt to prevent any RCE vulnerability by disabling the web service on the
+appliance.
+File checksums:
+--
+399372536 11980 license.pl
+1066084722 7851070 appliancews.war
+
+
+Continue?  [y,n] (y)
+
+Starting pre-processing.
+
+Extracting pre-process script -- /opt/NBUAppliance/scripts/preprocess_install_3916413.pl
+
+- [Info] Stop Web service...
+
+pre-process complete.
+
+Checksum of original at /opt/NBUAppliance/scripts/license.pl: 3631895583, Checksum of file in the installer: 399372536
+Checksum of original at /opt/SYMCnbappws/appliancews.war: 1899630757, Checksum of file in the installer: 1066084722
+
+Extracting...
+/opt/NBUAppliance/scripts/license.pl
+/opt/SYMCnbappws/appliancews.war
+
+Installation complete.
+
+
+Starting post-processing.
+
+Extracting post-process script -- /opt/NBUAppliance/scripts/install-3916413.pl
+
+- [Info] Start Web service...
+- [Info] It might take a couple of minutes...
+
+
+post-process complete.
+
+- [Info] Install script exited successfully.
+- [Info] Successfully installed the EEB NBAPP_EEB_ET3916413-3.0.0.0-1.x86_64.rpm.
+XXXnbu52Y0ams.Software></code>
+  * Fully patched NBU appliance in version 3.0 should looked like (for June 9th 2017):<code>XXXnbu52Y0ams.Software> List AddOns
+List of installed AddOns:
+SYMC_NBAPP_addon_nbwin-8.0-0165.x86_64
+XXXnbu52Y0ams.Software> List EEBs
+List of installed EEBs:
+NBAPP_EEB_ET3912472-3.0.0.0-3.x86_64
+NBAPP_EEB_ET3913599-3.0.0.0-2.x86_64
+NBAPP_EEB_ET3916413-3.0.0.0-1.x86_64
+XXXnbu52Y0ams.Software> List Version
+Appliance Version: 3.0
+NetBackup Version: 8.0
+Build Date: 9107920161119202719
+XXXnbu52Y0ams.Software></code>
+  * Upgrade clients to match the release of master server - use the binaries installed earlier as described above.
+  * Update this [[https://tenneco.sharepoint.com/sites/COUSGI/DPT/Lists/Library_links/AllItems.aspx|web page]] so ours inventory will be showing proper details.
+  * Eleveate to linux shell and do the following:<code>cd ~admin
+mkdir .ssh
+vi .ssh/authorized_keys
+chown -R admin:admin .ssh
+cd /var/sshkeys/
+mkdir admin
+ln -s ~admin/.ssh/authorized_keys admin/authorized_keys</code> For authorized_keys file use these keys:<code>ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAwR/4SxLhf/k3RXm3xmsLnmNabWRyzp7OGal6NXPle8Hbdu2k3Pvnd1HngRw/INexgjOZhsQDye6X9uUL9yixt6DyiHa/fySwjgSDxlylnMByYdi+u87lwaizGfdWgK+5SP8NAf9qu6e+rPx6ImlFE7ggSbNbPYn4CfN1emSjx/E= rsa-key-20070822
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC1O9eh1LeDkZKOHAcFT9Rfz1m3tQNyOjsVor8igIvpHH2K6KLCxuvcOi1RCNnEgBwtVnrkbv79D7nXPXhozEYQWAE8oqO/OpWo+AxubHRKRxH/L8WUtt7tuvGxMOB9GlwKu3nSrYZ66UBXeQZJT1rlsZHRtFFEpC9+STZj6g4E+5RCoua6alqcuoCAnlWEXoOE6bZErsAiP11a1f/60qphyS6HE7qcDZ02V9H27unZZw64jzLZ5+gXPPXU9a6bHs35pO8h+ZEFPh1xn9/R47dChdSkupPTd19aBOo/ApWxqxdHMgZSEU+aafX/oLM67kKdcBSbsztyN9vXOVl1BnTj x1kxk630@kaps-fedora-dt01
+ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAzaGoL8l7oTkLA/XqyTd5wuVSdrIHs3h/DoaA9NJ/UGtTPydtl27efFimXCof+oBMCw24XgVmHyW7Rft1AoMzfg8vO/rjmG7xRLagiHZhCrBryhqg16kxOE2Hfi6BJjwGZxuvkJrN/rov/spIVAZKFsTbF2QpkgtBxibldKCYViKvxtRz9E6R7zgFA5tFnJI1trxUWDNuxeiuDBWg9o7IAuR5m5KdtalZKwDBL0QEOJjCQtzP8Jc1J3TbCVbDvvWXXIAp+ay4Fj7g86qgmQ66ZNG2na/vuEVg6ldTpVOexQHECeu0XTDq7CYIDQ4pR1fA8ZpdohTYWF88vGgkB0TbEQ== rsa-key-20140328
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn8ylGCM2GQ4iY9giSU27AQNWoXkiCkwy1nn3gKgdeIjX3Qjxt4fAvSJaYyZmEx5ehhEJ/l0o+laykMmT1t0tZWfpQHOZo5l65TUqFhEH4l/twwYIE/aCqY19D2nmtMTh4vwQlNvj4nUhZrxc/3IzSKfmEnz0AYuy7VzyM3I1pBcri4DSWK+XL4ScnqZJm/bHyPVJgb69iLSaz/rzbyl//reqBJ1NolMYCmgOfXJkpH/nNxN2K66sKAVoy+tH0ns646MSO0Ls0tFg5+6uRqVS6NofS9nldEufhjjIHtSnr60OUNzRZooIxlYcQQbrVdVPfrEdcm4PVKSSXokATSJd8w== x1nithsa@pgunap01</code>

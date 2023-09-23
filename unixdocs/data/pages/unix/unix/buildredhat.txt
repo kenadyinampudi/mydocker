@@ -1,0 +1,57 @@
+====== Linux Installation notes ======
+
+  * Add the server to the console database **/prod/images/etc/unix_sys_console** on taitc118.<code>sudo vi /prod/images/etc/unix_sys_console</code>
+    * A VMWare VM would be configured as<code>taitc059:std-vmware-vsphere:taitc176:ADACCOUNT</code>
+    * A standalone intelk box would look like<code>taitc122:std-intel-ilo:taitc122:administrator</code>
+  * Login to the VSphere or the physical machine's BIOS to get the correct MAC address and make a note of it.
+    * The Lincolnshire vSphere server is "taitc176"
+    * For systems inside the DMZ, login to http://taitc059rmb ( Login and password in the safe )
+      * Launch Remote console
+        * Login as Administrator ( Login and password in the safe )
+  * Add the server to cobbler
+    * Login to pablsv01
+    * Choose the right profile for the system
+
+^Profile^Description^
+|rhel-5.8-i386|RHEL 5.8 32 bit for all intel hardware Tenneco support|
+|rhel-5.8-i386-HP|RHEL 5.8 32 bit for HP standalone intel hardware|
+|rhel-5.8-x86_64|RHEL 5.8 64 bit for all intel hardware Tenneco support|
+|rhel-5.8-x86_64-HP|RHEL 5.8 64 bit for HP standalone intel hardware|
+|rhel-6.3-i386|RHEL 6.3 32 bit for all intel hardware Tenneco support|
+|rhel-6.3-i386-HP|RHEL 6.3 32 bit for HP standalone intel hardware|
+|rhel-6.3-x86_64|RHEL 6.3 64 bit for all intel hardware Tenneco support|
+|rhel-6.3-x86_64-HP|RHEL 6.3 64 bit for HP standalone intel hardware|
+|rhel-6.4-x86_64|RHEL 6.4 64 bit|
+
+    * Define the system and assign the correct profile - Sample intranet
+      * Command Line method<code>sudo cobbler system add \
+--name=<hostname> \
+--profile=rhel-6.6-x86_64 \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=amer.int.tenneco.com \
+--gateway=<gateway> \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=<mac_address> \
+--ip-address=<ip_address> \
+--netmask=255.255.255.0 \
+--server=pablsv01.amer.int.tenneco.com</code>Sample DMZ<code>sudo cobbler system add \
+--name=<hostname> \
+--profile=rhel-6.6-x86_64 \
+--netboot-enabled=False \
+--name-servers=<ip_address> \
+--name-servers-search=tenneco.com, amer.int.tenneco.com \
+--gateway=<gateway> \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=<mac_address> \
+--ip-address=<ip_address> \
+--netmask=255.255.255.192 \
+--server=pablsv01.amer.int.tenneco.com</code>Check the return code<code>echo ${?}</code>Description of the relavent fields explained here.
+  * Create the Boot ISO on pablsv01<code>sudo cobbler buildiso --systems="taitc059" --iso=/var/www/html/servers/taitc059.iso</code>In this example, hostname is taitc059 - change it to the host you plan to deploy.
+  * Copy the iso file to taitc118 NFS datastore<code>sudo scp /var/www/html/servers/<hostname>.iso taitc118:/prod/images/bootisos/</code>
+  * [[unix:vmware-install|VMWare ? Click here ]]
+  * [[unix:standalone-install|Standalone intel server ? Click here ]]

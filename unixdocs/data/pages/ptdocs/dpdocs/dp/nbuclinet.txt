@@ -1,0 +1,66 @@
+====== **NetBackup 8.1.2 client software installation** ======
+
+To check if NBU client binaries are present on this given client, please login to master server and execute the following:<code>root on munnbuhmams:/root $ bpgetconfig -s tamun008.emea.int.tenneco.com
+Client of munnbuhmams
+PC-x64, WindowsXP
+8.1.0
+NetBackup
+8.1.1
+810000
+C:\Program Files\Veritas\NetBackup\bin
+Windows2012_R2 6</code>If you have similar outcome it means client binaries are installed and running. If you will receive this <code>root on mognbuhmams:/root $ bpgetconfig -s tamog002.amer.int.tenneco.com
+cannot connect on socket</code> - it means client binaries are not running and/or are not running and not being installed. so please login into given client. Collect NBU binaries from nearest site - most likely from master server and install these there. In worst case scenario please download appropriate version from \\taitc138\f$\Veritas\ to this client. On home made master server binaries for wintel are being stored in: /inst/shared <code>root on mognbuhmams:/inst/shared $ ls -la
+total 1485196
+drwxr-xr-x. 2 root     root          4096 Nov 26 06:16 .
+drwxrwxrwx. 6 root     root          4096 Nov 26 06:16 ..
+-rw-r--r--. 1 pawetkac stgteam 1520824808 May 29 03:15 NetBackup_8.1.1_Win.zip</code>
+I will use this version to install it on example client tamog008.
+First thing first - please copy pscp to this client tamog008 from this web site https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html or here is [[https://the.earth.li/~sgtatham/putty/latest/w64/pscp.exe|pscp-64bit]] or [[https://the.earth.li/~sgtatham/putty/latest/w32/pscp.exe|pscp - 32bit]] Once pscp is on the client open cmd prompt and go the folder with pscp.exe file: <code>C:\Users\q1pawetk>cd Downloads
+
+C:\Users\q1pawetk\Downloads>dir
+ Volume in drive C is SYSTEM
+ Volume Serial Number is 6630-5BFB
+
+ Directory of C:\Users\q1pawetk\Downloads
+
+11/26/2018  10:31 AM    <DIR>          .
+11/26/2018  10:31 AM    <DIR>          ..
+11/26/2018  10:31 AM           626,744 pscp.exe
+               1 File(s)        626,744 bytes
+               2 Dir(s)  19,399,520,256 bytes free
+
+
+C:\Users\q1pawetk\Downloads>pscp pawetkac@mognbuhmams:/inst/shared/NetBackup_8.1.1_Win.zip NetBackup_8.1.1_Win.zip
+The server's host key is not cached in the registry. You have no guarantee that the server is the computer you
+think it is. The server's ssh-ed25519 key fingerprint is:
+ssh-ed25519 256 77:da:16:4c:49:22:04:b3:f7:f0:93:be:55:37:95:ef
+If you trust this host, enter "y" to add the key to PuTTY's cache and carry on connecting.
+If you want to carry on connecting just once, without adding the key to the cache, enter "n".
+If you do not trust this host, press Return to abandon theconnection.
+Store key in cache? (y/n) y
+pawetkac@mognbuhmams's password:
+NetBackup_8.1.1_Win.zip   | 1485180 kB | 47909.0 kB/s | ETA: 00:00:00 | 100%</code> Of course please use your user ID on the master server. Than unzip this file and proceed with installation of client binaries.
+Below some pictures.{{ :dp:clnt_installation_1.png?direct |}}
+{{ :dp:clnt_installation_2.png?direct |}}
+{{ :dp:clnt_installation_3.png?direct |}}
+{{ :dp:clnt_installation_4.png?direct |}}
+Compare this below Finger print with the one available on master server CACert - below shown
+{{ :dp:clnt_installation_5.png?direct |}}
+{{ :dp:clnt_installation_6.png?direct |}}
+
+From where to obtain CA certificate. Please login to master server and go here:
+{{ :dp:clnt_installation_7.png?direct |}}
+{{ :dp:certCA.png?direct | CACert}}
+For brand new clients (NBU domain is not aware of any backups of it etc) you need to generate token and provide it in installation. To create token do this:
+{{ :dp:new_token.png?direct |}}
+{{ :dp:token_creation.png?direct |}}
+{{ :dp:token_created.png?direct |}}
+Once installed you can see such output from this<code>root on mognbuhmams:/root $ bpgetconfig -s tamog002.amer.int.tenneco.com
+Client of mognbuhmams
+PC-x64, WindowsXP
+8.1.0
+NetBackup
+8.1.1
+810000
+C:\Program Files\Veritas\NetBackup\bin
+Windows2012_R2 6</code> so you can directly restore files from VMware based backup to this client.

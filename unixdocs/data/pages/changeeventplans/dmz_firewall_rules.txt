@@ -1,0 +1,53 @@
+====== Firewall Rules for new NTP & DNS Servers ======
+
+
+==== CDC Firewall Rules====
+
+^Purpose	^Source IP	^Source server name	^Target IP ^Target	Server Name	^Port	^Protocol ^Direction wrt Target ^Remarks^
+|SSH from\\ Jump Server	|10.128.41.10	|pcdcunxaxap01	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|22	|TCP	|Inbound| |
+|SSH from\\ build server	|10.128.81.17	|pcdcunxlxap01	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|22	|TCP	|Bidirectional	| |
+|SSH from\\ jump server	|10.135.49.143	|Sfldmilx031	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|22	|TCP	|Inbound	| |
+|SYSLOG	|10.128.80.10	|pcdcunxlxap04	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|514	|UDP	|Outbound	| |
+|Repo	|10.128.81.17	|pcdcunxlxap01	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|80, 443	|TCP	|Outbound	| |
+|Lpar2rrd	|10.128.81.18	|pcdcunxlxap02	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|22	|TCP	|Bidirectional	| |
+|UUMA	|10.128.81.19	|pcdcunxlxap03	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|40035	|TCP	|Outbound	| |
+|NTP 	|10.128.31.248	|pcdcntplxap02	|10.99.207.5	|pcdcntplxap01	|123	|UDP	|Inbound	|Only for NTP server|
+|NTP Public Servers||ntp-0.cso.uiuc.edu\\ ntp1.cs.wisc.edu\\ 0.north-america.pool.ntp.org\\ 1.north-america.pool.ntp.org	|10.99.207.5	|pcdcntplxap01	|123	|UDP	|Outbound	|Only for NTP server|
+|DNS	|10.128.11.200 \\ 10.128.11.201\\ 10.128.11.202	|EGDCILDC001\\ EGDCILDC002\\ EGDCILDC003	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|53	|UDP	|Outbound	|Client|
+|Nexpose\\ (security\\ scan)|10.128.80.38\\ 10.128.80.39\\ 10.128.80.44\\ 10.128.80.56\\ 0.128.80.57\\ 10.128.80.58\\ 10.45.169.30\\ 208.118.237.52\\ 10.128.80.38 |AMER pcdcrp7lxsc01.driv.com\\ AMER pcdcrp7lxsc02.driv.com\\ AMER pcdcrp7lxsc03.driv.com\\ EMEA pcdcrp7lxsc04.driv.com\\ EMEA pcdcrp7lxsc05.driv.com\\ EMEA pcdcrp7lxsc06.driv.com\\ ASPA pshjrp7lxsc01.driv.com\\ [[https://pcdcrp7lxcc01.driv.com:3780|DR1V Dedicated Scan Engine]]|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|All	|TCP, UDP	|Inbound| |	
+|Service Now	|10.128.100.57\\ 10.128.100.58\\ 10.128.10.207\\ 10.128.10.208\\ 10.24.130.27\\ 10.24.130.28	|CDCVILMS412.driv.com\\ CDCVILMS413.driv.com\\ EGDCILMS012.driv.com\\ EGDCILMS013.driv.com	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|161	|UDP	|Bidirectional	|
+|Service Now	|10.128.100.57\\ 10.128.100.58\\ 10.128.10.207\\ 10.128.10.208\\ 10.24.130.27\\ 10.24.130.28	|CDCVILMS412.driv.com\\ CDCVILMS413.driv.com\\ EGDCILMS012.driv.com\\ EGDCILMS013.driv.com	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|22	|TCP	|Bidirectional	|
+|Monitoring|10.128.100.20\\ 10.128.100.21\\ 10.128.100.25\\ 10.128.100.26\\ 10.128.100.27|CDCVILMS204.driv.com\\ CDCVILMS205.driv.com\\ CDCVILMS461.driv.com\\ CDCVILMS403.driv.com\\ CDCILMS510.driv.com|10.99.207.5\\ 10.99.207.4|pcdcntplxap01\\ pcdcdnslxap01|161|UDP|Bidrectional|
+|Monitoring|10.128.100.20\\ 10.128.100.21\\ 10.128.100.25\\ 10.128.100.26\\ 10.128.100.27|CDCVILMS204.driv.com\\ CDCVILMS205.driv.com\\ CDCVILMS461.driv.com\\ CDCVILMS403.driv.com\\ CDCILMS510.driv.com|10.99.207.5\\ 10.99.207.4|pcdcntplxap01\\ pcdcdnslxap01|162|UDP|Bidrectional|
+|Monitoring|10.128.100.20\\ 10.128.100.21\\ 10.128.100.25\\ 10.128.100.26\\ 10.128.100.27|CDCVILMS204.driv.com\\ CDCVILMS205.driv.com\\ CDCVILMS461.driv.com\\ CDCVILMS403.driv.com\\ CDCILMS510.driv.com|10.99.207.5\\ 10.99.207.4|pcdcntplxap01\\ pcdcdnslxap01|22|TCP|Inbound|
+|SMTP	|10.128.10.236	|smtp.driv.com	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|25	|TCP	|Outbound	|
+|Vmware tools &\\ console access	|134.238.126.193	|cdcvilms156.driv.com	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|443	|TCP	|Outbound|[[https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html|Connecting to the Virtual Machine Console Through a Firewall ]]|
+|Vmware tools &\\ console access	|10.128.24.168\\ 10.128.24.169\\ 10.128.24.170	|**ESXi hosts** \\ cdcvilvm168.driv.com\\ cdcvilvm169.driv.com\\ cdcvilvm170.driv.com	|10.99.207.5\\ 10.99.207.4	|pcdcntplxap01\\ pcdcdnslxap01	|902	|TCP	|Bidirectional|[[https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html|Connecting to the Virtual Machine Console Through a Firewall ]]|
+
+==== LDD Firewall Rules====
+^Purpose	^Source IP	^Source server name	^Target IP ^Target	Server Name	^Port	^Protocol ^Direction wrt Target ^Remarks^
+|SSH from\\ Jump Server	|10.128.41.10	|pcdcunxaxap01	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|22	|TCP	|Inbound| |
+|SSH from\\ build server	|10.128.81.17	|pcdcunxlxap01	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|22	|TCP	|Bidirectional	| |
+|SSH from\\ jump server	|10.135.49.143	|Sfldmilx031	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|22	|TCP	|Inbound	| |
+|SYSLOG	|10.128.80.10	|pcdcunxlxap04	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|514	|UDP	|Outbound	| |
+|Repo	|10.128.81.17	|pcdcunxlxap01	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|80, 443	|TCP	|Outbound	| |
+|Lpar2rrd	|10.128.81.18	|pcdcunxlxap02	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|22	|TCP	|Bidirectional	| |
+|UUMA	|10.128.81.19	|pcdcunxlxap03	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|40035	|TCP	|Outbound	| |
+|NTP 	|10.24.132.248	|plddntplxap02	|10.24.151.5	|plddntplxap01	|123	|UDP	|Inbound	|Only for NTP server|
+|NTP Public Servers||ntp1.belbone.be\\ time1.hs-augsburg.de\\ 0.europe.pool.ntp.org\\ 1.europe.pool.ntp.org	|10.24.151.5	|plddntplxap01	|123	|UDP	|Outbound	|Only for NTP server|
+|DNS	|10.24.130.232\\ 10.24.130.233	|LDDGBDC001\\ LDDGBDC002 |10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|53	|UDP	|Outbound	|Client|
+|Nexpose\\ (security\\ scan)|10.128.80.38\\ 10.128.80.39\\ 10.128.80.44\\ 10.128.80.56\\ 0.128.80.57\\ 10.128.80.58\\ 10.45.169.30\\ 208.118.237.52\\ 10.128.80.38 |AMER pcdcrp7lxsc01.driv.com\\ AMER pcdcrp7lxsc02.driv.com\\ AMER pcdcrp7lxsc03.driv.com\\ EMEA pcdcrp7lxsc04.driv.com\\ EMEA pcdcrp7lxsc05.driv.com\\ EMEA pcdcrp7lxsc06.driv.com\\ ASPA pshjrp7lxsc01.driv.com\\ [[https://pcdcrp7lxcc01.driv.com:3780|DR1V Dedicated Scan Engine]]|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|All	|TCP, UDP	|Inbound| |	
+|Service Now	|10.128.100.57\\ 10.128.100.58\\ 10.128.10.207\\ 10.128.10.208\\ 10.24.130.27\\ 10.24.130.28	|CDCVILMS412.driv.com\\ CDCVILMS413.driv.com\\ EGDCILMS012.driv.com\\ EGDCILMS013.driv.com	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|161	|UDP	|Bidirectional	|
+|Service Now	|10.128.100.57\\ 10.128.100.58\\ 10.128.10.207\\ 10.128.10.208\\ 10.24.130.27\\ 10.24.130.28	|CDCVILMS412.driv.com\\ CDCVILMS413.driv.com\\ EGDCILMS012.driv.com\\ EGDCILMS013.driv.com	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|22	|TCP	|Bidirectional	|
+|Monitoring|10.128.100.20\\ 10.128.100.21\\ 10.128.100.25\\ 10.128.100.26\\ 10.128.100.27|CDCVILMS204.driv.com\\ CDCVILMS205.driv.com\\ CDCVILMS461.driv.com\\ CDCVILMS403.driv.com\\ CDCILMS510.driv.com|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|161|UDP|Bidrectional|
+|Monitoring|10.128.100.20\\ 10.128.100.21\\ 10.128.100.25\\ 10.128.100.26\\ 10.128.100.27|CDCVILMS204.driv.com\\ CDCVILMS205.driv.com\\ CDCVILMS461.driv.com\\ CDCVILMS403.driv.com\\ CDCILMS510.driv.com|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|162|UDP|Bidrectional|
+|Monitoring|10.128.100.20\\ 10.128.100.21\\ 10.128.100.25\\ 10.128.100.26\\ 10.128.100.27|CDCVILMS204.driv.com\\ CDCVILMS205.driv.com\\ CDCVILMS461.driv.com\\ CDCVILMS403.driv.com\\ CDCILMS510.driv.com|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|22|TCP|Inbound|
+|SMTP	|10.128.10.236	|smtp.driv.com	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|25	|TCP	|Outbound	|
+|Vmware tools &\\ console access	|134.238.126.193	|cdcvilms156.driv.com	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|443	|TCP	|Outbound|[[https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html|Connecting to the Virtual Machine Console Through a Firewall ]]|
+|Vmware tools &\\ console access	|192.55.159.212\\ 192.55.159.213\\ 192.55.159.214	|**ESXi hosts**\\ lddcgbvm007\\ lddcgbvm008\\ lddcgbvm009	|10.24.151.5\\ 10.24.151.4	|plddntplxap01\\ pldddnslxap01	|902	|TCP	|Bidirectional|[[https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html|Connecting to the Virtual Machine Console Through a Firewall ]]|
+
+
+==== GUR Firewall Rules====
+^Purpose	^Source IP	^Source server name	^Target IP ^Target	Server Name	^Port	^Protocol ^Direction wrt Target ^Remarks^
+|NTP to CDC Master	|10.220.128.248	|pgurntplxap01	|10.99.207.5	|pcdcntplxap01	|123	|UDP	|Outbound| |
+|NTP to LDD Master	|10.220.128.248	|pgurntplxap01	|10.24.151.5	|plddntplxap01  |123	|UDP	|Outbound| |

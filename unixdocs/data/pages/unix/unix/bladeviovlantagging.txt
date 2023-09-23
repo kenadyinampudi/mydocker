@@ -1,0 +1,29 @@
+====== VLAN Tagging on Blade VIO Server ======
+
+ent8 - 450,48,406,4
+
+ent9 - 451,49
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>cfgmgr</code>
+  - Find out the adapter id<code>lshwres -r hea --rsubtype logical --level port -F adapter_id</code>It will be a series of numbers like 23000001 or 23000000
+  - Remove the HEA membership from all guest lpars.<code>chhwres -r hea -o s -l 23000001 -g 1 -a vlan_id_list=all --id 2 --logport 3</code><code>chhwres -r hea -o s -l 23000001 -g 1 -a vlan_id_list=all --id 2 --logport 4</code>
+  - Set VIOS partition as the Promiscious lpar. 
+    - Set it<code>chhwres -r hea -o s -l 23000001 -g 1 -a promisc_lpar_id=1 --physport 0</code><code>chhwres -r hea -o s -l 23000001 -g 1 -a promisc_lpar_id=1 --physport 1</code>
+  - Obtain <Server name> by executing as padmin the following for next two steps<code>lssyscfg -r sys -F name</code> And <vio lpar name><code>lssyscfg -r lpar -F name</code>
+  - Create entxx virtual NIC with additional VLANs that we need. 450,48,406.  <code>chhwres -m <Server name> -p <vio lpar name> -o a -r virtualio --rsubtype eth -s 14 -a "ieee_virtual_eth=1,port_vlan_id=14,\"addl_vlan_ids=450,48,406\",is_trunk=1,trunk_priority=1" -d 5</code>
+  - Create entxx virtual NIC with additional VLANs that we need. 451,49.<code>chhwres -m <Server name> -p <vio lpar name> -o a -r virtualio --rsubtype eth -s 15 -a "ieee_virtual_eth=1,port_vlan_id=15,\"addl_vlan_ids=451,49\",is_trunk=1,trunk_priority=1" -d 5</code>
+  - Create etherchannels ent10 and ent11
+    - ent0 + ent1 => ent10<code>mkvdev -lnagg ent0 -attr backup_adapter=ent1</code> 
+    - ent2 + ent3 => ent11<code>mkvdev -lnagg ent2 -attr backup_adapter=ent3</code>
+  - Create SEA ent12 ent10 + ent8 => ent12<code>mkvdev -sea ent10 -vadapter ent8 -default ent8 -defaultid 14</code>
+  - Create SEA ent13 ent11 + ent9 => ent13<code>mkvdev -sea ent11 -vadapter ent9 -default ent9 -defaultid 15</code>
+  - Configure IP on SEA<code>mktcpip -hostname <vio DNS name> -inetaddr <vio IP> -interface en12 -netmask 255.255.255.0 -gateway <default gateway> -start</code>If hostname was not changed / you get a message like this <code>Hostname "taprvio3" does not match with system hostname "taprvio3.amer.int.tenneco.com".
+System Hostname will not be altered. /etc/hosts file will be updated.</code>Change the hostname in ODM<code>oem_setup_env</code><code>chdev -l inet0 -a hostname=<vioservername></code>

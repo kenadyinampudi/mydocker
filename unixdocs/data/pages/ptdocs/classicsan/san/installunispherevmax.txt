@@ -1,0 +1,19 @@
+====== Install VMAX Unisphere on Redhat ======
+
+  - Make sure /opt/emc is a filesystem with 100G free space.
+  - Install Solutions enabler.
+    - Download the software<code>sudo scp taitc118:/prod/images/EMC/se7610-Linux-i386-ni.tar.gz /var/tmp</code>
+    - Untar<code>cd /var/tmp ; sudo gtar -xvf /var/tmp/se7610-Linux-i386-ni.tar.gz</code>
+    - Run the installer<code>sudo ./se7610_install.sh -install</code>
+    - Perform zoning so that the system can see VMAX.
+    - Register the system to VMAX
+    - Discover the VMAX.<code>sudo symcfg discover</code>
+    - List and make sure VMAX is visible<code>sudo symcfg list</code>
+    - Cleanup files from /var/tmp
+  - Add the group and user<code>sudo groupadd mysql</code><code>sudo useradd -m -g mysql -p mysql mysql</code>
+  - Download the Unisphere installable<code>sudo scp taitc118:/prod/images/EMC/UNIVMAX_V1.6.1.6_LINUX_X86_64.bin /var/tmp</code>
+  - Run the installer<code>sudo /var/tmp/UNIVMAX_V1.6.1.6_LINUX_X86_64.bin</code>
+  - Start the DB<code>cd /opt/emc//SMAS/jboss/standalone/data/msq
+sudo ./smas_mysql_unix_helper.sh -S</code>
+  - Start the application<code>cd /etc/init.d
+sudo ./smas start</code>

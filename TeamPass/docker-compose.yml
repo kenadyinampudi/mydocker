@@ -1,0 +1,32 @@
+version: "3"
+services:
+  teampass-web:
+    image: dormancygrace/teampass:latest
+    restart: unless-stopped
+    environment:
+      VIRTUAL_HOST: scdcawxlxap01 
+      VIRTUAL_PORT: 8070
+    volumes:
+      - ./teampass-html:/var/www/html
+    # uncomment ports to use without proxy
+    ports:
+      - 8070:80
+    networks:
+      - teampass-internal
+    depends_on:
+      - db
+  db:
+    restart: unless-stopped
+    image: yobasystems/alpine-mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: teampass
+      MYSQL_DATABASE: teampass
+      MYSQL_PASSWORD: teampass 
+      MYSQL_USER: teampass
+    volumes:
+      - ./teampass-db:/var/lib/mysql
+    networks:
+      - teampass-internal
+
+networks:
+  teampass-internal:

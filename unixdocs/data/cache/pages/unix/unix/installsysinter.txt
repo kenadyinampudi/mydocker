@@ -1,0 +1,17 @@
+====== Install sysinter ======
+
+===== AIX & VIOS =====
+
+  - Make this directory<code>mkdir -p /usr/local/bin</code>
+  - Copy this<code>[[ "$(uname)" = "AIX" ]] && scp taitc118:/prod/images/csi/sysinter.aix5 /usr/local/bin/sysinter.aix5</code>
+  - Then do this<code>[[ "$(uname)" = "AIX" ]] && echo "sysinter                40035/tcp" >> /etc/services</code>
+  - Then do this<code>[[ "$(uname)" = "AIX" ]] && echo "sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5" >> /etc/inetd.conf</code>
+  - Now restart inetd<code>[[ "$(uname)" = "AIX" ]] && refresh -s inetd</code>
+
+===== Linux =====
+
+  - Make this directory<code>mkdir -p /usr/local/bin</code>
+  - Copy this<code>scp taitc118:/prod/images/csi/sysinter.redhat /usr/local/bin/sysinter.redhat</code>
+  - Then do this<code>[[ "$(uname)" = "Linux" ]] && echo "sysinter                40035/tcp" >> /etc/services</code>
+  - Then do this<code>[[ "$(uname)" = "Linux" ]] && scp taitc118:/prod/images/csi/sysinter-xinetd /etc/xinetd.d</code>
+  - Now restart inetd<code>[[ "$(uname)" = "Linux" ]] && service xinetd reload</code>

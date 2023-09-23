@@ -1,0 +1,106 @@
+====== Installing the MS SQL ODBC driver for linux ======
+
+
+Full instructions for all systems are located in [[https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver15 | this online article]]
+
+The repositories are added to SuSE Manager.  Check to make sure the repositories are added to the server you want to install the packages, then you can run simple zypper commands. \\ 
+\\ 
+Please note the environmental variable which needs to be set before the installation.
+==== SHORT PATH! ====
+
+Three step process:
+  - Install version 17 (ignoring broken dependencies)\\  <code>
+  sudo ACCEPT_EULA=Y zypper install msodbcsql17</code>
+  - Install version 13\\  <code>
+  sudo ACCEPT_EULA=Y zypper install msodbcsql</code>
+  - Put links in\\   <code>
+  ln -s /usr/lib64/libodbc.so.2.0.0 /usr/lib64/libodbc.so.1
+  ln -s /usr/lib64/libodbcinst.so.2.0.0 /usr/lib64/libodbcinst.so.1</code>
+  
+  ==== Full Version ====
+As of SLES 12.4, the MS SQL package is linked to the wrong dependencies.  It will wrongly suggest that the openssl1 package is not installed.  You can check this with zypper.
+<code>
+cdcpillx047:/usr/lib64 # zypper se libopenssl
+Refreshing service 'spacewalk'.
+Loading repository data...
+Reading installed packages...
+
+S | Name                       | Summary                                                                      | Type
+--+----------------------------+------------------------------------------------------------------------------+--------
+i | libopenssl-1_0_0-devel     | Development files for OpenSSL                                                | package
+i | libopenssl-devel           | Include Files and Libraries mandatory for Development                        | package
+  | libopenssl0_9_8            | Secure Sockets and Transport Layer Security                                  | package
+  | libopenssl0_9_8-32bit      | Secure Sockets and Transport Layer Security                                  | package
+i | libopenssl1_0_0            | Secure Sockets and Transport Layer Security                                  | package
+i | libopenssl1_0_0-32bit      | Secure Sockets and Transport Layer Security                                  | package
+  | libopenssl1_0_0-hmac       | HMAC files for FIPS-140-2 integrity checking of the openssl shared libraries | package
+  | libopenssl1_0_0-hmac-32bit | HMAC files for FIPS-140-2 integrity checking of the openssl shared libraries | package
+  | libopenssl1_1              | Secure Sockets and Transport Layer Security                                  | package
+  | libopenssl1_1-32bit        | Secure Sockets and Transport Layer Security                                  | package
+</code>
+In this example, libopenssl1_0_0 is already installed.\\ 
+
+
+Proceed with the installation anyway making sure to select "2" to ignore the dependencies and install the package anyway.
+<code>
+sudo ACCEPT_EULA=Y zypper install msodbcsql17
+</code>
+
+
+<code>
+Problem: nothing provides openssl1 needed by msodbcsql17-17.5.1.1-1.x86_64
+ Solution 1: do not install msodbcsql17-17.5.1.1-1.x86_64
+ Solution 2: break msodbcsql17-17.5.1.1-1.x86_64 by ignoring some of its dependencies
+
+Choose from above solutions by number or cancel [1/2/c] (c): 2
+Resolving dependencies...
+Resolving package dependencies...
+
+The following NEW package is going to be installed:
+  msodbcsql17
+
+The following package has no support information from it's vendor:
+  msodbcsql17
+
+1 new package to install.
+Overall download size: 0 B. Already cached: 797.3 KiB. After the operation, additional 2.3 MiB will be used.
+Continue? [y/n/...? shows all options] (y):
+In cache msodbcsql17-17.5.1.1-1.x86_64.rpm                                                                                                  (1/1), 797.3 KiB (  2.3 MiB unpacked)
+
+Checking for file conflicts: ..............................................................................................................................................[done]
+(1/1) Installing: msodbcsql17-17.5.1.1-1.x86_64 ------------------------------------------------------------------------------------------------------------------------------[|]
+The license terms for this product can be downloaded from
+https://aka.ms/odbc17eula and found in
+/usr/share/doc/msodbcsql17/LICENSE.txt . By entering 'YES',
+you indicate that you accept the license terms.
+
+Do you accept the license terms? (Enter YES or NO)
+YES
+(1/1) Installing: msodbcsql17-17.5.1.1-1.x86_64 ...........................................................................................................................[done]
+Additional rpm output:
+warning: /var/cache/zypp/packages/spacewalk:pt-sle12-sp4-yearly-sle12-sp4-dev-mssql-odbc/getPackage/1/21f0db563241433334baf0b1159d601bed58810cec816a4080afa0ae6b165ef4/msodbcsql17-17.5.1.1-1.x86_64.rpm: Header V4 RSA/SHA256 Signature, key ID be1229cf: NOKEY
+</code>
+Lastly, create necessary symlinks
+
+  ln -s /usr/lib64/libodbc.so.2.0.0 /usr/lib64/libodbc.so.1
+  ln -s /usr/lib64/libodbcinst.so.2.0.0 /usr/lib64/libodbcinst.so.1
+
+
+
+  - A SLES12 zypper package has been provided by Microsoft for the [ODBC Driver 13 for SQL Server] driver.   The instructions to install the latest package are available here:\\  [[https://docs.microsoft.com/en-gb/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017#microsoft-odbc-driver-131-for-sql-server]]
+SAP recommends to install the [ODBC Driver 17 for SQL Server] in addition.  Newer versions of the DBSL database interface will use this driver instead of the 13 driver.  Use this page to install the latest ODBC Driver 17 for SQL Server:
+[[https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server]]
+
+The [ODBC Driver 17 for SQL Server] is supported for higher SLES releases.  Use the same page for the installation instructions and create the same necessary symlinks.
+
+
+If asked to install other things, these are the instructions.
+<code>
+# optional: for bcp and sqlcmd
+sudo ACCEPT_EULA=Y zypper install mssql-tools
+echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+source ~/.bashrc
+# optional: for unixODBC development headers
+sudo zypper install unixODBC-devel
+</code>

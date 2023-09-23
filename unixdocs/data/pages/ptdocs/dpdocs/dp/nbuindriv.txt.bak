@@ -1,0 +1,25 @@
+====== DRiV split tasks -- NBU backups ======
+
+====== T0 ======
+Assumptions:
+  * NetBackup software should be installed in all UNIX based clients (AIX as well RedHat) - if not follow this <fixme>
+  * All backup policies were activated and are active - this can be easy checked from NBU JAVA GUI
+  * All VMWARE based clients were tagged - if something was not tag follow [[https://dpdocs.amer.int.tenneco.com/doku.php?id=dp:imo-vms|this]]
+
+To verify if above assumptions are valid follow next steps (for example I am using client name pcdcprmaxdb01
+  - Log in to master server via using ssh client putty<code>putty pcdcbkplxms01.driv.com</code>
+  - create a list of all tagged vm clients that NBU can see - including powered off ones<code>sudo /usr/openv/netbackup/bin/nbdiscover  -noxmloutput -includedonly "vmware:/?filter=tag equal 'NBU_BACKUP_YES'" > tagged_ones_even_poweredoff</code>
+  - create a list of all clients coming from defined policies <code>sudo /usr/openv/netbackup/bin/admincmd/bpplclients -allunique > all_nbu_clients</code>
+  - set some variables<code>export TAGVMS=tagged_ones_even_poweredoff
+export ALLCLNTS=all_nbu_clients
+export CHECKED_CLNT=pcdcprmaxdb01</code>
+  - Check what policies are defined for given client<code>grep -i ${CHECKED_CLNT} ${ALLCLNTS} ${TAGVMS}
+all_nbu_clients:RS6000           AIX6                       pcdcprmaxdb01bck.driv.com</code>
+  - From above copy the real NBU client to a variable<code>export CHECKED_CLNT_NBU=pcdcprmaxdb01bck.driv.com</code>
+  - Find out policies defined for this client and see if these are active - for vm no policy will be found (maybe a database one will)<code>sudo /usr/openv/netbackup/bin/admincmd/bppllist -byclient ${CHECKED_CLNT_NBU} -U |grep -e "^Policy Name" -e "^  Active:"
+Policy Name:       SAP_PRM_PCDCPRMAXDB01
+  Active:              no
+Policy Name:       STD_PCDCPRMAXDB01
+  Active:              no</code>
+  - So for this client from example we do see to polices defined - for now these are not active. This line Active: no should be having yes during go live.
+

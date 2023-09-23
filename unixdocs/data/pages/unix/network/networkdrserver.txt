@@ -1,0 +1,36 @@
+====== Customization for Data Repository Network Monitoring servers ======
+
+  - Create groups<code>sudo groupadd -g 6681 verticadba
+sudo groupadd -g 6926 dradmin</code>
+  - Create users account<code>sudo useradd -K PASS_MAX_DAYS=-1 -g dradmin -G verticadba -d /home/dradmin -c "Vertica DB User" -m -u 6224 dradmin</code>
+  - Create filesystems with LVM<code>sudo fdisk -l | grep /dev/sd
+sudo fdisk -l /dev/sdb
+sudo pvcreate /dev/sdb
+sudo vgcreate datavg01 /dev/sdb
+sudo lvcreate -n opt_CA -L 5GB datavg01
+sudo mkfs -t ext4 /dev/datavg01/opt_CA
+echo "/dev/mapper/datavg01-opt_CA   /opt/CA                    ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /opt/CA
+sudo mount /opt/CA
+
+sudo lvcreate -n opt_vertica -L 51196MB datavg01
+sudo mkfs -t ext4 /dev/datavg01/opt_vertica
+echo "/dev/mapper/datavg01-opt_vertica   /opt/vertica                    ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /opt/vertica
+sudo mount /opt/vertica
+
+sudo lvcreate -n opt_CA -L 61436MB datavg01
+sudo lvcreate -n vertica_backup -L 61436MB datavg01
+sudo mkfs -t ext4 /dev/datavg01/vertica_backup
+echo "/dev/mapper/datavg01-vertica_backup   /vertica/backup                    ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /vertica/backup
+sudo mount /vertica/backup</code>
+  - Create filesystems with Non-LVM<code>sudo mkfs -t ext4 /dev/sdc
+echo "/dev/sdc   /vertica/data                   ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /vertica/data
+sudo mount /vertica/data
+
+sudo mkfs -t ext4 /dev/sdd
+echo "/dev/sdc   /vertica/catalog                   ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /vertica/catalog
+sudo mount /vertica/catalog</code>

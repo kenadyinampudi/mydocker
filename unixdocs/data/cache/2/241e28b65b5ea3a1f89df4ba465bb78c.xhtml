@@ -1,0 +1,212 @@
+
+<h1 class="sectionedit1" id="instructions_to_obtain_patches_january_-_2020">Instructions to obtain patches January - 2020</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Instructions to obtain patches January - 2020" [1-61] -->
+<h2 class="sectionedit2" id="figured_out_the_patches_needed">Figured out the patches needed</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the build server<pre class="code">ssh pcdcunxlxap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a look at the RHEL inventory and figure out what latest offerings are available.</div>
+</li>
+<li class="level1"><div class="li"> January 2020, we have the following versions available and the offerings.</div>
+</li>
+</ol>
+<div class="table sectionedit3"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Inventory</th><th class="col1 leftalign">Plan / Target version                                       </th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">RHEL6    </td><td class="col1 leftalign">Upgrade to RHEL 6.9                                         </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign">RHEL7    </td><td class="col1 leftalign">Upgrade to RHEL 7.7 except HANA database systems            </td>
+	</tr>
+</table></div>
+<!-- EDIT3 TABLE [335-553] -->
+</div>
+<!-- EDIT2 SECTION "Figured out the patches needed" [62-555] -->
+<h2 class="sectionedit4" id="download_patches_for_latest_rhel7_version_rhel_77_at_this_time">Download patches for latest RHEL7 version ( RHEL 7.7 at this time )</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create a base directory under document root<pre class="code">sudo mkdir -p /var/www/html/sources/01-09-2020/rhel-7.7</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to an existing RHEL7 system or execute it from the build server and register it to RHN.</div>
+<ol>
+<li class="level2"><div class="li"> If needed enable proxy<pre class="code">sudo vi /etc/rhsm/rhsm.conf</pre>
+
+<p>
+Modify this
+</p>
+<pre class="code">proxy_hostname = 170.64.0.72
+proxy_port = 8080
+proxy_user = &lt;username&gt;
+proxy_password = &lt;password&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Register the host<pre class="code">sudo subscription-manager register --username tenauto</pre>
+
+<p>
+Enter the password
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Un-subscribe from all subscriptions<pre class="code">sudo subscription-manager unsubscribe --all</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Subscribe to one of the valid subscriptions<pre class="code">sudo subscription-manager subscribe --pool=8a85f9815828568c01582c299cf061be</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> The subscription takes a while sometimes, so give it 15 minutes or so.</div>
+</li>
+<li class="level2"><div class="li"> Set the release level to RHEL 7.7<pre class="code">sudo subscription-manager release --set=7Server</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Refresh and attach the subscription, this step populates redhat.repo<pre class="code">sudo subscription-manager refresh
+sudo subscription-manager attach</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Cleanup yum cache<pre class="code">sudo yum clean all
+sudo rm -rf /var/cache/yum</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Sync repositories<pre class="code">sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.7 -r rhel-7-server-rpms –l
+sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.7 -r rhel-7-server-extras-rpms -l
+sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.7 -r rhel-7-server-optional-rpms -l</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run createrepo on each repository<pre class="code">sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.7/rhel-7-server-rpms
+sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.7/rhel-7-server-extras-rpms
+sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.7/rhel-7-server-optional-rpms</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If these repositories were created on a 3rd host, rsync the contents to build server <code>pcdcunxlxap01</code></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Download patches for latest RHEL7 version ( RHEL 7.7 at this time )" [556-2505] -->
+<h2 class="sectionedit5" id="download_patches_for_sap_for_rhel7">Download patches for SAP for RHEL7</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create a base directory under document root<pre class="code">sudo mkdir -p /var/www/html/sources/01-09-2020/rhel-7.7</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to an existing RHEL7 system or execute it from the build server and register it to RHN.</div>
+<ol>
+<li class="level2"><div class="li"> If needed enable proxy<pre class="code">sudo vi /etc/rhsm/rhsm.conf</pre>
+
+<p>
+Modify this
+</p>
+<pre class="code">proxy_hostname = 170.64.0.72
+proxy_port = 8080
+proxy_user = &lt;username&gt;
+proxy_password = &lt;password&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Register the host<pre class="code">sudo subscription-manager register --username tenauto</pre>
+
+<p>
+Enter the password
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Un-subscribe from all subscriptions<pre class="code">sudo subscription-manager unsubscribe --all</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Subscribe to one of the valid subscriptions<pre class="code">sudo subscription-manager subscribe --pool=8a85f9815828568c01582c299cf061be</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> The subscription takes a while sometimes, so give it 15 minutes or so.</div>
+</li>
+<li class="level2"><div class="li"> Set the release level to RHEL 7Server<pre class="code">sudo subscription-manager release --set=7Server</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Refresh and attach the subscription, this step populates redhat.repo<pre class="code">sudo subscription-manager refresh
+sudo subscription-manager attach</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Cleanup yum cache<pre class="code">sudo yum clean all
+sudo rm -rf /var/cache/yum</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Sync repositories<pre class="code">sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.7 -r rhel-sap-for-rhel-7-server-rpms –l</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run createrepo on each repository<pre class="code">sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.7/rhel-sap-for-rhel-7-server-rpms</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If these repositories were created on a 3rd host, rsync the contents to build server <code>pcdcunxlxap01</code></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Download patches for SAP for RHEL7" [2506-4099] -->
+<h2 class="sectionedit6" id="download_patches_for_sap_hana_for_rhel7">Download patches for SAP HANA for RHEL7</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create a base directory under document root<pre class="code">sudo mkdir -p /var/www/html/sources/01-09-2020/rhel-7.2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to an existing RHEL7 system or execute it from the build server and register it to RHN.</div>
+<ol>
+<li class="level2"><div class="li"> If needed enable proxy<pre class="code">sudo vi /etc/rhsm/rhsm.conf</pre>
+
+<p>
+Modify this
+</p>
+<pre class="code">proxy_hostname = 170.64.0.72
+proxy_port = 8080
+proxy_user = &lt;username&gt;
+proxy_password = &lt;password&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Register the host<pre class="code">sudo subscription-manager register --username tenauto</pre>
+
+<p>
+Enter the password
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Un-subscribe from all subscriptions<pre class="code">sudo subscription-manager unsubscribe --all</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Subscribe to one of the valid RHEL for HANA subscriptions<pre class="code">sudo subscription-manager subscribe --pool=8a85f9815bcfd8f3015bd002cc8c3741</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> The subscription takes a while sometimes, so give it 15 minutes or so.</div>
+</li>
+<li class="level2"><div class="li"> Set the release level to RHEL 7.2<pre class="code">sudo subscription-manager release --set=7.2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Refresh and attach the subscription, this step populates redhat.repo<pre class="code">sudo subscription-manager refresh
+sudo subscription-manager attach</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Cleanup yum cache<pre class="code">sudo yum clean all
+sudo rm -rf /var/cache/yum</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Sync repositories<pre class="code">sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.2 -r rhel-sap-hana-for-rhel-7-server-rpms –l</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run createrepo on each repository<pre class="code">sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.2/rhel-sap-hana-for-rhel-7-server-rpms</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If these repositories were created on a 3rd host, rsync the contents to build server <code>pcdcunxlxap01</code></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Download patches for SAP HANA for RHEL7" [4100-] -->

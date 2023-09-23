@@ -1,0 +1,25 @@
+====== Installing LPAR2RRD agent - AIX ======
+
+  - Login to pcdcunxaxap01 and set a variable to define the target system<code>export targethost=<hostname></code>
+  - Copy the rpm to target<code>sudo scp /prod/images/rpms/lpar2rrd/lpar2rrd-agent-5.05-8.ppc.rpm ${targethost}:/var/tmp/</code>
+  - Install and configure lpar2rrd agent 
+    - Login to target system<code>sudo ssh ${targethost}</code>
+    - Create the user<code>sudo /usr/bin/mkuser id=2209 pgrp=staff groups=staff home=/home/lpar2rrd shell=/usr/bin/ksh gecos="Micro partition Data collection" lpar2rrd</code>
+    - Install the agent package<code>sudo rpm -Uvh /var/tmp/lpar2rrd-agent-5.05-8.ppc.rpm</code>Cleanup<code>sudo rm /var/tmp/lpar2rrd-agent-5.05-8.ppc.rpm</code>
+    - Enable cron access for lpar2rrd<code>echo "lpar2rrd" | sudo tee -a /var/adm/cron/cron.allow</code>
+    - Add the script to crontab<code>cat << EOF | sudo tee /var/spool/cron/crontabs/lpar2rrd
+* * * * * /usr/bin/perl /opt/lpar2rrd-agent/lpar2rrd-agent.pl lpar2rrd > /var/tmp/lpar2rrd-agent.out 2>&1
+EOF</code>
+    - Refresh cron<code>ps -ef | grep cron | grep -v grep | awk '{print $2}' | xargs -n1 sudo kill</code>
+
+====== Installing LPAR2RRD agent - RHEL ======
+
+  - Create the user<code>sudo useradd -g users -d /home/lpar2rrd -c "Micro partition Data collection" -m -u 2209 lpar2rrd
+echo "lpar2rrd:sa7uSbZX5aYMU" | sudo chpasswd -e
+sudo chage -M -1 lpar2rrd</code>
+  - Enable cron access<code>echo "lpar2rrd" | sudo tee -a /etc/cron.allow</code>
+  - Install the client<code>sudo yum -y install lpar2rrd-agent</code>
+  - Install the cron job<code>cat << EOF | sudo tee /var/spool/cron/lpar2rrd
+* * * * * /usr/bin/perl /opt/lpar2rrd-agent/lpar2rrd-agent.pl lpar2rrd > /var/tmp/lpar2rrd-agent.out 2>&1
+EOF</code>
+  - Restart cron<code>sudo systemctl restart crond</code>

@@ -1,0 +1,89 @@
+====== QSC refresh using V9000 - Flash Copy ======
+
+Since the adoption of the IBM V9000 storage array for TA2 storage, the IT0 refresh is to be performed using FlashCopy.
+
+  * PSC --> pgscdb01 ( Production )
+  * QSC --> qgscdb01 ( QA )
+
+==== Read This - notes related to the Flash Copy refresh issues ====
+
+  - When there are two flashcopy jobs using same source volumes in progress, force stopping on of them may cause corruption on the other FlashCopy target as well. Hence, __Do not force stop FlashCopy tasks__
+
+==== Create the consistency group and FlashCopy mappings ====
+
+  - Login to pgunap01 and create a directory for today's work<code>mkdir qscrefresh.$(date +%m%d%Y)
+cd qscrefresh.$(date +%m%d%Y)</code>
+  - Get device details
+    - Collect a list of all devices on V9000<code>ssh ldcv9ac2vip1 lsvdisk > lsvdisk.out.v9000</code>
+    - Collect a list of all devices on pgscdb01<code>ssh pgscdb01 sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.pgscdb01</code>
+    - Get the serial numbers of source volumes<code>grep datavg lsvpcfg.out.pgscdb01 | awk -F: '{print $4}' > source.luns.txt</code>
+    - Get the volume names of source volumes<code>grep -f source.luns.txt lsvdisk.out.v9000 | awk '{print $2}' | sort > source.vols.txt</code>
+    - Create the pairing file<code>paste source.vols.txt target.vols.txt  >  qsc.mapping.txt</code>
+  - Create the consistency group, if it does not exist<code>ssh ldcv9ac2vip1 mkfcconsistgrp -name TA2IT0REFRESH</code>
+  - Add flashcopy mappings to consistency group<code>cat qsc.mapping.txt | awk '{print "ssh ldcv9ac2vip1 mkfcmap -autodelete -cleanrate 50 -consistgrp QSCREFRESH -copyrate 80 -name QSCREFRESH_"number++" -source "$1" -target "$2}'</code>Execute the commands printed as the result of the above awk statement.
+    - Check it on qgscdb01<code>ps -ef | grep ora</code>Make sure nothing comes up may be exception is a listener.
+  - Login to qgscdb01 and make a note of the disks that makes up QSC<code>lspv | grep datavg > /var/tmp/deletethesedisks</code>
+  - Unmount the data filesystems on QSC<code>for vg in $(lsvg | grep datavg)
+do
+   echo "$(date)  ::  Status - Working on ${vg} "
+   for fs in $(sudo lsvgfs ${vg} )
+   do
+      echo "$(date)  ::  Status - Working on ${vg} - ${fs} "
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         echo "$(date)  ::  Error - Unable to unmount ${vg} - ${fs} "
+      fi         
+   done
+   lsvg -l ${vg} | grep -i open > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      echo "$(date)  ::  Error - Open volumes found on ${vg} -- Check"
+   else
+      sudo varyoffvg ${vg}
+      sudo exportvg ${vg}
+   fi
+done</code>
+  - Define the LUNs so that AIX stops complaining about it<code>cat /var/tmp/deletethesedisks | awk '{print $1}' |  xargs -n1 sudo rmdev -dl</code>
+  - Ask the DBA to put the DB on hot backup mode OR if it is the standby DB, shut it down.
+  - Start the FlashCopy task<code>ssh ldcv9ac2vip1 startfcconsistgrp -prep QSCREFRESH</code>
+  - Ask the DBA to put the DB on end backup mode.
+  - On qeerdb01/tedv2d01, configure the luns.<code>sudo lsvpcfg.sh > lsvpcfg.out.10
+sudo cfgmgr
+sudo lsvpcfg.sh > lsvpcfg.out.11</code>Then<code>diff lsvpcfg.out.10 lsvpcfg.out.11 | grep ">" | awk '{print $2}' | awk -F: '{print $1}' | xargs -n1 sudo chdev -a reserve_policy=no_reserve -a algorithm=round_robin -l</code>
+  - On tedv2d01, get the PVIDs from peerdb99<code>ssh peerdb99 "lspv" > /var/tmp/peerdb99.pvids</code>
+  - Import the VGs<code>for vg in $(grep datavg /var/tmp/peerdb99.pvids | awk '{print $3}' | sort -u )
+do
+   grep -w ${vg} /var/tmp/peerdb99.pvids | awk '{print $2}' > ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   echo "sudo recreatevg -Y/ -L/ -y ${vg} ${disks}"
+done</code>Execute the re-createvg commands one at a time.
+  - Change the mount point of all filesystems from TA2 to IT0<code>for vg in $(grep datavg /var/tmp/peerdb99.pvids | awk '{print $3}' | sort -u )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      newfs=$(echo ${fs} | sed "s;TA2;IT0;g" )
+      sudo chfs -m ${newfs} ${fs}
+   done
+done</code>
+  * Run fsck on each filesystem<code>for vg in $(grep datavg /var/tmp/peerdb99.pvids | awk '{print $3}' | sort -u )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo fsck -y ${fs}
+   done
+done</code>
+  * Mount all filesystems and fix permissions<code>for vg in $(grep datavg /var/tmp/peerdb99.pvids | awk '{print $3}' | sort -u )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mount ${fs}
+      if [ ${?} -eq 0 ]
+      then
+         sudo chown -R orait0:dba ${fs}
+      else
+         echo "Unable to mount ${fs} - please fix and don't forget to change the permissions using chown -R orait0:dba ${fs}"
+      fi         
+   done
+done</code>
+  * Handover IT0 to DBA team.

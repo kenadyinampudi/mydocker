@@ -1,0 +1,36 @@
+====== Adding a Host to Pure via Command Line ======
+
+Steps to add a host to a Pure array via the command line.
+
+==== Get your data ====
+You need:
+  * Host Name
+  * WWNs
+
+==== Add the host to Pure ====
+   purehost create HOST...
+
+This is just a create.  The default name won't really work, because there are no WWNs associated yet.
+==== Modify host for usage ====
+  purehost setattr --addwwnlist WWN-LIST --personality PERSONALITY HOST
+This is a two-fer.  It adds WWNs to the host and sets the "personality" to enable the right set of SCSI commands.\\
+"WWN-LIST" is comma-separated list of one or more Fibre Channel worldwide names (WWNs), no ":" or "." separating the values.
+\\
+Valid personalities are:
+  * aix
+  * esxi
+  * hitachi-vsp
+  * hpux
+  * oracle-vm-server
+  * solaris
+  * vms
+We almost exclusively use "aix" and "esxi".  "vms" is for directly connecting disk to a VM, not for presenting disk to the VM Host.
+\\
+==== Add host to hostgroup ====
+This assigns all the disk assigned with a group to this host.  A host can only be in one group, so the host groups mirror the VM Clusters.
+  purehgroup setattr --addhostlist HOST-LIST HGROUP
+"Host-List" is a comma separated list of additional hosts.  It won't overwrite.
+"HGROUP" is the VM Cluster name.
+
+==== Add some disk ====
+[[san:addpurevol|Add a Pure Volume]]

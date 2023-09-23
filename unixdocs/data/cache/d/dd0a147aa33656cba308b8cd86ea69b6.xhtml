@@ -1,0 +1,52 @@
+
+<h2 class="sectionedit1" id="configure_iocp_aix">Configure IOCP (AIX)</h2>
+<div class="level2">
+
+<p>
+<strong> The following is based upon information from IBM Developer Works </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Check the filesets are installed or not<pre class="code">lslpp -l bos.iocp.rte</pre>
+
+<p>
+The output should look like this
+</p>
+<pre class="code">    Fileset                     Level     State       Description
+    ----------------------------------------------------------------------------
+    Path: /usr/lib/objrepos
+      bos.iocp.rte              5.3.9.0   APPLIED     I/O Completion Ports API
+
+    Path: /etc/objrepos
+      bos.iocp.rte              5.3.0.50  COMMITTED   I/O Completion Ports API</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the status of IOCP device<pre class="code">lsdev -Cc iocp</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> If the device is configured, you should see something like this<pre class="code">iocp0          Available  I/O Completion Ports</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If the device is NOT configured, you should see something like this<pre class="code">iocp0          Defined               I/O Completion Ports</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If the IOCP port status is <strong>Defined</strong>, change the status to Available. Log in to the server and issue the following command:<pre class="code">sudo chdev -l iocp0 -a autoconfig=available</pre>
+
+<p>
+Make it available
+</p>
+<pre class="code">sudo mkdev -l iocp0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the device status using lsdev command<pre class="code">lsdev -Cc iocp</pre>
+
+<p>
+The resulting output should match the following example:
+</p>
+<pre class="code">iocp0 Available  I/O Completion Ports</pre>
+</div>
+</li>
+</ol>
+
+</div>

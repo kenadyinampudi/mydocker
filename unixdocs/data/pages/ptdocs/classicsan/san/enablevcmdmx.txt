@@ -1,0 +1,10 @@
+====== Enable DMX4 FAs for LUN masking ======
+
+  - Login to the CLI server ''taitc118 for DMX4''
+  - Create a file bits.txt<code>vi bits.txt</code>Add these **change the ports**<code>set port 8C:1 Init_Point_to_Point=enable;
+set port 8C:1 VCM_State=enable;</code>
+  - Process the commands<code>sudo symconfigure -sid 39 -f bits.txt preview
+sudo symconfigure -sid 39 -f bits.txt commit</code>
+  - Reset the FA ports **DO NOT COPY PASTE THESE COMMANDS**<code>#sudo symcfg -sid 39 -sa 8C -p 1 offline
+#sudo symcfg -sid 39 -sa 8C -p 1 online</code>
+  - Check the switch ports and verify the FAs are logged in. The WWN of the FA port can be listed<code>sudo symcfg -sid 39 list -sa 8C -p 1 -v | grep WWN</code>

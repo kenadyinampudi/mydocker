@@ -1,0 +1,18 @@
+===== Set ssh startup by inetd ======
+  - logon to server being built
+  - Make a copy of the inetd.conf file<code>sudo /usr/bin/cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y-%m-%d-%H:%M:%S)</code>
+  - Insert the entry into the inetd.conf file <code>grep -q ^ssh /etc/inetd.conf
+[[ ${?} -ne 0 ]] && echo "ssh stream   tcp      nowait   root  /usr/sbin/sshd  sshd -i"  | sudo tee -a  /etc/inetd.conf</code>
+  - Refresh the inetd daemon so that it knows about the changes to the file <code>sudo  refresh -s inetd </code>
+  - Update the rc scripts that start/stop sshd. 
+    - First make a copy <code>sudo cp -p /etc/rc.d/rc2.d/Ssshd /etc/rc.d/rc2.d/Ssshd-original
+sudo cp -p /etc/rc.d/rc2.d/Ksshd /etc/rc.d/rc2.d/Ksshd-original</code>
+    - Edit the Ssshd file and put in the following lines after the #!/bin/ksh statement <code>sudo vi /etc/rc.d/rc2.d/Ssshd</code>Add these lines right after the first line<code># inserted 2 lines - ssh is now started from initd
+exit 0
+exit 0 </code> save the changes
+    - Edit the Ksshd file and put in the following lines after the #!/bin/ksh statement <code>sudo vi /etc/rc.d/rc2.d/Ksshd</code>Add these lined right after the first line<code># inserted 2 lines - ssh is now started from initd
+exit 0
+exit 0 </code> save the changes
+
+===== End of Set ssh startup by inetd  ======
+

@@ -1,0 +1,106 @@
+====== Brocade upgrade - 2017 ======
+
+ *Please Blackout all servers before upgrading the SAN switch*
+
+
+
+===== Stage the Brocade upgrade files =====
+
+  - For brocade switches at LDC or Interxion, ignore this step. The brocade software will be on pgunap01(LDC) or pgunap02(INX)
+  - For systems outside LDC or Interexion ** Do this step a few days in advance **
+    - Locate a unix system with enough space to stage the installation files<code>Edenkoben		taede057
+Gliwice			taglw057
+GrassLake		taglk057
+Interxion		pgunap02
+LDC			pgunap01
+Monroe			tamon057
+Rybnik			taryb055
+St Truiden		tastr057
+Seward                  tasew007</code>
+    - Login to the Admin server<code>ssh pgunap01</code>Switch to sanmontr<code>sudo su - sanmontr</code>Just to make it easier, define the staging server as a variable<code>export stagesrvr=<corresponding stage server></code>
+    - Check if the target system has enough space to stage the upgrade. We need 3G in /home. If there is not enough space Ask Unix team to make it temporarily bigger<code>ssh ${stagesrvr} df -k /home</code>
+    - Create the brocade directory if it does not exist<code>ssh ${stagesrvr} "mkdir -p brocade"</code>
+    - Start the rsync for v 7.4.1d<code>rsync -avv /prod/storageteam/soft/Brocade/v7.4.1d/v7.4.1d/ ${stagesrvr}:brocade/v7.4.1d/</code>
+    
+
+
+
+
+===== Upgrade to FOS 7.4.1d =====
+
+  --Make a note of the IP address of the staging server<code>nslookup ${stagesrvr}</code>
+  -Define a variable to the switch<code>export switch=<Switch Hostname></code>
+  - Login to the switch<code>ssh admin@${switch}</code>
+  - Upgrade the firmware
+    - Interxion<code>firmwaredownload -p scp 10.56.13.92,sanmontr,/prod/storageteam/soft/Brocade/v7.4.1d/v7.4.1d</code>
+    - Lincolnshire<code>firmwaredownload -p scp 10.32.6.150,sanmontr,/prod/storageteam/soft/Brocade/v7.4.1d/v7.4.1d</code>
+    - Remote offices<code>firmwaredownload -p scp <stagesrvr IP>,sanmontr,/home/sanmontr/brocade/v7.4.1d</code>Change the IP address to the local stage server
+  - You should see a message similar to this<code>Verifying if the public key authentication is available.Please wait ...Success.
+Server IP: 10.58.20.57, Protocol IPv4
+Checking system settings for firmwaredownload...
+WARNING: Fabric Watch is discontinued in FOS 7.4 and will not run after firmware upgrade. To continue with monitoring capability, 
+it is recommended to migrate to MAPS prior to firmware upgrade. Users can convert existing Fabric Watch thresholds into MAPS policies by 
+using "mapsConfig --fwconvert" CLI command and continue monitoring with the same settings. Fabric Watch thresholds cannot be converted to MAPS policies after firmware upgrade. 
+Please refer to MAPS Administrator's Guide for further information.
+System settings check passed.
+
+You can run firmwaredownloadstatus to get the status
+of this command.
+
+This command will cause a warm/non-disruptive boot but will 
+require that existing telnet, secure telnet or SSH sessions 
+be restarted.
+ 
+
+
+Do you want to continue (Y/N) [Y]:</code>Hit enter to choose "Y". Then see some messages like this<code>Firmware is being downloaded to the switch. This step may take up to 30 minutes.
+Preparing for firmwaredownload...
+Start to install packages...
+dir-1.0.5-5
+############################### [ 100% ]
+ldconfig-2.16.2-4
+############################### [ 100% ]
+...... lines deleted ...
+...... lines deleted ...
+prom-440epx-1.0.11-1
+Please avoid powering off the system during prom update.
+############################### [ 100% ]
+...... lines deleted ...
+...... lines deleted ...
+Removing unneeded files, please wait ...
+Finished removing unneeded files. 
+
+creating the old storage file
+All packages have been downloaded successfully.
+Firmware has been downloaded to the secondary partition of the switch.
+HA Rebooting ...</code>At this time, your ssh session to the switch will break<code>Write failed: Broken pipe</code>Login back to the switch<code>ssh admin@${switch}</code>You might see this message<code>ededs300a:admin> 
+Broadcast message from root Thu May  5 22:01:04 2017...
+
+
+
+*******************************************
+Notice: System has changed state to active.
+All active commands are available now.
+*******************************************</code>Check the firmware upgrade status<code>firmwareDownloadStatus</code>You should see something like this<code>[1]: Thu May  5 21:53:02 2016
+Firmware is being downloaded to the switch. This step may take up to 30 minutes.
+
+[2]: Thu May  5 21:58:52 2017
+Firmware has been downloaded to the secondary partition of the switch.
+
+[3]: Thu May  5 22:01:10 2017
+The firmware commit operation has started. This may take up to 10 minutes.
+
+[4]: Thu May  5 22:05:12 2017
+The commit operation has completed successfully.
+
+[5]: Thu May  5 22:05:12 2016
+Firmwaredownload command has completed successfully. Use firmwareshow to verify the firmware versions.</code>Check the firmware<code>firmwareshow</code>You should see<code>Appl     Primary/Secondary Versions 
+------------------------------------------
+FOS      v7.4.1d
+         v7.4.1d</code>
+
+===== Perform functional testing=====
+
+- Login and check hosts if all paths are active. If any are down, work with systems team to ensure the paths came back online.
+ 
+

@@ -1,0 +1,194 @@
+
+<h1 class="sectionedit1" id="deployment_schedule">Deployment Schedule</h1>
+<div class="level1">
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0 centeralign">    Date      </th><th class="col1 centeralign">   # <br/>
+Servers       </th><th class="col2 centeralign">   Remarks          </th><th class="col3 centeralign">  CR  </th><th class="col4 centeralign">   Status          </th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign"> 21-Sep-2022    </td><td class="col1 centeralign">  10     </td><td class="col2 leftalign"> Sandbox servers        </td><td class="col3">CHG0055052</td><td class="col4">Completed</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign"> 23-Sep-2022    </td><td class="col1 centeralign">  09     </td><td class="col2 leftalign"> Sandbox servers        </td><td class="col3">CHG0055053</td><td class="col4">Completed</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0 leftalign"> 28-Sep-2022    </td><td class="col1 centeralign">  39     </td><td class="col2 leftalign"> All DEV servers        </td><td class="col3">CHG0055185</td><td class="col4">Completed</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0 leftalign"> 30-Sep-2022    </td><td class="col1 centeralign">  68     </td><td class="col2 leftalign"> All QA/Test servers        </td><td class="col3">CHG0055188</td><td class="col4">Completed</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0 leftalign"> 07-Oct-2022    </td><td class="col1 centeralign">  45     </td><td class="col2 leftalign"> Prod servers - NBU        </td><td class="col3">CHG0055307</td><td class="col4">Completed</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0 leftalign"> 13-Oct-2022    </td><td class="col1 centeralign">  40     </td><td class="col2 leftalign"> More prod servers        </td><td class="col3">CHG0055380</td><td class="col4">Completed</td>
+	</tr>
+	<tr class="row7">
+		<td class="col0 leftalign"> 17-Oct-2022    </td><td class="col1 centeralign">  54     </td><td class="col2 leftalign"> More prod servers       </td><td class="col3">CHG0055416</td><td class="col4">Completed</td>
+	</tr>
+	<tr class="row8">
+		<td class="col0 leftalign"> 22-Oct-2022    </td><td class="col1 centeralign">  63    </td><td class="col2 leftalign"> All SAP &amp; DB servers       </td><td class="col3">CHG0055415</td><td class="col4">Completed</td>
+	</tr>
+	<tr class="row9">
+		<td class="col0 leftalign"> 14-Nov-2022    </td><td class="col1 centeralign">  19    </td><td class="col2 leftalign"> Missed servers       </td><td class="col3">CHG0055930</td><td class="col4">Planned</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [36-806] -->
+</div>
+<!-- EDIT1 SECTION "Deployment Schedule" [1-810] -->
+<h1 class="sectionedit3" id="rapid7_deployment_steps">RAPID7 Deployment Steps</h1>
+<div class="level1">
+
+<p>
+These are the high level steps to re-deploy RAPID7 agents on Linux servers.
+</p>
+<ul>
+<li class="level1"><div class="li"> Execute these commands one by one from sfldmilx031 as a regular user</div>
+</li>
+<li class="level1"><div class="li"> Verify the output after each steps</div>
+</li>
+<li class="level1"><div class="li"> Create a file with host[1..x] with the list of hosts in your current working directory</div>
+</li>
+<li class="level1"><div class="li"> Create a file in your local directory with the list of servers where the upgrade must be done.  In this case, lets assume its hosts3</div>
+</li>
+</ul>
+<ol>
+<li class="level1"><div class="li"> First, Uninstall the existing agent<pre class="code">for i in `cat hosts3`
+do 
+sudo ssh -q -o &quot;StrictHostKeyChecking=no&quot; $i &quot;/opt/agent_installer.sh  uninstall&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify it is uninstalled<pre class="code">for i in `cat hosts3`
+do 
+sudo ssh -q -o &quot;StrictHostKeyChecking=no&quot; $i &#039;[ ! -d /opt/rapid7 ] &amp;&amp; \
+echo &quot;rapid7 is uninstalled on `hostname`&quot; || \
+&quot;echo rapid7 is present on `hostname`&quot;&#039;
+done</pre>
+
+<p>
+If not copy the existing agent from /opt/newagent/agent_installer.sh on sfldmilx031 and run the previous step again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the new agent_installer file<pre class="code">for i in `cat hosts3`
+do 
+sudo scp -qpr -o &quot;StrictHostKeyChecking=no&quot; /opt/newagent/agent_installer.sh $i:/opt
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure the new agent_installer is the correctly copied<pre class="code">for i in `cat hosts3`
+do echo $i
+sudo ssh -q -o &quot;StrictHostKeyChecking=no&quot; $i ls -ld /opt/agent_installer.sh 
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the agent<pre class="code">for i in `cat hosts3`
+do echo $i
+sudo ssh -q -o &quot;StrictHostKeyChecking=no&quot; $i /opt/agent_installer.sh install_start \
+--token  us:c58ccdc4-7f37-44ba-b13f-ede6b9decc76 
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that it is running<pre class="code">for i in `cat hosts3`
+do 
+echo;echo;echo $i
+sudo ssh -q -o &quot;StrictHostKeyChecking=no&quot; $i &quot;[ -f /usr/bin/systemctl ] &amp;&amp; \
+systemctl status ir_agent || /etc/init.d/ir_agent status&quot; 
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm the Agent version &amp; status<pre class="code">for i in `cat hosts3`
+do 
+echo;echo;echo $i
+sudo ssh -q -o &quot;StrictHostKeyChecking=no&quot; $i \
+&quot;cat /opt/rapid7/ir_agent/components/insight_agent/common/agent.log | grep &#039;Agent Info&#039; | tail -1l &quot;
+done </pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "RAPID7 Deployment Steps" [811-2819] -->
+<h1 class="sectionedit4" id="observations_during_deployment">Observations during Deployment</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT4 SECTION "Observations during Deployment" [2820-2865] -->
+<h2 class="sectionedit5" id="agent_version_upgrade_-_open">Agent Version Upgrade - OPEN</h2>
+<div class="level2">
+
+<p>
+The agent is installed using a installer script namely agent_installer.sh.  The agent that was provided by the Security team is from August 2022, with a version of 3.1.6.45.  The latest version, of September 2022, is 3.1.9.24.  After the installation, the agent version automatically gets updated to the latest one on the Linux servers. This takes anywhere from a few minutes to a few hours. However, on servers running older versions of SLES, viz. SLES 11.x, the agent version was not getting automatically updated.  At this point of time, it is not clear if this is a matter of concern and that the agents on these servers have to be updated manually every month/quarter to ensure that the security vulnerabilities can be properly detected on the Linux servers running older versions of <abbr title="Operating System">OS</abbr>.  
+</p>
+
+<p>
+For example, CDCVILLX102 is running SLES 11.3
+</p>
+<pre class="code">SUSE Linux Enterprise Server 11 (x86_64)
+VERSION = 11
+PATCHLEVEL = 3</pre>
+
+<p>
+And even after 4 days of installing the agent, the newer version doesn&#039;t get automatically installed.
+</p>
+<pre class="code">x1naveka@sfldmilx031:~/rapid7&gt; sudo ssh CDCVILLX102 cat /opt/rapid7/ir_agent/components/insight_agent/common/agent.log \
+| grep &#039;Agent Info&#039; | tail -1l
+2022-10-03 10:52:44,968 [INFO] [agent.agent_beacon]: Agent Info -- ID: d36a6c105bc144f5020bfd9c6d8a1e6d Version: 3.1.6.45 (1660325338)
+x1naveka@sfldmilx031:~/rapid7&gt;
+x1naveka@sfldmilx031:~/rapid7&gt; sudo ssh CDCVILLX102 &quot;date &amp;&amp; ls -lrt /etc/init.d/ir_agent&quot;
+Mon Oct  3 06:54:42 EDT 2022
+-rwxr-xr-x 1 root root 3941 Sep 28 07:59 /etc/init.d/ir_agent
+x1naveka@sfldmilx031:~/rapid7&gt;</pre>
+
+</div>
+<!-- EDIT5 SECTION "Agent Version Upgrade - OPEN" [2866-4474] -->
+<h2 class="sectionedit6" id="duplicates_in_the_console_-_open">Duplicates in the Console - OPEN</h2>
+<div class="level2">
+
+<p>
+Some servers are being duplicated in the console.  The last scan date of the first asset is exactly when the agent was upgraded. So, during the agent upgrade, a new asset has been created with a different name (note the difference in the hostname) and site.  This has to be investigated with the Security team and identify the implications of these duplicates. 
+<a href="/lib/exe/detail.php?id=changeeventplans%3Arapid7_deployment&amp;media=changeeventplans:pasted:20221003-130041.png" class="media" title="changeeventplans:pasted:20221003-130041.png"><img src="/lib/exe/fetch.php?media=changeeventplans:pasted:20221003-130041.png" class="media" alt="" /></a>
+</p>
+
+</div>
+<!-- EDIT6 SECTION "Duplicates in the Console - OPEN" [4475-4931] -->
+<h2 class="sectionedit7" id="some_servers_not_visible_in_dashboard_-_open">Some servers not visible in Dashboard - OPEN</h2>
+<div class="level2">
+
+<p>
+Some servers that were newly added (eg: tcnnbuhmams &amp; julnbuhmams - these are newly built NBU Home made appliances) are not visible in the console. However, these servers were visible in a dump that the security team generated for us. So, at this stage it is not clear why this happens.  This has been reported to the Security team.  
+</p>
+
+</div>
+<!-- EDIT7 SECTION "Some servers not visible in Dashboard - OPEN" [4932-5324] -->
+<h2 class="sectionedit8" id="find_is_executed_after_agent_installation_-_closed">find is executed after agent installation - CLOSED</h2>
+<div class="level2">
+
+<p>
+It was observed that a find command is being executed by the ir_agent, most probably looking for files with wrong permissions. While this find command excludes a lot of slow filesystems, reinstalling the agent on systems with huge number of files can have some impact.  This was observed from the systemctl status output on many servers immediately after the upgrade.
+</p>
+
+<p>
+It was decided in the Unix Team meeting that this is not bad and inorder to minimize the impact, the upgrade for Oracle &amp; SAP servers should be done during a quiet time, during a weekend.
+</p>
+<pre class="code">CDCVILLX100
+● ir_agent.service - Rapid7 Insight Agent
+   Loaded: loaded (/etc/systemd/system/ir_agent.service; enabled; vendor preset: disabled)
+   Active: active (running) since Fri 2022-09-30 09:25:37 EDT; 8min ago
+ Main PID: 1522 (ir_agent)
+    Tasks: 46 (limit: 512)
+   CGroup: /system.slice/ir_agent.service
+           ├─1522 /opt/rapid7/ir_agent/ir_agent
+           ├─1530 /opt/rapid7/ir_agent/components/insight_agent/3.1.6.45/ir_agent
+           ├─1624 /opt/rapid7/ir_agent/components/insight_agent/3.1.6.45/ir_agent -S -E -c from multiprocessing.resource_tracker import main;main(13)
+           ├─1625 /opt/rapid7/ir_agent/components/insight_agent/3.1.6.45/ir_agent --multiprocessing-fork tracker_fd=14 pipe_handle=18
+           ├─2089 /bin/sh -c find /  \( -fstype cifs -o -fstype smbfs -o -fstype nfs -o -fstype nfs4 -o -fstype ncpfs -o -fstype vmhgfs -o -fstype gpfs -o -fstype mtmfs -o -fstype wekafs -o -fstype fuse.s3fs -o -fstype ceph -o -fstype autofs -o -fstype gfs2 -o -fstype samfs -o -fstype secfs2 -o -fstype panfs -o -fstype afs -o -fstype proc -o -fstype sysfs -o -fstype cgroup -o -fstype fuse.lxcfs -o -fstype unknown -o -path &#039;/var/lib/docker&#039; -o -path &#039;/.snapshots&#039; \) -prune -type f -o \(  \( -name &#039;*.war&#039; -o -name &#039;.netrc&#039; -o -name &#039;.product.properties&#039; -o -name &#039;.rhosts&#039; -o -name &#039;WAS.product&#039; -o -name &#039;WebSphereApplicationServer.properties&#039; -o -name &#039;catalina.jar&#039; -o -name &#039;cfusion&#039; -o -name &#039;comps.xml&#039; -o -name &#039;config.php&#039; -o -name &#039;db2*lvl&#039; -o -name &#039;go-pear.phar&#039; -o -name &#039;installed.xml&#039; -o -name &#039;ir_agent&#039; -o -name &#039;jar-versions.xml&#039; -o -name &#039;jrt-fs.jar&#039; -o -name &#039;layer.conf&#039; -o -name &#039;log4j-*.jar&#039; -o -name &#039;mysqlaccess&#039; -o -name &#039;registry.xml&#039; -o -name &#039;rt.jar&#039; -o -name &#039;spring-beans*.jar&#039; -o -name &#039;spring-cloud-function-core*.jar&#039; -o -name &#039;struts*-core*.jar&#039; -o -name &#039;struts2-struts1-plugin*.jar&#039; -o -name &#039;updates.xml&#039; -o -name &#039;version.properties&#039; -o -name &#039;version.signature&#039; -o -name &#039;version.txt&#039; -o -name &#039;versions&#039; \) -o \( -perm -2000 -type f -o -perm -4000 -type f \) -o \( -perm -02 -type f \) \) -print0 | xargs -0 ls -Lnd
+           ├─2091 find / ( -fstype cifs -o -fstype smbfs -o -fstype nfs -o -fstype nfs4 -o -fstype ncpfs -o -fstype vmhgfs -o -fstype gpfs -o -fstype mtmfs -o -fstype wekafs -o -fstype fuse.s3fs -o -fstype ceph -o -fstype autofs -o -fstype gfs2 -o -fstype samfs -o -fstype secfs2 -o -fstype panfs -o -fstype afs -o -fstype proc -o -fstype sysfs -o -fstype cgroup -o -fstype fuse.lxcfs -o -fstype unknown -o -path /var/lib/docker -o -path /.snapshots ) -prune -type f -o ( ( -name *.war -o -name .netrc -o -name .product.properties -o -name .rhosts -o -name WAS.product -o -name WebSphereApplicationServer.properties -o -name catalina.jar -o -name cfusion -o -name comps.xml -o -name config.php -o -name db2*lvl -o -name go-pear.phar -o -name installed.xml -o -name ir_agent -o -name jar-versions.xml -o -name jrt-fs.jar -o -name layer.conf -o -name log4j-*.jar -o -name mysqlaccess -o -name registry.xml -o -name rt.jar -o -name spring-beans*.jar -o -name spring-cloud-function-core*.jar -o -name struts*-core*.jar -o -name struts2-struts1-plugin*.jar -o -name updates.xml -o -name version.properties -o -name version.signature -o -name version.txt -o -name versions ) -o ( -perm -2000 -type f -o -perm -4000 -type f ) -o ( -perm -02 -type f ) ) -print0
+           └─2092 xargs -0 ls -Lnd    
+
+Sep 30 09:25:37 cdcvillx100 systemd[1]: Started Rapid7 Insight Agent.</pre>
+
+</div>
+<!-- EDIT8 SECTION "find is executed after agent installation - CLOSED" [5325-] -->

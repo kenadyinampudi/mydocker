@@ -1,0 +1,214 @@
+
+<h1 class="sectionedit1" id="na_-_ldc_-_disaster_recovery_test_linux_instructions_2018">NA - LDC - Disaster Recovery Test LINUX instructions (2018)</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "NA - LDC - Disaster Recovery Test LINUX instructions (2018)" [1-75] -->
+<h2 class="sectionedit2" id="connectivity_to_dr_esxi_farm">Connectivity to DR ESXi farm</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> VMWARE vSphere hostname and credentials<pre class="code">vSphere server  :  taste001  IP - 10.39.9.61
+User account    :  &lt;AD Credentials&gt;
+Password        :  &lt;AD Credentials&gt;
+WebAccess       :  https://taste001/vsphere-client/?csp</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Connectivity to DR ESXi farm" [76-347] -->
+<h2 class="sectionedit3" id="restore_of_the_virtual_machines">Restore of the Virtual Machines</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Data preservation will restore the VMs and handover to GIOS Unix Team</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Restore of the Virtual Machines" [348-467] -->
+<h2 class="sectionedit4" id="unix_team_s_activities">Unix Team&#039;s activities</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Choose the Linux server, update the DR database for the server&#039;s <strong>Reconfigure IP and start server and application</strong> task to <strong>In Progress.</strong></div>
+</li>
+<li class="level1"><div class="li"> Login to vSphere using fat client or web client. –&gt; On the address space click and select “Hosts and Clusters”.</div>
+</li>
+<li class="level1"><div class="li"> On the left hand pane, select “DR site” –&gt; click on the “DR site” → click on “SAP server cluster”.</div>
+</li>
+<li class="level1"><div class="li"> Select the VM –&gt; click edit settings </div>
+<ol>
+<li class="level2"><div class="li"> Remove Ethernet Adapter.</div>
+</li>
+<li class="level2"><div class="li"> Reduce the memory by 25%</div>
+</li>
+<li class="level2"><div class="li"> Reduce the CPU by 25%</div>
+</li>
+<li class="level2"><div class="li"> Click OK once done.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Power on the Virtual Machine –&gt; Access console and login as root.</div>
+</li>
+<li class="level1"><div class="li"> Remove network configuration and shutdown<pre class="code">cd /etc/sysconfig/network-scripts/
+mv ifcfg-eth0* /root
+shutdown now</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On the VSphere client select VM and click edit settings → Add Ethernet Adapter with correct adapter type and VLAN ID.</div>
+<ol>
+<li class="level2"><div class="li"> Adapter type=VMXNET3</div>
+</li>
+<li class="level2"><div class="li"> Select the correct VLAN for Linux VMs. The names are normally self explanatory.</div>
+</li>
+<li class="level2"><div class="li"> Click OK once done.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Power on the VM.</div>
+</li>
+<li class="level1"><div class="li"> Login as root on the console.</div>
+</li>
+<li class="level1"><div class="li"> Check and document the newly added ethernet adapter<pre class="code">ifconfig -a</pre>
+
+<p>
+Make a note of the device name. In this case it is ens192.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure IP address of the hostname<pre class="code">vi /etc/sysconfig/network-scripts/ifcfg-ens192</pre>
+
+<p>
+Add the following
+</p>
+<pre class="code">DEVICE=ens192
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=&lt;the IP address to which the hostname resolvs to i.e. paerap01h --&gt; 10.39.11.X&gt;
+NETMASK=255.255.255.0</pre>
+
+<p>
+Save the file and bring up the interface
+</p>
+<pre class="code">ifup ens192</pre>
+
+<p>
+Ignore the error that shows up
+</p>
+<pre class="code">dm-0: write same failed.Manually zeroing</pre>
+
+<p>
+Don&#039;t know what it is – we will investigate this later.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the default gateway<pre class="code">echo &quot;GATEWAY=10.39.11.1&quot; &gt; /etc/sysconfig/network</pre>
+
+<p>
+Also add to the current running kernel
+</p>
+<pre class="code">route add -net 0.0.0.0 gw 10.39.11.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Try ssh to production server using IP Address<pre class="code">ssh 10.0.48.12 &lt;i.e. pgnmsv01&gt;</pre>
+
+<p>
+If this is successful <strong>STOP</strong> and escalate.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable name resolution<pre class="code">mv resolv.conf /etc/resolv.conf.DR</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restart the system<pre class="code">systemctl reboot</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the DR-NIM server to continue with system re-configurations.</div>
+<ol>
+<li class="level2"><div class="li"> Set variable specific to the system. First the servername<pre class="code">export hostname=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install NIM server&#039;s public key into authorized_keys file.<pre class="code">sudo scp /root/.ssh/id_rsa.pub ${hostname}:/root/</pre>
+<pre class="code">sudo ssh ${hostname} &quot;cat  /root/id_rsa.pub &gt;&gt; /root/.ssh/authorized_keys&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> install the DR hostfiles<pre class="code">sudo ssh ${hostname} &quot;cp /etc/hosts /etc/hosts.copyforDR&quot;</pre>
+
+<p>
+Now push the file
+</p>
+<pre class="code">sudo scp /etc/hosts ${hostname}:/etc/hosts</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure NTP in DR. Stop daemon<pre class="code">sudo ssh ${hostname} systemctl stop ntpd</pre>
+
+<p>
+Backup the config
+</p>
+<pre class="code">sudo ssh ${hostname} cp /etc/ntp.conf /etc/ntp.conf.DRtest</pre>
+
+<p>
+Now push the NTP file
+</p>
+<pre class="code">sudo scp /root/ntp.client.conf ${hostname}:/etc/ntp.conf</pre>
+
+<p>
+Start the daemons
+</p>
+<pre class="code">sudo ssh ${hostname} systemctl restart ntpd</pre>
+
+<p>
+Set the correct time from NIM server
+</p>
+<pre class="code">sudo ssh ${hostname} &quot;date ; ntpdate -u nim ; date&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Turn off cron<pre class="code">sudo ssh ${hostname} systemctl stop crond.service</pre>
+<pre class="code">sudo ssh ${hostname} systemctl disable crond.service</pre>
+
+<p>
+Check if cron is still running
+</p>
+<pre class="code">sudo ssh ${hostname} ps -ef | grep cron</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Login to the server<pre class="code">sudo ssh ${hostname}</pre>
+
+<p>
+Change PS1 variable by login to the client. Make a backup copy
+</p>
+<pre class="code">sudo cp /etc/profile /etc/profile.copyforDR</pre>
+
+<p>
+Then
+</p>
+<pre class="code">sudo vi /etc/profile</pre>
+
+<p>
+Add this towards the end ( last line )
+</p>
+<pre class="code">HOST=$(uname -n)
+PS1=&#039;DR test -- $HOST:$PWD&gt;&#039;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Perform a reboot<pre class="code">sudo systemctl reboot</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+<p>
+<strong> When in doubt, ask </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmdslinux-2018&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+</p>
+
+<p>
+<strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremly careful ) </strong>
+</p>
+
+</div>
+<!-- EDIT4 SECTION "Unix Team's activities" [468-] -->

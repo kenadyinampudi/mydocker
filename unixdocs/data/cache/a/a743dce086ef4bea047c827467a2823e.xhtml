@@ -1,0 +1,219 @@
+
+<h1 class="sectionedit1" id="setup_ntp_network_time_protocol">Setup NTP (Network Time Protocol)</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Setup NTP (Network Time Protocol)" [1-49] -->
+<h2 class="sectionedit2" id="aix">AIX</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d server 10.0.48.12</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the config file. First make a backup copy<pre class="code">sudo cp /etc/ntp.conf /etc/ntp.conf.$(date +%Y%m%d)</pre>
+
+<p>
+Now make the changes
+</p>
+<pre class="code">sudo vi /etc/ntp.conf</pre>
+
+<p>
+Replace the file with this
+</p>
+<pre class="code">driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server 10.0.48.12 prefer
+server 10.56.1.105</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon now and during system restart<pre class="code">sudo stopsrc -s xntpd</pre>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure it is running<pre class="code">lssrc -s xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If the time is not too far, adjuct the time. <strong>DO NOT CHANGE TIME ON DATABASE SERVERS</strong><pre class="code">date ; sudo ntpdate -u 10.0.48.12 ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ensure the timeserver is correct<pre class="code">sudo xntpdc -l
+client    penmsv01.emea.int.tenneco.com
+client    pgnmsv01.amer.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong>Other usefull commands:</strong>
+</p>
+<pre class="code">chrctcp -S -a xntpd enable and start xntpd
+chrctcp -S -d xntpd disable and stop xntpd
+chrctcp -a xntpd enable but do not start xntpd
+chrctcp -d xntpd disable but do not stop xntpd</pre>
+
+</div>
+<!-- EDIT2 SECTION "AIX" [50-1283] -->
+<h2 class="sectionedit3" id="vios">VIOS</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> export PATH<pre class="code">export PATH=$PATH:/usr/sbin:/sbin:/etc:/usr/bin:/bin</pre>
+
+<p>
+Some VIOS root logins don&#039;t set PATH variable correct - need to check why
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d server 10.0.48.12</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the config file<pre class="code">sudo vi /home/padmin/config/ntp.conf</pre>
+
+<p>
+Add these to the end of the file
+</p>
+<pre class="code"># Customized for Tenneco
+server 10.0.48.12 prefer
+server 10.56.1.105</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon now and during system restart<pre class="code">sudo stopsrc -s xntpd</pre>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure it is running<pre class="code">lssrc -s xntpd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If there is an offset, correct it<pre class="code">date ; sudo ntpdate -u 10.0.48.12 ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ensure the timeserver is correct<pre class="code">sudo xntpdc -l
+client    penmsv01.emea.int.tenneco.com
+client    pgnmsv01.amer.int.tenneco.com</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "VIOS" [1284-2280] -->
+<h2 class="sectionedit4" id="linux">Linux</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT4 SECTION "Linux" [2281-2299] -->
+<h3 class="sectionedit5" id="suse">SuSE</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d server 10.0.48.12</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the config file<pre class="code">sudo vi /etc/ntp.conf</pre>
+
+<p>
+Add these to the end of the file
+</p>
+<pre class="code"># Customized for Tenneco
+server 10.0.48.12
+server 10.56.1.105</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon<pre class="code">sudo chkconfig ntp 12345 on</pre>
+
+<p>
+Check it
+</p>
+<pre class="code">sudo chkconfig --list ntp
+ntp                       0:off  1:on   2:on   3:on   4:on   5:on   6:off</pre>
+
+<p>
+Start it
+</p>
+<pre class="code">sudo service ntp start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure it is running<pre class="code">sudo service ntp status</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If there is an offset, correct it<pre class="code">sudo ntpdate -u server 10.0.48.12</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "SuSE" [2300-3076] -->
+<h3 class="sectionedit6" id="redhat">Redhat</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Check the time server<pre class="code">sudo ntpdate -d server 10.0.48.12</pre>
+
+<p>
+If the offset is greater than 1000 seconds, manually adjust the time and run the ntpdate command again.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Replace the config file with this<pre class="code">sudo vi /etc/ntp.conf</pre>
+
+<p>
+Fill in these
+</p>
+<pre class="code"># Customized for Tenneco
+fudge   127.127.1.0 stratum 10
+driftfile /var/lib/ntp/drift
+keys /etc/ntp/keys
+server 10.0.48.12
+server 10.56.1.105</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Start using the XNTPD daemon<pre class="code">sudo chkconfig --level 12345 ntpd on</pre>
+
+<p>
+Check it
+</p>
+<pre class="code">sudo chkconfig --list ntpd
+ntp                       0:off  1:on   2:on   3:on   4:on   5:on   6:off</pre>
+
+<p>
+Start it
+</p>
+<pre class="code">sudo service ntpd start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure it is running<pre class="code">service ntpd status</pre>
+
+<p>
+e.g.
+</p>
+<pre class="code">paitap01:~ # service ntpd status
+Checking for network time protocol daemon (NTPD):                     running</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the date<pre class="code">date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If there is an offset, correct it<pre class="code">sudo ntpdate -u server 10.0.48.12</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Redhat" [3077-] -->

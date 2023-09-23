@@ -1,0 +1,170 @@
+====== pahydb01 Move from blade to VIO40/41 - Kapil's steps (Storage + Unix) ======
+
+**Unix Steps**
+
+  - Make sure the system is in blackout
+    - [[http://taitc212/cgi-bin/blackout/login.cgi|Use this URL to enter a new one]]
+    - [[http://taitc212/cgi-bin/active_bo.cgi|Use this URL to verify the blackout]]
+  - Get on to the console. Login to taitc118<code>sudo getconsole pahydb01</code>
+  - Collect information<code>mkdir -p /root/pahydb01-bkps
+ps -ef > /root/pahydb01-bkps/psef.$(date +%m%d%y)
+df -k > /root/pahydb01-bkps/mountedfs.$(date +%m%d%y)
+lsvg > /root/pahydb01-bkps/lsvg.$(date +%m%d%y)
+lspv > /root/pahydb01-bkps/lspv.$(date +%m%d%y)
+lsps -a > /root/pahydb01-bkps/lsps.$(date +%m%d%y)
+bootlist -o -m normal > /root/pahydb01-bkps/bootlist.$(date +%m%d%y)
+bootinfo -b > /root/pahydb01-bkps/bootinfob.$(date +%m%d%y)</code>
+  - Copy the files to taitc118<code>ssh taitc118 mkdir /var/tmp/pahydb01
+scp /root/pahydb01-bkps/* taitc118:/var/tmp/pahydb01</code>
+  - Disable all NFS mounts and NFS exports<code>sudo cp /etc/filesystems /etc/filesystems.OLD
+sudo vi /etc/filesystems
+sudo mv /etc/exports /etc/exports.OLD</code>
+  - List of disks to be migrated<code>lspv > /var/tmp/sourcedisks.pahydb01</code>Copy to VIO servers<code>scp /var/tmp/sourcedisks.pahydb01 taprvio40:/var/tmp/sourcedisks.pahydb01
+scp /var/tmp/sourcedisks.pahydb01 taprvio41:/var/tmp/sourcedisks.pahydb01</code>
+  - Make a note of the IP addresses<code>en3    10.0.48.31
+en2    10.0.49.36</code>
+  - Shutdown the LPAR<code>sudo shutdown -F</code>
+  - Unmap the disks from taprvio9.
+    - Check first<code>lsdiskcfg | egrep "00014bca998e3b6f|00c9f3a0e7189664|00c9f3a0e71a2bc2|00014bcaa79955ab|00c9f3a0ac60566e|00014bcae3763036" 
+hdisk2:34522:pahydb01:3:vhost1:00c9f3a0e7189664:000190103471:1471
+hdisk3:34522:pahydb01:3:vhost1:00c9f3a0e71a2bc2:000190103471:1475
+hdisk8:138090:pahydb01:3:vhost1:00014bca998e3b6f:000190103471:0239
+hdisk9:138090:pahydb01:3:vhost1:00014bcaa79955ab:000190103471:0249
+hdisk17:34522:pahydb01:3:vhost1:00c9f3a0ac60566e:000190103471:05F9
+hdisk25:34522:pahydb01:3:vhost1:00014bcae3763036:000190103471:14F5</code>   
+    - Switch to padmin on taprvio9<code>sudo su - padmin</code>Unmap<code>for disk in hdisk2 hdisk3 hdisk8 hdisk9 hdisk17 hdisk25
+do
+   rmvdev -vdev ${disk}
+done</code>
+  - As root, Remove the disks from taprvio9<code>echo "hdisk2 hdisk3 hdisk8 hdisk9 hdisk17 hdisk25" | xargs -n1 sudo rmdev -dl</code>
+
+**Storage Steps**
+
+  - Map the LUNs
+    - Create this file and save it as pahydb01.map<code>map dev 0239 to dir 10A:1 target=0 lun=116;
+map dev 0249 to dir 10A:1 target=0 lun=117;
+map dev 0239 to dir 7A:1 target=0 lun=116;
+map dev 0249 to dir 7A:1 target=0 lun=117;
+map dev 1471 to dir 10B:1 target=0 lun=376;
+map dev 1475 to dir 10B:1 target=0 lun=377;
+map dev 05F9 to dir 10B:1 target=0 lun=378;
+map dev 14F5 to dir 10B:1 target=0 lun=379;
+map dev 1471 to dir 7B:1 target=0 lun=376;
+map dev 1475 to dir 7B:1 target=0 lun=377;
+map dev 05F9 to dir 7B:1 target=0 lun=378;
+map dev 14F5 to dir 7B:1 target=0 lun=379;</code>
+    - Preview the map operation<code>sudo symconfigure -sid 71 -f pahydb01.map preview</code>
+    - Commit the changes<code>sudo symconfigure -sid 71 -f pahydb01.map commit</code>
+  - Mask the LUNs<code>sudo symmask -sid 71 -wwn 10000000C99D280A -dir 10A -p 1 add devs 0239,0249
+sudo symmask -sid 71 -wwn 10000000C99D280B -dir 7A -p 1 add devs 0239,0249
+sudo symmask -sid 71 -wwn 10000000C9F21828 -dir 10A -p 1 add devs 0239,0249
+sudo symmask -sid 71 -wwn 10000000C9F21829 -dir 7A -p 1 add devs 0239,0249
+sudo symmask -sid 71 -wwn 10000000C99D280A -dir 10B -p 1 add devs 1471,1475,05F9,14F5
+sudo symmask -sid 71 -wwn 10000000C99D280B -dir 7B -p 1 add devs 1471,1475,05F9,14F5
+sudo symmask -sid 71 -wwn 10000000C9F21828 -dir 10B -p 1 add devs 1471,1475,05F9,14F5
+sudo symmask -sid 71 -wwn 10000000C9F21829 -dir 7B -p 1 add devs 1471,1475,05F9,14F5</code>
+  - Refresh the directors<code>sudo symmask -sid 71 refresh</code>
+
+**Take a break for 10 mins**
+
+**Unix Steps**
+
+  - Configure devices on taprvio40
+    - Configure<code>sudo cfgmgr
+cat /var/tmp/sourcedisks.pahydb01 | awk '{print $2}' > /var/tmp/sourcedisks.pahydb01.pvid
+lspv | grep -wf /var/tmp/sourcedisks.pahydb01.pvid > /var/tmp/viodisks.pahydb01</code>
+    - Make sure these disks are not in use(Impossible but still )<code>awk '{print $1}' /var/tmp/viodisks.pahydb01 > /var/tmp/viodisks.pahydb01.pvs
+sudo lsdiskcfg | grep -f /var/tmp/viodisks.pahydb01.pvs</code>
+    - Check if the devices are readable<code>for dev in $(cat /var/tmp/viodisks.pahydb01.pvs)
+do
+   echo ${dev} :: $(sudo bootinfo -s ${dev} )
+done</code>
+    - Turn off reserve lock<code>for dev in $(cat /var/tmp/viodisks.pahydb01.pvs)
+do
+   sudo chdev -l ${dev} -a reserve_policy=no_reserve
+done</code>
+  - Configure devices on taprvio41
+    - Configure devices<code>sudo cfgmgr
+cat /var/tmp/sourcedisks.pahydb01 | awk '{print $2}' > /var/tmp/sourcedisks.pahydb01.pvid
+lspv | grep -wf /var/tmp/sourcedisks.pahydb01.pvid > /var/tmp/viodisks.pahydb01</code>
+    - Make sure these disks are not in use(Impossible but still )<code>awk '{print $1}' /var/tmp/viodisks.pahydb01 > /var/tmp/viodisks.pahydb01.pvs
+sudo lsdiskcfg | grep -f /var/tmp/viodisks.pahydb01.pvs</code>
+  - Check if the devices are readable<code>for dev in $(cat /var/tmp/viodisks.pahydb01.pvs)
+do
+   echo ${dev} :: $(sudo bootinfo -s ${dev} )
+done</code>
+  - Turn off reserve lock<code>for dev in $(cat /var/tmp/viodisks.pahydb01.pvs)
+do
+   sudo chdev -l ${dev} -a reserve_policy=no_reserve
+done</code>
+  - On taprvio40, Map the devices<code>for dev in $(cat /var/tmp/viodisks.pahydb01.pvs )
+do
+   mkvdev -vdev ${dev} -vadapter vhost8
+done</code>
+  - On taprvio41, Map the devices<code>for dev in $(cat /var/tmp/viodisks.pahydb01.pvs )
+do
+   mkvdev -vdev ${dev} -vadapter vhost8
+done</code>
+  - Boot pahydb01<code>ssh hscroot@taitc051
+chsysstate -r lpar -o on -b sms -m MES-Dev-QA-8205-E6B-SN1048EEP -n pahydb01-hyper-prd -f pahydb01-hyper-prd</code>
+  - At the console make sure we booted from the correct disk<code>lspv | grep rootvg</code>
+  - Configure the network
+    - Down detach all the interfaces<code>sudo ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   sudo rmdev -dl en${dev}
+   sudo rmdev -dl et${dev}
+   sudo rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>sudo cfgmgr</code>
+    - Configure the front end IP<code>sudo /usr/sbin/mktcpip -h'pahydb01' -a'10.0.48.31' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.0.48.1' -A'no' -t'N/A' -s''</code>
+    - Configure the backup network<code>sudo chdev -l en1 -a netaddr=10.0.49.36 -a netmask=255.255.255.0 -a state=up</code>
+    - Enable all NFS mounts and NFS exports<code>sudo cp /etc/filesystems.OLD /etc/filesystems
+sudo mv /etc/exports.OLD /etc/exports</code>
+  - Update the console database. On taitc118<code>sudo vi /prod/images/etc/unix_sys_console</code>
+  - As the server has been moved from single VIO setup to dual VIO server setup, perform the following steps.
+    - Make a note of the pvid of alt_rootvg disk and remove the hdisks that belonged to alt_rootvg<code>alt_root_disk=$(lspv | grep alt_rootvg | awk '{print $2}' | sort -u)
+lspv | grep alt_rootvg | awk '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+    - Remove the alt_rootvg<code>sudo alt_disk_install -X alt_rootvg</code>
+    - Run cfgmgr<code>sudo cfgmgr</code>
+    - Create a alt_rootvg<code>sudo alt_disk_copy -d $(lspv | grep ${alt_root_disk} | awk '{print $1}' )</code>
+    - Reboot the server<code>sudo shutdown -Fr</code>
+    - Make a note of the pvid of old_rootvg disk and remove the hdisks that belonged to it<code>old_root_disk=$(lspv | grep old_rootvg | awk '{print $2}' | sort -u)
+lspv | grep old_rootvg | awk '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+    - Remove the old_rootvg<code>sudo alt_disk_install -X old_rootvg</code>
+    - Run cfgmgr<code>sudo cfgmgr</code>
+    - Create a alt_rootvg<code>sudo alt_disk_copy -d $(lspv | grep ${old_root_disk} | awk '{print $1}' )</code>
+
+**Storage work - Cleanup **
+
+  - Unmask from the old WWNs<code>sudo symmask -sid 71 -wwn 2100001b3208d7ac -dir 8c -p 1 remove dev 0239,0249
+sudo symmask -sid 71 -wwn 2101001b323a7958 -dir 9c -p 1 remove dev 0239,0249
+sudo symmask -sid 71 -wwn 2100001b3208d7ac -dir 8c -p 0 remove dev 05F9,1471,1475,14F5
+sudo symmask -sid 71 -wwn 2101001b323a7958 -dir 9c -p 0 remove dev 05F9,1471,1475,14F5</code>
+  - Write disable the devices<code>sudo symdev -sid 71 write_disable 0239 -SA 8c -p 1
+sudo symdev -sid 71 write_disable 0249 -SA 9c -p 1
+
+sudo symdev -sid 71 write_disable 05F9 -SA 8c -p 0
+sudo symdev -sid 71 write_disable 1471 -SA 8c -p 0
+sudo symdev -sid 71 write_disable 1475 -SA 8c -p 0
+sudo symdev -sid 71 write_disable 14F5 -SA 8c -p 0
+
+sudo symdev -sid 71 write_disable 05F9 -SA 9c -p 0
+sudo symdev -sid 71 write_disable 1471 -SA 9c -p 0
+sudo symdev -sid 71 write_disable 1475 -SA 9c -p 0
+sudo symdev -sid 71 write_disable 14F5 -SA 9c -p 0</code>
+  - Create this mapfile as pahydb01.unmap<code>unmap dev 0239 from dir 8C:1;
+unmap dev 0239 from dir 9C:1;
+unmap dev 0249 from dir 8C:1;
+unmap dev 0249 from dir 9C:1;
+unmap dev 05F9 from dir 8C:0;
+unmap dev 05F9 from dir 9C:0;
+unmap dev 1471 from dir 8C:0;
+unmap dev 1471 from dir 9C:0;
+unmap dev 1475 from dir 8C:0;
+unmap dev 1475 from dir 9C:0;
+unmap dev 14F5 from dir 8C:0;
+unmap dev 14F5 from dir 9C:0;</code>
+  - Preview the symconfigure session<code>sudo symconfigure -sid 71 -f pahydb01.unmap preview</code>
+  - Commit<code>sudo symconfigure -sid 71 -f pahydb01.unmap commit</code>

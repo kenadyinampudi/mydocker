@@ -1,0 +1,40 @@
+====== Pure Migration via LVM Steps ======
+//AKA, the hard way//
+
+ - Add drives to server
+  * Make sure to keep drives to an appropriate size
+    I voted for "not thinking" and made all the drives bigger.  It makes allocation much easier, becuase you don't have to make 14 different sized drives.
+  * Check the largest size for all the volumes groups first with lsvg and some math to find the upper size limit.
+  * You want to multiply the maximum number of PPs per PV by the PV size to get disk size, then you want to make sure the maximum number of PVs per VG is greater than the current used PPs + the expected amount of new PPs.
+ - cfgmgr to discover drives
+
+ - make a file called "migratepv.mapping".
+Use the format
+<code>VolumeGroup	OldHDisk	NewHDisk</code>
+
+You again will need to plan out which set of drives get mapped to where.  In theory, you can reuse the same mapping if you wipe out the old drives first.
+
+
+ - Create the script "pvmigrate.sh"  (On AIX, the command is "migratepv", so I reverse it to distinguish)
+<code>
+	#!/bin/bash
+	cat migratepv.mapping | while read line
+	do
+	   echo "$(date)   :   Migrating ${line} ..."
+	   sourcedisk=$(echo ${line} | awk '{print $2}' )
+	   targetdisk=$(echo ${line} | awk '{print $3}' )
+	   volumegroup=$(echo ${line} | awk '{print $1}' )
+	   echo "$(date)   :   Adding ${targetdisk} to ${volumegroup} ..."
+	   extendvg ${volumegroup} ${targetdisk}
+	   #echo extendvg ${volumegroup} ${targetdisk}
+	   echo "$(date)   :   Migrating ${sourcedisk} to ${targetdisk} in ${volumegroup} ..."
+	   migratepv ${sourcedisk} ${targetdisk}
+	   #echo migratepv ${sourcedisk} ${targetdisk}
+	   echo "$(date)   :   Removing ${sourcedisk} from ${volumegroup} ..."
+	   reducevg ${volumegroup} ${sourcedisk}
+	   #echo reducevg ${volumegroup} ${sourcedisk}
+	done
+</code>
+I saw a steady 5G a minute transfer on a live database server.
+
+One important point ... may want to make sure to give the filesystems a new PVID before mounting, just in case.

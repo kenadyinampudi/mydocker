@@ -1,0 +1,99 @@
+====== tsqa1d02 migration ======
+
+**Migrate these filesystems from rootvg to datavg01**
+
+<code>/application/CA
+/usr/sap/QEP
+/oracle
+/oracle/client
+/oracle/QEP
+/oracle/QEP/102_64
+/oracle/QEP/origlogA
+/oracle/QEP/origlogB
+/oracle/QEP/mirrlogA
+/oracle/QEP/mirrlogB
+/oracle/QEP/sapdata1
+/oracle/QEP/sapdata2
+/oracle/QEP/sapdata3
+/oracle/QEP/sapdata4
+/oracle/QEP/oraarch
+/sapmnt/QEP
+/instdir
+/oracle/QEP/sapreorg</code>
+
+**Procedure**
+
+  * A couple of days in advance, execute these rsyncs.<code>sudo rsync -avv /application/CA/ /new/application/CA/
+sudo rsync -avv /instdir/ /new/instdir/
+sudo rsync -avv /usr/sap/QEP/ /new/usr/sap/QEP/
+sudo rsync -avv /sapmnt/QEP/ /new/sapmnt/QEP/
+sudo rsync -avv /oracle/QEP/102_64/ /new/oracle/QEP/102_64/</code>
+
+  * During the outage after all applications are down, execute these rsyncs.
+    * Migrate non oracle filesystems<code>sudo rsync -avv /application/CA/ /new/application/CA/
+sudo rsync -avv /instdir/ /new/instdir/
+sudo rsync -avv /oracle/client/ /new/oracle/client/
+sudo rsync -avv /usr/sap/QEP/ /new/usr/sap/QEP/
+sudo rsync -avv /sapmnt/QEP/ /new/sapmnt/QEP/
+sudo rsync -avv /oracle/QEP/102_64/ /new/oracle/QEP/102_64/</code>
+    * Migrate oracle filesystems. Run them all in parallel<code>sudo rsync -avv /oracle/QEP/sapreorg/ /new/oracle/QEP/sapreorg/
+sudo rsync -avv /oracle/QEP/origlogA/ /new/oracle/QEP/origlogA/
+sudo rsync -avv /oracle/QEP/origlogB/ /new/oracle/QEP/origlogB/
+sudo rsync -avv /oracle/QEP/mirrlogA/ /new/oracle/QEP/mirrlogA/
+sudo rsync -avv /oracle/QEP/mirrlogB/ /new/oracle/QEP/mirrlogB/
+sudo rsync -avv /oracle/QEP/sapdata1/ /new/oracle/QEP/sapdata1/
+sudo rsync -avv /oracle/QEP/sapdata2/ /new/oracle/QEP/sapdata2/
+sudo rsync -avv /oracle/QEP/sapdata3/ /new/oracle/QEP/sapdata3/
+sudo rsync -avv /oracle/QEP/sapdata4/ /new/oracle/QEP/sapdata4/
+sudo rsync -avv /oracle/QEP/oraarch/ /new/oracle/QEP/oraarch/
+sudo rsync -avv /oracle/QEP/sapreorg/ /new/oracle/QEP/sapreorg/</code>
+    * After all the above rsyncs have completed, rsync the base /oracle filesystem<code>sudo rsync -avv /oracle/ /new/oracle/</code>
+
+** Rename filesystems **
+
+  * Unmount all filesystems<code>for fs in /usr/sap/QEP /sapmnt/QEP /oracle/client /oracle/QEP/sapreorg /oracle/QEP/sapdata4 \
+/oracle/QEP/sapdata3 /oracle/QEP/sapdata2 /oracle/QEP/sapdata1 /oracle/QEP/origlogB /oracle/QEP/origlogA /oracle/QEP/oraarch \
+/oracle/QEP/mirrlogB /oracle/QEP/mirrlogA /oracle/QEP/102_64 /oracle/QEP /oracle /new/usr/sap/QEP /new/sapmnt/QEP /new/oracle/client \
+/new/oracle/QEP/sapreorg /new/oracle/QEP/sapdata4 /new/oracle/QEP/sapdata3 /new/oracle/QEP/sapdata2 /new/oracle/QEP/sapdata1 \
+/new/oracle/QEP/origlogB /new/oracle/QEP/origlogA /new/oracle/QEP/oraarch /new/oracle/QEP/mirrlogB /new/oracle/QEP/mirrlogA \
+/new/oracle/QEP/102_64 /new/oracle/QEP /new/oracle /new/instdir /new/application/CA /instdir /application/CA
+do
+   sudo umount $fs
+done</code>
+  * Rename old filesystems<code>sudo chfs -m /OLD/application/CA /application/CA
+sudo chfs -m /OLD/oracle/QEP/sapreorg /oracle/QEP/sapreorg
+sudo chfs -m /OLD/instdir /instdir
+sudo chfs -m /OLD/usr/sap/QEP /usr/sap/QEP
+sudo chfs -m /OLD/oracle /oracle
+sudo chfs -m /OLD/oracle/client /oracle/client
+sudo chfs -m /OLD/oracle/QEP /oracle/QEP
+sudo chfs -m /OLD/oracle/QEP/102_64 /oracle/QEP/102_64
+sudo chfs -m /OLD/oracle/QEP/origlogA /oracle/QEP/origlogA
+sudo chfs -m /OLD/oracle/QEP/origlogB /oracle/QEP/origlogB
+sudo chfs -m /OLD/oracle/QEP/mirrlogA /oracle/QEP/mirrlogA
+sudo chfs -m /OLD/oracle/QEP/mirrlogB /oracle/QEP/mirrlogB
+sudo chfs -m /OLD/oracle/QEP/sapdata1 /oracle/QEP/sapdata1
+sudo chfs -m /OLD/oracle/QEP/sapdata2 /oracle/QEP/sapdata2
+sudo chfs -m /OLD/oracle/QEP/sapdata3 /oracle/QEP/sapdata3
+sudo chfs -m /OLD/oracle/QEP/sapdata4 /oracle/QEP/sapdata4
+sudo chfs -m /OLD/oracle/QEP/oraarch /oracle/QEP/oraarch
+sudo chfs -m /OLD/sapmnt/QEP /sapmnt/QEP</code>
+  * Change the mount point of the new filesystems<code>sudo chfs -m /application/CA /new/application/CA
+sudo chfs -m /instdir /new/instdir
+sudo chfs -m /oracle /new/oracle
+sudo chfs -m /oracle/QEP /new/oracle/QEP
+sudo chfs -m /oracle/QEP/102_64 /new/oracle/QEP/102_64
+sudo chfs -m /oracle/QEP/mirrlogA /new/oracle/QEP/mirrlogA
+sudo chfs -m /oracle/QEP/mirrlogB /new/oracle/QEP/mirrlogB
+sudo chfs -m /oracle/QEP/oraarch /new/oracle/QEP/oraarch
+sudo chfs -m /oracle/QEP/origlogA /new/oracle/QEP/origlogA
+sudo chfs -m /oracle/QEP/origlogB /new/oracle/QEP/origlogB
+sudo chfs -m /oracle/QEP/sapdata1 /new/oracle/QEP/sapdata1
+sudo chfs -m /oracle/QEP/sapdata2 /new/oracle/QEP/sapdata2
+sudo chfs -m /oracle/QEP/sapdata3 /new/oracle/QEP/sapdata3
+sudo chfs -m /oracle/QEP/sapdata4 /new/oracle/QEP/sapdata4
+sudo chfs -m /oracle/QEP/sapreorg /new/oracle/QEP/sapreorg
+sudo chfs -m /oracle/client /new/oracle/client
+sudo chfs -m /sapmnt/QEP /new/sapmnt/QEP
+sudo chfs -m /usr/sap/QEP /new/usr/sap/QEP</code>
+  * Mount the new filesystems<code>sudo lsvgfs datavg01 | sort | xargs -n1 sudo mount</code>

@@ -1,0 +1,84 @@
+
+<h1 class="sectionedit1" id="fix_dynamic_tracking_and_failover_policy_on_aix_mpio_and_powerpath">Fix dynamic tracking and failover policy on AIX (MPIO and Powerpath)</h1>
+<div class="level1">
+
+<p>
+<strong>MPIO</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Check the flags<pre class="code">lspath | awk &#039;{print $NF}&#039; | sort -u |grep fscsi| xargs -n1 lsattr -a dyntrk -a fc_err_recov -El</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Fix them<pre class="code">for adapter in $(lspath | awk &#039;{print $NF}&#039; | sort -u |grep fscsi)
+do
+   ADAPTER=$(echo ${adapter} | sed &quot;s;fscsi;fcs;g&quot;)
+   for pv in $(lsdev -Ccdisk | egrep -v &quot;sas|scsi&quot; | awk &#039;{print $1}&#039;)
+   do
+      sudo rmpath -l ${pv} -p ${adapter}
+   done
+   hwloc=$(lscfg | grep -w ${adapter} | awk &#039;{print $3}&#039;)
+   sfwdev=$(lscfg | grep ${hwloc} | grep sfw |  awk &#039;{print $2}&#039;)
+   if [ &quot;hello${sfwdev}&quot; != &quot;hello&quot; ]
+   then
+      sudo rmdev -dl ${sfwdev}
+   fi
+   sudo chdev -l ${adapter} -a fc_err_recov=fast_fail -a dyntrk=yes
+   sudo cfgmgr -l ${ADAPTER}
+   lspath
+   echo &quot;Done fixing ${adapter} - press a key to continue&quot;
+   read
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the flags<pre class="code">lspath | awk &#039;{print $NF}&#039; | sort -u |grep fscsi| xargs -n1 lsattr -a dyntrk -a fc_err_recov -El</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the flags again<pre class="code">lspath | awk &#039;{print $NF}&#039; | sort -u |grep fscsi| xargs -n1 lsattr -a dyntrk -a fc_err_recov -El</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong>Powerpath based systems</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Check the parameters<pre class="code">lscfg | grep fscsi | awk &#039;{print $2}&#039; | xargs -n1 lsattr -a dyntrk -a fc_err_recov -El</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the powerpath adapters<pre class="code">sudo powermt display</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On each fiber HBA, do the following </div>
+<ol>
+<li class="level2"><div class="li"> Take one path offline<pre class="code">sudo powermt remove hba=0</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Find the hardware path<pre class="code">lscfg | grep fscsi0</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> List all devices (minus hdiskpower) to a file<pre class="code">lscfg | grep U7311.D20.10078AB-P1-C07-T1| grep -v power| egrep &quot;hdisk|sfw|fcnet&quot; | sort | awk &#039;{print $2}&#039; &gt; devices</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Change their status to “Defined”<pre class="code">for dev in $(cat devices)
+do
+   sudo rmdev -l ${dev}
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Change the parameter<pre class="code">sudo chdev -l fscsi0 -a fc_err_recov=fast_fail -a dyntrk=yes</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Change the devices status to “Available”<pre class="code">for dev in $(cat devices | sort -r)
+do
+   sudo mkdev -l ${dev}
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Reconfigure powerpath<pre class="code">sudo powermt config</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

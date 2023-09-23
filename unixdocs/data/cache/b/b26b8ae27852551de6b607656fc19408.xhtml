@@ -1,0 +1,128 @@
+
+<h1 class="sectionedit1" id="decommission_unix_servers">Decommission Unix servers</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Decommission Unix servers" [1-41] -->
+<h2 class="sectionedit2" id="steps_to_do_prior">Steps to do prior</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Document all approvals from business, customers or other teams necessary.</div>
+</li>
+<li class="level1"><div class="li"> Discuss within the team and get an agreement.</div>
+</li>
+<li class="level1"><div class="li"> Create a <strong>Standard change</strong> control, get approval and do all the necessary paperwork.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Steps to do prior" [42-292] -->
+<h2 class="sectionedit3" id="decommission_-_day_1">Decommission - Day 1</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Communicate with all stake holders that the server and it&#039;s apps are being decommissioned.</div>
+</li>
+<li class="level1"><div class="li"> Have the application team stop all apps on the server</div>
+</li>
+<li class="level1"><div class="li"> If backups required, please ask DataPres team to backup the server with requested retention period.</div>
+</li>
+<li class="level1"><div class="li"> DRiV Servers</div>
+<ol>
+<li class="level2"><div class="li"> Send an email to Monitoring team to stop monitoring.</div>
+</li>
+<li class="level2"><div class="li"> Send an email to Netbackup team to stop backing up the server.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Tenneco Servers</div>
+<ol>
+<li class="level2"><div class="li"> Ask PT Unix team to execute their decomm checklist</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Decommission - Day 1" [293-806] -->
+<h2 class="sectionedit4" id="decommission_-_day_2">Decommission - Day 2</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Make sure the backups are completed. It could be a day or two.</div>
+</li>
+<li class="level1"><div class="li"> Unmount &amp; remove NFS mounts from clients when necessary and unexport the filesytems.</div>
+</li>
+<li class="level1"><div class="li"> Shutdown the server </div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Decommission - Day 2" [807-1022] -->
+<h2 class="sectionedit5" id="decommission_-_day_9">Decommission - Day 9</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Return the SAN storage after clearing PVIDs and destroying the VGDA. </div>
+</li>
+<li class="level1"><div class="li"> If this is a physical server, </div>
+<ol>
+<li class="level2"><div class="li"> Send a ticket for cables reclamation and any storage zones etc to delete.</div>
+</li>
+<li class="level2"><div class="li"> Remove CDs/Tape media from the server.</div>
+</li>
+<li class="level2"><div class="li"> Unrack the server or pull out the blade.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> DRiV servers</div>
+<ol>
+<li class="level2"><div class="li"> Remove the host from <code>pcdcunxaxap01:/prod/images/etc/unix_sys_console</code></div>
+</li>
+<li class="level2"><div class="li"> Remove the host from <code>pcdcunxaxap01:/prod/images/nimserver-utilities/Disaster.Recovery.List</code></div>
+</li>
+<li class="level2"><div class="li"> Remove the host from <code>pcdcunxaxap01:/prod/images/nimserver-utilities/Disaster.Recovery.List</code></div>
+</li>
+<li class="level2"><div class="li"> Remove the host from PowerVM monitoring / LPAR2RRD - pcdcunxlxap02.</div>
+</li>
+<li class="level2"><div class="li"> Remove the mksysb backup files <code>pcdcunxaxap01</code>.</div>
+</li>
+<li class="level2"><div class="li"> Remove from NIM definitions <code>pcdcunxaxap01</code>.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Tenneco servers</div>
+<ol>
+<li class="level2"><div class="li"> Remove the host from <code>pgnmsv01:/prod/images/etc/unix_sys_console</code></div>
+</li>
+<li class="level2"><div class="li"> Remove the host from <code>pgnmsv01:/prod/images/nimserver-utilities/Disaster.Recovery.List</code></div>
+</li>
+<li class="level2"><div class="li"> Remove the host from <code>penmsv01:/prod/images/nimserver-utilities/Disaster.Recovery.List</code></div>
+</li>
+<li class="level2"><div class="li"> Remove the host from PowerVM monitoring / LPAR2RRD.</div>
+</li>
+<li class="level2"><div class="li"> Remove the mksysb backup files.</div>
+</li>
+<li class="level2"><div class="li"> Remove from NIM definitions.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove the LPAR/Blade/Frame as applicable.</div>
+</li>
+<li class="level1"><div class="li"> Remove the HMC/ILO network/VMWare as applicable.</div>
+</li>
+<li class="level1"><div class="li"> Request to remove from hardware maintenance. Email System model number and serial number to Robert - Not applicable if you are decommissioning .</div>
+</li>
+<li class="level1"><div class="li"> Remove from UUMA - Email to Robert.</div>
+</li>
+<li class="level1"><div class="li"> Send ticket to reclaim <abbr title="Domain Name System">DNS</abbr> names, IP addresses, network ports and cables to Network team.</div>
+</li>
+<li class="level1"><div class="li"> Goto service now and change the hardware status to <em>retire</em> for that server.</div>
+<ol>
+<li class="level2"><div class="li"> Goto service now and search for server –&gt; Click option <em>All</em> —&gt; then in the name column type the decommissioning server</div>
+</li>
+<li class="level2"><div class="li"> Once you get the server change the status of the server to <em>retire</em>.</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Decommission - Day 9" [1023-] -->

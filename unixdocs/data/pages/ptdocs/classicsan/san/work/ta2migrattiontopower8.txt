@@ -1,0 +1,64 @@
+====== Migrate TA2 DB server to Power8 - storage work ======
+
+** zoning is complete as follows **
+
+^Hostname^WWN^DMX4 - FA^
+|peerdb99|10000090fa563c0a|FA-8B:1|
+|peerdb99|10000090fa563dce|FA-9B:1|
+|peerdb99|10000090fa726c38|FA-7C:0|
+|peerdb99|10000090fa72a7a0|FA-10C:0|
+
+** BCV one-off backups **
+
+The BCV backup has been pre-poned to complete prior to Sunday afternoon.,
+
+  - Wait for confirmation from DBA / Datapres that TA2 backup is complete.
+  - Unmount, varyoff & export filesystems from teprbk01<code>for vg in $(grep datavg0 /home/x1kxk630/ta2migrationbcvbackups/lsvpcfg.out.1 | awk -F: '{print $NF}' | sort -u )
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+   done
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+done</code>
+  - rmdev the disks<code>grep datavg0 /home/x1kxk630/ta2migrationbcvbackups/lsvpcfg.out.1 | tr ":" "\n" | grep hdisk | xargs -n1 sudo rmdev -l</code>
+  - Perform an incremental sync<code>sudo symmir -g TA2_BKUP_DMX4 establish</code>
+  - Wait for confirmation from DBAs that TA2 primary is shutdown
+  - Now perform a split<code>sudo symmir -g TA2_BKUP_DMX4 split</code>
+
+** Moving LUNs to peerap99, tepr2e01 and paap3p01 **
+
+:!: Remember to unmap the old LUNS from these servers
+
+  - Map VMAX luns to tepr2e01
+    - Add the devices<code>sudo symaccess -sid 0301 -type storage -name tepr2e01_SG add devs 07FF,0800,0EB0,0EB1,0EB2,0EB3,0EB4,0EB5,0EB6,0EEA,0EEB,0EEC,0EED</code>
+    - Remove the test LUNs<code>sudo symaccess -sid 0301 -type storage -name tepr2e01_SG remove dev 087B</code>
+  - Map VMAX LUNs to paap3p01
+    - Add the devices<code>sudo symaccess -sid 0301 -type storage -name paap3p01_SG add devs 05D6,05D7,05D8,05D9,05DA,05DB,05DC,05DD,05DE,05DF,05E0,05E1,05E2,07FB,07FC</code>
+    - Remove the test LUNs<code>sudo symaccess -sid 0301 -type storage -name paap3p01_SG remove dev 0879</code>
+  - Map LUNs to peerap99
+    - Add VMAX LUNs
+      - Add the devices<code>sudo symaccess -sid 0301 -type storage -name peerap99_SG add devs 05E3,05E4,05E5,05E6,05E7,05E8,05E9,04ED,04EE,04EF,04F0,0575</code>
+    - Add DMX4 LUNs
+      - Map the LUNs<code>sudo symconfigure -sid 39 -f /home/x1kxk630/ta2migration2power8/mappeerap99luns2power8.txt preview
+sudo symconfigure -sid 39 -f /home/x1kxk630/ta2migration2power8/mappeerap99luns2power8.txt commit</code>
+      - Mask the LUNs<code>sudo symmask -sid 39 -wwn c0507607cd0e0012 -dir 8C -p 0 add devs 1236,1246,090A,090D,0911,0916,0919,091E,0921,1AFE,1B02,1B06,1B0A,1B0E
+sudo symmask -sid 39 -wwn c0507607cd0e0016 -dir 8C -p 0 add devs 1236,1246,090A,090D,0911,0916,0919,091E,0921,1AFE,1B02,1B06,1B0A,1B0E
+sudo symmask -sid 39 -wwn c0507607cd0e0010 -dir 9C -p 0 add devs 1236,1246,090A,090D,0911,0916,0919,091E,0921,1AFE,1B02,1B06,1B0A,1B0E
+sudo symmask -sid 39 -wwn c0507607cd0e0014 -dir 9C -p 0 add devs 1236,1246,090A,090D,0911,0916,0919,091E,0921,1AFE,1B02,1B06,1B0A,1B0E
+
+sudo symmask -sid 39 refresh</code>
+
+** After Unix team varyoff VGs and ready for migration **
+
+  - Login to DMX4 CLI server taitc118
+  - Map the volumes<code>sudo symconfigure -sid 39 -f /home/x1kxk630/ta2migration2power8/mapta2luns2power8.txt preview
+sudo symconfigure -sid 39 -f /home/x1kxk630/ta2migration2power8/mapta2luns2power8.txt commit</code>
+  - Mask the volumes<code>sudo symmask -sid 39 -wwn 10000090fa563c0a -dir 8B -p 1 add devs <list of devs from /home/x1kxk630/ta2migration2power8/ta2luns-excludingpagevg>
+sudo symmask -sid 39 -wwn 10000090fa563dce -dir 9B -p 1 add devs <list of devs from /home/x1kxk630/ta2migration2power8/ta2luns-excludingpagevg>
+sudo symmask -sid 39 -wwn 10000090fa726c38 -dir 7C -p 0 add devs <list of devs from /home/x1kxk630/ta2migration2power8/ta2luns-excludingpagevg>
+sudo symmask -sid 39 -wwn 10000090fa72a7a0 -dir 10C -p 0 add devs <list of devs from /home/x1kxk630/ta2migration2power8/ta2luns-excludingpagevg></code>
+  - Refresh the masking database<code>sudo symmask -sid 39 refresh</code>
+
+** Handover to Unix team - ready to import VGs **

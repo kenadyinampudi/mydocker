@@ -1,0 +1,78 @@
+====== HPUX Root Disk Mirroring ======
+
+===== Preparation work =====
+
+  - Check that there are unused/spare hard disk. Use a combination of the following commands to identify <code>ioscan -fnC disk
+vgdisplay -v vg00
+pvdisplay /dev/dsk/c2t6d0 |egrep -iE "Total|Free"</code>
+  - If there is already a disk and added under LVM control, verify that it is empty and the same size as the primary boot disk.<code>uskux12:/root # pvdisplay /dev/dsk/c2t6d0 |egrep -iE "Total|Free"
+Total PE                    4340
+Free PE                     4340
+uskux12:/root # </code>
+  - Check that Mirror-UX is installed. Sample o/p below <code>uskux12:/root # swlist |grep -i Mirror
+  B2491BA                               B.11.00        MirrorDisk/UX
+uskux12:/root #</code>
+  - Create change controls, get approval.  Sample Change is CHG0046954
+
+===== Installation Plan =====
+
+  - Store the disk device files in a variable.<code>DISK="/dev/dsk/c2t6d0" && RDISK="/dev/rdsk/c2t6d0"</code>
+  - Create a physical volume with a boot reserved area.  Make sure to specify the right disk <code>pvcreate -B ${RDISK}</code>
+  - Add the physical volume to the root VG if not already added <code>vgextend /dev/vg00 ${DISK}</code>
+  - Use mkboot to place the boot utilities in the boot area and add the AUTO file <code>mkboot ${RDISK}
+mkboot -a "hpux -lq" ${RDISK}</code>
+  - This step is for the existing Primary Disk and not on the secondary disk.  Use mkboot to update the AUTO file on the primary boot disk <code>mkboot -a "hpux -lq" ${RDISK}</code>
+  - Mirror the stand, root and swap logical volumes in order. It has to be run one by one.  <code>lvextend -m 1 /dev/vg00/lvol1 ${DISK}
+lvextend -m 1 /dev/vg00/lvol2 ${DISK}
+lvextend -m 1 /dev/vg00/lvol3 ${DISK}</code>
+  - Then mirror the rest of your root logical volumes.  It has to be run one by one. <code>lvextend -m 1 /dev/vg00/lvol4 ${DISK}
+lvextend -m 1 /dev/vg00/lvol5 ${DISK}
+lvextend -m 1 /dev/vg00/lvol6 ${DISK}
+lvextend -m 1 /dev/vg00/lvol7 ${DISK}
+lvextend -m 1 /dev/vg00/andy ${DISK}
+lvextend -m 1 /dev/vg00/lvol9 ${DISK} </code>
+  - Verify that the total number of used PEs on both disks are same. Use <code>vgdisplay -v vg00 |grep Free\ PE</code>
+  - Modify your alternate boot path <code> setboot -a 2/1.6.0 # use the path of your new boot disk </code>
+  - Backup /stand/bootconf & Edit /stand/bootconf and add the new mirrored boot disk.
+
+===== Post Implementation Testing =====
+
+  - Verify there are no stale PEs <code>for LVs in `vgdisplay -v vg00 |grep "LV Name" |awk '{print $3}'`
+do
+echo "Total Stale PE in $LVs is" $(lvdisplay -v $LVs |grep -ci stale)
+done </code>
+  - Verify there is extra 1 copy for all LVs (including swap/dump) <code>for LVs in `vgdisplay -v vg00 |grep "LV Name" |awk '{print $3}'`
+do
+echo "$LVs has" $(lvdisplay -v $LVs |grep ^Mirror |awk '{print $3}') "mirror copies"
+done</code>
+  - Verify that alternate boot disk is set using setboot command
+  - Verify there are no errors in dmesg or in /var/adm/messages
+  - Verify that the lvlnboot is updated Sample o/p below <code>uskux12:/stand # lvlnboot -v
+Boot Definitions for Volume Group /dev/vg00:
+Physical Volumes belonging in Root Volume Group:
+        /dev/dsk/c1t6d0 (0/0/2/0.6.0) -- Boot Disk
+        /dev/dsk/c2t6d0 (0/0/2/1.6.0) -- Boot Disk
+Boot: lvol1     on:     /dev/dsk/c1t6d0
+                        /dev/dsk/c2t6d0
+Root: lvol3     on:     /dev/dsk/c1t6d0
+                        /dev/dsk/c2t6d0
+Swap: lvol2     on:     /dev/dsk/c1t6d0
+                        /dev/dsk/c2t6d0
+Dump: lvol2     on:     /dev/dsk/c1t6d0, 0
+</code>
+
+
+===== Backout Plan =====
+
+  - Restore the /stand/bootconf from the backup
+  - Remove the mirror copies one after the other <code>lvreduce -m 0 /dev/vg00/lvol9 ${DISK}
+lvreduce -m 0 /dev/vg00/andy ${DISK}
+lvreduce -m 0 /dev/vg00/lvol7 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol6 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol5 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol4 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol3 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol2 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol1 ${DISK}</code>
+  - Remove the disk from the VG <code>vgreduce vg00 ${DISK}</code>
+  - Confirm that the lvlnboot is updated

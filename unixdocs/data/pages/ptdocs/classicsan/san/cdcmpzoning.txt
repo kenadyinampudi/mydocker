@@ -1,0 +1,60 @@
+====== CDC - MP/DRiV Zoning Documentation ======
+
+  * CDC - MP/DRiV has SAN fabric constructed by using Cisco MDS switches.
+
+^SwitchName                      ^Description        ^
+|uscdcxswisan001.federalmogul.com|Switch1 or Fabric A|
+|uscdcxswisan002.federalmogul.com|Switch2 or Fabric B|
+
+
+  * CDC - MP/DRiV has two Pure storage arrays -- This documentation covers zoning to those.
+
+===== Zoning Procedure =====
+
+  * Ideally a zoning request would come to us similar to this<code>Please zone the following systems to cdcvilns013 / cdcvilns013 storage array
+
+Hostname : qcdcccsaxdb01
+Host OS  : AIX
+WWNs     : 
+
+c050760ac7580000
+c050760ac7580001
+c050760ac7580002
+c050760ac7580003</code>
+  * The first step is to figure out where these WWNs are logged in to,
+    * Run the FAB WWN documentation script on pgunap01<code>ssh pgunap01</code>Switch to 'sanmontr' account<code>sudo su - sanmontr</code>Run the script<code>/prod/storageteam/scripts/docsanwwnwiki_fmmp</code>
+    * Define this function if you feel lazy to 'grep'<code>function check_wwn_mp {
+lookupfile="/prod/storageteam/dokuwiki/data/pages/san/stats/fmmp_allswitches.txt"
+for wwn in ${*}
+do
+   switch=$(grep ${wwn} ${lookupfile} | awk -F "|" '{print $3}')
+   echo "${wwn}  ${switch}"
+done
+}</code>
+    * Check it now<code>check_wwn_mp c050760ac7580000 c050760ac7580001 c050760ac7580002 c050760ac7580003</code>Just an example -- change the WWNs. You should see an output like this<code>c050760ac7580000  uscdcxswisan002.federalmogul.com
+c050760ac7580001  uscdcxswisan002.federalmogul.com
+c050760ac7580002  uscdcxswisan001.federalmogul.com
+c050760ac7580003  uscdcxswisan001.federalmogul.com</code>
+    * At FM-MP, the current zoning is split across two groups of target ports on the Storage arrays. This is to load balance the storage array ports. They are,
+
+
+^Switch Name                     ^Array Name ^Group 1 - Aliases                                                    ^Group 2 aliases                                                      ^
+|uscdcxswisan001.federalmogul.com|cdcvilns013|PUREM50R2_bc92_CDCVILNS013-CT0-FC1 PUREM50R2_bc92_CDCVILNS013-CT1-FC1|PUREM50R2_bc92_CDCVILNS013-CT0-FC3 PUREM50R2_bc92_CDCVILNS013-CT1-FC3|
+|uscdcxswisan001.federalmogul.com|cdcvilns015|PUREM70R2_9160_CDCVILNS015-CT0-FC0 PUREM70R2_9160_CDCVILNS015-CT1-FC0|PUREM70R2_9160_CDCVILNS015-CT0-FC2 PUREM70R2_9160_CDCVILNS015-CT1-FC2|
+|uscdcxswisan002.federalmogul.com|cdcvilns015|PUREM50R2_bc92_CDCVILNS013-CT0-FC0 PUREM50R2_bc92_CDCVILNS013-CT1-FC0|PUREM50R2_bc92_CDCVILNS013-CT0-FC4 PUREM50R2_bc92_CDCVILNS013-CT1-FC4|
+|uscdcxswisan002.federalmogul.com|cdcvilns015|PUREM70R2_9160_CDCVILNS015-CT0-FC1 PUREM70R2_9160_CDCVILNS015-CT1-FC1|PUREM70R2_9160_CDCVILNS015-CT0-FC3 PUREM70R2_9160_CDCVILNS015-CT1-FC3|
+
+
+==== Zoning to switch 1 ====
+
+  - Generate the zoning commands.
+    - Document the login status to a temporary file<code>check_wwn_mp c050760ac7580000 c050760ac7580001 c050760ac7580002 c050760ac7580003 > logininfo.hostname</code>
+    - Define a function<code>
+}
+
+   
+
+
+
+
+</code>

@@ -1,0 +1,20 @@
+====== How to remove a V9000 snapshot that was made ======
+
+  - Once the made snapshot becomes un-needed we should get rid of it. 
+  - ** First thing to make sure is to double and tripple check that we are dealing with the correct consistency group,**
+    - The customer no longer need the snapshot.
+    - You have a documented email/ letter from the customer that the target disks / filesystems are no longer needed.
+    - The target disks have been disconnected from hosts.
+  - Below are steps I did in order to get rid of snapshot which was created for CORE SP upgrade:
+  - Define a variable to the FlashCopy Group<code>export mapping=TA2CORESPBKP</code>
+  - Stop the consistency group<code>ssh admin@ldcv9ac2vip1 stopfcconsistgrp ${mapping}</code>
+  - Document the flashcopy tasks in the group<code>ssh admin@ldcv9ac2vip1 lsfcmap -filtervalue name=${mapping}* -nohdr > lsfcmap_${mapping}.txt</code>
+  - Remove the flashcopy tasks<code>for i in `cat lsfcmap_${mapping}.txt|awk '{print $2}'`
+do
+   echo ssh admin@ldcv9ac2vip1 rmfcmap -force ${i}
+done</code>Execute the commands.
+  - Remove the consistency group<code>ssh admin@ldcv9ac2vip1 rmfcconsistgrp ${mapping}</code>
+  - Remove the target LUNs<code>for i in `cat lsfcmap_${mapping}.txt|awk '{print $6}'`
+do
+   echo ssh admin@ldcv9ac2vip1 rmvdisk ${i}
+done</code>Execute the resulting commands.

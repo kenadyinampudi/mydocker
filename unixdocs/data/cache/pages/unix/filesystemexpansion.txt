@@ -1,0 +1,65 @@
+====== What to do when you get a ticket for filesystem expansion ======
+
+==== Make sure you have adequate information to work on the ticket ====
+
+  * Hostname.
+  * Filesystem name.
+  * How much additional space is needed.
+  * Reason for expansion ( Organic growth or Project work )
+  * Figure out the type of host
+
+==== Understand the ticket ====
+
+  - A typical filesystem expansion can come in these fashions<code>Please increase filesystem /oracle/CTB/sapdata3 by 10G on dahrdb01</code>OR<code>Filesystem /oracle/CTB/sapdata3 is 95% on dahrdb01, please increase the filesystemby 10G</code>
+  - From the above ticket, we know,<code>Hostname is dahrdb01
+Filesystem name is /oracle/CTB/sapdata3
+Filesystem is to be increased by an additional 10G</code>
+
+
+==== Allocating additional filesystem space - AIX (Have enough space on the VG) ====
+
+  - Find out the volume group the filesystem is on<code>df -k /oracle/CTB/sapdata3
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/fslv19       6684672   1568888   77%       13     1% /oracle/CTB/sapdata3</code>The logical volume is **fslv19**<code>lslv fslv19 | grep "VOLUME GROUP"
+LOGICAL VOLUME:     fslv19                 VOLUME GROUP:   datavg01</code>The volume group is **datavg01**
+  - Find out if the volume group has enough space or not<code>lsvg datavg01 | grep "FREE PPs:"
+MAX LVs:            256                      FREE PPs:       461 (29504 megabytes)</code>That says we have 29 Gig free here. Thats good news ....
+  - Increase the filesystem size<code>sudo chfs -a size=+10G /oracle/CTB/sapdata3
+Filesystem size changed to 34340864</code>
+    - If you get an error message like this<code>0516-787 extendlv: Maximum allocation for logical volume fslv19
+        is 102.</code>This means, the "Maximum LPs" parameter set for this logical volume is 102. Hence, the logical volume size is limited to 102 * 64 Meg = 6528Meg. This can be fixed by changing the Max LPs value higher. In this case, an increase by 10G would bring this filesystem(logical volume) to approx 16G, so we need to make the "Max LP" parameter to atleast 16 * 1024 / 64 = 256<code>sudo chlv -x 300 fslv19</code>Once done, retry the chfs command and it will succeed.
+
+==== Allocating additional filesystem space - AIX (Not enough space on the VG) ====
+
+  - What if the ticket said, the filesystem need to be expanded by 50G ?
+  - Let us redo the check again<code>lsvg datavg01 | grep "FREE PPs:"
+MAX LVs:            256                      FREE PPs:       461 (29504 megabytes)</code>That says we have 29 Gig free here. That is no a good news if we were to expand the filesystem by 50G.
+  - This means, we need to add an additional disk.
+  - List the disks that makes up the volume group<code>x1kxk630 on dahrdb01:/home/x1kxk630 $ lsvg -p datavg01
+datavg01:
+PV_NAME           PV STATE          TOTAL PPs   FREE PPs    FREE DISTRIBUTION
+hdisk4            active            539         113         30..00..00..00..83
+hdisk5            active            539         166         14..00..00..44..108
+hdisk8            active            539         172         28..00..00..36..108
+hdisk9            active            539         10          01..00..00..00..09</code>
+  - Now check what type disks they are
+    - Virtual SCSI Disk Drive(dahrdb01)<code>x1kxk630 on dahrdb01:/home/x1kxk630 $ lsdev -Ccdisk | egrep "hdisk4|hdisk5|hdisk8|hdisk9"
+hdisk4 Available  Virtual SCSI Disk Drive
+hdisk5 Available  Virtual SCSI Disk Drive
+hdisk8 Available  Virtual SCSI Disk Drive
+hdisk9 Available  Virtual SCSI Disk Drive</code>In this case, they are Virtual SCSO Disk Drive. These disks are virtualized by VIOS servers. This URL will show you a map between the lpar and VIOS servers.[[http://unixdocs/doku.php?id=unix:viodisksmap-summary]]
+    - EMC MPIO disk(tedv2d01)<code>hdisk2  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID
+hdisk3  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID
+hdisk4  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID
+hdisk5  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID
+hdisk6  Available 08-00-02 EMC Symmetrix FCP MPIO VRAID</code>
+    - EMC Powerpath disks(peerdb98<code>hdiskpower96  Available 02-08-02 PowerPath Device
+hdiskpower97  Available 02-08-02 PowerPath Device
+hdiskpower98  Available 01-08-02 PowerPath Device
+hdiskpower99  Available 02-08-02 PowerPath Device
+hdiskpower100 Available 02-08-02 PowerPath Device
+hdiskpower101 Available 02-08-02 PowerPath Device</code>
+    - SCSI disks<code>hdisk2 Available 00-08-01-4,0 16 Bit LVD SCSI Disk Drive
+hdisk3 Available 03-08-00-4,0 16 Bit LVD SCSI Disk Drive
+hdisk4 Available 03-08-00-5,0 16 Bit LVD SCSI Disk Drive
+hdisk5 Available 03-08-00-8,0 16 Bit LVD SCSI Disk Drive</code>

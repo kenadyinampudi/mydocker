@@ -1,0 +1,8 @@
+**On a SAN booting system**
+ 
+        - Find out the alt_disk<code>lspv | grep rootvg
+hdisky          00021ffb513afe5a                    rootvg          active
+hdiskx          00021ffb513aff90                    altinst_rootvg</code>In this case hdisk1 is the alternate boot disk.
+        - Remove the current alt_disk_rootvg<code>sudo alt_rootvg_op -X altinst_rootvg</code>
+        - Create a fresh alt_disk_copy<code>sudo alt_disk_copy -B -d hdiskX</code>-B option makes sure that it does not execute a bootlist - FYI.
+        - Check altinsta_rootvg has been created<code>lspv | grep rootvg</code>Make sure you see the altinst_rootvg in the output

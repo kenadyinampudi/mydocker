@@ -1,0 +1,116 @@
+
+ ====== Renaming the zoning ======
+
+  -Renaming peerap01 zoning
+   <code>
+x1nithsa on xpgscdb1:/home/x1nithsa $ listwwns
+fcs0 C0507607F3530028
+fcs1 C0507607F353002A
+
+
+====================================================================================================================
+ldcds5300a1:admin> zoneshow peerap01*
+ 
+zone:  peerap01_530028__ldcv9ac2n1_212fbf
+                peerap01_530028; ldcv9ac2n1_212fbf
+ zone:  peerap01_530028__ldcv9ac2n2_212fc0
+                peerap01_530028; ldcv9ac2n2_212fc0
+ 
+zone:  peerap01_530028__vmax_0301_4g1
+                peerap01_530028; vmax_0301_4g1
+ 
+zone:  peerap01_530029__ldcv9ac2n1_212fbf
+                peerap01_530029; ldcv9ac2n1_212fbf
+ zone:  peerap01_530029__ldcv9ac2n2_212fc0
+                peerap01_530029; ldcv9ac2n2_212fc0
+ 
+zone:  peerap01_530029__vmax_0301_4g1
+                peerap01_530029; vmax_0301_4g1
+====================================================================================================================
+admin@ldcds5300b1's password:
+
+ldcds5300b1:admin> zoneshow peerap01*
+ 
+zone:  peerap01_25625e__vmax_0301_3g0
+                peerap01_25625e; vmax_0301_3g0
+ 
+zone:  peerap01_53002a__ldcv9ac2n1_222fbf
+                peerap01_53002a; ldcv9ac2n1_222fbf
+ zone:  peerap01_53002a__ldcv9ac2n2_222fc0
+                peerap01_53002a; ldcv9ac2n2_222fc0
+ zone:  peerap01_53002a__vmax_0301_1g1
+                peerap01_53002a; vmax_0301_1g1
+ zone:  peerap01_53002b__ldcv9ac2n1_222fbf
+                peerap01_53002b; ldcv9ac2n1_222fbf
+ zone:  peerap01_53002b__ldcv9ac2n2_222fc0
+                peerap01_53002b; ldcv9ac2n2_222fc0
+ zone:  peerap01_53002b__vmax_0301_1g1
+                peerap01_53002b; vmax_0301_1g1
+========================================================================================================================
+
+FAB A
+======
+
+Rename Alias
+-------------
+
+1):zoneobjectrename peerap01_530028,xpgscdb1_530028
+
+2):zoneobjectrename peerap01_530029,xpgscdb1_530029
+
+Rename zoning
+-------------
+
+1):zoneobjectrename peerap01_530028__ldcv9ac2n1_212fbf,xpgscdb1_530028__ldcv9ac2n1_212fbf
+
+2):zoneobjectrename peerap01_530028__ldcv9ac2n2_212fc0,xpgscdb1_530028__ldcv9ac2n2_212fc0
+
+3):zoneobjectrename peerap01_530029__ldcv9ac2n1_212fbf,xpgscdb1_530029__ldcv9ac2n1_212fbf
+
+4):zoneobjectrename peerap01_530029__ldcv9ac2n2_212fc0,xpgscdb1_530029__ldcv9ac2n2_212fc0
+
+5):zoneobjectrename peerap01_530028__vmax_0301_4g1,xpgscdb1_530028__vmax_0301_4g1
+
+6):zoneobjectrename peerap01_530029__vmax_0301_4g1,xpgscdb1_530029__vmax_0301_4g1
+
+
+==========================================================================================================================
+
+FAB B
+------
+
+
+
+Rename Alias
+-------------
+
+1):zoneobjectrename peerap01_53002a,xpgscdb1_53002a
+
+2):zoneobjectrename peerap01_53002b,xpgscdb1_53002b
+
+Rename zoning
+-------------
+
+1):zoneobjectrename peerap01_53002a__ldcv9ac2n1_222fbf,xpgscdb1_53002a__ldcv9ac2n1_222fbf
+
+2):zoneobjectrename peerap01_53002a__ldcv9ac2n2_222fc0,xpgscdb1_53002a__ldcv9ac2n2_222fc0
+
+3):zoneobjectrename peerap01_53002b__ldcv9ac2n1_222fbf,xpgscdb1_53002b__ldcv9ac2n1_222fbf
+
+4):zoneobjectrename peerap01_53002b__ldcv9ac2n2_222fc0,xpgscdb1_53002b__ldcv9ac2n2_222fc0
+
+5):zoneobjectrename peerap01_53002a__vmax_0301_1g1,xpgscdb1_53002a__vmax_0301_1g1
+
+6):zoneobjectrename peerap01_53002b__vmax_0301_1g1,xpgscdb1_53002b__vmax_0301_1g1
+
+
+==============================================================================================================================
+
+Deleting the zoning :FAB B
+--------------------
+
+cfgremove "fab_b_act_config","peerap01_25625e__vmax_0301_3g0"
+
+zonedelete peerap01_25625e__vmax_0301_3g0
+
+alidelete peerap01_25625e</code>

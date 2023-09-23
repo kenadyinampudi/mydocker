@@ -1,0 +1,56 @@
+====== pearfs01 - Storage allocation - Power8 ======
+
+<code>Hi Kapil,
+
+Please map 2 x 134Gig Tier1 luns for EU Archiving server (pearfs01)
+
+	
+c05076089bc80018	ldcds6510a1
+c05076089bc80019	ldcds6510a1
+
+c05076089bc8001a	ldcds6510b1
+c05076089bc8001b	ldcds6510b1
+
+Fabric A
+
+alicreate "pearfs01_c80018","c0:50:76:08:9b:c8:00:18"
+alicreate "pearfs01_c80019","c0:50:76:08:9b:c8:00:19"
+
+
+zonecreate "pearfs01_c80018__vmax_0301_2g1","pearfs01_c80018;vmax_0301_2g1"
+zonecreate "pearfs01_c80019__vmax_0301_2g1","pearfs01_c80019;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","pearfs01_c80018__vmax_0301_2g1;pearfs01_c80019__vmax_0301_2g1"
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+Fabric B
+
+alicreate "pearfs01_c8001a","c0:50:76:08:9b:c8:00:1a"
+alicreate "pearfs01_c8001b","c0:50:76:08:9b:c8:00:1b"
+
+
+zonecreate "pearfs01_c8001a__vmax_0301_3g1","pearfs01_c8001a;vmax_0301_3g1"
+zonecreate "pearfs01_c8001b__vmax_0301_3g1","pearfs01_c8001b;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","pearfs01_c8001a__vmax_0301_3g1;pearfs01_c8001b__vmax_0301_3g1"
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+sudo symaccess -sid 0301 -name pearfs01_IG -type initiator create
+sudo symaccess -sid 0301 -name pearfs01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pearfs01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pearfs01_IG -type initiator -wwn c05076089bc80018 add
+sudo symaccess -sid 0301 -name pearfs01_IG -type initiator -wwn c05076089bc80019 add
+sudo symaccess -sid 0301 -name pearfs01_IG -type initiator -wwn c05076089bc8001a add
+sudo symaccess -sid 0301 -name pearfs01_IG -type initiator -wwn c05076089bc8001b add
+
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 08FA;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 2 devices copying dev 08FA;" commit -nop
+
+sudo symaccess -sid 0301 -name pearfs01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pearfs01_SG add devs 
+sudo symfast -sid 0301 -fp_name Gold associate -sg pearfs01_SG -priority 2
+sudo symaccess -sid 0301 create view -name pearfs01_MV -sg pearfs01_SG -pg 2G1_3G1_PG -ig pearfs01_IG</code>

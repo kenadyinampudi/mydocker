@@ -1,0 +1,11 @@
+There might be possibility to take over some small sites under the wings of NBU with MSDP (like nbu appliances) if WAN link will suffice, as well there is a mutual agreement that the bulk recovery will be made either by using external USB or HW shipment. If all parties agree on this, follow the bellow steps in order to perform client side deduplication backups:
+  * Insert the tapes with full backup of clients from remote small site to destiantion NBU domain with MSDP (write protect these tapes - of course tapes technology needs to match)
+  * Put these media to appropriate volume pool (ie LDC_WEEKLY) – ask tape managers to do not eject these tapes until you are done
+  * Import these tapes with full backup into NBU catalog
+  * Duplicate imported backup images to MSDP
+  * Configure NBU client to perform deduplication on client side (NetBackup management/Host Properties/Master Servers/masterserver/Clients Attributes - Deduplication location - Prefer to use client-side deduplication)
+  * Enable network resillency on this client (NetBackup management/Host Properties/Master Servers/masterserver/Resilien Network - add this client there)
+  * Make sure that all server from new NBU domain are in server list’s on remote client (so all can communicate with it). Do not make master any of the added one or your master there will be broken….
+  * Deactivate the policy on remote master server 
+  * Configure the policy on new NBU to use NBU accelerator, use local SLPs
+

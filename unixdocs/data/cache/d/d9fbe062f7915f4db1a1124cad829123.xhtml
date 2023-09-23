@@ -1,0 +1,199 @@
+
+<h1 class="sectionedit1" id="redhat_server_post_installation_work">Redhat Server Post installation work</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Redhat Server Post installation work" [1-52] -->
+<h3 class="sectionedit2" id="steps_from_the_server_that_is_being_built">Steps from the server that is being built</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the server (as root) you just built using the default credentials <code>abc123</code><pre class="code">sudo ssh &lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the root password to the standard.<pre class="code">passwd root</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create /root/.ssh directory<pre class="code">sudo ssh localhost</pre>
+
+<p>
+CTRL + C –
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Correct hostname. Cobbler sometimes reverse lookup the IP and set up the hostname. So a <abbr title="Domain Name System">DNS</abbr> error can change the hostname<pre class="code">sudo vi /etc/sysconfig/network</pre>
+
+<p>
+Change the FQDN to shortname.Also edit hosts file
+</p>
+<pre class="code">sudo vi /etc/hosts</pre>
+
+<p>
+Remove the ipv6 line
+</p>
+<pre class="code">::1         localhost localhost.localdomain localhost6 localhost6.localdomain6</pre>
+
+<p>
+And add a line for the host itself. Something like
+</p>
+<pre class="code">80.0.0.43       salnxsv05</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:usersandgroups#linux" class="wikilink1" title="unix:usersandgroups">Create basic unix group and users</a></div>
+</li>
+<li class="level1"><div class="li"> Add Centralized syslog entry<pre class="code">echo &#039;authpriv.info      @pablsv01&#039; | sudo tee -a /etc/rsyslog.conf
+sudo service rsyslog restart</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the Redhat repository<pre class="code">sudo rm /etc/yum.repos.d/rhel-source.repo</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Modify the local.repo file with the latest repository<pre class="code">sudo vi /etc/yum.repos.d/local.repo</pre>
+
+<p>
+Remove everything except the following depending on the <abbr title="Operating System">OS</abbr> and type.
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> RHEL6 64 bit<pre class="code">[local-rhel-6.6-x86_64]
+name=local-rhel-6.6-x86_64
+baseurl=http://pablsv01/sources/rhel-6.6-x86_64/
+enabled=1
+gpgcheck=0
+[local-tenneco-noarch]
+name=local-tenneco-noarch
+baseurl=http://pablsv01/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupresolv.conf" class="wikilink1" title="unix:setupresolv.conf">Setup resolv.conf</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupntp#redhat" class="wikilink1" title="unix:setupntp">Setup NTP</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:createinformationfile" class="wikilink1" title="unix:createinformationfile">Create the information file</a></div>
+</li>
+<li class="level1"><div class="li"> Schedule standard cron jobs<pre class="code">sudo crontab -e</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">03 03 * * 6 /usr/local/scripts/clean_var 1&gt;/dev/null 2&gt;&amp;1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1&gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On VMWare VMs, </div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:vmware:vmwaretools" class="wikilink1" title="unix:vmware:vmwaretools">Install VMWare tools</a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Install and configure SNMPD<pre class="code">sudo yum install net-snmp -y</pre>
+
+<p>
+Configure it
+</p>
+<pre class="code">sudo mv /etc/snmp/snmpd.conf /etc/snmp/snmpd.conf.Original
+sudo vi /etc/snmp/snmpd.conf</pre>
+
+<p>
+Add this config
+</p>
+<pre class="code">syslocation Server Room
+syscontact Sysadmin (root@localhost)
+
+rocommunity oicu812 10.32.6.113 
+rocommunity oicu812 10.32.8.188 
+rocommunity oicu812 10.32.8.187 
+rocommunity oicu812 10.32.8.191
+rocommunity oicu812 10.56.1.144
+trapsink   10.32.8.191   oicu812
+trap2sink  10.32.8.191   oicu812</pre>
+
+<p>
+Start snmpd
+</p>
+<pre class="code">sudo chkconfig --level 234 snmpd on
+sudo service snmpd start</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Steps from the server that is being built" [53-2579] -->
+<h3 class="sectionedit3" id="steps_from_the_master_server_pgnmsv01">Steps from the Master server (pgnmsv01)</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to pgnmsv01</div>
+</li>
+<li class="level1"><div class="li"> Set a variable for the server you are building<pre class="code">export server_tenneco=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Setup <abbr title="Secure Shell">SSH</abbr> keys for NIM server<pre class="code">sudo rsync -avv /root/.ssh/authorized_keys ${server_tenneco}:/root/.ssh/authorized_keys</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On VMWare VMs, </div>
+<ol>
+<li class="level2"><div class="li"> Install SYMCquiesce, SYMCquiesce is a utility to quiesce the IO during a snapshopt backup.<pre class="code">sudo rsync -avv /prod/images/applications/netbackup-vm/SYMCquiesce-1.0.0-001.x86_64.rpm ${server_tenneco}:/var/tmp/
+sudo ssh ${server_tenneco} rpm -Uvh /var/tmp/SYMCquiesce-1.0.0-001.x86_64.rpm</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure default ssh configs<pre class="code">sudo rsync -avv /prod/images/etc/global_ssh_config ${server_tenneco}:/etc/ssh/ssh_config</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install xinetd<pre class="code">sudo ssh ${server_tenneco} yum -y install xinetd</pre>
+
+<p>
+Enable and start it
+</p>
+<pre class="code">sudo ssh ${server_tenneco} &quot;/sbin/chkconfig --level 234 xinetd on&quot;</pre>
+<pre class="code">sudo ssh ${server_tenneco} &quot;/sbin/service xinetd start&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:installsysinter" class="wikilink1" title="unix:installsysinter">Install sysinter </a></div>
+</li>
+<li class="level1"><div class="li"> Install cfg2html<pre class="code">sudo ssh ${server_tenneco} yum -y install cfg2html-linux-2.66-2.noarch</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Korn shell<pre class="code">sudo ssh ${server_tenneco} yum -y install ksh
+sudo ssh ${server_tenneco} ln -s /bin/ksh /usr/bin/ksh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install these libraries for openview<pre class="code">sudo ssh ${server_tenneco} yum -y install libgcc.i686 libstdc++.i686 compat-libstdc++-33-3.2.3-69.el6.i686</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the TMOUT variable to /etc/profile<pre class="code">sudo ssh ${server_tenneco} &#039;echo &quot;TMOUT=3600&quot; | tee -a /etc/profile&#039;
+sudo ssh ${server_tenneco} &#039;echo &quot;readonly TMOUT&quot; | tee -a /etc/profile&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the scripts<pre class="code">sudo ssh ${server_tenneco} mkdir -p /usr/local/scripts
+sudo rsync -avv /usr/local/scripts/ ${server_tenneco}:/usr/local/scripts/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the sudoers file from the NIM server pgnmsv01<pre class="code">sudo rsync -avv /prod/images/etc/sudoers ${server_tenneco}:/etc/sudoers</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send ticket for netbackup</div>
+</li>
+<li class="level1"><div class="li"> Send ticket for Monitoring</div>
+</li>
+<li class="level1"><div class="li"> Send a ticket to “GIOS Operations - Entitlement” to add the systems.</div>
+</li>
+<li class="level1"><div class="li"> Add the system to UUMA<pre class="code">ssh taqa1a03 echo &quot;${server_tenneco}&quot; | sudo tee -a /home/oracle/uuma/hosts.txt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot<pre class="code">sudo ssh ${server_tenneco}</pre>
+
+<p>
+Reboot
+</p>
+<pre class="code">sudo init 6</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Steps from the Master server (pgnmsv01)" [2580-] -->

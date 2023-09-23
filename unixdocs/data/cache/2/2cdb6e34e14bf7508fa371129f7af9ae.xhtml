@@ -1,0 +1,405 @@
+
+<h1 class="sectionedit1" id="na_-_ldc_-_disaster_recovery_test_aix_instructions">NA - LDC - Disaster Recovery Test AIX instructions</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=dr:2015debrief" class="wikilink1" title="dr:2015debrief">2015 - Debrief notes -- Improvements </a></div>
+</li>
+<li class="level1"><div class="li"> IBM contact details HMC details etc<pre class="code">Remote: HMC #1
+IP 10.39.10.200
+
+Remote: HMC #2
+IP 10.39.10.201
+
+Remote: HMC #3
+IP 10.39.10.202 
+
+user id is - stf106081T
+passwd is- NNco1021at
+
+
+Image-RISC Server - Customer NIM server (need root password)
+10.39.11.37
+10GB: 10.39.1.37(DD)
+id - root
+passwd is - nim4tenneco
+
+
+
+888-227-7310, option 1, 4 for pSeries - IBM AIX DR support</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> IBM will recover these systems</div>
+<ul>
+<li class="level2"><div class="li"> peerdb99</div>
+</li>
+<li class="level2"><div class="li"> tapr1d01</div>
+</li>
+<li class="level2"><div class="li"> teprbk01</div>
+</li>
+<li class="level2"><div class="li"> taqa1d01 </div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> IBM will also deliver a NIM server “nim”</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=dr:dr2015assignments" class="wikilink1" title="dr:dr2015assignments">We will recover these systems</a></div>
+</li>
+</ol>
+
+<p>
+<strong> When in doubt, ask </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmds-2015&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+</p>
+
+<p>
+<strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremly careful ) </strong>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "NA - LDC - Disaster Recovery Test AIX instructions" [1-896] -->
+<h2 class="sectionedit2" id="configure_nim_server">Configure NIM server</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Define DR post install script on the NIM server.<pre class="code">sudo mkdir -p /prod/nim/resources/scripts</pre>
+
+<p>
+Open vi editor
+</p>
+<pre class="code">sudo vi /prod/nim/resources/scripts/postinstall.DR</pre>
+
+<p>
+Insert the following code
+</p>
+<pre class="code">#!/usr/bin/ksh
+# Backup important config files on the system
+for file in /etc/filesystems /etc/exports /etc/hosts /etc/resolv.conf
+do
+  cp ${file} ${file}.copyforDR
+done
+
+cat /dev/null &gt; /var/tmp/filesystems.modified
+for fs in $(lsvgfs rootvg)
+do
+   grep -p ${fs}: /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified
+done
+
+grep -p proc /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified
+
+cp /var/tmp/filesystems.modified /etc/filesystems
+
+mv /etc/resolv.conf /etc/resolv.conf.OLD
+
+# If a successful copy had been made, rename the exports file to prevent long boot times.
+
+[[ -f /etc/exports.copyforDR ]] &amp;&amp; mv /etc/exports /etc/exports.OLDD
+
+# Disable CRON
+rmitab cron
+
+# Configure AIO on AIX 5.3
+oslevel | grep ^&quot;5.3&quot; &gt; /dev/null 2&gt;&amp;1
+if [ ${?} -eq 0 ]
+then
+   chdev -l aio0 -a autoconfig=available
+   mkdev -l aio0
+fi</pre>
+
+<p>
+Define it as a resource now
+</p>
+<pre class="code">sudo nim -o define -t script -a server=master -a location=/prod/nim/resources/scripts/postinstall.DR postinstallDR</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the mksysbs from data domain<pre class="code">for mksysb in $(ls &lt;mount_point_of_datadomain&gt;)
+do
+   cp &lt;datadomain&gt;/${mksysb} /prod/nim/resources/mksysb/${mksysb}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unzip mksysb files<pre class="code">cd /prod/nim/resources/mksysb
+for mksysb in $(ls )
+do
+   gunzip ${mksysb}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define the mksysb resources<pre class="code">for file in $(ls -1 /prod/nim/resources/mksysb | grep &quot;bos.obj&quot; )
+do
+   host=$(echo ${file} | sed &quot;s;bos.obj.;;g&quot;)
+   nim -o define -t mksysb -a server=master -a location=/prod/nim/resources/mksysb/${file} ${host}-mksysb
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the latest hosts file on NIM server<pre class="code">cp /etc/hosts /etc/hosts.copyforDR</pre>
+<pre class="code">sudo vi /etc/hosts</pre>
+
+<p>
+Paste these in there <a href="/doku.php?id=dr:hostsfile-2015" class="wikilink1" title="dr:hostsfile-2015">DR hosts file</a>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Define the DR network NIM resource</div>
+<ol>
+<li class="level2"><div class="li"> 10.39.11/24 network<pre class="code">sudo nim -o define -t ent -a net_addr=10.39.11.0 -a snm=255.255.255.0 -a routing1=&quot;default 10.39.11.1&quot; ent-10-39-11-0</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> 10.39.1/24 network<pre class="code">sudo nim -o define -t ent -a net_addr=10.39.1.0 -a snm=255.255.255.0 -a routing1=&quot;default 10.39.1.1&quot; ent-10-39-1-0</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Define the hosts on NIM server<pre class="code">for file in $(ls /prod/nim/resources/mksysb )
+do
+   host=$(echo ${file} | sed &quot;s;bos.obj.;;g&quot;)
+   nim -o define -t standalone -a platform=chrp -a if1=&quot;find_net ${host} 0&quot; -a netboot_kernel=mp ${host}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create NTP server on NIM server</div>
+<ol>
+<li class="level2"><div class="li"> Edit config file<pre class="code">cp /etc/ntp.conf /etc/ntp.conf.copyforDR</pre>
+<pre class="code">vi /etc/ntp.conf</pre>
+
+<p>
+Add these lines - replacing everything else
+</p>
+<pre class="code">server 127.127.1.0
+fudge 127.127.1.0 stratum 9
+driftfile /etc/ntp.drift
+tracefile /etc/ntp.trace</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Start NTP daemons<pre class="code">chrctcp -S -a xntpd</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> When in doubt, ask </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmds-2015&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+</p>
+
+<p>
+<strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremly careful ) </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> May be implement passwordless ssh for root from DR NIM server ( automate it through post install script )</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Configure NIM server" [897-4099] -->
+<h2 class="sectionedit3" id="aix_server_recovery_steps">AIX server recovery steps</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Perform a NIM installation using the following resources</div>
+<ul>
+<li class="level2"><div class="li"> LPPSRC of the server&#039;s <abbr title="Operating System">OS</abbr> level </div>
+</li>
+<li class="level2"><div class="li"> SPOT of the server&#039;s <abbr title="Operating System">OS</abbr> level</div>
+</li>
+<li class="level2"><div class="li"> mksysb of the server</div>
+</li>
+<li class="level2"><div class="li"> “postinstallDR” post installation script</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> After the mksysb installation, perform the following steps</div>
+</li>
+<li class="level1"><div class="li"> <a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmds-2015&amp;media=dr:areyousure.png" class="media" title="dr:areyousure.png"><img src="/lib/exe/fetch.php?w=100&amp;media=dr:areyousure.png" class="media" alt="" width="100" /></a></div>
+</li>
+<li class="level1"><div class="li"> <strong> Make sure you are on the DR host </strong></div>
+</li>
+<li class="level1"><div class="li"> <strong> Are you sure you are on the DR host ??? </strong></div>
+</li>
+<li class="level1"><div class="li"> <strong> Are you really sure you are on the DR host ??? </strong></div>
+</li>
+<li class="level1"><div class="li"> Continue ……</div>
+</li>
+<li class="level1"><div class="li"> Login as root on the console.</div>
+</li>
+<li class="level1"><div class="li"> Change PS1 variable. Make a backup copy<pre class="code">sudo cp /etc/profile /etc/profile.copyforDR</pre>
+
+<p>
+Then
+</p>
+<pre class="code">sudo vi /etc/profile</pre>
+
+<p>
+Add this towards the end ( last line )
+</p>
+<pre class="code">HOST=$(uname -n)
+PS1=&#039;DR test -- $HOST:$PWD&gt;&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get a copy of /etc/hosts from NIM server<pre class="code">sudo cp /etc/hosts /etc/hosts.Old
+sudo scp 10.39.11.37:/etc/hosts /etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable NTP. Stop daemon<pre class="code">sudo stopsrc -s xntpd</pre>
+
+<p>
+Backup the config
+</p>
+<pre class="code">sudo mv /etc/ntp.conf /etc/ntp.conf.DRtest</pre>
+
+<p>
+Put the new config
+</p>
+<pre class="code">echo &quot;driftfile /etc/ntp.drift&quot; | sudo tee /etc/ntp.conf
+echo &quot;tracefile /tmp/xntpd.trace&quot; | sudo tee -a /etc/ntp.conf
+echo &quot;server nim&quot;  | sudo tee -a /etc/ntp.conf</pre>
+
+<p>
+Start the daemons
+</p>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+
+<p>
+Set the correct time from NIM server
+</p>
+<pre class="code">date ; sudo ntpdate -u nim ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check cron<pre class="code">ps -ef | grep cron</pre>
+
+<p>
+It should not be running.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Change itocroot password<pre class="code">echo &quot;itocroot:ka95aLbJ7WER6&quot; | chpasswd -e
+pwdadm -c itocroot</pre>
+
+<p>
+Password will now be “abcd1234”
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the timezone from filesystems.txt and make sure it matches<pre class="code">grep TZ /etc/environment</pre>
+
+<p>
+Now compare it to the filesystems.txt
+</p>
+<pre class="code">grep -i tz /usr/local/scripts/file_systems.txt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the second interface<pre class="code">sudo chdev -l en1 -a netaddr=10.39.1.XX -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the required space on datavgs, create them</div>
+<ol>
+<li class="level2"><div class="li"> To resolve EMC serial numbers to hdiskpowers, use this script<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Always create big VGs<pre class="code">sudo mkvg -B -s 512 -y &lt;vgname&gt; hdiskX hdiskY ......</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create filesystems<pre class="code">egrep &quot;^mkdir|^mount|^crfs|^chown|^chmod&quot; /usr/local/scripts/file_systems.txt &gt; /var/tmp/crfs.sh</pre>
+
+<p>
+Now execute the script
+</p>
+<pre class="code">sudo ksh -x /var/tmp/crfs.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure all filesystems are mounted<pre class="code">lsvg -o | grep -v rootvg | xargs -n1 lsvg -l | grep -i closed</pre>
+
+<p>
+Make sure there are no closed volumes.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Fix /etc/exports<pre class="code">cat /etc/exports.copyforDR | sed &quot;s;bck;;g&quot; &gt; /var/tmp/exports.modified
+[[ ${?} -eq 0 ]] &amp;&amp; cp /var/tmp/exports.modified /etc/exports</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove Netbackup software<pre class="code">installp -u SYMCnbclt SYMCnbjava SYMCnbjre SYMCnbclt SYMCnbjava SYMCnbjre</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform a reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mirror rootvg. Find out the second <abbr title="Small Computer System Interface">SCSI</abbr>/SAS ( internal ) disk<pre class="code">sudo extendvg rootvg hdiskZ
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdiskX
+sudo bosboot -ad /dev/hdiskY
+sudo bootlist -m normal hdiskX hdiskY</pre>
+
+<p>
+Ofcourse replace “X” &amp; “Y” with the hdisk number.
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> When in doubt, ask </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmds-2015&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+</p>
+
+<p>
+<strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremly careful ) </strong>
+</p>
+
+</div>
+<!-- EDIT3 SECTION "AIX server recovery steps" [4100-7416] -->
+<h1 class="sectionedit4" id="at_800_pm_mount_all_nfs_filesystems">At 8:00 PM mount all NFS filesystems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Add the NFS filesystems back. <strong>Deferred until all systems have been recovered </strong><pre class="code">echo &quot;&quot; &gt;&gt; /etc/filesystems
+grep -p nfs /etc/filesystems.copyforDR | sed &quot;s;bck;;g&quot; &gt;&gt; /etc/filesystems</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount all filesystems<pre class="code">lsnfsmnt | awk &#039;{if ($(NF-1) == &quot;yes&quot;) print $0}&#039; | awk &#039;{print $1}&#039; | sort  | xargs -n1 sudo mount</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "At 8:00 PM mount all NFS filesystems" [7417-7809] -->
+<h1 class="sectionedit5" id="nfs_mounts_on_each_pta_app_servers">NFS mounts on each PTA app servers</h1>
+<div class="level1">
+
+<p>
+<strong> NFS mounts may need to remounted as the sequence of server restores may not be correct. Some CLIs listed here will be handy </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Forcefully unmount the filesystems<pre class="code">sudo umount -f &lt;mountpoint&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove a filesystem from /etc/filesystems<pre class="code">rmnfsmnt -f &lt;nfs_mount_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the ones from tapr1d01<pre class="code">echo &quot;/sapmnt/PTA/exe /sapmnt/PTA/global /sapmnt/PTA/profile /usr/sap/trans /ADK &quot; | xargs -n1 sudo mount</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> When in doubt, ask </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=dr%3Aunixrecoverycmds-2015&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+</p>
+
+<p>
+<strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremly careful ) </strong>
+</p>
+
+</div>
+<!-- EDIT5 SECTION "NFS mounts on each PTA app servers" [7810-] -->

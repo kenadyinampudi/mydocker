@@ -1,0 +1,112 @@
+
+<h1 class="sectionedit1" id="sudo_documentation_for_users">SUDO Documentation for Users</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> sudo or “Super User Do” is an Opensource Unix utility that allows regular users to execute some commands as root on a Unix system. </div>
+</li>
+<li class="level1"><div class="li"> sudo provides a rich set of features including monitoring, managing and alerting as compared to its competitors like setuid, proprietory RBAC or root equivalent user. </div>
+</li>
+</ul>
+
+<p>
+At DRiV, the following teams use sudo.
+</p>
+<ul>
+<li class="level1"><div class="li"> <abbr title="Database Administrator">DBA</abbr> Team</div>
+</li>
+<li class="level1"><div class="li"> Data preservation Team</div>
+</li>
+<li class="level1"><div class="li"> SAP - Basis Team</div>
+</li>
+<li class="level1"><div class="li"> HP Openview Team.</div>
+</li>
+<li class="level1"><div class="li"> Middleware Team</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "SUDO Documentation for Users" [1-497] -->
+<h2 class="sectionedit2" id="usage">Usage</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> This is the easiest part. This is as simple as “prefix the command that you need to run as root with sudo”.</div>
+<ul>
+<li class="level2"><div class="li"> For example if a <abbr title="Database Administrator">DBA</abbr> needs to run &#039;/oracle/SID/11203/root.sh&#039; as root during an Oracle installation or upgrade, Instead of jumping to a &#039;root shell&#039;, they can execute the command as folllows<pre class="code">sudo /oracle/SID/11203/root.sh</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> To list all the commands your user account is entitled to<pre class="code">sudo -l</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Usage" [498-951] -->
+<h2 class="sectionedit3" id="dos_don_t_s">Dos &amp; Don&#039;t(s)</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> There is no perfect security model. So there are ways around to break everything.</div>
+</li>
+<li class="level1"><div class="li"> Be responsible. sudo gives great power on a Unix system. “With great power comes great responsibility, visibility and publicity”. Please think before you hit enter on that command you prefixed with sudo. You are Superman !</div>
+</li>
+<li class="level1"><div class="li"> Use sudo only when needed. It is not to be used for convenience. For example, please do not fix a problem by “chmod 777” because you have the ability to do so. Trust me, it will bite you back.</div>
+</li>
+<li class="level1"><div class="li"> When in doubt, use “CTRL + C” <strong>do not hit enter</strong>.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "Dos & Don't(s)" [952-1546] -->
+<h2 class="sectionedit4" id="limitations_of_sudo">Limitations of sudo</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Redirection is one limitation of sudo. For example,</div>
+<ul>
+<li class="level2"><div class="li"> If you need to add something to /etc/motd, a file owned by root. The following code will not work.<pre class="code">sudo echo &quot;something&quot; &gt; /etc/motd</pre>
+
+<p>
+For security reasons, sudo does not permit re-directions. Instead, this works
+</p>
+<pre class="code">echo &quot;something&quot; | sudo tee -a /etc/motd</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Shell internal commands ..</div>
+<ul>
+<li class="level2"><div class="li">  As an example, “cd” command if used like this, will not work<pre class="code">sudo cd /protected-directory</pre>
+
+<p>
+Instead use
+</p>
+<pre class="code">sudo ls -l /protected-directory</pre>
+
+<p>
+i.e. Don&#039;t “cd” to the directory. You may wonder, what if I need to “cd” to a directory and create a tar ball with relative paths ? Looking up the man page for tar, I found this
+</p>
+<pre class="code"> -C Directory
+            Causes the tar command to perform a chdir subroutine to the directory specified by the Directory variable. Using the -C flag allows
+            multiple directories that are not related by a close common parent to be archived, using short relative path names.</pre>
+
+<p>
+That means, you can execute this command from wherever you are and it will create a tarball with relative path
+</p>
+<pre class="code">sudo tar cvf mytarfile.tar -C /opt/ibm .</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Limitations of sudo" [1547-2750] -->
+<h2 class="sectionedit5" id="sudo_audit_and_logging">sudo audit and logging</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> All sudo commands are logged and sent to a central repository. Unix team, from time to time , when required , will audit the file for investigation purpose and/or misuse.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT5 SECTION "sudo audit and logging" [2751-] -->

@@ -1,0 +1,124 @@
+====== Install ASM on Redhat ======
+
+===== Storage / Filesystems =====
+
+  - Create ORACLE_HOME for grid software<code>sudo lvcreate -n oracleasmapp -L20G vg_kapiltest1
+sudo mkfs -t ext4 /dev/vg_kapiltest1/oracleasmapp
+echo "/dev/vg_kapiltest1/oracleasmapp     /oracle/ASM/app    ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /oracle/ASM/app
+sudo mount /oracle/ASM/app</code>
+
+===== Users / Groups =====
+
+  - Create user oracle<code>sudo groupadd dba</code><code>sudo useradd -G dba oracle</code>
+  - Create a .profile for grid<code>sudo vi /home/oracle/.grid_env</code>Put this<code>unalias cp > /dev/null 2>&1
+unset DISPLAY
+TMP="/var/tmp"
+TMPDIR="/var/tmp"
+TEMP="/var/tmp"
+ORACLE_HOSTNAME="$(uname -n)"
+ORACLE_BASE="/oracle/ASM/app/base"
+ORACLE_HOME="/oracle/ASM/app/1120"
+ORACLE_SID="+ASM"
+PATH=/bin:/usr/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/sbin:${ORACLE_HOME}:/bin
+export PATH TMP TMPDIR ORACLE_HOSTNAME ORACLE_HOME ORACLE_BASE ORACLE_SID TEMP</code>
+  - Change permissions / ownerships<code>sudo chown oracle:dba /oracle/ASM/app</code>
+
+===== Pre-requisits =====
+
+  - Install Oracle Virtual Box drivers<code>sudo yum install kernel-devel binutils compat-libcap1 compat-libstdc++ compat-libstdc++ gcc \
+gcc-c++ glibc glibc.i686 glibc-devel glibc-devel.i686 ksh libgcc libgcc.i686 libstdc++ libstdc++.i686 libstdc++-devel \
+libstdc++-devel.i686 libaio libaio.i686 libaio-devel libaio-devel.i686 libXext libXext.i686 libXtst libXtst.i686 libX11 \
+libX11.i686 libXau libXau.i686 libxcb libxcb.i686 libXi libXi.i686 make sysstat unixODBC unixODBC-devel tigervnc-server \
+xterm compat-libstdc++-33.i686 compat-libstdc++-33.x86_64 elfutils-libelf-devel unixODBC.i686 unixODBC-devel.i686 \
+ksh mksh -y</code>
+  - Mount Virtual Box media from Devices -> Once done <code>sudo mkdir /cdrom
+sudo mount /dev/cdrom /cdrom
+cd /cdrom
+sudo ./VBoxLinuxAdditions.run --nox11</code>
+  - Reboot to take effect<code>sudo init 6</code>
+  - Now mount the media folder that contains isos<code>sudo mkdir -p /mnt/media
+sudo mount -t boxfs media /mnt/media</code>
+  - Unzip the grid installation to /oracle/stage/grid<code>sudo mkdir -p /oracle/stage
+sudo chown -R oracle:dba /oracle/stage
+sudo su - oracle
+cd /oracle/stage
+unzip /mnt/media/linux.x64_11gR2_grid.zip</code>
+  - Configure kernel parameters<code>sudo vi /etc/sysctl.conf</code>Add these<code>#Customized for Oracle installation
+fs.file-max = 6815744
+kernel.sem = 250 32000 100 128
+kernel.shmmni = 4096
+kernel.shmall = 1073741824
+kernel.shmmax = 4398046511104
+net.core.rmem_default = 262144
+net.core.rmem_max = 4194304
+net.core.wmem_default = 262144
+net.core.wmem_max = 1048576
+fs.aio-max-nr = 1048576
+net.ipv4.ip_local_port_range = 9000 65500</code><code>sudo sysctl -p</code>
+  - Configure limits<code>sudo vi /etc/security/limits.conf</code>Add this<code>#Customized for Oracle installation
+oracle   soft   nofile    2048
+oracle   hard   nofile    65536
+oracle   soft   nproc    2047
+oracle   hard   nproc    16384
+oracle   soft   stack    10240
+oracle   hard   stack    32768</code>
+  - Change SELINUX to permissive<code>sudo vi /etc/selinux/config</code>Add this<code>SELINUX=permissive</code>
+  - Disable iptables<code>sudo service iptables stop
+sudo chkconfig iptables off</code>
+  - Create udev rules to set permissions for ASM disks<code>sudo vi /etc/udev/rules.d/99-oracle-asmdevices.rules</code>Add this<code>KERNEL=="sdc", BUS=="scsi", NAME="asm-disk1", OWNER="oracle", GROUP="dba", MODE="0660"
+KERNEL=="sdd", BUS=="scsi", NAME="asm-disk2", OWNER="oracle", GROUP="dba", MODE="0660"
+KERNEL=="sde", BUS=="scsi", NAME="asm-disk3", OWNER="oracle", GROUP="dba", MODE="0660"</code>
+  - Reboot<code>sudo init 6</code>
+
+===== Run the installer =====
+
+  - Login as oracle<code>sudo su - oracle
+. ./.grid_env
+cd /oracle/stage/grid</code>
+  - Run vncserver<code>vncserver :1</code>
+  - Open xterm on VNC client and run installer<code>./runInstaller</code>
+  - Run the root.sh when prompted.
+  - Create the sqlnet.ora file for ASM<code>vi $ORACLE_HOME/network/admin/sqlnet.ora</code>Add this<code>NAMES.DIRECTORY_PATH= (TNSNAMES)
+NAMES.DEFAULT_DOMAIN = WORLD
+NAMES.DEFAULT_ZONE = WORLD
+ADR_BASE = /oracle/ASM/app/base</code>
+  - Create the listener.ora file for ASM<code>vi $ORACLE_HOME/network/admin/listener.ora</code>Add this<code>LISTENER_ASM =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC_ASM))
+      (ADDRESS = (PROTOCOL = TCP)(HOST = kapiltest1)(PORT = 1526))
+    )
+  )
+
+SID_LIST_LISTENER_ASM =
+  (SID_LIST =
+    (SID_DESC =
+      (GLOBAL_DBNAME = +ASM.WORLD)
+      (ORACLE_HOME = /oracle/ASM/app/1120)
+      (SID_NAME = +ASM)
+    )
+  )
+
+ADMIN_RESTRICTIONS_LISTENER_ASM = ON
+ADR_BASE_LISTENER_ASM = /oracle/ASM/app/base
+ENABLE_GLOBAL_DYNAMIC_ENDPOINT_LISTENER_ASM=ON</code>
+  - Create the tnsnames.ora file for ASM<code>vi $ORACLE_HOME/network/admin/tnsnames.ora</code>Add this<code>+ASM.WORLD =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = kapiltest1)(PORT = 1526))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SID = +ASM)
+    )
+  )</code>
+  - Create the init.ora file for ASM<code>vi $ORACLE_HOME/dbs/init+ASM.ora</code>Add this<code>*.asm_diskstring='/dev/asm*'
+*.asm_power_limit=1
+*.diagnostic_dest='/oracle/ASM/app'
+*.instance_type='asm'
+*.large_pool_size=150M
+*.memory_target=0
+*.processes=300
+*.remote_login_passwordfile='EXCLUSIVE'
+*.sga_max_size=400M
+*.sga_target=400M
+*.trace_enabled=FALSE</code>

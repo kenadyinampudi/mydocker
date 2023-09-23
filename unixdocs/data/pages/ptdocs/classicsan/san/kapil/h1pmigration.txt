@@ -1,0 +1,95 @@
+====== H1P Migration Plan ======
+
+The plan is to move H1P database server from MMA to the new P740 frame.
+
+==== Unix Team Steps ====
+
+  - Make sure H1P application ( SAP & Database ) is down.
+  - Data preservation team starts the backup of these filesystems<code>/usr/sap/trans
+/sapmnt/H1P/global</code>
+  - Wait for backups to finish.
+  - Shutdown pehrdb01 server
+    - Unmount filesystems<code>for fs in $(lsvgfs datavg02 | sort -r)
+do
+   sudo umount ${fs}
+done</code>
+    - Export the VG<code>sudo cp /etc/filesystems /etc/filesystems.03152013
+sudo exportvg datavg02</code>
+    - Delete the disks<code>echo "hdisk9 hdisk10 hdisk11 hdisk12 hdisk13 hdisk14 hdisk6 hdisk7" | xargs -n1 sudo rmdev -dl</code>
+    - Rename pehrdb01 to pehrdb98<code>sudo /usr/sbin/mktcpip -h'pehrdb98' -a'10.56.1.107' -m'255.255.255.0' -i'en4' -n'170.64.216.180' -d'emea.int.tenneco.com' -g'10.56.1.1' -A'no' -t'N/A' -s''
+sudo chdev -l en5 -a netaddr=10.56.12.107 -a netmask=255.255.255.0 -a state=up</code>
+    - Disable CROND and shutdown the system<code>sudo rmitab cron
+sudo shutdown -F</code>
+    - Disable auto start in the HMC for pehrdb01.
+  - Details of devices<code>hdisk6:00cbf6512718186f:CKM00103000222:0070:147456::datavg02
+hdisk7:00cbf6512718194b:CKM00103000222:0071:147456::datavg02
+hdisk9:00cbf651aecbd34d:CKM00103000222:0100:147456::datavg02
+hdisk10:00cbf6513fdfb666:CKM00103000222:0102:147456::datavg02
+hdisk11:00cbf6513fdfb750:CKM00103000222:0104:147456::datavg02
+hdisk12:00cbf6513fdfb80f:CKM00103000222:0101:147456::datavg02
+hdisk13:00cbf6513fdfb8cb:CKM00103000222:0103:147456::datavg02
+hdisk14:00cbf6513fdfb984:CKM00103000222:0105:147456::datavg02</code>
+
+==== Storage Team Steps ====
+
+  - Remove the luns from PEHRDB01 storage group<code>for HLU in 0 1 2 3 4 5 6 7
+do
+   echo "navicli -h inxns480spa storagegroup -removehlu -gname PEHRDB01 -hlu ${HLU}"
+done</code>Verify the commands and execute them one at a time. **CAREFULLY**
+  - Add the LUNs to PEHRDB99 storage group<code>i=2
+for ALU in 100 102 104 101 103 105 70 71
+do
+   echo "navicli -h inxns480spa storagegroup -addhlu -gname PEHRDB99 -alu ${ALU} -hlu ${i}"
+   i=$(echo "${i} + 1" | bc)
+done</code>Verify the commands and execute them one at a time. **CAREFULLY**
+
+==== Unix Team Steps ====
+
+** Configure LVM and filesystems **
+
+  - Make sure pehrdb99 **can** see the LUNs<code>lsdev -Ccdisk > /var/tmp/diskbefore
+sudo cfgmgr
+lsdev -Ccdisk > /var/tmp/diskafter</code>Do a diff<code>diff /var/tmp/diskbefore /var/tmp/diskafter</code>
+  - Change the device attributes<code>for disk in $(lsdev -Ccdisk | awk '{print $1}' )
+do
+   sudo chdev -a reserve_policy=no_reserve -a algorithm=round_robin -l ${disk}
+done</code>
+  - Import the VG<code>sudo importvg -y datavg01 00cbf6513fdfb80f</code>
+  - Mount the filesystems<code>for fs in $(lsvgfs datavg01)
+do
+   sudo fsck ${fs}
+   sudo mkdir -p ${fs}
+   sudo mount ${fs}
+done</code>
+  - Make sure we aren't doing a **huge mistake** .. Check if CIO option is turned on<code>mount | grep cio</code>
+
+** Configure Virtual IP addresses **
+
+  - Configure the VIPs on pehrdb99<code>sudo /root/cluster/alias99.sh</code>Check<code>ifconfig -a</code>
+  - Configure the VIPs on pehrap99<code>sudo /root/cluster/alias99.sh</code>Check<code>ifconfig -a</code>
+
+** Configure NFS **
+
+  - NFS export the following filesystems on pehrap99<code>/usr/sap/trans
+/sapmnt/H1P</code>Like this<code>echo '/usr/sap/trans -anon=65534,access=dehrap99:dehrap98:dehrap00:dehrap01:qehrdb01:qehrap01:pehrap01' | sudo tee -a /etc/exports
+echo '/sapmnt/H1P -anon=65534,access=pehrdb99:pehrdb98:pehrdb00' | sudo tee -a /etc/exports</code>Then start NFSD<code>sudo /usr/sbin/mknfs '-B'</code>
+  - NFS mount filesystems on clients. 
+    - On pehrdb99, cleanup the NFS exports
+      - Unexport all filesystems<code>sudo exportfs -ua</code>Remove the expors file<code>sudo mv /etc/exports /etc/exports.OLD</code>Disable NFS<code>sudo /usr/sbin/rmnfs '-I'</code>
+      - rename these filesystems<code>sudo chfs -m /OLD/usr/sap/trans /usr/sap/trans
+sudo chfs -m /OLD/sapmnt/H1P /sapmnt/H1P</code>Unmount both the filesystems<code>echo "/sapmnt/H1P /usr/sap/trans" | xargs -n1 sudo umount</code>
+    - NFS mount/usr/sap/trans on all clients. From taitc118 perform this<code>for host in dehrap99 dehrap01 qehrdb01 qehrap01 pehrap01
+do
+   ssh ${host} sudo chnfsmnt -f /usr/sap/trans -d /usr/sap/trans -h pehrap00
+done</code>Now mount it<code>for host in dehrap99 dehrap01 qehrdb01 qehrap01 pehrap01
+do
+   ssh ${host} sudo umount /usr/sap/trans
+   ssh ${host} sudo mount /usr/sap/trans
+done</code>
+    - /sapmnt/H1P -> From taitc118 perform this<code>ssh pehrdb99 "sudo /usr/sbin/mknfsmnt -f '/sapmnt/H1P' -d '/sapmnt/H1P' -h 'pehrap00' -M 'sys' '-B' '-A' -t 'rw' -w 'bg' '-Y' '-Z' '-X' '-S' '-j' '-q' '-g'"</code>Now mount it<code>ssh pehrdb99 sudo mount /sapmnt/H1P</code>
+
+** Configure CRON jobs for Basis and DBA **
+
+  - From taitc118<code>sudo rsync -a /home/x1kxk630/pehrdb01-cronjobs/ pehrdb99:/var/spool/cron/crontabs/</code>
+  - Inform DBA / Basis members to check and make sure what CRON jobs needs to be enabled
+  - Refresh cron on pehrdb99<code>sudo kill <pid of crond></code>

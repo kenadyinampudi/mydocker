@@ -1,0 +1,51 @@
+====== What to do when you get a ticket for filesystem expansion - RHEL ======
+
+  - Request would look like<code>Please make /oracle/client 1.5 GB on daerap01h</code>
+  - The first step to do is, find out if this is a VM or a physical system.<code>sudo dmesg | grep -i "Hypervisor detected"</code>
+    - If the output is empty, it is a physical system. We don't have many of them, but pablsv01 is one.
+    - If the output shows something like below, it is a VM under VMWARE.<code>[    0.000000] Hypervisor detected: VMware</code>
+
+===== Virtual (VMWARE) systems =======
+
+  - Check the filesystem<code>df -h /oracle</code><code>Filesystem                          Size  Used Avail Use% Mounted on
+/dev/mapper/datavg01-oracle_client  976M  153M  757M  17% /oracle/client</code><code>mount | grep oracle</code><code>/dev/mapper/datavg01-oracle_client on /oracle/client type ext4 (rw,relatime,seclabel,data=ordered)</code>
+    - From this you now know<code>VG Name       : datavg01
+LV Name       : oracle_client
+Existing Size : 976M
+FS Type       : ext4</code>
+  - Check if the volume group has free space<code>sudo vgs datavg01</code><code>  VG       #PV #LV #SN Attr   VSize  VFree
+  datavg01   1  11   0 wz--n- 34.00g 4.50g</code>
+    - In this case, we have 4.5G of free space. Skip this section and move to expand the filesystem[[#expand_the_filesystem]]
+  - If the VG has not enough space, ( /oracle/client has to be made 10G )
+    - Being on VMWARE, it doesn't make sense to add multiple virtual disks and complicate things(atleast for now, may be later we will change this when it comes to bigger systems)
+    - Conceptually, we plan to increase the size of the PV that is used to construct datavg01
+    - Figure out the disk that belongs to datavg01<code>sudo pvs  | grep datavg01</code><code>  /dev/sdc   datavg01 lvm2 a--  34.00g    4.50g</code>
+    - From the above output, we now know<code>
+Disk(PV) :   /dev/sdb
+Size     :   34G</code>
+    - Double check the disk size<code>sudo fdisk -l /dev/sdc</code><code>Disk /dev/sdc: 36.5 GB, 36507222016 bytes, 71303168 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes</code>It does report 36.5GB, It has something to do with the way fdisk and pvs commands display the output capacity.
+    - "/dev/sdc" is the 3rd disk on this system i.e.<code>sudo fdisk -l | grep /dev/sd.:</code>In this case<code>Disk /dev/sda: 75.2 GB, 75161927680 bytes, 146800640 sectors ( Hard Disk 0 )
+Disk /dev/sdb: 68.7 GB, 68719476736 bytes, 134217728 sectors ( Hard Disk 0 )
+Disk /dev/sdc: 36.5 GB, 36507222016 bytes, 71303168 sectors ( Hard Disk 0 )</code>
+    - Login to the respective vSphere server --> Select the VM --> Edit settings --> Select the 3rd Disk "Hard Disk 3" --> Change the size from 34GB to 44GB --> Click Ok. ( Documented in detailed elsewhere )
+    - Come back to the server's putty session and rescan the device<code>echo "1" | sudo tee /sys/block/sdc/device/rescan</code>
+    - Run fdisk and make sure the size has changed<code>sudo fdisk -l | grep /dev/sd.:</code>In this case<code>Disk /dev/sda: 75.2 GB, 75161927680 bytes, 146800640 sectors ( Hard Disk 0 )
+Disk /dev/sdb: 68.7 GB, 68719476736 bytes, 134217728 sectors ( Hard Disk 0 )
+Disk /dev/sdc: 46.5 GB, 36507222016 bytes, 71303168 sectors ( Hard Disk 0 )</code>
+    - Resize the PV so the new size can be seen to the VG<code>sudo pvresize /dev/sdc</code>
+    - At this time, you should be able to go ahead and expand the filesystem [[#expand_the_filesystem]]
+
+===== Physical systems =======
+
+  - Will do later
+
+
+===== Expand the filesystem =======
+
+  - Expand the logical volume<code>sudo lvextend -L 1.5g /dev/datavg01/oracle_client</code>
+  - Expand the filesystem
+    - ext3 and ext4 <code>sudo /usr/sbin/resize2fs /dev/datavg01/oracle_client</code>
+    - xfs <code>sudo /usr/sbin/xfs_growfs /dev/datavg01/oracle_client</code>

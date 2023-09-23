@@ -1,0 +1,43 @@
+====== Symmetrix Commands (CLI) ======
+
+===== Sym DMX Commands =====
+
+  - List all FAs on the system<code>sudo symcfg -sid <SID> -fa all list</code>
+  - List all EAs(ESCON - mainframe) on the system<code>sudo symcfg -sid <SID> -ea all list</code>
+  - List all sym devices<code>sudo symdev -sid <SID> list</code>
+
+
+===== Sym VMAX Commands =====
+
+  - List all Initiator, Port and Storage Groups Created for Array 0301<code>sudo symaccess -sid 0301 list
+Symmetrix ID          : 000198700301
+
+Group Name                          Type
+--------------------------------  ---------
+paerap01_IG                       Initiator
+....lines removed
+qaerdb01_IG                       Initiator
+1E0_2E0_3E0_4E0_PG                Port
+....lines removed
+2H0_3H0_PG                        Port
+paerap01_SG                       Storage
+paerap02_SG                       Storage
+....lines removed
+taprvio5_SG                       Storage
+taqa1d01_SG                       Storage</code>
+  - List all storage groups<code>symaccess -sid 10301 list -type storage</code>Initiator groups<code>symaccess -sid 10301 list -type initiator</code>port groups<code>symaccess -sid 10301 list -type port</code>
+  - List all masking views<code>sudo symaccess -sid 0301 list view</code>
+  - List assignment of a given LUN<code>sudo symaccess -side 0301 list assignment -dev ABCD</code>
+  - Replace a WWN<code>sudo symaccess -sid 0301 -wwn <> replace -new_wwn <></code>
+  - Check if objects are part of any group.
+    - Check if WWN is part of any initiator groups<code>sudo symaccess -sid 0301 list -type initiator -wwn <></code>
+    - Check if LUN is part of any storage group<code>sudo symaccess -sid 0301 list -type storage -dev ABCD</code>
+  - Display details of a given Masking view.<code>sudo symaccess -sid 0301 show view qaerdb01_MV</code>
+  - Create a initiator group<code>sudo symaccess -sid 0301 -type initiator -name qaerdb01_IG create -wwn <></code>
+  - Create a Masking view<code>sudo symaccess -sid 0301 create view -name qaerdb01_MV -sg qaerdb01_SG -ig qaerdb01_IG -pg 1F0_4F0_PG</code>
+  - Delete a masking view<code>sudo symaccess -sid 0301 delete view -name <name></code>
+  - Add a device to storagegroup<code>symaccess -sid 1234 -type storage -name Host1 add devs <volume/meta></code>
+  - Remove a device from storage group<code>symaccess -sid 1234 -type storage -name Host1 remove devs <volume/meta></code>
+  - Replace WWN<code>sudo symaccess -sid 0301 -wwn xxxx replace -new_wwn yyyy</code>
+  - List all locks held by array<code>sudo symcfg -sid 0301 list -lockn all</code>
+  - Release the lock<code>sudo symcfg -sid 0301 -lockn 15 release -force</code>

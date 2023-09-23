@@ -1,0 +1,26 @@
+====== RP2 DB refresh documentation ======
+
+^Source System  ^Source DC ^Target System  ^Target DC|
+|sfldmiax255 	|CDC/PTCA  |acdcrp2axdb01  |CDC/MPPS|
+
+  - Get a latest copy of PVIDs from the source server and copy to the target system.
+    - Login to one of the jump servers ''pcdcunxaxap01''<code>ssh sfldmiax255 "lspv | grep -e appvg -e sapvg1 -e sapvg2 -e sapvg3 -e sapvg4 -e sapvg5" > RP2.pvids
+scp RP2.pvids acdcrp2axdb01:</code>
+  - Login to the target server and perform the rest of the work<code>ssh acdcrp2axdb01</code>
+    - Discover the new disks<code>sudo cfgmgr</code>
+    - <html>
+<span style="color:red;font-size:150%;">RP2 is HACMP Cluster use the below script</span>
+</html>varyonvg VGs and mount filesystems<code>for vg in appvg sapvg1 sapvg2 sapvg3 sapvg4 sapvg5
+do
+   echo "Working on ${vg} "
+   sudo varyonvg -O ${vg}
+   sudo chvg -l ${vg}
+   sudo chvg -a y ${vg}
+   for fs in $(lsvgfs ${vg} | sort )
+   do
+      echo "$(date) :: Working on ${vg} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>

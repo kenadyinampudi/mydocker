@@ -1,0 +1,83 @@
+<code>------------- Current State ---------------------
+
+SPA - Slot A1 - Port 0 - 50:06:01:60:09:60:08:07 - glwds300a1 - port 0
+SPA - Slot A1 - Port 1 - 50:06:01:61:09:60:08:07 - glwds300a1 - port 1
+
+SPA - Slot A1 - Port 2 - 50:06:01:62:09:60:08:07 - glwds300b1 - port 0
+SPA - Slot A1 - Port 3 - 50:06:01:63:09:60:08:07 - glwds300b1 - port 1
+
+
+
+SPB - Slot B1 - Port 0 - 50:06:01:68:09:60:08:07 - glwds300a1 - port 2
+SPB - Slot B1 - Port 1 - 50:06:01:69:09:60:08:07 - glwds300a1 - port 3
+
+SPB - Slot B1 - Port 2 - 50:06:01:6a:09:60:08:07 - glwds300b1 - port 2
+SPB - Slot B1 - Port 1 - 50:06:01:6b:09:60:08:07 - glwds300b1 - port 3
+
+------------- Future State ---------------------
+
+SPA - Slot A1 - Port 0 - 50:06:01:60:09:60:08:07 - glwds300a1 - port 0
+SPA - Slot A4 - Port 2 - 50:06:01:66:09:60:08:07 - glwds300a1 - port 1
+
+SPA - Slot A1 - Port 2 - 50:06:01:62:09:60:08:07 - glwds300b1 - port 0
+SPA - Slot A4 - Port 3 - 50:06:01:67:09:60:08:07 - glwds300b1 - port 1
+
+
+SPB - Slot B1 - Port 0 - 50:06:01:68:09:60:08:07 - glwds300a1 - port 2
+SPB - Slot B4 - Port 2 - 50:06:01:6E:09:60:08:07 - glwds300a1 - port 3
+
+SPB - Slot B1 - Port 2 - 50:06:01:6a:09:60:08:07 - glwds300b1 - port 2
+SPB - Slot B4 - Port 3 - 50:06:01:6f:09:60:08:07 - glwds300b1 - port 3
+
+
+
+Fabric A
+
+alicreate "glwvnxspa1_0","50:06:01:60:09:60:08:07"
+alicreate "glwvnxspa4_2","50:06:01:66:09:60:08:07"
+alicreate "glwvnxspb1_0","50:06:01:68:09:60:08:07"
+alicreate "glwvnxspb4_2","50:06:01:6e:09:60:08:07"
+
+alicreate "taglw055_601145","10:00:00:00:c9:60:11:45"
+alicreate "taglw001_5372c4","51:40:2e:c0:00:53:72:c4"
+
+zonecreate "taglw055_601145__glwvnxspa1_0","taglw055_601145;glwvnxspa1_0"
+zonecreate "taglw055_601145__glwvnxspb1_0","taglw055_601145;glwvnxspb1_0"
+
+zonecreate "taglw001_5372c4__glwvnxspa4_2","taglw001_5372c4;glwvnxspa4_2"
+zonecreate "taglw001_5372c4__glwvnxspb4_2","taglw001_5372c4;glwvnxspb4_2"
+
+cfgadd "production_a","taglw055_601145__glwvnxspa1_0;taglw055_601145__glwvnxspb1_0"
+cfgadd "production_a","taglw001_5372c4__glwvnxspa4_2;taglw001_5372c4__glwvnxspb4_2"
+
+cfgsave
+
+cfgenable "production_a"
+
+
+Fabric B
+
+cfgclear
+cfgdelete cfg
+cfgsave
+cfgcreate "production_b"
+
+alicreate "glwvnxspa1_2","50:06:01:62:09:60:08:07"
+alicreate "glwvnxspa4_3","50:06:01:67:09:60:08:07"
+alicreate "glwvnxspb1_2","50:06:01:6a:09:60:08:07"
+alicreate "glwvnxspb4_3","50:06:01:6f:09:60:08:07"
+
+alicreate "taglw055_60778d","10:00:00:00:c9:60:77:8d"
+alicreate "taglw001_5373b8","51:40:2e:c0:00:53:73:b8"
+
+zonecreate "taglw055_60778d__glwvnxspa1_2","taglw055_60778d;glwvnxspa1_2"
+zonecreate "taglw055_60778d__glwvnxspb1_2","taglw055_60778d;glwvnxspb1_2"
+
+zonecreate "taglw001_5373b8__glwvnxspa4_3","taglw001_5373b8;glwvnxspa4_3"
+zonecreate "taglw001_5373b8__glwvnxspb4_3","taglw001_5373b8;glwvnxspb4_3"
+
+cfgcreate "production_b","taglw055_60778d__glwvnxspa1_2;taglw055_60778d__glwvnxspb1_2"
+cfgadd "production_b","taglw001_5373b8__glwvnxspa4_3;taglw001_5373b8__glwvnxspb4_3"
+cfgsave
+cfgenable "production_b"
+</code>

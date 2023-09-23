@@ -1,0 +1,121 @@
+====== Customization for SAP HANA App servers ======
+
+  - Enter the SID name to automate further<code>export abap_sid_name=<ABAP SID name in lower case></code>
+  - Enter the SID name to automate further<code>export java_sid_name=<java_sid name></code>
+  - Manipulate the SID name into variables<code>export abap_sid_name=$(echo ${abap_sid_name} | tr A-Z a-z)
+export ABAP_SID_NAME=$(echo ${abap_sid_name} | tr a-z A-Z)
+export java_sid_name=$(echo ${java_sid_name} | tr A-Z a-z)
+export JAVA_SID_NAME=$(echo ${java_sid_name} | tr a-z A-Z)</code>
+  - Figure out two new unique uids for the following users<code>ssh pgnmsv01 /prod/images/scripts/picknextuid 2</code>
+    - Define them as variables<code>export firstuid=<>
+export seconduid=<></code>
+  - Create users account<code>sudo useradd  -K PASS_MAX_DAYS=-1 -s /usr/bin/csh -g sapsys -G sapinst -d /home/${abap_sid_name}adm -c "SAP NA System Admin" -m -u ${firstuid} ${abap_sid_name}adm
+echo "${abap_sid_name}adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+
+sudo useradd  -K PASS_MAX_DAYS=-1 -s /usr/bin/csh -g sapsys -G sapinst -d /home/${java_sid_name}adm -c "SAP System Admin" -m -u ${seconduid} ${java_sid_name}adm
+echo "${java_sid_name}adm:DKK*],E-7Pwp?tqX" | sudo chpasswd</code>
+  - Create filesystems<code>
+
+sudo lvcreate -n oracle            -L 512MB   datavg01
+sudo lvcreate -n oracle_client     -L 1024MB  datavg01
+
+
+sudo lvcreate -n sapcomm                        -L 2G   datavg01
+sudo lvcreate -n usr_sap_${ABAP_SID_NAME}       -L 60G  datavg01
+sudo lvcreate -n usr_sap_${ABAP_SID_NAME}_SUM   -L 100G datavg01
+sudo lvcreate -n sapmnt_${ABAP_SID_NAME}        -L 5G   datavg01
+sudo lvcreate -n home_${java_sid_name}adm       -L 1G   datavg01
+sudo lvcreate -n home_${abap_sid_name}adm       -L 1G   datavg01
+sudo lvcreate -n usr_sap_${JAVA_SID_NAME}       -L 20G  datavg01
+sudo lvcreate -n usr_sap_${JAVA_SID_NAME}_SUM   -L 20G  datavg01
+sudo lvcreate -n sapmnt_${JAVA_SID_NAME}        -L 20G  datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/oracle
+sudo mkfs -t ext4 /dev/datavg01/oracle_client
+
+sudo mkfs -t ext4 /dev/datavg01/sapcomm
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_${ABAP_SID_NAME}
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_${ABAP_SID_NAME}_SUM
+sudo mkfs -t ext4 /dev/datavg01/sapmnt_${ABAP_SID_NAME}
+sudo mkfs -t ext4 /dev/datavg01/home_${java_sid_name}adm
+sudo mkfs -t ext4 /dev/datavg01/home_${abap_sid_name}adm
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_${JAVA_SID_NAME}
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_${JAVA_SID_NAME}_SUM
+sudo mkfs -t ext4 /dev/datavg01/sapmnt_${JAVA_SID_NAME}
+
+cat << EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-oracle                          /oracle                         ext4    defaults        1 2
+/dev/mapper/datavg01-oracle_client                   /oracle/client                  ext4    defaults        1 2
+/dev/mapper/datavg01-sapcomm                         /sapcomm                        ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_${ABAP_SID_NAME}        /usr/sap/${ABAP_SID_NAME}       ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_${ABAP_SID_NAME}_SUM    /usr/sap/${ABAP_SID_NAME}/SUM   ext4    defaults        1 2
+/dev/mapper/datavg01-sapmnt_${ABAP_SID_NAME}         /sapmnt/${ABAP_SID_NAME}        ext4    defaults        1 2
+/dev/mapper/datavg01-home_${abap_sid_name}adm        /home/${abap_sid_name}adm       ext4    defaults        1 2
+/dev/mapper/datavg01-home_${java_sid_name}adm        /home/${java_sid_name}adm       ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_${JAVA_SID_NAME}        /usr/sap/${JAVA_SID_NAME}       ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_${JAVA_SID_NAME}_SUM    /usr/sap/${JAVA_SID_NAME}/SUM   ext4    defaults        1 2
+/dev/mapper/datavg01-sapmnt_${JAVA_SID_NAME}         /sapmnt/${JAVA_SID_NAME}        ext4    defaults        1 2
+EOF
+
+for FS in /oracle /oracle/client /sapcomm /usr/sap/${ABAP_SID_NAME} /usr/sap/${ABAP_SID_NAME}/SUM /sapmnt/${ABAP_SID_NAME} /home/${abap_sid_name}adm
+do
+   sudo mkdir -p ${FS}
+   sudo mount ${FS}
+   sudo chown ${abap_sid_name}adm:sapsys ${FS}
+done   
+
+for FS in /home/${java_sid_name}adm /usr/sap/${JAVA_SID_NAME} /usr/sap/${JAVA_SID_NAME}/SUM /sapmnt/${JAVA_SID_NAME}
+do
+   sudo mkdir -p ${FS}
+   sudo mount ${FS}
+   sudo chown ${java_sid_name}adm:sapsys ${FS}
+done</code>
+  - On production systems, create /usr/sap/trans filesystem<code>sudo lvcreate -n usr_sap_trans                  -L 35G  datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_trans
+
+cat << EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-usr_sap_trans                  /usr/sap/trans                 ext4    defaults        1 2
+EOF
+
+sudo mkdir -p /usr/sap/trans
+sudo mount /usr/sap/trans
+sudo chown ${abap_sid_name}adm:sapsys /usr/sap/trans</code>
+  - Configure the Virtual IP<code>export VIP=<ip_address></code>
+  - Create configuration<code>echo "DEVICE=eth0:0"        | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo "ONBOOT=yes"           | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo "TYPE=Ethernet"        | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo "BOOTPROTO=none"       | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo "NAME=eth0:0"          | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo "IPADDR=${VIP}"        | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0
+echo "NETMASK=255.255.255.0"| sudo tee -a /etc/sysconfig/network-scripts/ifcfg-eth0:0</code>Bring up the interface<code>sudo ifup eth0:0</code>Check<code>ifconfig -a</code>
+  - Adjust filesystem sizes as requirede.g. PSM App server here<code>/home/psmadm      0.5 GB
+/home/pjsadm      0.5 GB
+/home/sapadm      0.5 GB
+/home/daaadm      0.5 GB
+/usr/sap/DAA      3.0 GB
+/sapmnt/PJS       5.0 GB
+/sapmnt/PSM       5.0 GB
+/usr/sap/PJS/SUM  50  GB
+/usr/sap/PSM/SUM  50  GB
+/usr/sap          60  GB
+/usr/sap/PJS      60  GB
+/usr/sap/PSM      60  GB
+/usr/sap/hostctrl 1   GB
+/usr/sap/trans    35  GB</code>You could use this script to adjust space. It is under development, so be careful.<code>sudo /usr/local/scripts/extendfs <fsname> <final size></code>
+
+===== Setup /usr/sap/trans filesystem =====
+
+  - On the production system
+    - Enable and start NFS server<code>sudo systemctl enable nfs-server.service
+sudo systemctl start nfs-server.service</code>
+    - Create ''exports'' file<code>cat << EOF | sudo tee -a  /etc/exports
+/usr/sap/trans <dev_host_name>(rw)
+EOF</code>
+    - Export filesystem<code>sudo exportfs -av</code>
+  - On the dev system
+    - Add nfs filesystem<code>cat << EOF | sudo tee -a  /etc/fstab
+<nfs_server_name>:/usr/sap/trans                /usr/sap/trans        nfs     defaults
+EOF</code>
+    - Mount the filesystem<code>sudo mkdir -p /usr/sap/trans
+sudo mount/usr/sap/trans</code>

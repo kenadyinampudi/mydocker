@@ -1,0 +1,92 @@
+====== Move PTA to MMA ======
+
+===== PTA BCV sync =====
+
+  - Login to taqa1d01
+  - Unmount fs and varyoff vgs<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1
+for vg in datavg01 datavg02 datavg03 datavg04
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      echo "Unmounting ${vg} - ${fs} "
+      sudo umount ${fs}
+   done
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+done</code>
+  - Delete the disks<code>for powerdisk in $(grep datavg0 lsvpcfg.out.1 | awk -F: '{print $1}' )
+do
+   echo "Working on ${powerdisk} "
+   sudo powermt remove dev=${powerdisk}
+   grep -w ^${powerdisk} lsvpcfg.out.1 | tr ":" "\n" | grep hdisk | xargs -n1 sudo rmdev -dl
+done</code>
+  - Start the sync<code>sudo symmir -g PTA_BACKUP_DG establish</code>
+
+===== PTA BCV split =====   
+
+  - Login to taqa1d01
+  - Check the sync<code>sudo symmir -g PTA_BACKUP_DG query</code>
+  - Split the copy<code>sudo symmir -g PTA_BACKUP_DG split</code>
+
+===== Move PTA to xaerdb01, Move NFSVG02 to paarfs01 =====   
+
+  - Unmount the archive filesystems from app servers<code>for host in 1 2 3 4 5 6 7
+do
+   echo "Unmounting /sapcomm/PTA/archive from paerap0${host}"
+   ssh paerap0${host} sudo umount /sapcomm/PTA/archive
+done</code>
+  - Login to tapr1d01
+  - Unexport all filesystems<code>sudo exportfs -ua</code>
+  - Check for listener, unispool processes and have Basis kill them.<code>ps -ef | egrep "tns|unispool"</code>
+  - Take a snapshot and delete the disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Unmount and export VGs<code>for vg in datavg01 datavg02 datavg03 datavg04 nfsvg02 redovg01 binvg01
+do
+	for fs in $(lsvgfs ${vg} )
+	do
+		echo "Unmounting ${vg} - ${fs} "
+		sudo umount ${fs}
+	done
+	sudo varyoffvg ${vg}
+	sudo exportvg ${vg}
+done</code>
+  - Delete the disks<code>grep EMC lsvpcfg.tapr1d01.out | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - Login to pgunap01<code>ssh pgunap01</code>
+  - Remove PTA & nfsvg02 LUNs tfrom tapr1d01<code>sudo symaccess -sid 0301 -name tapr1d01-p8_SG -type storage remove dev 0691,0692,09E2,0693,0694,0695,0696,0665,0AC5,0AC6,0AC7,0AC8,0AC9,0ACA,0ACB,0ACC,0ACD,0ACE,0ACF,0AD0,0AD1,0AD2,0AD3,0AD4,0AD5,0AD6,0AD7,0AD8,0AD9,0ADA,0ADB,0ADC,0ADD,0ADE,0ADF,0AE0,0AE1,0AE2,0AE3,0AE4,0AE5,0AE6,0AE7,0AE8,0AE9,0AEA,0AEB,0AEC,0AED,0AEE,0AEF,0AF0,0AF1,0AF2,0AF3,0AF4,0AF5,0AF6,0AF7,0AF8,0AF9,0AFA,0AFB,0AFC,179D,1A4D,1A4E,1AC5,1AC6,1AE5,3861,386D</code>
+  - Add PTA LUNs to xaerdb01<code>sudo symaccess -sid 0301 -name tapr1d01_SG -type storage add dev 0691,0692,09E2,0693,0694,0695,0696,0665,0AC5,0AC6,0AC7,0AC8,0AC9,0ACA,0ACB,0ACC,0ACD,0ACE,0ACF,0AD0,0AD1,0AD2,0AD3,0AD4,0AD5,0AD6,0AD7,0AD8,0AD9,0ADA,0ADB,0ADC,0ADD,0ADE,0ADF,0AE0,0AE1,0AE2,0AE3,0AE4,0AE5,0AE6,0AE7,0AE8,0AE9,0AEA,0AEB,0AEC,0AED,0AEE,0AEF,0AF0,0AF1,0AF2,0AF3,0AF4,0AF5,0AF6,0AF7,0AF8,0AF9,0AFA,0AFB,0AFC,179D,1A4D,1A4E,1AC5,1AC6,1AE5,3861,386D</code>
+  - Remove nfsvg02 LUNs from tapr1d01<code>sudo symaccess -sid 0301 -name tapr1d01-p8_SG -type storage remove dev 2B81,2B8D,2B99,2BA5,2BB1,2BBD,2DBF,2DCB,2DD7,2DE3</code>
+  - Add nfsvg02 luns to paarfs01 host<code>sudo symaccess -sid 0301 -name paarfs01_SG -type storage add devs 2B81,2B8D,2B99,2BA5,2BB1,2BBD,2DBF,2DCB,2DD7,2DE3</code>
+  - Discover PTA LUNs on xaerdb01<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>then<code>sudo cfgmgr</code>then<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>then<code>diff lsvpcfg.out.1 lsvpcfg.out.2 | grep ">" | awk '{print $2}' | awk -F: '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l</code>
+  - Import PTA VGs on xaerdb01
+    - binvg01<code>sudo importvg -y binvg01 00c9f39016992bc8</code>
+    - redovg01<code>sudo importvg -y redovg01 00cc49c7de4b3181</code>
+    - datavg01<code>sudo importvg -y datavg02 00c9f39013c204e6</code>
+    - datavg02<code>sudo importvg -y datavg02 00c9f39013cb55b1</code>
+    - datavg03<code>sudo importvg -y datavg03 00c9f39013cf401a</code>
+    - datavg04<code>sudo importvg -y datavg04 00c9f39013d56594</code>
+  - Mount PTA filesystems on xaerdb01<code>for vg in binvg01 redovg01 datavg01 datavg02 datavg03 datavg04
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      echo "Mounting ${vg} - ${fs} "
+      sudo mount ${fs}
+   done
+done</code>
+  - Copy the /etc/exports file from tapr1d01 to xaerdb01<code>sudo cp /etc/exports /etc/exports.05082016.kr
+sudo scp tapr1d01:/etc/exports /etc/exports
+sudo exportfs -av</code>Check if all NFS daemonds are running on xaerdb01.
+  - Discover nfsvg02 LUNs on paarfs01<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>then<code>sudo cfgmgr</code>then<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>then<code>diff lsvpcfg.out.1 lsvpcfg.out.2 | grep ">" | awk '{print $2}' | awk -F: '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l</code>
+  - Import nfsvg02 on paarfs01<code>sudo importvg -y nfsvg02 00c9f390b33b780d</code>
+  - Export archive filesystem on paarfs01 to app servers<code>echo '/sapcomm/PTA/archive -anon=65534,access=paerap01:paerap02:paerap03:paerap04:paap3p01:paerap05:paerap06:paerap07,root=paerap01:paerap02:paerap03:paerap04:paap3p01:paerap05:paerap06:paerap07' | sudo tee -a /etc/exports</code>then<code>sudo /usr/sbin/mknfs '-B'</code>then<code>sudo exportfs -av</code>
+
+===== Rename xaerdb01 & tapr1d01 -- enable NFS exports =====   
+
+  - Robert does this
+  - Once filesystems are exported from the new tapr1d01
+  - Remount all filesystems on app servers except the archive filesystem.
+  - Modify the archive filesystem on all App servers<code>for host in 1 2 3 4 5 6 7
+do
+   echo "Working on paerap0${host}"
+   ssh paerap0${host} sudo chnfsmnt -f /sapcomm/PTA/archive -d /sapcomm/PTA/archive -h paarfs01
+   ssh paerap0${host} sudo mount /sapcomm/PTA/archive
+done</code>
+  

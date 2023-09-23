@@ -1,0 +1,155 @@
+====== For Netbackup home made appliances ======
+
+===== Kernel parameters, user limits and service accounts =====
+
+  - Kernel parameters<code>cat << EOF | sudo tee -a /etc/sysctl.conf
+kernel.sem = 300  307200  32  1024
+EOF</code>
+  - Re-read configuration<code>sudo sysctl -p</code>
+  - User limits<code>cat << EOF | sudo tee -a /etc/security/limits.conf
+*               hard    nofile          10000
+*               soft    nofile          10000
+EOF</code>
+  - Add netbackup service account<code>sudo groupadd -g 9091 nbwebgrp
+sudo useradd -g nbwebgrp -c 'NetBackup Web Services account' -d /usr/openv/wmc -m -u 9091 nbwebsvc</code>
+  - Modify Host_Alias "BKPSRVR" in /etc/sudoers to include the new hostname follow the instruction as per the link. [[unix:managingsudo]]
+
+
+===== Create NBU filesystems =====
+
+  - Create Netbackup data volume group<code>sudo pvcreate /dev/sdb
+sudo vgcreate -s 512M datavg01 /dev/sdb</code>
+    - If pvcreate is successful then proceed to step no 2.
+    - If you face any error i.e.<code>sudo pvcreate /dev/sdb
+pvcreate device /dev/sdb not found (or ignored by filtering)</code>then do the following<code>sudo parted /dev/sdb mklabel gpt
+Output:- Warning: The existing disk label on /dev/sdb will be destroyed and all data on this disk will be lost. Do you want to continue?
+Yes/No? y</code><code>sudo file -s /dev/sdb
+output:- /dev/sdb: x86 boot sector; partition 1: ID=0xee, starthead 0, startsector 1, 4294967295 sectors, extended partition table (last)\011, code offset 0x0</code><code>sudo dd if=/dev/zero of=/dev/sdb bs=1k</code><code>sudo file -s /dev/sdb
+output:- /dev/sdb: data</code><code>sudo pvcreate /dev/sdb
+sudo vgcreate -s 512M datavg01 /dev/sdb</code>
+  - Create netbackup filesystems<code>sudo lvcreate -n inst              -L 50GB   datavg01
+sudo lvcreate -n log               -L 128GB  datavg01
+sudo lvcreate -n usr_openv         -L 128GB  datavg01
+sudo lvcreate -n config            -L 128GB  datavg01
+sudo lvcreate -n usr_openv_db      -L 128GB  datavg01
+sudo lvcreate -n msdp_advol        -L 1024GB datavg01
+sudo lvcreate -n msdp_pdvol        -L 4096GB datavg01
+sudo lvcreate -n msdp_cat          -L 20GB   datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/inst
+sudo mkfs -t ext4 /dev/datavg01/log
+sudo mkfs -t ext4 /dev/datavg01/usr_openv
+sudo mkfs -t ext4 /dev/datavg01/config
+sudo mkfs -t ext4 /dev/datavg01/usr_openv_db
+sudo mkfs -t ext4 /dev/datavg01/msdp_advol
+sudo mkfs -t ext4 /dev/datavg01/msdp_pdvol
+sudo mkfs -t ext4 /dev/datavg01/msdp_cat
+
+echo "# NBU home made appliance filesystems"                                                     | sudo tee -a /etc/fstab
+echo ""                                                                                          | sudo tee -a /etc/fstab
+
+echo "/dev/mapper/datavg01-inst           /inst                    ext4    defaults        1 2"  | sudo tee -a /etc/fstab
+echo "/dev/mapper/datavg01-log            /log                     ext4    defaults        1 2"  | sudo tee -a /etc/fstab
+echo "/dev/mapper/datavg01-usr_openv      /usr/openv               ext4    defaults        1 2"  | sudo tee -a /etc/fstab
+echo "/dev/mapper/datavg01-config         /config                  ext4    rw,nodev,_netdev 1 2" | sudo tee -a /etc/fstab
+echo "/dev/mapper/datavg01-usr_openv_db   /usr/openv/netbackup/db  ext4    rw,nodev,_netdev 1 2" | sudo tee -a /etc/fstab
+echo "/dev/mapper/datavg01-msdp_advol     /advanceddisk/dp1/advol  ext4    rw,nodev,_netdev 1 2" | sudo tee -a /etc/fstab
+echo "/dev/mapper/datavg01-msdp_pdvol     /msdp/data/dp1/pdvol     ext4    rw,nodev,_netdev 1 2" | sudo tee -a /etc/fstab
+echo "/dev/mapper/datavg01-msdp_cat       /msdp/cat                ext4    rw,nodev,_netdev 1 2" | sudo tee -a /etc/fstab
+
+sudo mkdir -p /inst
+sudo mount    /inst
+sudo mkdir -p /log
+sudo mount    /log
+sudo mkdir -p /usr/openv
+sudo mount    /usr/openv
+sudo mkdir -p /config
+sudo mount    /config
+sudo mkdir -p /usr/openv/netbackup/db
+sudo mount    /usr/openv/netbackup/db
+sudo mkdir -p /advanceddisk/dp1/advol
+sudo mount    /advanceddisk/dp1/advol
+sudo mkdir -p /msdp/data/dp1/pdvol
+sudo mount    /msdp/data/dp1/pdvol
+sudo mkdir -p /msdp/cat
+sudo mount    /msdp/cat</code>
+
+===== Configure bond0 interface and move the IP address =====
+
+  - Remove the configuration on eno1<code>sudo rm /etc/sysconfig/network-scripts/ifcfg-eno1</code>
+  - Create configuration files<code>cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+ONBOOT=yes
+BOOTPROTO=none
+USERCTL=no
+BONDING_OPTS="mode=802.3ad miimon=100"
+EOF
+
+cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-eno2
+DEVICE=eno2
+NAME=eno2
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF
+
+cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-eno3
+DEVICE=eno3
+NAME=eno3
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF
+
+cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-eno4
+DEVICE=eno4
+NAME=eno4
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+EOF</code>
+  - Set the following parameters
+    - VLAN<code>export VLAN=XXX</code>Ask the network team member for the VLAN id.
+    - IP & MASK<code>IP=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | awk '{print $2}')
+MASK=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | awk '{print $4}')</code>
+  - Create the VLAN configuration<code>cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0.${VLAN}
+DEVICE=bond0.${VLAN}
+BOOTPROTO=none
+IPADDR=${IP}
+NETMASK=${MASK}
+USERCTL=no
+VLAN=yes
+ONPARENT=yes
+EOF</code>
+  - Remove IP from eno1 and move to the VLAN interfaces. Do this step exactly as documented and it does take about 30 seconds<code>sudo ifconfig eno1 down ; sudo service network restart</code>
+
+===== Configure iSCSI VLAN and install iSCSI client =====
+
+  - Add iSCSI VLAN & IP address<code>export VLAN=203
+export ISCSI_IP=192.168.0.101</code><code>cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-bond0.${VLAN}
+DEVICE=bond0.${VLAN}
+BOOTPROTO=none
+IPADDR=${ISCSI_IP}
+NETMASK=${MASK}
+USERCTL=no
+VLAN=yes
+ONPARENT=yes
+EOF</code><code>sudo ifup bond0.${VLAN}</code>Check it now<code>ifconfig bond0.${VLAN}</code>
+  - iSCSI configuration
+    - check package if it is installed or not<code>rpm -qa | grep -i iscsi*</code>
+    - Install the package if not installed<code>sudo yum install iscsi-initiator-utils</code>
+    - And if anyone asks for iscsi Initiator Node then do this<code>cat /etc/iscsi/initiatorname.iscsi</code>
+
+===== NBU hot catalog backup =====
+
+  - In order to receive NBU hot catalog backup form giosdatapresalerts@tenneco.com follow below steps:<code>echo "sender_canonical_maps = hash:/etc/postfix/sender_canonical_maps" | sudo tee -a /etc/postfix/main.cf
+echo Netbackup.`hostname` giosdatapresalerts@tenneco.com | sudo tee -a /etc/postfix/sender_canonical_maps
+sudo postmap hash:/etc/postfix/sender_canonical_maps
+sudo postfix reload</code>
+  - Test now the hot catalog backup if email received is from proper sender.<code>bpbackup -I -p HOT_xxx</code>

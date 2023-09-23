@@ -1,0 +1,13 @@
+====== Rybnik - LVM splitvg precodure ======
+
+  - Stop all applications.
+  - Wait for Kempe to bringdown the database.
+  - Wait for Kempe's okay to split.
+  - Execute the split
+    - Login to ''taryb055''<code>ssh taryb055</code>
+    - Check all logical volumes are sync'd<code>lsvg -l datavg02</code>
+    - Document LVM status before the split<code>lspv > lspv.beforesplitvg.out</code>
+    - Execute splitvg on datavg02<code>sudo splitvg -y forkempe -c2 -i datavg02</code>
+    - Disable autovaryon for the new VG<code>sudo chvg -a n forkempe</code>
+    - Document LVM status after the split<code>lspv > lspv.aftersplitvg.out</code>
+  - Kempe to setup a reminder to let us know to destroy the copy on Tuesday''04/11/2017''

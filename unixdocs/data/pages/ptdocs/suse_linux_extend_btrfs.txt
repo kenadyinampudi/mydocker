@@ -1,0 +1,34 @@
+====== Go Into Rescue Mode ======
+
+    *** rescue:~ # parted /dev/sda**
+    * GNU Parted 3.1
+    * Using /dev/sda
+    * Welcome to GNU Parted! Type 'help' to view a list of commands.
+    *(parted) **resize**
+   * Partition number? **2**
+    * End?  [21.5GB]? **42.5GB**
+    *(parted) **quit**
+    * Information: You may need to update /etc/fstab.
+    * 0:rescue:~ #
+
+    - **Running parted -l will show the new end of the partition:**
+  
+  * 0:rescue:~ # **parted -l**
+    
+
+      * Model: VMware Virtual disk (scsi)
+      * Disk /dev/sda: 42.9GB
+      * Sector size (logical/physical): 512B/512B
+      * Partition Table: msdos
+      * Disk Flags:
+      * Number  Start   End     Size    Type     File system     Flags
+      * 1      1049kB  4302MB  4301MB  primary  linux-swap(v1)  type=82
+      * 2      4302MB  42.5GB  38.2GB  primary  btrfs           boot, type=83
+      * 0:rescue:~ #
+  * **The last steps are to mount the partition and resize the btrfs file system:
+  * **
+
+  * 0:rescue:~ # **mount /dev/sda2 /mnt**
+  * 0:rescue:~ # **btrfs filesystem resize max /mnt**
+  * Resize '/mnt' of 'max'
+

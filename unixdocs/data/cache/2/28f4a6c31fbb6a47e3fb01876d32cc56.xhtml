@@ -1,0 +1,108 @@
+
+<h1 class="sectionedit1" id="na_-_ldc_-_disaster_recovery_test_linux_instructions_2018">NA - LDC - Disaster Recovery Test LINUX instructions (2018)</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "NA - LDC - Disaster Recovery Test LINUX instructions (2018)" [1-75] -->
+<h2 class="sectionedit2" id="connectivity_to_dr_esxi_farm">Connectivity to DR ESXi farm</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> VMWARE vSphere hostname and credentials<pre class="code">vSphere server  :  phlvpams005   IP - 134.238.206.43
+User account    :  &lt;AD Credentials&gt;
+Password        :  &lt;AD Credentials&gt;
+WebAccess       :  https://phlvpams005.driv.com/ui</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Connectivity to DR ESXi farm" [76-350] -->
+<h2 class="sectionedit3" id="recovery_of_virtual_machines">Recovery of  Virtual Machines</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Wintel Team will recover all the VMware Servers and start them. </div>
+</li>
+<li class="level1"><div class="li"> You should not have to make any changes to the Server IP address or network configuration. </div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Recovery of  Virtual Machines" [351-559] -->
+<h2 class="sectionedit4" id="unix_team_s_activities">Unix Team&#039;s activities</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Choose the Linux server, update the DR database for the server.</div>
+</li>
+<li class="level1"><div class="li"> Login to vSphere using fat client or web client. –&gt; On the address space click and select “Hosts and Clusters”.</div>
+</li>
+<li class="level1"><div class="li"> Login to the DR-NIM server to continue with system re-configurations.</div>
+<ol>
+<li class="level2"><div class="li"> Set variable specific to the system. First the servername<pre class="code">export hostname=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure NTP in DR. Stop daemon<pre class="code">sudo ssh ${hostname} systemctl stop ntpd</pre>
+
+<p>
+Backup the config
+</p>
+<pre class="code">sudo ssh ${hostname} cp /etc/ntp.conf /etc/ntp.conf.DRtest</pre>
+
+<p>
+Now push the NTP file
+</p>
+<pre class="code">sudo scp //prod/images/FILES-FOR-DR/ntp.client.conf ${hostname}:/etc/ntp.conf</pre>
+
+<p>
+Start the daemons
+</p>
+<pre class="code">sudo ssh ${hostname} systemctl restart ntpd</pre>
+
+<p>
+Set the correct time from NIM server
+</p>
+<pre class="code">sudo ssh ${hostname} &quot;date ; ntpdate -u nim ; date&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Turn off cron<pre class="code">sudo ssh ${hostname} systemctl stop crond.service</pre>
+<pre class="code">sudo ssh ${hostname} systemctl disable crond.service</pre>
+
+<p>
+Check if cron is still running
+</p>
+<pre class="code">sudo ssh ${hostname} ps -ef | grep cron</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Login to the server<pre class="code">sudo ssh ${hostname}</pre>
+
+<p>
+Change PS1 variable by login to the client. Make a backup copy
+</p>
+<pre class="code">sudo cp /etc/profile /etc/profile.copyforDR</pre>
+
+<p>
+Then
+</p>
+<pre class="code">sudo vi /etc/profile</pre>
+
+<p>
+Add this towards the end ( last line )
+</p>
+<pre class="code">HOST=$(uname -n)
+PS1=&#039;DR test -- $HOST:$PWD&gt;&#039;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Perform a reboot<pre class="code">sudo systemctl reboot</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> <strong>!!! Check that all file systems including all NFS file systems are mounted correctly on the server. !!!</strong> <pre class="code"> cat /etc/fstab | awk &#039;{print $2}&#039;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <strong> !!! Only after making sure that ALL  Server File Systems are correctly mounted including all NFS Mounts then and only
+ then turn over the server to the next group. !!!</strong></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Unix Team's activities" [560-] -->

@@ -1,0 +1,370 @@
+
+<h1 class="sectionedit1" id="firewall_rules_for_new_ntp_dns_servers">Firewall Rules for new NTP &amp; DNS Servers</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Firewall Rules for new NTP & DNS Servers" [1-57] -->
+<h3 class="sectionedit2" id="cdc_firewall_rules">CDC Firewall Rules</h3>
+<div class="level3">
+<div class="table sectionedit3"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Purpose	</th><th class="col1 leftalign">Source IP	</th><th class="col2 leftalign">Source server name	</th><th class="col3">Target IP </th><th class="col4 leftalign">Target	Server Name	</th><th class="col5 leftalign">Port	</th><th class="col6">Protocol </th><th class="col7">Direction wrt Target </th><th class="col8">Remarks</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign"><abbr title="Secure Shell">SSH</abbr> from<br/>
+Jump Server	</td><td class="col1 leftalign">10.128.41.10	</td><td class="col2 leftalign">pcdcunxaxap01	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7">Inbound</td><td class="col8"> </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign"><abbr title="Secure Shell">SSH</abbr> from<br/>
+build server	</td><td class="col1 leftalign">10.128.81.17	</td><td class="col2 leftalign">pcdcunxlxap01	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Bidirectional	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0 leftalign"><abbr title="Secure Shell">SSH</abbr> from<br/>
+jump server	</td><td class="col1 leftalign">10.135.49.143	</td><td class="col2 leftalign">Sfldmilx031	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Inbound	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0 leftalign">SYSLOG	</td><td class="col1 leftalign">10.128.80.10	</td><td class="col2 leftalign">pcdcunxlxap04	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">514	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Outbound	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0 leftalign">Repo	</td><td class="col1 leftalign">10.128.81.17	</td><td class="col2 leftalign">pcdcunxlxap01	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">80, 443	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Outbound	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0 leftalign">Lpar2rrd	</td><td class="col1 leftalign">10.128.81.18	</td><td class="col2 leftalign">pcdcunxlxap02	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Bidirectional	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0 leftalign">UUMA	</td><td class="col1 leftalign">10.128.81.19	</td><td class="col2 leftalign">pcdcunxlxap03	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">40035	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Outbound	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0 leftalign">NTP 	</td><td class="col1 leftalign">10.128.31.248	</td><td class="col2 leftalign">pcdcntplxap02	</td><td class="col3 leftalign">10.99.207.5	</td><td class="col4 leftalign">pcdcntplxap01	</td><td class="col5 leftalign">123	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Inbound	</td><td class="col8">Only for NTP server</td>
+	</tr>
+	<tr class="row9">
+		<td class="col0" colspan="2">NTP Public Servers</td><td class="col2 leftalign">ntp-0.cso.uiuc.edu<br/>
+ntp1.cs.wisc.edu<br/>
+0.north-america.pool.ntp.org<br/>
+1.north-america.pool.ntp.org	</td><td class="col3 leftalign">10.99.207.5	</td><td class="col4 leftalign">pcdcntplxap01	</td><td class="col5 leftalign">123	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Outbound	</td><td class="col8">Only for NTP server</td>
+	</tr>
+	<tr class="row10">
+		<td class="col0 leftalign"><abbr title="Domain Name System">DNS</abbr>	</td><td class="col1 leftalign">10.128.11.200 <br/>
+10.128.11.201<br/>
+10.128.11.202	</td><td class="col2 leftalign">EGDCILDC001<br/>
+EGDCILDC002<br/>
+EGDCILDC003	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">53	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Outbound	</td><td class="col8">Client</td>
+	</tr>
+	<tr class="row11">
+		<td class="col0">Nexpose<br/>
+(security<br/>
+scan)</td><td class="col1">10.128.80.38<br/>
+10.128.80.39<br/>
+10.128.80.44<br/>
+10.128.80.56<br/>
+0.128.80.57<br/>
+10.128.80.58<br/>
+10.45.169.30<br/>
+208.118.237.52<br/>
+10.128.80.38 </td><td class="col2">AMER pcdcrp7lxsc01.driv.com<br/>
+AMER pcdcrp7lxsc02.driv.com<br/>
+AMER pcdcrp7lxsc03.driv.com<br/>
+EMEA pcdcrp7lxsc04.driv.com<br/>
+EMEA pcdcrp7lxsc05.driv.com<br/>
+EMEA pcdcrp7lxsc06.driv.com<br/>
+ASPA pshjrp7lxsc01.driv.com<br/>
+<a href="https://pcdcrp7lxcc01.driv.com:3780" class="urlextern" title="https://pcdcrp7lxcc01.driv.com:3780"  rel="nofollow">DR1V Dedicated Scan Engine</a></td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">All	</td><td class="col6 leftalign">TCP, UDP	</td><td class="col7">Inbound</td><td class="col8"> </td>
+	</tr>
+	<tr class="row12">
+		<td class="col0 leftalign">Service Now	</td><td class="col1 leftalign">10.128.100.57<br/>
+10.128.100.58<br/>
+10.128.10.207<br/>
+10.128.10.208<br/>
+10.24.130.27<br/>
+10.24.130.28	</td><td class="col2 leftalign">CDCVILMS412.driv.com<br/>
+CDCVILMS413.driv.com<br/>
+EGDCILMS012.driv.com<br/>
+EGDCILMS013.driv.com	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">161	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Bidirectional	</td><td class="col8"></td>
+	</tr>
+	<tr class="row13">
+		<td class="col0 leftalign">Service Now	</td><td class="col1 leftalign">10.128.100.57<br/>
+10.128.100.58<br/>
+10.128.10.207<br/>
+10.128.10.208<br/>
+10.24.130.27<br/>
+10.24.130.28	</td><td class="col2 leftalign">CDCVILMS412.driv.com<br/>
+CDCVILMS413.driv.com<br/>
+EGDCILMS012.driv.com<br/>
+EGDCILMS013.driv.com	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Bidirectional	</td><td class="col8"></td>
+	</tr>
+	<tr class="row14">
+		<td class="col0">Monitoring</td><td class="col1">10.128.100.20<br/>
+10.128.100.21<br/>
+10.128.100.25<br/>
+10.128.100.26<br/>
+10.128.100.27</td><td class="col2">CDCVILMS204.driv.com<br/>
+CDCVILMS205.driv.com<br/>
+CDCVILMS461.driv.com<br/>
+CDCVILMS403.driv.com<br/>
+CDCILMS510.driv.com</td><td class="col3">10.99.207.5<br/>
+10.99.207.4</td><td class="col4">pcdcntplxap01<br/>
+pcdcdnslxap01</td><td class="col5">161</td><td class="col6">UDP</td><td class="col7">Bidrectional</td><td class="col8"></td>
+	</tr>
+	<tr class="row15">
+		<td class="col0">Monitoring</td><td class="col1">10.128.100.20<br/>
+10.128.100.21<br/>
+10.128.100.25<br/>
+10.128.100.26<br/>
+10.128.100.27</td><td class="col2">CDCVILMS204.driv.com<br/>
+CDCVILMS205.driv.com<br/>
+CDCVILMS461.driv.com<br/>
+CDCVILMS403.driv.com<br/>
+CDCILMS510.driv.com</td><td class="col3">10.99.207.5<br/>
+10.99.207.4</td><td class="col4">pcdcntplxap01<br/>
+pcdcdnslxap01</td><td class="col5">162</td><td class="col6">UDP</td><td class="col7">Bidrectional</td><td class="col8"></td>
+	</tr>
+	<tr class="row16">
+		<td class="col0">Monitoring</td><td class="col1">10.128.100.20<br/>
+10.128.100.21<br/>
+10.128.100.25<br/>
+10.128.100.26<br/>
+10.128.100.27</td><td class="col2">CDCVILMS204.driv.com<br/>
+CDCVILMS205.driv.com<br/>
+CDCVILMS461.driv.com<br/>
+CDCVILMS403.driv.com<br/>
+CDCILMS510.driv.com</td><td class="col3">10.99.207.5<br/>
+10.99.207.4</td><td class="col4">pcdcntplxap01<br/>
+pcdcdnslxap01</td><td class="col5">22</td><td class="col6">TCP</td><td class="col7">Inbound</td><td class="col8"></td>
+	</tr>
+	<tr class="row17">
+		<td class="col0 leftalign"><abbr title="Simple Mail Transfer Protocol">SMTP</abbr>	</td><td class="col1 leftalign">10.128.10.236	</td><td class="col2 leftalign">smtp.driv.com	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">25	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Outbound	</td><td class="col8"></td>
+	</tr>
+	<tr class="row18">
+		<td class="col0 leftalign">Vmware tools &amp;<br/>
+console access	</td><td class="col1 leftalign">134.238.126.193	</td><td class="col2 leftalign">cdcvilms156.driv.com	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">443	</td><td class="col6 leftalign">TCP	</td><td class="col7">Outbound</td><td class="col8"><a href="https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html" class="urlextern" title="https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html"  rel="nofollow">Connecting to the Virtual Machine Console Through a Firewall </a></td>
+	</tr>
+	<tr class="row19">
+		<td class="col0 leftalign">Vmware tools &amp;<br/>
+console access	</td><td class="col1 leftalign">10.128.24.168<br/>
+10.128.24.169<br/>
+10.128.24.170	</td><td class="col2 leftalign"><strong>ESXi hosts</strong> <br/>
+cdcvilvm168.driv.com<br/>
+cdcvilvm169.driv.com<br/>
+cdcvilvm170.driv.com	</td><td class="col3 leftalign">10.99.207.5<br/>
+10.99.207.4	</td><td class="col4 leftalign">pcdcntplxap01<br/>
+pcdcdnslxap01	</td><td class="col5 leftalign">902	</td><td class="col6 leftalign">TCP	</td><td class="col7">Bidirectional</td><td class="col8"><a href="https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html" class="urlextern" title="https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html"  rel="nofollow">Connecting to the Virtual Machine Console Through a Firewall </a></td>
+	</tr>
+</table></div>
+<!-- EDIT3 TABLE [87-4390] -->
+</div>
+<!-- EDIT2 SECTION "CDC Firewall Rules" [58-4391] -->
+<h3 class="sectionedit4" id="ldd_firewall_rules">LDD Firewall Rules</h3>
+<div class="level3">
+<div class="table sectionedit5"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Purpose	</th><th class="col1 leftalign">Source IP	</th><th class="col2 leftalign">Source server name	</th><th class="col3">Target IP </th><th class="col4 leftalign">Target	Server Name	</th><th class="col5 leftalign">Port	</th><th class="col6">Protocol </th><th class="col7">Direction wrt Target </th><th class="col8">Remarks</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign"><abbr title="Secure Shell">SSH</abbr> from<br/>
+Jump Server	</td><td class="col1 leftalign">10.128.41.10	</td><td class="col2 leftalign">pcdcunxaxap01	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7">Inbound</td><td class="col8"> </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign"><abbr title="Secure Shell">SSH</abbr> from<br/>
+build server	</td><td class="col1 leftalign">10.128.81.17	</td><td class="col2 leftalign">pcdcunxlxap01	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Bidirectional	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0 leftalign"><abbr title="Secure Shell">SSH</abbr> from<br/>
+jump server	</td><td class="col1 leftalign">10.135.49.143	</td><td class="col2 leftalign">Sfldmilx031	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Inbound	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0 leftalign">SYSLOG	</td><td class="col1 leftalign">10.128.80.10	</td><td class="col2 leftalign">pcdcunxlxap04	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">514	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Outbound	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0 leftalign">Repo	</td><td class="col1 leftalign">10.128.81.17	</td><td class="col2 leftalign">pcdcunxlxap01	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">80, 443	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Outbound	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0 leftalign">Lpar2rrd	</td><td class="col1 leftalign">10.128.81.18	</td><td class="col2 leftalign">pcdcunxlxap02	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Bidirectional	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0 leftalign">UUMA	</td><td class="col1 leftalign">10.128.81.19	</td><td class="col2 leftalign">pcdcunxlxap03	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">40035	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Outbound	</td><td class="col8"> </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0 leftalign">NTP 	</td><td class="col1 leftalign">10.24.132.248	</td><td class="col2 leftalign">plddntplxap02	</td><td class="col3 leftalign">10.24.151.5	</td><td class="col4 leftalign">plddntplxap01	</td><td class="col5 leftalign">123	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Inbound	</td><td class="col8">Only for NTP server</td>
+	</tr>
+	<tr class="row9">
+		<td class="col0" colspan="2">NTP Public Servers</td><td class="col2 leftalign">ntp1.belbone.be<br/>
+time1.hs-augsburg.de<br/>
+0.europe.pool.ntp.org<br/>
+1.europe.pool.ntp.org	</td><td class="col3 leftalign">10.24.151.5	</td><td class="col4 leftalign">plddntplxap01	</td><td class="col5 leftalign">123	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Outbound	</td><td class="col8">Only for NTP server</td>
+	</tr>
+	<tr class="row10">
+		<td class="col0 leftalign"><abbr title="Domain Name System">DNS</abbr>	</td><td class="col1 leftalign">10.24.130.232<br/>
+10.24.130.233	</td><td class="col2">LDDGBDC001<br/>
+LDDGBDC002 </td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">53	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Outbound	</td><td class="col8">Client</td>
+	</tr>
+	<tr class="row11">
+		<td class="col0">Nexpose<br/>
+(security<br/>
+scan)</td><td class="col1">10.128.80.38<br/>
+10.128.80.39<br/>
+10.128.80.44<br/>
+10.128.80.56<br/>
+0.128.80.57<br/>
+10.128.80.58<br/>
+10.45.169.30<br/>
+208.118.237.52<br/>
+10.128.80.38 </td><td class="col2">AMER pcdcrp7lxsc01.driv.com<br/>
+AMER pcdcrp7lxsc02.driv.com<br/>
+AMER pcdcrp7lxsc03.driv.com<br/>
+EMEA pcdcrp7lxsc04.driv.com<br/>
+EMEA pcdcrp7lxsc05.driv.com<br/>
+EMEA pcdcrp7lxsc06.driv.com<br/>
+ASPA pshjrp7lxsc01.driv.com<br/>
+<a href="https://pcdcrp7lxcc01.driv.com:3780" class="urlextern" title="https://pcdcrp7lxcc01.driv.com:3780"  rel="nofollow">DR1V Dedicated Scan Engine</a></td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">All	</td><td class="col6 leftalign">TCP, UDP	</td><td class="col7">Inbound</td><td class="col8"> </td>
+	</tr>
+	<tr class="row12">
+		<td class="col0 leftalign">Service Now	</td><td class="col1 leftalign">10.128.100.57<br/>
+10.128.100.58<br/>
+10.128.10.207<br/>
+10.128.10.208<br/>
+10.24.130.27<br/>
+10.24.130.28	</td><td class="col2 leftalign">CDCVILMS412.driv.com<br/>
+CDCVILMS413.driv.com<br/>
+EGDCILMS012.driv.com<br/>
+EGDCILMS013.driv.com	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">161	</td><td class="col6 leftalign">UDP	</td><td class="col7 leftalign">Bidirectional	</td><td class="col8"></td>
+	</tr>
+	<tr class="row13">
+		<td class="col0 leftalign">Service Now	</td><td class="col1 leftalign">10.128.100.57<br/>
+10.128.100.58<br/>
+10.128.10.207<br/>
+10.128.10.208<br/>
+10.24.130.27<br/>
+10.24.130.28	</td><td class="col2 leftalign">CDCVILMS412.driv.com<br/>
+CDCVILMS413.driv.com<br/>
+EGDCILMS012.driv.com<br/>
+EGDCILMS013.driv.com	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">22	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Bidirectional	</td><td class="col8"></td>
+	</tr>
+	<tr class="row14">
+		<td class="col0">Monitoring</td><td class="col1">10.128.100.20<br/>
+10.128.100.21<br/>
+10.128.100.25<br/>
+10.128.100.26<br/>
+10.128.100.27</td><td class="col2">CDCVILMS204.driv.com<br/>
+CDCVILMS205.driv.com<br/>
+CDCVILMS461.driv.com<br/>
+CDCVILMS403.driv.com<br/>
+CDCILMS510.driv.com</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5">161</td><td class="col6">UDP</td><td class="col7">Bidrectional</td><td class="col8"></td>
+	</tr>
+	<tr class="row15">
+		<td class="col0">Monitoring</td><td class="col1">10.128.100.20<br/>
+10.128.100.21<br/>
+10.128.100.25<br/>
+10.128.100.26<br/>
+10.128.100.27</td><td class="col2">CDCVILMS204.driv.com<br/>
+CDCVILMS205.driv.com<br/>
+CDCVILMS461.driv.com<br/>
+CDCVILMS403.driv.com<br/>
+CDCILMS510.driv.com</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5">162</td><td class="col6">UDP</td><td class="col7">Bidrectional</td><td class="col8"></td>
+	</tr>
+	<tr class="row16">
+		<td class="col0">Monitoring</td><td class="col1">10.128.100.20<br/>
+10.128.100.21<br/>
+10.128.100.25<br/>
+10.128.100.26<br/>
+10.128.100.27</td><td class="col2">CDCVILMS204.driv.com<br/>
+CDCVILMS205.driv.com<br/>
+CDCVILMS461.driv.com<br/>
+CDCVILMS403.driv.com<br/>
+CDCILMS510.driv.com</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5">22</td><td class="col6">TCP</td><td class="col7">Inbound</td><td class="col8"></td>
+	</tr>
+	<tr class="row17">
+		<td class="col0 leftalign"><abbr title="Simple Mail Transfer Protocol">SMTP</abbr>	</td><td class="col1 leftalign">10.128.10.236	</td><td class="col2 leftalign">smtp.driv.com	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">25	</td><td class="col6 leftalign">TCP	</td><td class="col7 leftalign">Outbound	</td><td class="col8"></td>
+	</tr>
+	<tr class="row18">
+		<td class="col0 leftalign">Vmware tools &amp;<br/>
+console access	</td><td class="col1 leftalign">134.238.126.193	</td><td class="col2 leftalign">cdcvilms156.driv.com	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">443	</td><td class="col6 leftalign">TCP	</td><td class="col7">Outbound</td><td class="col8"><a href="https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html" class="urlextern" title="https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html"  rel="nofollow">Connecting to the Virtual Machine Console Through a Firewall </a></td>
+	</tr>
+	<tr class="row19">
+		<td class="col0 leftalign">Vmware tools &amp;<br/>
+console access	</td><td class="col1 leftalign">192.55.159.212<br/>
+192.55.159.213<br/>
+192.55.159.214	</td><td class="col2 leftalign"><strong>ESXi hosts</strong><br/>
+lddcgbvm007<br/>
+lddcgbvm008<br/>
+lddcgbvm009	</td><td class="col3 leftalign">10.24.151.5<br/>
+10.24.151.4	</td><td class="col4 leftalign">plddntplxap01<br/>
+pldddnslxap01	</td><td class="col5 leftalign">902	</td><td class="col6 leftalign">TCP	</td><td class="col7">Bidirectional</td><td class="col8"><a href="https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html" class="urlextern" title="https://docs.vmware.com/en/VMware-vSphere/7.0/com.vmware.vsphere.security.doc/GUID-27A340F5-DE98-41A8-AC73-01ED4949EEF2.html"  rel="nofollow">Connecting to the Virtual Machine Console Through a Firewall </a></td>
+	</tr>
+</table></div>
+<!-- EDIT5 TABLE [4420-8658] -->
+</div>
+<!-- EDIT4 SECTION "LDD Firewall Rules" [4392-8660] -->
+<h3 class="sectionedit6" id="gur_firewall_rules">GUR Firewall Rules</h3>
+<div class="level3">
+<div class="table sectionedit7"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Purpose	</th><th class="col1 leftalign">Source IP	</th><th class="col2 leftalign">Source server name	</th><th class="col3">Target IP </th><th class="col4 leftalign">Target	Server Name	</th><th class="col5 leftalign">Port	</th><th class="col6">Protocol </th><th class="col7">Direction wrt Target </th><th class="col8">Remarks</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">NTP to CDC Master	</td><td class="col1 leftalign">10.220.128.248	</td><td class="col2 leftalign">pgurntplxap01	</td><td class="col3 leftalign">10.99.207.5	</td><td class="col4 leftalign">pcdcntplxap01	</td><td class="col5 leftalign">123	</td><td class="col6 leftalign">UDP	</td><td class="col7">Outbound</td><td class="col8"> </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign">NTP to LDD Master	</td><td class="col1 leftalign">10.220.128.248	</td><td class="col2 leftalign">pgurntplxap01	</td><td class="col3 leftalign">10.24.151.5	</td><td class="col4 leftalign">plddntplxap01  </td><td class="col5 leftalign">123	</td><td class="col6 leftalign">UDP	</td><td class="col7">Outbound</td><td class="col8"> </td>
+	</tr>
+</table></div>
+<!-- EDIT7 TABLE [8689-9010] -->
+</div>
+<!-- EDIT6 SECTION "GUR Firewall Rules" [8661-] -->

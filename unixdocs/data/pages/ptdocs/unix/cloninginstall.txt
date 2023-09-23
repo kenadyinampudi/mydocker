@@ -1,0 +1,18 @@
+====== Setting up nim resources for a mksysb installation ======
+
+**This documentation was written while building peerap09 using the mksysb of peerap07**
+
+  - For ease of documenting, export a variable to notify the source system and new system<code>export srcsystem=<system_of_which_you_plan_to_use_mksysb_from></code>
+  - Login to the NIM Server (pgnmsv01 - LDC and penmsv01 - Interexion) and identify the mksysb.<code>ls -ld /mksysb-images/bos.obj.${srcsystem}.*
+-rw-r-----    1 mksysftp system   1573758245 Aug 11 17:06 /mksysb-images/bos.obj.peerap07.gz</code>
+  - Copy the mksysb to a temp location<code>sudo cp /mksysb-images/bos.obj.${srcsystem}.gz /preupgrade/mksysb/</code>
+  - Unzip the mksysb file<code>cd /preupgrade/mksysb/ ; sudo gunzip bos.obj.${srcsystem}.gz</code>
+  - Define a mksysb resource(if doesn't exist already) using the unzipped mksysb file<code>sudo nim -o define -t mksysb -a server=master -a location=/preupgrade/mksysb/bos.obj.${srcsystem} ${srcsystem}-mksysb</code>If NIM complains there is an existing resource with that name, please remove it<code>sudo nim -o remove ${srcsystem}-mksysb</code>
+  - Find out the OSLEVEL on the system that we plan to clone<code>ssh ${srcsystem} oslevel -s
+5300-12-01-1016</code>
+  - Find out the correct Spot and LPPSRC for the above AIX release level. In this case they are,<code>530TL12-01_spot
+530TL12-01_lppsrc</code>
+  - Define the new server as a NIM client.
+    - CLI method<code>sudo nim -o define -t standalone -a platform=chrp -a if1="find_net peerap09 0" -a netboot_kernel=mp peerap09</code>
+    - smitty method<code>sudo smitty nim --> Perform NIM Administration Tasks --> Manage Machines --> Define a Machine --> Type in the hostname (hit enter) --> select "ent" --> Fill in and hit enter</code>
+  - Configure the server for a bosinst operation<code>sudo nim -o bos_inst -a source=mksysb -a spot=530TL12-01_spot -a lpp_source=530TL12-01_lppsrc -a no_client_boot=yes -a script=postinstallCloning -a mksysb=${srcsystem}-mksysb peerap09</code>

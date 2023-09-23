@@ -1,0 +1,156 @@
+
+e==== Backout OpenSSL and OpenSSH ======
+
+
+This proceedure is for Backing Out the upgrade of OpenSSH and OpenSSL on the AIX servers. YoU will need to remove  OpenSSH first.
+   
+You should have a backup directory n /usr/local/update called hstname-SAVED-SSH-timestamp Example atlasdr-SAVED-SSH.20180110163306 This was created if you followed the upgrade instructions. 
+===== If You Do NOT Have A Back Out  Directory  !!!!!!! STOP !!!!!!!  DO NOT PROCEED WITH THE BACKOUT PROCESS ===== 
+===== Go Back to the Upgrade Instructions and Create the Backouto !!!!!!! Directory Then Proceed with the Back Out Porcess =====
+
+    - Change Directory to the hstname-SAVED-SSH-timestamp direcotey and run the ls -liaR command to verify that the /var/ssl /etc/ssh director ies was succesfully copied.<code> ls -liaR {hstname-SAVED-SSH-timestamp} </code> The output shoudl look like the following <code> sudo ls -liatR
+total 32
+193320 -rw-r--r--    1 root     system          141 Jan 18 16:21 Recover-SSL
+193319 -rw-r--r--    1 root     system          141 Jan 18 16:21 Recover-SSH
+193289 drwxr-xr-x    5 root     system          256 Jan 18 16:21 .
+193290 -rw-r--r--    1 root     system          408 Jan 18 16:21 log.txt
+193292 drwxr-xr-x    3 root     system          256 Jan 18 16:21 var
+193291 drwxr-xr-x    3 root     system          256 Jan 18 16:21 etc
+82368 drwxr-xr-x    7 root     system         4096 Jan 18 16:21 ..
+193293 drwx------    2 root     system          256 Oct 09 2013  ROOT-SSH-KEYS
+./var:
+total 0
+193289 drwxr-xr-x    5 root     system          256 Jan 18 16:21 ..
+193292 drwxr-xr-x    3 root     system          256 Jan 18 16:21 .
+193568 drwxr-xr-x    3 root     system          256 Mar 28 2017  ssl
+
+./var/ssl:
+total 24
+193292 drwxr-xr-x    3 root     system          256 Jan 18 16:21 ..
+193568 drwxr-xr-x    3 root     system          256 Mar 28 2017  .
+193309 drwxr-xr-x    2 root     system          256 Mar 28 2017  misc
+193569 -rw-r--r--    1 root     system         9827 Jan 30 2008  openssl.cnf
+
+./var/ssl/misc:
+total 80
+193309 drwxr-xr-x    2 root     system          256 Mar 28 2017  .
+193568 drwxr-xr-x    3 root     system          256 Mar 28 2017  ..
+193310 -rwxr-xr-x    1 root     system         5679 Mar 28 2017  CA.pl
+193311 -rwxr-xr-x    1 root     system         5175 Mar 28 2017  CA.sh
+193314 -rwxr-xr-x    1 root     system          119 Mar 28 2017  c_hash
+193315 -rwxr-xr-x    1 root     system          152 Mar 28 2017  c_info
+193316 -rwxr-xr-x    1 root     system          112 Mar 28 2017  c_issuer
+193317 -rwxr-xr-x    1 root     system          110 Mar 28 2017  c_name
+193318 -rwxr-xr-x    1 root     system         6865 Mar 28 2017  tsget
+
+./etc:
+total 8
+193289 drwxr-xr-x    5 root     system          256 Jan 18 16:21 ..
+193291 drwxr-xr-x    3 root     system          256 Jan 18 16:21 .
+193297 drwxr-xr-x    2 root     system         4096 Mar 28 2017  ssh
+
+./etc/ssh:
+total 352
+193291 drwxr-xr-x    3 root     system          256 Jan 18 16:21 ..
+193297 drwxr-xr-x    2 root     system         4096 Mar 28 2017  .
+193298 -rw-------    1 root     system       132839 Mar 28 2017  moduli
+193302 -rw-------    1 root     system          227 Mar 28 2016  ssh_host_ecdsa_key
+193303 -rw-r--r--    1 root     system          162 Mar 28 2016  ssh_host_ecdsa_key.pub
+193299 -rw-r--r--    1 root     system          512 Jul 15 2014  ssh_config
+193300 -rw-------    1 root     system          672 Jul 18 2012  ssh_host_dsa_key
+193301 -rw-r--r--    1 root     system          590 Jul 18 2012  ssh_host_dsa_key.pub
+193304 -rw-------    1 root     system          965 Jul 18 2012  ssh_host_key
+193305 -rw-r--r--    1 root     system          630 Jul 18 2012  ssh_host_key.pub
+193306 -rw-------    1 root     system         1679 Jul 18 2012  ssh_host_rsa_key
+193307 -rw-r--r--    1 root     system          382 Jul 18 2012  ssh_host_rsa_key.pub
+193308 -rw-r--r--    1 root     system         3060 Aug 18 2011  sshd_config
+
+./ROOT-SSH-KEYS:
+ls: ./ROOT-SSH-KEYS: The file access permissions do not allow the specified action.
+total 0 </code>
+
+    - On the Server to be patched, create the target location<code>sudo mkdir -p /mnt/aixupdates </code>
+    - On the Server to be patched, NFS mount the lppsrc location <code> sudo mount pgnmsv01:/prod/images/service-packs/LATEST-SSL-SSH /mnt/aixupdates </code> 
+    - To list the  software  that n eed to be installed cd to the directory you just mounted<code> cd /mnt/aixupdates; ls </code> Use the code that follows to preview  the install.
+
+===== DEINSTALL SSH =====
+<code> sudo geninstall -e '/var/adm/ras/install_all_updates.log' -u -I " -J -w" -Z  'openssh.base.client openssh.base.server openssh.license openssh.man.en_US openssh.msg.EN_US'</code>
+The outlooh should look like this<code>
++-----------------------------------------------------------------------------+
+                                Summaries:
++-----------------------------------------------------------------------------+
+
+Installation Summary
+--------------------
+Name                        Level           Part        Event       Result
+-------------------------------------------------------------------------------
+openssh.base.server         7.5.102.1100    ROOT        DEINSTALL   SUCCESS
+openssh.base.server         7.5.102.1100    USR         DEINSTALL   SUCCESS
+openssh.license             7.5.102.1100    USR         DEINSTALL   SUCCESS
+openssh.man.en_US           7.5.102.1100    USR         DEINSTALL   SUCCESS
+openssh.msg.EN_US           7.5.102.1100    USR         DEINSTALL   SUCCESS
+openssh.base.client         7.5.102.1100    ROOT        DEINSTALL   SUCCESS
+openssh.base.client         7.5.102.1100    USR         DEINSTALL   SUCCESS
+
+File /etc/group has been modified.
+File /etc/passwd has been modified.
+
+One or more of the files listed in /etc/check_config.files have changed.
+        See /var/adm/ras/config.diff for details.</code>
+
+
+=====DEINSTALL  SSL =====
+<code>sudo geninstall -e '/var/adm/ras/install_all_updates.log' -u -I "-J -w" -Z   'openssl.license openssl.man.en_US openssl.base'</code>The output should look
+ like the following<code> 
++-----------------------------------------------------------------------------+
+                                Summaries:
++-----------------------------------------------------------------------------+
+
+Installation Summary
+--------------------
+Name                        Level           Part        Event       Result
+-------------------------------------------------------------------------------
+openssl.base                1.0.2.1300      ROOT        DEINSTALL   SUCCESS
+openssl.base                1.0.2.1300      USR         DEINSTALL   SUCCESS
+openssl.license             1.0.2.1300      USR         DEINSTALL   SUCCESS
+openssl.man.en_US           1.0.2.1300      USR         DEINSTALL   SUCCESS
+</code>
+
+===== INSTALL OLD SSL VERSION =====
+    - Install the OLD SSL version first because ssh depends on it. <code>sudo installp -aXYd OpenSSL/OpenSSL_1.0.1.500/openssl-1.0.1.500 openssl</code> <code>The output should look like the following<code> +-----------------------------------------------------------------------------+
+                                Summaries:
++-----------------------------------------------------------------------------+
+
+Installation Summary
+--------------------
+Name                        Level           Part        Event       Result
+-------------------------------------------------------------------------------
+openssl.man.en_US           1.0.1.500       USR         APPLY       SUCCESS
+openssl.license             1.0.1.500       USR         APPLY       SUCCESS
+openssl.base                1.0.1.500       USR         APPLY       SUCCESS
+openssl.base                1.0.1.500       ROOT        APPLY       SUCCESS
+</code>
+    - Install the OLD Version of ssh  <code>sudo sudo installp -aXYd OpenSSH/openssh.6.0.0.6202 openssh</code> A success full installation output shoudl look like this <code> +-----------------------------------------------------------------------------+
+                                Summaries:
++-----------------------------------------------------------------------------+
+
+Installation Summary
+--------------------
+Name                        Level           Part        Event       Result
+-------------------------------------------------------------------------------
+openssh.license             6.0.0.6202      USR         APPLY       SUCCESS
+openssh.base.client         6.0.0.6202      USR         APPLY       SUCCESS
+openssh.base.client         6.0.0.6202      ROOT        APPLY       SUCCESS
+openssh.msg.en_US           6.0.0.6202      USR         APPLY       SUCCESS
+openssh.msg.EN_US           6.0.0.6202      USR         APPLY       SUCCESS
+openssh.man.en_US           6.0.0.6202      USR         APPLY       SUCCESS
+openssh.base.server         6.0.0.6202      USR         APPLY       SUCCESS
+openssh.base.server         6.0.0.6202      ROOT        APPLY       SUCCESS </code>
+
+=====  Reset the /var/ssl and /etc/ssh directories to the OLD versions  =====
+   -  Change directory to the backup directory that you creatred as part of the update in /usr/local/update called hostname-SAVED-SSH-timestamp  This was created if you followed the upgrade instructions.  Example <code> cd  atlasdr-SAVED-SSH.20180110163306</code> 
+    - Reset the /vad/ssl directory <code> sudo sh ./Recover-SSL</code>
+    - Reset the /etc/ssh directory <code> sudo  sh ./Recover-SSH</code> 
+    - Restart SSH to activate  the update and the change to thr  sshd_config file <code>sudo stopsrc -s sshd </code> <code>sudo startsrc -s sshd </code> 
+  - Unmount the file system <code> cd </code> <code> sudo umount /mnt/aixupdates</code>
+  - On the NIM Server, remove the exported lppsource file system from the exports list  <code> /usr/sbin/rmnfsexp -d '/prod/images/service-packs/LATEST-SSL-SSH' '-B' </code>

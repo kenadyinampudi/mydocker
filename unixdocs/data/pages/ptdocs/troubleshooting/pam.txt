@@ -1,0 +1,48 @@
+====== Troubleshooting Pam ======
+ 
+LDAP is working, as confirmed by getent and su …
+<code>[root@shnhcnlx035 log]# getent passwd leedsn16
+leedsn16:*:617:617:Leeds, Nathan:/home/leedsn16:/bin/bash
+[root@shnhcnlx035 log]# su - leedsn16
+Last login: Fri Apr  5 00:55:44 CST 2019 on pts/1
+Last failed login: Fri Apr  5 00:56:53 CST 2019 from cdcpillx055.federalmogul.com on ssh:notty
+There was 1 failed login attempt since the last successful login.
+/usr/bin/id: cannot find name for group ID 617
+mkdir: cannot create directory '/home/leedsn16/.local': Permission denied</code>
+ 
+You can also try verifying that the Domain Controller is working by executing an ldapsearch.\\
+This does not verify your configuration, only that the domain controller is responding as expected.\\
+  ldapsearch -x -h 10.135.17.73 -b 'dc=fedmog,dc=federalmogul,dc=com' -D 'leedsn16@fedmog' -W "(anr=leedsn*)"
+
+PAM is complaining, as confirmed by /var/log/secure.
+  Apr  5 00:56:50 shnhcnlx035 sshd[128371]: pam_succeed_if(sshd:auth): requirement "uid >= 1000" not met by user "leedsn16"
+ 
+There’s a config in PAM to not allow user IDs under 1000 from logging in.  All the users in HPCC land are in the 600 range.
+I modified /etc/pam.d/password-auth
+<code>[root@shnhcnlx035 pam.d]# cat password-auth
+#%PAM-1.0
+# This file is auto-generated.
+# User changes will be destroyed the next time authconfig is run.
+auth        required      pam_env.so
+auth        required      pam_faildelay.so delay=2000000
+auth        sufficient    pam_unix.so nullok try_first_pass
+auth        requisite     pam_succeed_if.so uid >= 1000 quiet_success
+auth        required      pam_deny.so
+ 
+account     required      pam_unix.so
+account     sufficient    pam_localuser.so
+account     sufficient    pam_succeed_if.so uid < 1000 quiet
+account     required      pam_permit.so
+ </code>
+ 
+I ran the authconfig to add sssd into the pam configs, then I manually edited the password-auth to allow UID under 1000.
+  authconfig --enablesssd --enablesssdauth --update
+ 
+Appears to be working now.<code>
+cdcpillx151:~ # ssh leedsn16@shnhcnlx035
+leedsn16@shnhcnlx035's password:
+Last login: Fri Apr  5 02:59:24 2019
+/usr/bin/id: cannot find name for group ID 617
+-bash-4.2$ logout
+Connection to shnhcnlx035 closed.
+ </code>

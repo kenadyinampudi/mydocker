@@ -1,0 +1,30 @@
+====== Ubuntu has been discarded .. ! it is redhat ======
+
+====== Network installation - Ubuntu ======
+
+
+
+
+[[https://help.ubuntu.com/11.04/installation-guide/i386/install-tftp.html|More info here]]
+
+  * Install bootp on the Server<code>sudo apt-get install bootpd</code>
+    * Adding a client<code>sudo vi /etc/bootptab</code>Add this<code>client:\
+ha="00:00:39:2B:54:B5":\
+ip=192.168.1.42:\
+gw=192.168.1.1:\
+sm=255.255.255.0:\
+td=/: hd=/: bf=pxelinux.0</code>
+      * ha = the mac address of the client machine (set this to its value)
+      * ip = the ip address assigned in the router to the client machine
+      * gw = the address of the router
+      * sm = the subnet mask for your lan
+      * td = the directory on the tfptboot server where the pxe files reside, relative to the tftpboot server's root.
+      * hd = a further path which ends at either the pxe boot file or a link to it. (this is probably ok as is)
+      * bf = the pxe boot file (this is probably ok as is) 
+
+  * Start bootp on the server<code>sudo service bootpd start</code>
+  * Install tftp server<code>sudo apt-get install tftpd-ha</code>
+  * Configure using the sample<code>/etc/default/tftpd-hpa</code>here<code>RUN_DAEMON="yes"
+OPTIONS="-l -s /var/lib/tftpboot"</code>-s
+  * Download the netboot installer tarfile from the Ubuntu archives and extract its contents into the tftpboot server file root
+  * 

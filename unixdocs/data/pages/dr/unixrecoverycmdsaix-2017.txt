@@ -1,0 +1,90 @@
+====== AIX recovery instructions ======
+
+==== Perform the NIM installation ====
+
+  - Pick your server, update the DR database for the server's Restore base operating system task to ''In Progress''.
+  - Perform a NIM installation using the following resources<code>smitty nim_bosinst</code>
+    * Select the machine you are planning to build
+    * Choose the right Spot # Check the excel sheet
+    * Choose mksysb recovery
+    * Select the machine's mksysb resource
+    * Define "postinstallDR" as the post installation script
+    * The install screen should look like this at the end<code>                                                     Install the Base Operating System on Standalone Clients
+
+Type or select values in entry fields.
+Press Enter AFTER making all desired changes.
+
+[TOP]                                                   [Entry Fields]
+* Installation Target                                 peerap99
+* Installation Type                                   mksysb
+* SPOT                                                710TL4SP2spot
+  LPP_SOURCE                                         []                                                                                                        +
+  MKSYSB                                              peerap99-mksysb
+
+  BOSINST_DATA to use during installation            []                                                                                                        +
+  IMAGE_DATA to use during installation              []                                                                                                        +
+  RESOLV_CONF to use for network configuration       []                                                                                                        +
+  Customization SCRIPT to run after installation     [postinstallDR]                                                                                           +
+  Customization FB Script to run at first reboot     []                                                                                                        +
+  ACCEPT new license agreements?                     [yes]                                                                                                     +
+  Remain NIM client after install?                   [yes]                                                                                                     +
+  Preserve NIM definitions for resources on          [yes]                                                                                                     +
+    this target?
+
+  FORCE PUSH the installation?                       [no]                                                                                                      +
+
+  Initiate reboot and installation now?              [no]                                            </code>
+  - Reboot the server to SMS, configure ethernet card with client IP, server IP, netmask, default route.
+  - Perform a ping test
+  - Perform a normal boot from network
+  - At the installation screen, select the correct disks for rootvg.
+    - To be useful at a later stage, irrespective of the source system, choose both the internal disks at this stage. It does not mirror now. Doing it now, makes it easier to automate mirroring.
+  - After the mksysb installation, perform the following steps
+  - {{:dr:areyousure.png?100|}}
+  - ** Make sure you are on the DR host **
+  - ** Are you sure you are on the DR host ??? **
+  - {{:dr:really-are-you-sure-about-that.jpg?200|}}
+  - ** Are you really sure you are on the DR host ??? **
+  - Continue ......
+  - Login as root on the console.
+  - Change PS1 variable. Make a backup copy<code>sudo cp /etc/profile /etc/profile.copyforDR</code>Then<code>sudo vi /etc/profile</code>Add this towards the end ( last line )<code>HOST=$(uname -n)
+PS1='DR test -- $HOST:$PWD>'</code>
+  - Get a copy of /etc/hosts from NIM server<code>sudo cp /etc/hosts /etc/hosts.Old
+sudo scp 10.39.11.37:/etc/hosts /etc/hosts</code>
+  - Enable NTP. Stop daemon. ** Automated in PostInstall script on 09/28/2017 -- Check only**<code>sudo stopsrc -s xntpd</code>Backup the config<code>sudo mv /etc/ntp.conf /etc/ntp.conf.DRtest</code>Put the new config<code>cat << EOF >> /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+EOF</code>Start the daemons<code>sudo chrctcp -S -a xntpd</code>Set the correct time from NIM server<code>date ; sudo ntpdate -u nim ; date</code>
+  - Check cron<code>ps -ef | grep cron</code>It should not be running.
+  - Change itocroot password. ** Automated in PostInstall script on 09/28/2017 -- Check only**<code>echo "itocroot:ka95aLbJ7WER6" | chpasswd -e
+pwdadm -c itocroot</code>Password will now be "abcd1234"
+  - Check the timezone from filesystems.txt and make sure it matches<code>grep TZ /etc/environment</code>Now compare it to the filesystems.txt<code>grep -i tz /usr/local/scripts/file_systems.txt</code>
+  - Find out the required space on datavgs, create them
+    - To resolve EMC/IBM/PURE serial numbers to hdiskpowers, use this script<code>sudo /usr/local/scripts/lsvpcfg.sh</code>
+    - Always create big VGs<code>sudo mkvg -B -s 512 -y <vgname> hdiskX hdiskY ......</code>
+  - Create filesystems<code>egrep "^mkdir|^mount|^crfs|^chown|^chmod" /usr/local/scripts/file_systems.txt > /var/tmp/crfs.sh</code>Now execute the script<code>sudo ksh -x /var/tmp/crfs.sh</code>
+  - Make sure all filesystems are mounted<code>lsvg -o | grep -v rootvg | xargs -n1 lsvg -l | grep -i closed</code>Make sure there are no closed volumes.
+  - Fix /etc/exports<code>cat /etc/exports.copyforDR | sed "s;bck;;g" > /var/tmp/exports.modified
+[[ ${?} -eq 0 ]] && cp /var/tmp/exports.modified /etc/exports</code>
+  - Remove Netbackup software.** Automated in PostInstall script on 09/28/2017 -- Check only**<code>installp -u SYMCnbclt SYMCnbjava SYMCnbjre SYMCnbclt SYMCnbjava SYMCnbjre</code>
+  - Make sure /usr/openv is at least 6Gig in size. ** Automated in PostInstall script on 09/28/2017 -- Check only**<code>sudo chfs -a size=6G /usr/openv</code>
+  - If your are recovering an Oracle database server, configure IOCP** Automated in PostInstall script on 09/28/2017 -- Check only**<code>sudo chdev -l iocp0 -a autoconfig=available</code>Make it available<code>sudo mkdev -l iocp0</code>
+  - Perform a reboot<code>sudo shutdown -Fr</code>
+  - Mirror rootvg. Find out the second SCSI/SAS ( internal ) disk. Assuming you selected two rootvg disks** Automated in PostInstall script on 09/28/2017 -- Check only**<code>cat << EOF > /root/mirror.sh
+mirrorvg -c2 rootvg
+for disk in $(lspv | grep rootvg | awk '{print $1}')
+do
+   sudo bosboot -ad /dev/${disk}
+done
+rootdisks=$(lspv | grep rootvg | awk '{print $1}' | tr "\n" " " )
+bootlist -m normal ${rootdisks}
+EOF</code>
+  - Execute it in the background and handover the system to next team<code>chmod 755 /root/mirror.sh
+nohup /root/mirror.sh &</code>
+
+** When in doubt, ask **
+
+{{:dr:whenindoubtask.jpg?400|}}
+
+** Make sure you are on the DR host, not the production server ( don't do tickets in parallel / be extremly careful ) **

@@ -1,0 +1,73 @@
+= ==== Update Pure ODM and set hcheck_interval  ======
+<code>  lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte </code>
+    
+<code> lsdev -Ccdisk | head -4 </code>
+
+<code> sudo mkdir -p /mnt/updates ; sudo mount pcdcunxaxap01:/prod/images/storage /mnt/updates </code> 
+
+    - Remove the OLD Pure ODM device Driver before installation <code> sudo sudo installp -u devices.fcp.disk.pure.flasharray.mpio.rte </code>
+    - Install the NEW Pure ODM Device Driver  <code>sudo installp -acxd /mnt/updates/PureODM/1.0.0.7/devices.fcp.disk.pure.flasharray.mpio.rte all</code> 
+    - Unmount the carrier  <code>sudo umount /mnt/updates </code>
+    - Double check installation <code> lslpp -l devices.fcp.disk.pure.flasharray.mpio.rte </code>  
+    - Set hcheck_interval to 30 sec. <code> lsdev -Ccdisk | grep "PURE MPIO Drive" | awk '{print $1}' | xargs -n1 sudo chdev -a hcheck_interval=30 -Pl </code>  
+
+After last system done cleanup the NIM server. 
+  - On the NIM Server, remove the exported lppsource file system from the exports list  <code> /usr/sbin/rmnfsexp -d '/prod/images/service-packs/LATEST-SSL-SSH' '-B' </code>
+
+Servers to update are listed here
+
+qgimdb01
+dggtdb01
+dgasdb01
+dggpdb01
+tndv3d01
+deerap98
+dgrmdb01
+qamesd02
+dgjbdb01
+taitc121
+qgaidb01
+qgsodb02
+dggwdb01
+maerdb99
+dafodb01
+qgscdb01
+tsqa1d01
+qaerdb01
+dgsodb01
+daerap98
+qgbcdb01
+tnqa3d01
+daerdb98
+dafoap01
+dagi3p01
+qggtdb01
+dgimdb01
+tsdv1d01
+deerdb98
+dgsndb01
+dgaidb01
+dgomdb01
+mgscdb01
+deerap99
+dgscdb01
+deerdb99
+daerdb99
+dgbcdb01
+maerap99
+tedv2d03
+daerap99
+daap3p01
+qggpdb01
+qgsndb01
+qgrmdb01
+qamesd01
+qgjbdb01
+tedv2d01
+qggwdb01
+qgsnap01
+qgsodb01
+qaap3p01
+tedv2e01
+taitc102
+

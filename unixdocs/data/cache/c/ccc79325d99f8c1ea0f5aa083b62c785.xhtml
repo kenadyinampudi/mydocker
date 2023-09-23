@@ -1,0 +1,37 @@
+
+<h1 class="sectionedit1" id="rybnik_-_lvm_splitvg_precodure">Rybnik - LVM splitvg precodure</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Stop all applications.</div>
+</li>
+<li class="level1"><div class="li"> Wait for Kempe to bringdown the database.</div>
+</li>
+<li class="level1"><div class="li"> Wait for Kempe&#039;s okay to split.</div>
+</li>
+<li class="level1"><div class="li"> Execute the split</div>
+<ol>
+<li class="level2"><div class="li"> Login to <code>taryb055</code><pre class="code">ssh taryb055</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check all logical volumes are sync&#039;d<pre class="code">lsvg -l datavg02</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Document LVM status before the split<pre class="code">lspv &gt; lspv.beforesplitvg.out</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Execute splitvg on datavg02<pre class="code">sudo splitvg -y forkempe -c2 -i datavg02</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Disable autovaryon for the new VG<pre class="code">sudo chvg -a n forkempe</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Document LVM status after the split<pre class="code">lspv &gt; lspv.aftersplitvg.out</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Kempe to setup a reminder to let us know to destroy the copy on Tuesday<code>04/11/2017</code></div>
+</li>
+</ol>
+
+</div>

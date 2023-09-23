@@ -1,0 +1,389 @@
+
+<h1 class="sectionedit1" id="detailed_technical_plan_for_change_control_-_04-04-2013">Detailed technical plan for Change control - 04-04-2013</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Detailed technical plan for Change control - 04-04-2013" [1-71] -->
+<h2 class="sectionedit2" id="shutdown_applications_and_lpars">Shutdown applications and lpars</h2>
+<div class="level2">
+
+<p>
+<strong> 4/3 - Wednesday 4 PM </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Take pggpap01 out of the logon group for PLM. (Make sure the CI has enough memory)</div>
+</li>
+</ul>
+
+<p>
+<strong> 4/4 - Thursday 7 AM </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Shutdown ETL application on tgdvetl1</div>
+</li>
+<li class="level1"><div class="li"> Shutdown SAP on pgadap01,dahrap01 and qahrap01</div>
+</li>
+<li class="level1"><div class="li"> Make sure no users are on pggpap01.</div>
+</li>
+<li class="level1"><div class="li"> Run the pre-upgrade script on these servers tgdvetl1 pgadap01 dahrap01 qahrap01 pggpap01.</div>
+</li>
+<li class="level1"><div class="li"> Shutdown and de-activate lpars<pre class="code">for host in tgdvetl1 pgadap01 dahrap01 qahrap01 pggpap01
+do
+   echo &quot;sudo ssh -t ${host} shutdown -F &amp;&quot;
+done</pre>
+
+<p>
+Execute the resulting commands from taitc118.
+</p>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Shutdown applications and lpars" [72-687] -->
+<h2 class="sectionedit3" id="upgrade_taprvio16_robert_bieniek">Upgrade taprvio16 (Robert Bieniek)</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Upgrade VIOS and install EMC ODM on taprvio16<pre class="code">sudo bootlist -m normal hdisk6</pre>
+
+<p>
+Reboot
+</p>
+<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Upgrade firmware on taprvio16 as padmin.<pre class="code">ldfware -file /usr/sys/inst.images/blade_microcode/ibm_fw_bios_aa730.094.035_anyos_ppc64.img</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Re-configure the network switches for VLAN tagging (<abbr title="Local Area Network">LAN</abbr> Team)<pre class="code">Bladecentre2 - switch1 - port 14 - trunk , native vlan 4, allowed VLANs 4094,48,450,406,4
+Bladecentre2 - switch2 - port 14 - trunk , native vlan 4, allowed VLANs 48,450,406,4
+Bladecentre2 - switch3 - port 14 - trunk , no native vlan, allowed VLANs 49,451
+Bladecentre2 - switch4 - port 14 - trunk , no native vlan, allowed VLANs 49,451</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>Delete <abbr title="Domain Name System">DNS</abbr> entry for taprvio16 and taprvio16bck and assign new entry for taprvio16 in 10.0.4.xxx and get the network mask (non-standard)</strong></div>
+</li>
+<li class="level1"><div class="li"> Implement VLAN tagging on taprvio16.</div>
+<ul>
+<li class="level2"><div class="li"> Follow this documentation. <a href="/doku.php?id=unix:bladeviovlantagging" class="wikilink1" title="unix:bladeviovlantagging">VLAN Tagging on Blade VIO Server</a></div>
+</li>
+<li class="level2"><div class="li"> Create profile for pggpap01 <strong>Do not add any network at this time - it speeds up the boot time</strong><pre class="code">hdisk2:34522:pggpap01:2:vhost0:000e651a9020ad3e:000190103471:0879
+hdisk3:138090:pggpap01:2:vhost0:00c9f3907bdd357c:000190103471:1824
+hdisk4:138090:pggpap01:2:vhost0:000e651a90246398:000190103471:0865</pre>
+<pre class="code">Processor Version: PV_7_Compat
+Number Of Processors: 2
+Processor Clock Speed: 3000 MHz
+CPU Type: 64-bit
+Kernel Type: 64-bit
+LPAR Info: 2 pggpap01
+Memory Size: 21504 MB
+Good Memory Size: 21504 MB
+Platform Firmware level: AA710_114
+Firmware Version: IBM,AA710_114
+Console Login: enable
+Auto Restart: true
+Full Core: false
+ 
+Network Information
+        Host Name: pggpap01
+        IP Address: 10.32.50.67
+        Sub Netmask: 255.255.255.0
+        Gateway: 10.32.50.1
+        Name Server: 10.32.8.53
+        Domain Name: eu.ten
+ 
+Paging Space Information
+        Total Paging Space: 47104MB
+        Percent Used: 1%</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Bring up pggpap01 lpar.</div>
+</li>
+<li class="level2"><div class="li"> Correct the bootlist, disable NFS and shutdown pggpap01</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "Upgrade taprvio16 (Robert Bieniek)" [688-2742] -->
+<h2 class="sectionedit4" id="unmap_luns_from_source_vio_servers">Unmap LUNs from source VIO servers</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Delete tgdvetl1 lpar from taprvio3 and delete the disks from ODM.<pre class="code">echo &quot;hdisk1 hdisk2 hdisk3 hdisk8 hdisk11 hdisk13 hdisk14 hdisk15 hdisk16 hdisk17 hdisk18 hdisk28 hdisk30 hdisk31 hdisk32 hdisk36 hdisk37&quot; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Delete pgadap01 lpar from taprvio4 and delete the disks from ODM.<pre class="code">echo &quot;hdisk2 hdisk8 hdisk10 hdisk12 hdisk13 hdisk15 hdisk16 hdisk17 hdisk18 hdisk20 hdisk23 hdisk24 hdisk25 hdisk26 hdisk27 hdisk28 hdisk29 hdisk30 hdisk31 hdisk32&quot; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Delete dahrap01 and qahrap01 lpars from taprvio5 and delete the disks from ODM.<pre class="code">echo &quot;hdisk2 hdisk3 hdisk4 hdisk5 hdisk7 hdisk8 hdisk14&quot; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Unmap LUNs from source VIO servers" [2743-3493] -->
+<h2 class="sectionedit5" id="move_the_luns">Move the LUNs</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Swing tgdvetl1 LUNs from taprvio3 to taprvio14<pre class="code">1519 1884 1894 151D 1531 0E9D 0EA1 0EA5 0EA9 0E95 0E99 03D6 1A65 1A69 1A7D 1521 1525</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Swing pgadap01 LUNs from taprvio4 to taprvio16<pre class="code">0E51 1754 0E59 0E5D 0E61 0E65 0E69 0E6D 0E71 067D 0591 0D29 0D2D 0D31 0D35 0D39 0D3D 0D1D 0D21 0D25</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Swing qahrap01 and dahrap01 LUNs from taprvio5 to taprvio14<pre class="code">07D5 17B4 07C5 17A4 0E7D 0E81 1A6D</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT5 SECTION "Move the LUNs" [3494-3943] -->
+<h2 class="sectionedit6" id="create_the_lpars_on_target_vio_server">Create the LPARs on target VIO Server</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Create the LPARS on taprvio14<pre class="code">tgdvetl1 - 2c 9G
+dahrap01 - 4c 4G
+qahrap01 - 4c 4G</pre>
+
+<p>
+<strong>Do not add network at this time</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the lpar on taprvio16<pre class="code">pgadap01 - 4c 4G
+pgadap01 - 4c 4G</pre>
+
+<p>
+<strong>Do not add network at this time</strong>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Update the console database for tgdvetl1, pgadap01, dahrap01, qahrap01<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT6 SECTION "Create the LPARs on target VIO Server" [3944-4370] -->
+<h2 class="sectionedit7" id="map_the_disks_to_viocs">Map the disks to VIOCs</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Map the disks on taprvio14</div>
+</li>
+</ul>
+<div class="table sectionedit8"><table class="inline">
+	<tr class="row0">
+		<td class="col0">hdisk1</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aaca32d99462 </td><td class="col5">000190103471 </td><td class="col6">1519 </td>
+	</tr>
+	<tr class="row1">
+		<td class="col0">hdisk2</td><td class="col1">138090</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aacaf4d8b21c </td><td class="col5">000190103471 </td><td class="col6">1884 </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">hdisk3</td><td class="col1">138090</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aacab2c050a8 </td><td class="col5">000190103471 </td><td class="col6">1894 </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">hdisk8</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aaca32d994ac </td><td class="col5">000190103471 </td><td class="col6">151D </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">hdisk11</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">00c9f3a0fca34c5d </td><td class="col5">000190103471 </td><td class="col6">1531 </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">hdisk13</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">00c9f3a07e0992ce </td><td class="col5">000190103471 </td><td class="col6">0E9D </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">hdisk14</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">00c9f3a07e0a89d0 </td><td class="col5">000190103471 </td><td class="col6">0EA1 </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">hdisk15</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">00c9f3a07e11972f </td><td class="col5">000190103471 </td><td class="col6">0EA5 </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">hdisk16</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">00c9f3a07e0810b3 </td><td class="col5">000190103471 </td><td class="col6">0EA9 </td>
+	</tr>
+	<tr class="row9">
+		<td class="col0">hdisk17</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aacaed3a6e51 </td><td class="col5">000190103471 </td><td class="col6">0E95 </td>
+	</tr>
+	<tr class="row10">
+		<td class="col0">hdisk18</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aacaed3a6e0c </td><td class="col5">000190103471 </td><td class="col6">0E99 </td>
+	</tr>
+	<tr class="row11">
+		<td class="col0">hdisk28</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aaca7ba5d421 </td><td class="col5">000190103471 </td><td class="col6">03D6 </td>
+	</tr>
+	<tr class="row12">
+		<td class="col0">hdisk30</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aacae7862194 </td><td class="col5">000190103471 </td><td class="col6">1A65 </td>
+	</tr>
+	<tr class="row13">
+		<td class="col0">hdisk31</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aacae786826a </td><td class="col5">000190103471 </td><td class="col6">1A69 </td>
+	</tr>
+	<tr class="row14">
+		<td class="col0">hdisk32</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aaca4a2dd622 </td><td class="col5">000190103471 </td><td class="col6">1A7D </td>
+	</tr>
+	<tr class="row15">
+		<td class="col0">hdisk36</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aaca32d994d8 </td><td class="col5">000190103471 </td><td class="col6">1521 </td>
+	</tr>
+	<tr class="row16">
+		<td class="col0">hdisk37</td><td class="col1">34522</td><td class="col2">tgdvetl1</td><td class="col3">2</td><td class="col4">0000aaca32d99506 </td><td class="col5">000190103471 </td><td class="col6">1525 </td>
+	</tr>
+	<tr class="row17">
+		<td class="col0">hdisk2</td><td class="col1">138090</td><td class="col2">dahrap01</td><td class="col3">2</td><td class="col4">0001248a360d111b </td><td class="col5">000190103471 </td><td class="col6">07D5 </td>
+	</tr>
+	<tr class="row18">
+		<td class="col0">hdisk3</td><td class="col1">138090</td><td class="col2">dahrap01</td><td class="col3">2</td><td class="col4">0001248a547dd328 </td><td class="col5">000190103471 </td><td class="col6">17B4 </td>
+	</tr>
+	<tr class="row19">
+		<td class="col0">hdisk4</td><td class="col1">138090</td><td class="col2">qahrap01</td><td class="col3">3</td><td class="col4">0001248a4fed7785 </td><td class="col5">000190103471 </td><td class="col6">07C5 </td>
+	</tr>
+	<tr class="row20">
+		<td class="col0">hdisk5</td><td class="col1">138090</td><td class="col2">qahrap01</td><td class="col3">3</td><td class="col4">0001248a4fed77e8 </td><td class="col5">000190103471 </td><td class="col6">17A4 </td>
+	</tr>
+	<tr class="row21">
+		<td class="col0">hdisk7</td><td class="col1">34522</td><td class="col2">dahrap01</td><td class="col3">2</td><td class="col4">0001248a3b81b485 </td><td class="col5">000190103471 </td><td class="col6">0E7D </td>
+	</tr>
+	<tr class="row22">
+		<td class="col0">hdisk8</td><td class="col1">34522</td><td class="col2">qahrap01</td><td class="col3">3</td><td class="col4">0001248a4fed7813 </td><td class="col5">000190103471 </td><td class="col6">0E81 </td>
+	</tr>
+	<tr class="row23">
+		<td class="col0">hdisk14</td><td class="col1">34522</td><td class="col2">qahrap01</td><td class="col3">3</td><td class="col4">00c9f3a02c4ae0de </td><td class="col5">000190103471 </td><td class="col6">1A6D </td>
+	</tr>
+</table></div>
+<!-- EDIT8 TABLE [4439-5994] --><ul>
+<li class="level1"><div class="li"> Map disks on taprvio16</div>
+</li>
+</ul>
+<div class="table sectionedit9"><table class="inline">
+	<tr class="row0">
+		<td class="col0">hdisk2</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada9d2ad53f </td><td class="col5">000190103471 </td><td class="col6">0E51 </td>
+	</tr>
+	<tr class="row1">
+		<td class="col0">hdisk8</td><td class="col1">138090</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada4b48f9cd </td><td class="col5">000190103471 </td><td class="col6">1754 </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">hdisk10</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada9d2b0eca </td><td class="col5">000190103471 </td><td class="col6">0E59 </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">hdisk12</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada9d2b26da </td><td class="col5">000190103471 </td><td class="col6">0E5D </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">hdisk13</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada9d2b3d71 </td><td class="col5">000190103471 </td><td class="col6">0E61 </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">hdisk15</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada548366fb </td><td class="col5">000190103471 </td><td class="col6">0E65 </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">hdisk16</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada54836726 </td><td class="col5">000190103471 </td><td class="col6">0E69 </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">hdisk17</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada54836755 </td><td class="col5">000190103471 </td><td class="col6">0E6D </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">hdisk18</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aada54836780 </td><td class="col5">000190103471 </td><td class="col6">0E71 </td>
+	</tr>
+	<tr class="row9">
+		<td class="col0">hdisk20</td><td class="col1">138090</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aadaaf82b75c </td><td class="col5">000190103471 </td><td class="col6">067D </td>
+	</tr>
+	<tr class="row10">
+		<td class="col0">hdisk23</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">0000aadaafb94c60 </td><td class="col5">000190103471 </td><td class="col6">0591 </td>
+	</tr>
+	<tr class="row11">
+		<td class="col0">hdisk24</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac5c8bd9 </td><td class="col5">000190103471 </td><td class="col6">0D29 </td>
+	</tr>
+	<tr class="row12">
+		<td class="col0">hdisk25</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac61a518 </td><td class="col5">000190103471 </td><td class="col6">0D2D </td>
+	</tr>
+	<tr class="row13">
+		<td class="col0">hdisk26</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac66cfbd </td><td class="col5">000190103471 </td><td class="col6">0D31 </td>
+	</tr>
+	<tr class="row14">
+		<td class="col0">hdisk27</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac5cde75 </td><td class="col5">000190103471 </td><td class="col6">0D35 </td>
+	</tr>
+	<tr class="row15">
+		<td class="col0">hdisk28</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac6208e4 </td><td class="col5">000190103471 </td><td class="col6">0D39 </td>
+	</tr>
+	<tr class="row16">
+		<td class="col0">hdisk29</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac672285 </td><td class="col5">000190103471 </td><td class="col6">0D3D </td>
+	</tr>
+	<tr class="row17">
+		<td class="col0">hdisk30</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac5bec7b </td><td class="col5">000190103471 </td><td class="col6">0D1D </td>
+	</tr>
+	<tr class="row18">
+		<td class="col0">hdisk31</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac610ed7 </td><td class="col5">000190103471 </td><td class="col6">0D21 </td>
+	</tr>
+	<tr class="row19">
+		<td class="col0">hdisk32</td><td class="col1">34522</td><td class="col2">pgadap01 BASIS*Admin</td><td class="col3">5</td><td class="col4">00c9f3a0ac6672d4 </td><td class="col5">000190103471 </td><td class="col6">0D25 </td>
+	</tr>
+</table></div>
+<!-- EDIT9 TABLE [6024-7563] -->
+</div>
+<!-- EDIT7 SECTION "Map the disks to VIOCs" [4371-7564] -->
+<h2 class="sectionedit10" id="bring_up_the_lpars">Bring up the lpars</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Get to console<pre class="code">sudo getconsole tgdvetl1
+sudo getconsole pgadap01
+sudo getconsole dahrap01
+sudo getconsole qahrap01
+sudo getconsole pggpap01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Boot the lpars</div>
+</li>
+<li class="level1"><div class="li"> Correct bootlist</div>
+</li>
+<li class="level1"><div class="li"> Disable NFS<pre class="code">sudo cp /etc/filesystems /etc/filesystems.OLD
+grep -v -p nfs /etc/filesystems &gt; /var/tmp/filesystems.new
+sudo cp /var/tmp/filesystems.new /etc/filesystems
+sudo mv /etc/exports /etc/exports.old</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove all network configuration<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT10 SECTION "Bring up the lpars" [7565-8235] -->
+<h2 class="sectionedit11" id="configure_network_on_all_vio_clients">Configure network on all VIO Clients</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Shutdown all lpars</div>
+</li>
+<li class="level1"><div class="li"> Add network to all lpars on taprvio14<pre class="code">tgdvetl1 - 48 and 49
+dahrap01 - 48 and 49
+qahrap01 - 48 and 49</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add network to pgadap01 and pggpap01 on taprvio14<pre class="code">pgadap01 - 48 and 49
+pggpap01 - 450 and 451</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Startup the LPARs and configure network on all of them.</div>
+</li>
+<li class="level1"><div class="li"> Enable NFS<pre class="code">sudo cp /etc/filesystems.OLD /etc/filesystems
+sudo mv /etc/exports.old /etc/exports</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check and make sure date &amp; time are correct on all lpars.</div>
+</li>
+<li class="level1"><div class="li"> REboot</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT11 SECTION "Configure network on all VIO Clients" [8236-8779] -->
+<h2 class="sectionedit12" id="startup_the_lpars_and_applications">Startup the LPARs and applications</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Startup ETL application on tgdvetl1</div>
+</li>
+<li class="level1"><div class="li"> Startup SAP on pgadap01,dahrap01,qahrap01 and add pggpap01 to the logon group</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT12 SECTION "Startup the LPARs and applications" [8780-] -->

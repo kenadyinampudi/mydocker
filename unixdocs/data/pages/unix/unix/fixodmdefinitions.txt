@@ -1,0 +1,28 @@
+====== Configure AIX ODM so that new symmetrix devices will have reserve_lock turned off by default ======
+
+  * The first note<code>for dev in $(odmget -q "attribute = reserve_lock" PdAt | egrep "SYM|CLAR" | awk '{print $NF}' | sed "s;\";;g" )
+do
+echo "Changing ${dev} "
+odmchange -o PdAt -q "attribute = reserve_lock and uniquetype like ${dev}" <<EOF
+PdAt:
+        deflt = "no"
+EOF
+done</code>
+
+  * Second amendment. 
+    * **reserve_lock** Check first<code>sudo odmget -q "attribute = reserve_lock" PdAt | grep -p "deflt = \"yes\""</code>Then change<code>for dev in $(sudo odmget -q "attribute = reserve_lock" PdAt | grep uniquetype | sort -u | egrep -v "rwoptical|iscsi|cdrom" | awk '{print $NF}' | sed "s;\";;g")
+do
+echo "Changing ${dev} "
+sudo odmchange -o PdAt -q "attribute = reserve_lock and uniquetype like ${dev}" <<EOF
+PdAt:
+        deflt = "no"
+EOF
+done</code>Now check again<code>sudo odmget -q "attribute = reserve_lock" PdAt | grep -p "deflt = \"yes\""</code>
+    * **reserve_policy** Check first<code>sudo odmget -q "attribute = reserve_policy" PdAt | grep -p "/fcp" | grep -vp "deflt = \"no_reserve\""</code>Then change<code>for dev in $(sudo odmget -q "attribute = reserve_policy" PdAt | grep -p "/fcp"| grep uniquetype | sort -u | egrep -v "rwoptical|iscsi|cdrom" | awk '{print $NF}' | sed "s;\";;g")
+do
+echo "Changing ${dev} "
+sudo odmchange -o PdAt -q "attribute = reserve_policy and uniquetype like ${dev}" <<EOF
+PdAt:
+        deflt = "no_reserve"
+EOF
+done</code>Check again<code>sudo odmget -q "attribute = reserve_policy" PdAt| grep -p "/fcp" | grep -vp "deflt = \"no_reserve\""</code>

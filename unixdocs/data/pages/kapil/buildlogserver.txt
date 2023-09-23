@@ -1,0 +1,68 @@
+====== Build logserver ======
+
+  - Create the logs filesystem<code>sudo lvcreate -L 5G -n loglv01 /dev/datavg01</code>Then filesystem<code>sudo mkfs -t ext4 /dev/datavg01/loglv01</code>Then add to filesystem<code>echo "/dev/mapper/datavg01-loglv01   /prod/logs                    ext4    defaults        1 2" | sudo tee -a /etc/fstab</code>Mount it<code>sudo mkdir -p /prod/logs
+sudo mount /prod/logs</code>
+  - Install syslog-ng<code>sudo yum install syslog-ng</code>
+  - Enable auto startup<code>sudo chkconfig --level 234 syslog-ng on</code>
+  - Install the configuration to ''/etc/syslog-ng/syslog-ng.conf''<code>sudo vi /etc/syslog-ng/syslog-ng.conf</code>Add this<code># External logs defined here
+
+# Listener to accept logs from external servers
+source r_sys {
+  udp(ip(0.0.0.0) port(514));
+  tcp(ip(0.0.0.0) port(514) max_connections(1024) );
+};
+
+# Define a destination
+destination rd_sudo { file("/prod/logs/sudo/secure.log" ); };
+destination rd_bladecentre { file("/prod/logs/report/bladecentre.log" ); };
+destination rd_sanswitches { file("/prod/logs/sanswitches/sanswitch.log" ); };
+
+# Define a filter
+filter rf_sudo { program("^sudo$"); };
+filter rf_bladecentre1 { host(10.32.10.123); };
+filter rf_bladecentre2 { host(10.32.10.5); };
+filter rf_bladecentre3 { host(10.32.10.131); };
+filter rf_tasanswitch1 { host(10.32.51.190); };
+filter rf_tasanswitch2 { host(10.32.51.191); };
+filter rf_tasanswitch3 { host(10.32.10.28); };
+filter rf_tasanswitch4 { host(10.32.10.29); };
+filter rf_tasanswitch5 { host(10.32.10.31); };
+filter rf_tasanswitch6 { host(10.32.10.32); };
+filter rf_blade1switch1 { host(10.32.10.124); };
+filter rf_blade1switch2 { host(10.32.10.125); };
+filter rf_blade2switch1 { host(10.32.10.6); };
+filter rf_blade2switch2 { host(10.32.10.7); };
+filter rf_blade3switch1 { host(10.32.10.47); };
+filter rf_blade3switch2 { host(10.32.10.48); };
+filter rf_ldcds5300a1 { host(10.32.10.36); };
+filter rf_ldcds5300b1 { host(10.32.10.37); };
+
+# Now define a rule so that the sudo logs goes to the sudo destination log file
+log { source(r_sys); filter(rf_sudo); destination(rd_sudo); };
+log { source(r_sys); filter(rf_bladecentre1); destination(rd_bladecentre); };
+log { source(r_sys); filter(rf_bladecentre2); destination(rd_bladecentre); };
+log { source(r_sys); filter(rf_bladecentre3); destination(rd_bladecentre); };
+log { source(r_sys); filter(rf_tasanswitch1); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_tasanswitch2); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_tasanswitch3); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_tasanswitch4); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_tasanswitch5); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_tasanswitch6); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_blade1switch1); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_blade1switch2); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_blade2switch1); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_blade2switch2); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_blade3switch1); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_blade3switch2); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_ldcds5300a1); destination(rd_sanswitches); };
+log { source(r_sys); filter(rf_ldcds5300b1); destination(rd_sanswitches); };</code>
+  - Enable log rotation<code>sudo vi /etc/logrotate.d/syslog-ng</code>Add this<code>/prod/unixlog/sudo/secure.log
+/prod/unixlog/report/bladecentre.log
+/prod/logs/sanswitches/sanswitch.log
+{
+    sharedscripts
+    postrotate
+        /bin/kill -HUP `cat /var/run/syslog-ng.pid 2> /dev/null` 2> /dev/null || true
+    endscript
+}</code>
+  - Start syslog-ng<code>sudo service syslog-ng start</code>

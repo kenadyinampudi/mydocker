@@ -1,0 +1,32 @@
+
+=====  install FM-AIX sysinter =====
+
+<code> sudo mkdir -p /usr/local/scripts </code>
+
+<code> sudo mkdir -p /usr/local/bin </code>
+
+<code> sudo tar -xvf HULS.tar </code>
+
+<code> sudo cp -p /home/x1cxs952/HOLD-SYSINTER/sysinter.aix5 /usr/local/bin/sysinter.aix5 </code>
+
+<code> sudo chown root:system /usr/local/bin/sysinter.aix5 </code>
+
+<code> sudo cp -p /etc/services /etc/services-$(date +%Y%m%d-%H:%M:%S).cs </code>
+
+
+
+<code> echo "sysinter                40035/tcp" | sudo tee -a /etc/services</code>
+
+<code> sudo cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y%m%d-%H:%M:%S).cs</code>
+
+
+<code> echo "sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5" | sudo tee -a /etc/inetd.conf </code>
+
+
+<code> sudo refresh -s inetd </code>
+
+<code> sudo refresh -s inetd </code>
+
+<code> exit </code>
+
+<code> sudo ssh pcdcunxlxap03 "echo ${server_driv} >> /home/oracle/uuma/hosts.txt" </code>

@@ -1,0 +1,58 @@
+
+<h1 class="sectionedit1" id="rsc_configuration_on_sun_v240">RSC configuration on Sun V240</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Front view of the V240<a href="/lib/exe/detail.php?id=unix%3Av240rsc&amp;media=unix:v240frontview.png" class="media wikilink2" title="unix:v240frontview.png"><img src="/lib/exe/fetch.php?media=unix:v240frontview.png" class="media" alt="" /></a></div>
+</li>
+<li class="level1"><div class="li"> Rear view of the V240<a href="/lib/exe/detail.php?id=unix%3Av240rsc&amp;media=unix:v240rearview.png" class="media wikilink2" title="unix:v240rearview.png"><img src="/lib/exe/fetch.php?media=unix:v240rearview.png" class="media" alt="" /></a></div>
+</li>
+<li class="level1"><div class="li"> Top open view of the V240<a href="/lib/exe/detail.php?id=unix%3Av240rsc&amp;media=unix:v240topopen.png" class="media wikilink2" title="unix:v240topopen.png"><img src="/lib/exe/fetch.php?media=unix:v240topopen.png" class="media" alt="" /></a></div>
+</li>
+<li class="level1"><div class="li"> Cable up the RSC port (Also called Net management port ) to a 10/100 Ethernet Switch.</div>
+</li>
+<li class="level1"><div class="li"> Configure the network on RSC. Login as root<pre class="code">/usr/platform/`uname -i`/sbin/scadm set if_network true
+/usr/platform/`uname -i`/sbin/scadm set netsc_ipaddr 10.34.64.X
+/usr/platform/`uname -i`/sbin/scadm set netsc_ipnetmask 255.255.254.0
+/usr/platform/`uname -i`/sbin/scadm set netsc_ipgateway 10.34.64.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the settings<pre class="code">/usr/platform/`uname -i`/sbin/scadm show | grep netsc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set password for the admin user<pre class="code">/usr/platform/`uname -i`/sbin/scadm  userpassword admin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reset the ALOM using this command<pre class="code">/usr/platform/`uname -i`/sbin/scadm resetrsc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> telnet to the RSC port and login as admin.</div>
+</li>
+<li class="level1"><div class="li"> Use the console command to get to the console<pre class="code">console</pre>
+
+<p>
+or
+</p>
+<pre class="code">console -f</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Some useful commands are<pre class="code">poweron
+poweroff
+reset
+break
+flashupdate</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> You may need to take the system down to redefine the console sometimes and at the ok prompt<pre class="code">diag-console rsc
+setenv input-device rsc-console
+setenv output-device rsc-console</pre>
+
+<p>
+OR do this so the next reboot will take care of it
+</p>
+<pre class="code">eeprom input-device=rsc-console
+eeprom output-device=rsc-console</pre>
+</div>
+</li>
+</ol>
+
+</div>

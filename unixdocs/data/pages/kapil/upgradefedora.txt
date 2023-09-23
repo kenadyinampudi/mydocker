@@ -1,0 +1,16 @@
+====== Upgrade Fedora from 21 - 23 ======
+
+  - yum is being replaced by dnf. I think Fedora 21 has dnf, we just need to configure it.<code>sudo vi /etc/dnf/dnf.conf</code>Add the proxy information to it in the main section<code>proxy=http://170.64.0.72:8080
+proxy_username=x1kxk630
+proxy_password=<password></code>
+  - First of all, upgrade to the latest version of the current level<code>sudo dnf upgrade</code>
+  - Install the DNF upgrade plugins<code>sudo dnf install dnf-plugin-system-upgrade</code>
+  - Download the files for the upgrade<code>sudo dnf system-upgrade download --releasever=23 --best</code>
+  - Reboot and upgrade<code>sudo dnf system-upgrade reboot</code>
+  - Cleanup after the upgrade
+    - Remove unused packages<code>sudo rpm --rebuilddb
+sudo dnf distro-sync --setopt=deltarpm=0
+
+sudo dnf install rpmconf
+sudo rpmconf -a</code>
+  - If you have chrome<code>sudo dnf remove google-chrome-\* && sudo dnf install google-chrome-[beta,stable,unstable]</code>

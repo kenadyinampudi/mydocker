@@ -1,0 +1,80 @@
+<pre class="code">  
+Hardware Management Console Readme</pre>
+
+<p>
+For use with Version 7 Release 7.9.0 Service Pack 3
+Dated:  16 February 2017
+</p>
+<pre class="code">  Known Issues</pre>
+<ul>
+<li class="level1"><div class="li"> After applying Service pack 3, discard any older backups and take a new backup. <strong>When taking a backup, specify the current fix level (lshmc -V output) in the backup description field to help identify the fix level the backup was taken from.</strong> Before restoring a backup, apply the same fix level (service pack and iFix) that the backup was taken on.  If this is not followed the restore may produce unpredictable results. <br/>
+</div>
+</li>
+</ul>
+
+<p>
+<strong>WARNING                      DO NOT USE THIS EXAMPLE AS THE DESCRIPTION                  </strong> <br/>
+
+<strong>WARNING      LOG ON THE HMC YOU ARE BACKING UP AND RUN THE</strong> <em><em class="u"><strong>lshmc -V</strong></em></em> <strong>COMMAND BEFORE EVERY BACKUP      </strong> <br/>
+
+</p>
+
+<p>
+Examle of Splash Panel information (or lshmc -V output) 
+</p>
+<pre class="code"> sudo ssh hscroot@tgprhmcN lshmc -V </pre>
+<pre class="code">&quot;version= Version: 7
+Release: 7.9.0
+Service Pack: 3
+HMC Build level 20170207.1
+MH0NNNN: security updates (MM-DD-YYYY)
+MH0NNN7: security updates (MM-DD-YYYY)
+&quot;,&quot;base_version=V7R7.9.0
+ &quot;</pre>
+
+<p>
+The remainder of this process will be done from the HMC <abbr title="Graphical User Interface">GUI</abbr> Console (until the section about putting the lshmc -V output into the description field is verified vai PMR. the backup. The command line interface bkconsdata does not have an opitton for descriptuon
+</p>
+
+<p>
+Login to the HMC <abbr title="Graphical User Interface">GUI</abbr> interfage <br/>
+
+→ Select HMC Mangement
+</p>
+
+<p>
+–&gt; Select Backup Management Console Data
+</p>
+
+<p>
+—&gt; Select Include Performance and Capacity Monitoring Data 
+</p>
+
+<p>
+—→ Select Back up to media on local system
+</p>
+
+<p>
+—–&gt; Select USB Flash Memory Drive 
+</p>
+
+<p>
+——&gt; Insert the output from the lshmc -V command into the Description area and click on OK
+</p>
+
+<p>
+——→ Click OK to start the backup.  The system will display the folowing message
+“The backup of the management console data is in progress. This operation may take a considerable amount of time.
+Backup starting…”
+</p>
+
+<p>
+This could take up to 45 minutes to complete.  When successfully completed the srver will change the message in the window to Backup Successfully completed. <br/>
+
+Click OK to retrun close the window. <br/>
+
+</p>
+
+<p>
+When finished please log out of the HMC.
+</p>

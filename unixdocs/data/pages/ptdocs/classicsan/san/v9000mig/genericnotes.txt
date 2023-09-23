@@ -1,0 +1,279 @@
+====== V9000 tricks and tips as we went through the migration ======
+
+<code>Fabric A
+
+paerap01		21:00:00:1b:32:09:99:19
+paerap02		21:00:00:1b:32:09:57:1b
+paerap03		21:00:00:1b:32:09:f3:18
+paerap04		21:00:00:1b:32:09:f6:18
+
+v9ports="ldcv9ac2n1_112fbf ldcv9ac2n2_112fc0"
+config="fab_a_act_config"
+hostdefinitions="paerap.fabA"
+
+for object in $(awk '{print $1}' ${hostdefinitions} | sort -u)
+do
+   WWNs=$(grep ^${object} ${hostdefinitions} | awk '{print $2}' | tr "\n" " " )
+   for WWN in ${WWNs}
+   do
+      last6=$(echo ${WWN} |sed "s;:;;g" | cut -c 11-16)
+      for stgport in ${v9ports}
+      do
+         echo "zonecreate \"${object}_${last6}__${stgport}\",\"${object}_${last6};${stgport}\""
+         echo "cfgadd \"${config}\",\"${object}_${last6}__${stgport}\""
+      done
+   done
+done
+
+zonecreate "paerap01_099919__ldcv9ac2n1_112fbf","paerap01_099919;ldcv9ac2n1_112fbf"
+cfgadd "fab_a_act_config","paerap01_099919__ldcv9ac2n1_112fbf"
+zonecreate "paerap01_099919__ldcv9ac2n2_112fc0","paerap01_099919;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","paerap01_099919__ldcv9ac2n2_112fc0"
+zonecreate "paerap02_09571b__ldcv9ac2n1_112fbf","paerap02_09571b;ldcv9ac2n1_112fbf"
+cfgadd "fab_a_act_config","paerap02_09571b__ldcv9ac2n1_112fbf"
+zonecreate "paerap02_09571b__ldcv9ac2n2_112fc0","paerap02_09571b;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","paerap02_09571b__ldcv9ac2n2_112fc0"
+zonecreate "paerap03_09f318__ldcv9ac2n1_112fbf","paerap03_09f318;ldcv9ac2n1_112fbf"
+cfgadd "fab_a_act_config","paerap03_09f318__ldcv9ac2n1_112fbf"
+zonecreate "paerap03_09f318__ldcv9ac2n2_112fc0","paerap03_09f318;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","paerap03_09f318__ldcv9ac2n2_112fc0"
+
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+Fabric B
+
+paerap01		21:01:00:1b:32:2a:02:12
+paerap02		21:01:00:1b:32:31:3d:a1
+paerap03		21:01:00:1b:32:30:34:b7
+paerap04		21:01:00:1b:32:30:76:b8
+
+v9ports="ldcv9ac2n1_122fbf ldcv9ac2n2_122fc0"
+config="fab_b_act_config"
+hostdefinitions="paerap.fabB"
+
+for object in $(awk '{print $1}' ${hostdefinitions} | sort -u)
+do
+   WWNs=$(grep ^${object} ${hostdefinitions} | awk '{print $2}' | tr "\n" " " )
+   for WWN in ${WWNs}
+   do
+      last6=$(echo ${WWN} |sed "s;:;;g" | cut -c 11-16)
+      for stgport in ${v9ports}
+      do
+         echo "zonecreate \"${object}_${last6}__${stgport}\",\"${object}_${last6};${stgport}\""
+         echo "cfgadd \"${config}\",\"${object}_${last6}__${stgport}\""
+      done
+   done
+done
+
+
+zonecreate "paerap01_2a0212__ldcv9ac2n1_122fbf","paerap01_2a0212;ldcv9ac2n1_122fbf"
+cfgadd "fab_b_act_config","paerap01_2a0212__ldcv9ac2n1_122fbf"
+zonecreate "paerap01_2a0212__ldcv9ac2n2_122fc0","paerap01_2a0212;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","paerap01_2a0212__ldcv9ac2n2_122fc0"
+zonecreate "paerap02_313da1__ldcv9ac2n1_122fbf","paerap02_313da1;ldcv9ac2n1_122fbf"
+cfgadd "fab_b_act_config","paerap02_313da1__ldcv9ac2n1_122fbf"
+zonecreate "paerap02_313da1__ldcv9ac2n2_122fc0","paerap02_313da1;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","paerap02_313da1__ldcv9ac2n2_122fc0"
+zonecreate "paerap03_3034b7__ldcv9ac2n1_122fbf","paerap03_3034b7;ldcv9ac2n1_122fbf"
+cfgadd "fab_b_act_config","paerap03_3034b7__ldcv9ac2n1_122fbf"
+zonecreate "paerap03_3034b7__ldcv9ac2n2_122fc0","paerap03_3034b7;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","paerap03_3034b7__ldcv9ac2n2_122fc0"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+cat paerap.fabA paerap.fabB > paerap.fabA-B
+
+for host in $(awk '{print $1}' paerap.fabA-B | sort -u )
+do
+   WWNs=$(grep ^${host} paerap.fabA-B | awk '{print $2}' | sed "s;:;;g" | tr [a-z] [A-Z] | tr "\n" ":" | sed "s;:$;;g" )
+   echo "svctask mkhost -fcwwpn ${WWNs} -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name ${host} -type generic "
+done
+
+
+svctask mkhost -fcwwpn 2100001B32099919:2101001B322A0212 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name paerap01 -type generic
+svctask mkhost -fcwwpn 2100001B3209571B:2101001B32313DA1 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name paerap02 -type generic
+svctask mkhost -fcwwpn 2100001B3209F318:2101001B323034B7 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name paerap03 -type generic
+svctask mkhost -fcwwpn 2100001B3209F618:2101001B323076B8 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name paerap04 -type generic
+
+
+
+for host in $(awk '{print $1}' paerap.fabA-B | sort -u )
+do
+   HOST=$(echo ${host} | tr [a-z] [A-Z] )
+   echo "mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ${HOST}_000 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%"
+   echo "mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ${HOST}_001 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%"
+   echo "mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ${HOST}_002 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%"
+   echo "mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ${HOST}_003 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%"
+   echo ""
+   echo ""
+   echo "mkvdiskhostmap -host ${host} ${HOST}_000"
+   echo "mkvdiskhostmap -host ${host} ${HOST}_001"
+   echo "mkvdiskhostmap -host ${host} ${HOST}_002"
+   echo "mkvdiskhostmap -host ${host} ${HOST}_003"
+   echo ""
+   echo ""
+done
+     
+     
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP01_000 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP01_001 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP01_002 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP01_003 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+
+
+mkvdiskhostmap -host paerap01 PAERAP01_000
+mkvdiskhostmap -host paerap01 PAERAP01_001
+mkvdiskhostmap -host paerap01 PAERAP01_002
+mkvdiskhostmap -host paerap01 PAERAP01_003
+
+
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP02_000 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP02_001 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP02_002 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP02_003 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+
+
+mkvdiskhostmap -host paerap02 PAERAP02_000
+mkvdiskhostmap -host paerap02 PAERAP02_001
+mkvdiskhostmap -host paerap02 PAERAP02_002
+mkvdiskhostmap -host paerap02 PAERAP02_003
+
+
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP03_000 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP03_001 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP03_002 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name PAERAP03_003 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+
+
+mkvdiskhostmap -host paerap03 PAERAP03_000
+mkvdiskhostmap -host paerap03 PAERAP03_001
+mkvdiskhostmap -host paerap03 PAERAP03_002
+mkvdiskhostmap -host paerap03 PAERAP03_003
+
+
+ssh ldcv9ac2vip1 lsvdisk | grep -i peerap05 | awk '{print $2,$8,substr($10,18)}'
+x1kxk630 on pgnmsv01:/home/x1kxk630 $
+
+
+
+
+
+PAERAP01_000 134.87GB 8000000000000F5
+PAERAP01_001 134.87GB 8000000000000F6
+PAERAP01_002 33.72GB 8000000000000F7
+PAERAP01_003 33.72GB 8000000000000F8
+
+
+PAERAP02_000 134.87GB 8000000000000F9
+PAERAP02_001 134.87GB 8000000000000FA
+PAERAP02_002 33.72GB 8000000000000FB
+PAERAP02_003 33.72GB 8000000000000FC
+
+
+PAERAP03_000 134.87GB 8000000000000FD
+PAERAP03_001 134.87GB 8000000000000FE
+PAERAP03_002 33.72GB 8000000000000FF
+PAERAP03_003 33.72GB 800000000000100
+
+paerap04_000 134.87GB 8000000000000CF
+paerap04_001 134.87GB 8000000000000D0
+paerap04_002 33.72GB 8000000000000D1
+
+
+Fabric A
+
+pgscdb01		c0:50:76:07:f3:4d:00:12
+pgscdb01		c0:50:76:07:f3:4d:00:13
+
+v9ports="ldcv9ac2n1_212fbf ldcv9ac2n2_212fc0"
+config="fab_a_act_config"
+hostdefinitions="pgscdb01.fabA"
+
+for object in $(awk '{print $1}' ${hostdefinitions} | sort -u)
+do
+   WWNs=$(grep ^${object} ${hostdefinitions} | awk '{print $2}' | tr "\n" " " )
+   for WWN in ${WWNs}
+   do
+      last6=$(echo ${WWN} |sed "s;:;;g" | cut -c 11-16)
+      for stgport in ${v9ports}
+      do
+         echo "zonecreate \"${object}_${last6}__${stgport}\",\"${object}_${last6};${stgport}\""
+         echo "cfgadd \"${config}\",\"${object}_${last6}__${stgport}\""
+      done
+   done
+done
+
+zonecreate "pgscdb01_4d0012__ldcv9ac2n1_212fbf","pgscdb01_4d0012;ldcv9ac2n1_212fbf"
+cfgadd "fab_a_act_config","pgscdb01_4d0012__ldcv9ac2n1_212fbf"
+zonecreate "pgscdb01_4d0012__ldcv9ac2n2_212fc0","pgscdb01_4d0012;ldcv9ac2n2_212fc0"
+cfgadd "fab_a_act_config","pgscdb01_4d0012__ldcv9ac2n2_212fc0"
+zonecreate "pgscdb01_4d0013__ldcv9ac2n1_212fbf","pgscdb01_4d0013;ldcv9ac2n1_212fbf"
+cfgadd "fab_a_act_config","pgscdb01_4d0013__ldcv9ac2n1_212fbf"
+zonecreate "pgscdb01_4d0013__ldcv9ac2n2_212fc0","pgscdb01_4d0013;ldcv9ac2n2_212fc0"
+cfgadd "fab_a_act_config","pgscdb01_4d0013__ldcv9ac2n2_212fc0"
+
+
+
+Fabric B
+
+pgscdb01		c0:50:76:07:f3:4d:00:10
+pgscdb01		c0:50:76:07:f3:4d:00:11
+
+v9ports="ldcv9ac2n1_222fbf ldcv9ac2n2_222fc0"
+config="fab_b_act_config"
+hostdefinitions="pgscdb01.fabB"
+
+for object in $(awk '{print $1}' ${hostdefinitions} | sort -u)
+do
+   WWNs=$(grep ^${object} ${hostdefinitions} | awk '{print $2}' | tr "\n" " " )
+   for WWN in ${WWNs}
+   do
+      last6=$(echo ${WWN} |sed "s;:;;g" | cut -c 11-16)
+      for stgport in ${v9ports}
+      do
+         echo "zonecreate \"${object}_${last6}__${stgport}\",\"${object}_${last6};${stgport}\""
+         echo "cfgadd \"${config}\",\"${object}_${last6}__${stgport}\""
+      done
+   done
+done
+
+
+zonecreate "pgscdb01_4d0010__ldcv9ac2n1_222fbf","pgscdb01_4d0010;ldcv9ac2n1_222fbf"
+cfgadd "fab_b_act_config","pgscdb01_4d0010__ldcv9ac2n1_222fbf"
+zonecreate "pgscdb01_4d0010__ldcv9ac2n2_222fc0","pgscdb01_4d0010;ldcv9ac2n2_222fc0"
+cfgadd "fab_b_act_config","pgscdb01_4d0010__ldcv9ac2n2_222fc0"
+zonecreate "pgscdb01_4d0011__ldcv9ac2n1_222fbf","pgscdb01_4d0011;ldcv9ac2n1_222fbf"
+cfgadd "fab_b_act_config","pgscdb01_4d0011__ldcv9ac2n1_222fbf"
+zonecreate "pgscdb01_4d0011__ldcv9ac2n2_222fc0","pgscdb01_4d0011;ldcv9ac2n2_222fc0"
+cfgadd "fab_b_act_config","pgscdb01_4d0011__ldcv9ac2n2_222fc0"
+
+
+
+for host in $(awk '{print $1}' pgscdb01.fabA-B | sort -u )
+do
+   WWNs=$(grep ^${host} pgscdb01.fabA-B | awk '{print $2}' | sed "s;:;;g" | tr [a-z] [A-Z] | tr "\n" ":" | sed "s;:$;;g" )
+   echo "svctask mkhost -fcwwpn ${WWNs} -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name ${host} -type generic "
+done
+
+svctask mkhost -fcwwpn C0507607F34D0012:C0507607F34D0013:C0507607F34D0010:C0507607F34D0011 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pgscdb01 -type generic
+
+for host in $(awk '{print $1}' pgscdb01.fabA-B | sort -u )
+do
+   HOST=$(echo ${host} | tr [a-z] [A-Z] )
+   echo "mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ${HOST}_000 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%"
+   echo "mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ${HOST}_001 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%"
+   echo "mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ${HOST}_002 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%"
+   echo "mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ${HOST}_003 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%"
+   echo ""
+   echo ""
+   echo "mkvdiskhostmap -host ${host} ${HOST}_000"
+   echo "mkvdiskhostmap -host ${host} ${HOST}_001"
+   echo "mkvdiskhostmap -host ${host} ${HOST}_002"
+   echo "mkvdiskhostmap -host ${host} ${HOST}_003"
+   echo ""
+   echo ""
+done</code>

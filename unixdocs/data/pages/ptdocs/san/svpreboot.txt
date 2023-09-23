@@ -1,0 +1,27 @@
+====== Hitachi SVP Reboot ======
+Because of various issues with Java, the embedded Windows servers (SVPs) managing the Hitachi arrays need to be rebooted to clear out issues.
+
+===== Symptoms =====
+ 
+  * The initial symptom will be a failure to update the data in Device Manager.\\  The "Last Refreshed" date will be a week or more older.
+  * Progressive symptoms include: 
+    * raidcom failure
+    * tuning manager failure 
+    * Command Device failure
+    * Weird connectivity issues.
+
+===== Fix =====
+
+  * Use the Microsoft Terminal Services Client (mstsc.exe) to RDP into the Service Processor.  Use the user name and password in the secret server to log in.
+  * Click on "Start", then "Windows Security" then the little arrow next to the power icon on the lower right side to select "Reboot."\\ [[https://knowledge.hitachivantara.com/Documents/Storage/VSP_Gx00_and_VSP_Fx00/83-05-xx/SVP_Technical_Reference/Rebooting_the_SVP]]
+  * Wait a few minutes
+  * Ensure the SVP is still reachable
+  * Attempt a refresh from HDvM
+
+===== Troubleshooting =====
+
+
+  * If other, more strange connections issues arise after the reboot, there are probably some services which did not properly start.
+  * Click on "Open Storage Device list"
+    * If the services show as "Stopped", click the inviting "Start Services" button to get things rolling.
+    * The Storage array picture should now say "Ready" with a green indicator instead of grey.

@@ -1,0 +1,29 @@
+====== Adjust FAST policy to move more extents of PTA BCV volumes to SATA ======
+
+  - Create the BCV policy<code>sudo symfast -fp -sid 0301 create -name BCV
+sudo symfast -fp -sid 0301 -fp_name BCV add -tier_name VP_FC15_MIR2_TIER -max_sg_percent 50
+sudo symfast -fp -sid 0301 -fp_name BCV add -tier_name VP_Sata_R66_TIER -max_sg_percent 100</code>
+  - Add the BCV LUNs to a new storage group called PTABCV_SG<code>sudo symsg -sid 0301 create PTABCV_SG
+sudo symsg -sid 0301 -sg PTABCV_SG addall devs -dev 1409,140A,140B,140C,140D,140E,140F,1410,1411,1412,1413,1414,1415,1416,1417,1418,1419,141A,141B,141C
+sudo symsg -sid 0301 -sg PTABCV_SG addall devs -dev 1427,1428,1429,142A,142B,142C,142D,142E,142F,1430,1431,1432,1433,1434,1435,1436,1437,1438,1439,143A
+sudo symsg -sid 0301 -sg PTABCV_SG addall devs -dev 143B,143C,143D,143E,143F,1440,0B39,0B41,0B42,0B51,0B52,0B61,141D,141E,141F,1420,1421,1422,1423,1424,1425,1426</code>
+  - Remove host access on devices ( taqa1d01 )
+    - Document the devices<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>
+    - Deactivate the VGs<code>echo "datavg01 datavg02 datavg03 datavg04" | xargs -n1 lsvgfs | xargs -n1 sudo umount
+echo "datavg01 datavg02 datavg03 datavg04" | xargs -n1 sudo varyoffvg</code>
+    - Remove the powerpath devices<code>for dev in $(grep 122880 lsvpcfg.out.1 | awk -F: '{print $1}' )
+do
+   sudo powermt remove dev=$dev
+done</code>Remove devices<code>grep 122880 lsvpcfg.out.1 | tr ":" "\n" | grep hdisk | sort | xargs -n1 sudo rmdev -dl</code>
+  - Remove devices from taqa1d01_SG<code>sudo symsg -sid 0301 -sg taqa1d01_SG rmall devs -dev 1409,140A,140B,140C,140D,140E,140F,1410,1411,1412,1413,1414,1415,1416,1417
+sudo symsg -sid 0301 -sg taqa1d01_SG rmall devs -dev 1418,1419,141A,141B,141C,1427,1428,1429,142A
+sudo symsg -sid 0301 -sg taqa1d01_SG rmall devs -dev 142B,142C,142D,142E,142F,1430,1431,1432,1433,1434,1435,1436
+sudo symsg -sid 0301 -sg taqa1d01_SG rmall devs -dev 1437,1438,1439,143A,143B,143C,143D,143E,143F,1440,0B39,0B41
+sudo symsg -sid 0301 -sg taqa1d01_SG rmall devs -dev 0B42,0B51,0B52,0B61,141D,141E,141F,1420,1421
+sudo symsg -sid 0301 -sg taqa1d01_SG rmall devs -dev 1422,1423,1424,1425,1426</code>
+  - Create a new masking view<code>sudo symaccess -sid 0301 create view -name PTABCV_MV -sg PTABCV_SG -pg 2F0_3F0_PG -ig taqa1d01_IG</code>
+  - Associate devices to BCV policy<code>sudo symfast -sid 0301 -fp_name BCV associate -sg PTABCV_SG -priority 2</code>
+  - Configure devices on taqa1d01
+    - Run cfgmgr<code>sudo cfgmgr</code>
+    - Import the VGs<code>echo "datavg02 datavg01 datavg03 datavg04" | xargs -n1 sudo varyonvg</code>
+    - Mount filesystems<code>echo "datavg02 datavg01 datavg03 datavg04" | xargs -n1 lsvgfs | xargs -n1 sudo mount</code>

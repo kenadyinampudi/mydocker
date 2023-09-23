@@ -1,0 +1,318 @@
+
+<p>
+<strong><em class="u">MMD peerdb99-mmd LPAR build Note</em>s</strong>
+</p>
+
+<p>
+Ethernet Configuration:
+</p>
+<pre class="code"> Card Location: U2C4E.001.DBJX093-P2-C3-T[1,2,3,4]
+  ent0    Available 02-00 4-Port Gigabit Ethernet PCI-Express Adapter (e414571614102004)
+  ent1    Available 02-01 4-Port Gigabit Ethernet PCI-Express Adapter (e414571614102004)
+  ent2    Available 02-02 4-Port Gigabit Ethernet PCI-Express Adapter (e414571614102004)
+  ent3    Available 02-03 4-Port Gigabit Ethernet PCI-Express Adapter (e414571614102004)
+  
+ Card Location:U2C4E.001.DBJX011-P2-C3-T[1,2,3,4]
+  ent4    Available 04-00 4-Port Gigabit Ethernet PCI-Express Adapter (e414571614102004)
+  ent5    Available 04-01 4-Port Gigabit Ethernet PCI-Express Adapter (e414571614102004)
+  ent6    Available 04-02 4-Port Gigabit Ethernet PCI-Express Adapter (e414571614102004)
+  ent7    Available 04-03 4-Port Gigabit Ethernet PCI-Express Adapter (e414571614102004)
+  </pre>
+
+<p>
+Etherchannel (Original TA2 0 peerdb99 and peerdb99bck) During the pre-build we will use IP=xeerdb99 and xeerdb99bck and later swap
+</p>
+<pre class="code">Public NIB: ent0 + ent4(backup) ==&gt; ent8 Native=10.32.50.64 and VIP=10.32.50.62 255.255.255.0 / 10.32.50.1
+   Internet Address to Ping                           [10.32.50.1]
+   Number of Retries                                  [2] 
+   Retry Timeout (sec)                                [2]  
+  
+Backup NIB: ent1 + ent5(backup) ==&gt; ent9 Native=10.32.51.158 and VIP=10.32.51.143 255.255.255.0
+   Internet Address to Ping                           [10.32.51.1]
+   Number of Retries                                  [2] 
+   Retry Timeout (sec)                                [2]  </pre>
+
+<p>
+Fiberchannel Configuration:
+</p>
+<pre class="code">fcs[0,1]  U2C4E.001.DBJX093-P2-C2-T[1,2]  8Gb PCI Express Dual Port FC Adapter
+ fcs0  - Network Address.............10000090FA563DCE    &lt;&lt;=== connected to switch
+ fcs1  - Network Address.............10000090FA563DCF</pre>
+<pre class="code">fcs[2,3]  U2C4E.001.DBJX093-P2-C5-T[1,2]  8Gb PCI Express Dual Port FC Adapter  
+ fcs2  - Network Address.............10000090FA563C0A    &lt;&lt;=== connected to switch
+ fcs3  - Network Address.............10000090FA563C0B</pre>
+<pre class="code">fcs[4,5]  U2C4E.001.DBJX011-P2-C2-T[1,2]  8Gb PCI Express Dual Port FC Adapter 
+ fcs4  - Network Address.............10000090FA726C38    &lt;&lt;=== connected to switch
+ fcs5  - Network Address.............10000090FA726C39</pre>
+<pre class="code">fcs[6,7]  U2C4E.001.DBJX011-P2-C5-T[1,2]  8Gb PCI Express Dual Port FC Adapter
+ fcs6  - Network Address.............10000090FA72A7A0    &lt;&lt;=== connected to switch
+ fcs7  - Network Address.............10000090FA72A7A1</pre>
+
+<p>
+Paging Space Configuration (use SSD drives mirror accross controllers):
+</p>
+<pre class="code">lsdev -Cc disk | grep SSD
+hdisk1 Available 03-00-00 SAS RAID 0 SSD Array
+hdisk2 Available 03-00-00 SAS RAID 0 SSD Array
+hdisk4 Available 07-00-00 SAS RAID 0 SSD Array
+hdisk5 Available 07-00-00 SAS RAID 0 SSD Array</pre>
+
+<p>
+ Create pagevg01 regular volume group
+</p>
+<pre class="code">mkvg -y pagevg01 -s 512 hdisk1 hdisk2</pre>
+
+<p>
+ Create individual paging spaces
+</p>
+<pre class="code">for i in 1 2 3 4 5 6 7 8 9 10
+do
+ mkps -a -n -s123 pagevg01
+done</pre>
+
+<p>
+ Mirror pagevg01
+</p>
+<pre class="code">extendvg pagevg01 hdisk4 hdisk5</pre>
+<pre class="code">nohup mirrorvg pagevg01 hdisk4 hdisk5 &amp;</pre>
+
+<p>
+Remove old EMC drivers:
+</p>
+<pre class="code">ps -ef | grep stor
+    root 3997908       1   0   Oct 24      -  0:00 storwatchd start -name storwatchd
+    root 2622004       1   0   Oct 24      -  0:19 storapid start -name storapid</pre>
+<pre class="code">kill `ps -ef | grep stor | awk &#039;{print $2}&#039;`</pre>
+<pre class="code">lslpp -l | grep -i -E &quot;symcli|emc|power&quot; | grep -v IBM
+  EMC.Symmetrix.aix.rte      6.0.0.0  COMMITTED  EMC Symmetrix AIX Support
+  EMC.Symmetrix.fcp.rte      6.0.0.0  COMMITTED  EMC Symmetrix FCP Support
+  EMCpower.base              5.5.0.4  COMMITTED  PowerPath Base Driver and
+  EMCpower.encryption        5.5.0.4  COMMITTED  PowerPath Encryption with RSA
+  EMCpower.migration_enabler
+                             5.5.0.4  COMMITTED  PowerPath Migration Enabler
+  EMCpower.mpx               5.5.0.4  COMMITTED  PowerPath Multi_Pathing
+  SYMCLI.64BIT.rte           7.5.1.0  COMMITTED  64-bit Shared Libraries
+  SYMCLI.BASE.rte            7.5.1.0  COMMITTED  Shared Libraries and Runtime
+  SYMCLI.CERT.rte            7.5.1.0  COMMITTED  EMC Solutions Enabler -
+  SYMCLI.DATA.rte            7.5.1.0  COMMITTED  Data Component -  Core Library
+  SYMCLI.JNI.rte             7.5.1.0  COMMITTED  JNI Interface for EMC
+  SYMCLI.SRM.rte             7.5.1.0  COMMITTED  Shared Libraries and Runtime
+  SYMCLI.SYMCLI.rte          7.5.1.0  COMMITTED  Symmetrix Command Line
+                                                 Interface (SYMCLI)
+  SYMCLI.SYMRECOVER.rte      7.5.1.0  COMMITTED  EMC Solutions Enabler
+  SYMCLI.THINCORE.rte        7.5.1.0  COMMITTED  Shared Libraries and Runtime
+  EMC.Symmetrix.aix.rte      6.0.0.0  COMMITTED  EMC Symmetrix AIX Support
+  EMC.Symmetrix.fcp.rte      6.0.0.0  COMMITTED  EMC Symmetrix FCP Support</pre>
+<pre class="code">geninstall -pu -I &quot;p -J -w&quot; -Z -f File 2&gt;&amp;1
+
+File:
+    EMC.Symmetrix.aix.rte
+    EMC.Symmetrix.fcp.rte
+    EMCpower.base
+    EMCpower.encryption
+    EMCpower.migration_enabler
+    EMCpower.mpx
+    SYMCLI.64BIT.rte
+    SYMCLI.BASE.rte
+    SYMCLI.CERT.rte
+    SYMCLI.DATA.rte
+    SYMCLI.JNI.rte
+    SYMCLI.SRM.rte
+    SYMCLI.SYMCLI.rte
+    SYMCLI.SYMRECOVER.rte
+    SYMCLI.THINCORE.rte</pre>
+
+<p>
+ Remove startup for storability agents form /etc/inittab
+</p>
+<pre class="code">storapid:2:once:/usr/storapi/bin/stordaemon start storapid
+rmitab storapid</pre>
+
+<p>
+ Install latest ODM from EMC
+</p>
+<pre class="code">sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</pre>
+<pre class="code">sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</pre>
+<pre class="code">lslpp -l | grep -i -E &quot;symcli|emc|power&quot; | grep -v IBM
+  EMC.CLARiiON.aix.rte       6.0.0.3  COMMITTED  EMC CLARiiON AIX Support
+  EMC.CLARiiON.fcp.MPIO.rte  6.0.0.3  COMMITTED  EMC CLARiiON FCP MPIO Support
+  EMC.Symmetrix.aix.rte      6.0.0.3  COMMITTED  EMC Symmetrix AIX Support
+  EMC.Symmetrix.fcp.MPIO.rte
+                             6.0.0.3  COMMITTED  EMC Symmetrix FCP MPIO Support
+  EMC.CLARiiON.aix.rte       6.0.0.3  COMMITTED  EMC CLARiiON AIX Support
+  EMC.CLARiiON.fcp.MPIO.rte  6.0.0.3  COMMITTED  EMC CLARiiON FCP MPIO Support
+  EMC.Symmetrix.aix.rte      6.0.0.3  COMMITTED  EMC Symmetrix AIX Support
+  EMC.Symmetrix.fcp.MPIO.rte
+                             6.0.0.3  COMMITTED  EMC Symmetrix FCP MPIO Support</pre>
+<pre class="code">shutdown -Fr</pre>
+
+<p>
+Check time and Time Zone
+</p>
+<pre class="code">grep TZ /etc/environment
+TZ=NFT-1DFT,M3.5.0,M10.5.0</pre>
+
+<p>
+ Modify /etc/ntp.conf to new settings on entire TA2 peerdb[98,99], tepr2e01, peerap0[1,2,3,4,5,6,7,8,9,99,98] and paap3p01
+</p>
+<pre class="code">cat /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server 10.1.1.1 prefer
+server 10.1.1.2</pre>
+
+<p>
+ Start using the XNTPD daemon now and during system restart
+</p>
+<pre class="code">sudo stopsrc -s xntpd</pre>
+<pre class="code">sudo chrctcp -S -a xntpd</pre>
+
+<p>
+ Make sure it is running
+</p>
+<pre class="code">lssrc -s xntpd</pre>
+
+<p>
+ Check the date
+</p>
+<pre class="code">date</pre>
+
+<p>
+ If the time is not too far, adjuct the time. DO NOT CHANGE TIME ON DATABASE SERVERS
+</p>
+<pre class="code">date ; sudo ntpdate -u 10.1.1.1 ; date</pre>
+
+<p>
+ Ensure the timeserver is correct
+</p>
+<pre class="code">sudo xntpdc -l
+client    itcrtcor01.amer.int.tenneco.com
+client    itcrtcor02.amer.int.tenneco.com</pre>
+
+<p>
+Check bootlist
+</p>
+<pre class="code">bootlist -m normal -o</pre>
+
+<p>
+Correct if needed
+</p>
+<pre class="code">bootlist -m normal hdisk0 hdisk3</pre>
+
+<p>
+<img src="/lib/images/smileys/icon_cool.gif" class="icon" alt="8-)" /> Dont do this
+</p>
+
+<p>
+Chnage max_xfer_size to the next value : 0x200000
+</p>
+<pre class="code">for i in fcs0 fcs1 fcs2 fcs3 fcs4 fcs5 fcs6 fcs7
+do
+lsattr -El $i | grep max_xfer
+done</pre>
+<pre class="code">for i in fcs0 fcs1 fcs2 fcs3 fcs4 fcs5 fcs6 fcs7
+do
+chdev -l $i -a max_xfer_size=0x200000 -P
+done</pre>
+<pre class="code">shutdown -Fr</pre>
+
+<p>
+Stop here - and wait for the LUNs
+</p>
+
+<p>
+cfgmgr
+</p>
+
+<p>
+Enable Round Robin on all MPIO devices
+</p>
+<pre class="code">lsdev -Ccdisk | grep MPIO | awk &#039;{print $1}&#039; | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l</pre>
+
+<p>
+Check if all the LUN&#039;s are here
+</p>
+<pre class="code">for vgname in $(cat lsvg.txt)
+do
+  for line in $(cat $vgname.pvid)
+  do
+    grep -q $line lspv.after
+    if [ $? -ne 0 ]
+    then
+        echo &quot;$line does not exist&quot;
+    fi
+  done
+done</pre>
+
+<p>
+Import TA2 volume groups
+</p>
+<pre class="code">importvg -y binvg01 00c9f3a08b272067
+importvg -y origredovg 00c9f3a064948c5c
+importvg -y mirrredovg 00c9f3a0648c22a7
+importvg -y datavg01 00c9f3a045e081ab
+importvg -y datavg02 00c9f3a06a1a8591
+importvg -y datavg03 00c9f3a045e63d96
+importvg -y datavg04 00c9f3a06fcbf6df
+importvg -y datavg05 00c9f3a0a0bc3b8f
+importvg -y datavg06 00f72d6702069d2e
+importvg -y datavg07 00f72d6702027943
+importvg -y datavg08 00ca6ffeb7e5e77c</pre>
+
+<p>
+&lt;/code&gt;
+</p>
+
+<p>
+Fix /root/cluster/mount|umount scripts
+</p>
+
+<p>
+Modify Console file on taitc118
+</p>
+<pre class="code">9117-MMA - remove the entry</pre>
+<pre class="code">9117-MMD - make this entry permanent</pre>
+
+<p>
+Disable cron on original peerdb99
+</p>
+<pre class="code">rmitab cron:23456789:respawn:/usr/sbin/cron</pre>
+<pre class="code">Swap IP addresses  peerdb99 &lt;&lt;------&gt;&gt; xeerdb99</pre>
+
+<p>
+Enable cron
+</p>
+<pre class="code">mkitab cron:23456789:respawn:/usr/sbin/cron</pre>
+
+<p>
+<img src="/lib/images/smileys/fixme.gif" class="icon" alt="FIXME" />
+</p>
+<pre class="code">lsdev -Ccdisk | grep -i defined | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl
+ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach
+for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done
+cfgmgr
+
+Create etherchannel
+
+Configure IP addresses
+
+Create pagevg and paging spaces
+
+Mirror paging space
+
+Remove EMC softwares
+
+Install MPIO ODM filesets for EMC
+
+
+Configure NTP and sync the time
+
+Correct bootlist
+
+</pre>

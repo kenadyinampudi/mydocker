@@ -1,0 +1,15 @@
+===== Update OpenSSL and OpenSSH ======
+<code>  scp -r /usr/local/update {hostname}:/usr/local/ </code>
+    
+<code> cd /usr/local/update </code> <code> ./backup-ssh-ssl.sh </code>
+
+<code> ls -liatR  </code> 
+<code>mkdir -p /mnt/aixupdates </code>
+
+<code> mount pgnmsv01:/prod/images/service-packs/LATEST-SSL-SSH /mnt/aixupdates </code>  <code> cd /mnt/aixupdates; ls </code> 
+    - Rempve the ssl Efix before installation <code> sudo emgr -r -L 102m_ifix </code>
+    - Install the SSL update first <code>installp -aXYd OpenSSL/OpenSSL/openssl-1.0.2.1500-1.0.2o openssl</code> 
+    - Install the SSH update x <code>installp -aXYd OpenSSH/OpenSSH_7.5.102.1500 openssh </code>
+    - Restart SSH to activate the update and the changes to the sshd_config file <code> refresh -s inetd </code>  
+  - Unmount the file system <code> cd; umount /mnt/aixupdates</code>
+  - On the NIM Server, remove the exported lppsource file system from the exports list  <code> /usr/sbin/rmnfsexp -d '/prod/images/service-packs/LATEST-SSL-SSH' '-B' </code>

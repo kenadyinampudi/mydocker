@@ -1,0 +1,97 @@
+===== WORK TO DO AFTER PLP UPGRADE TO FIX /USR/SAP/TRANS ISSUE =====
+
+  - Ask Basis Team member to stop SAP on PLP - pcdcplplxap01, pcdcplplxap01, PLD - dcdcpldaxdb01, PLT - qcdcpltaxdb01, qcdcpltlxap01, and PLS - scdcplsaxdb01
+	 -  on  pcdcplpaxdb01.driv.com make a copy of the /etc/filesystems file <code> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S)</code>
+ -  on pcdcplpaxdb01.driv.com umount /usr/sap/tras and remove NFS file system <code>dpldci1a:/usr/sap/trans      48.00     34.87   28%     4008     1% /usr/sap/trans</code> <code>sudo umount /usr/sap/trans </code> <code>smit rmnfsmnt </code>
+
+ - logon to the RP NIM server pcdcunxaxap01 and mount premade /usr/sap/file system  <code>mount /usr/sap/trans </code> <code>cd /usr/sap/trans </code>
+ - clear the old data from the file on pcdcunxaxap01 confirm server name in nim server <code> uname -n</code> Must be  <code>pcdcunxaxap01</code> confirm directory <code> pwd </code> must be <code>/usr/sap/trans </code> If everything is OK clear the file - remove all entries so that is an empty file. 
+ - Verify a second time that there is no data in target (local) /usr/sap/trans file<code> cd /usr/sap/trans; ls -lia</code>Output should look similiar to this<code>total 0
+   2 drwxrwxrwx    2 root     system          256 Oct 25 10:48 .
+190433drwxr-xr-x    3 root     system          256 Oct 30 11:06 ..</code>
+ -  If everthing is OK then copy the data from development server dcdcpldaxdb01 {dpldci1a} /usr/sap/trans to /usr/sap/tras on pcdcunxaxap01 <code>sudo rsync -avv dcdcpldaxdb01:/usr/sap/trans/ . </code>
+ - compare count on dcdcpldaxdb01:/usr/sap/trans/  with pcdcunxaxap01:/usr/sap/trans on, dcdcpldaxdb01 run<code>ls -liatR | wc -l</code>on pcdcunxalap01 run<code> ls -liatR /usr/sap/trans| wc -l</code> Both outputs from the ls command should be equal if they are not equal recopy the data
+
+ - create the /usr/sap/trans on PLP pcdcplpaxdb01.driv.com <code>sudo mkdir -p /usr/sap/trans
+sudo chown root:system /usr/sap/trans
+sudo chmod 755 /usr/sap/trans
+sudo crfs -g datavg01 -A yes -v jfs2 -m /usr/sap/trans -a size=30G
+sudo mount /usr/sap/trans
+sudo chown plpadm:sapsys /usr/sap/trans
+sudo chmod 755 /usr/sap/trans</code>
+
+ - on production server pcdcplpaxdb01 create the /etc/exports entry /etc/exports and add this <code>/usr/sap/trans -sec=sys:krb5p:krb5i:krb5:dh,rw,root=dcdcpldaxdb01:qcdcpltaxdb01:qcdcpltlxap01:pcdcplplxap01:pcdcpgwaxdb01:scdcplsaxdb01,access=dcdcpldaxdb01:qcdcpltaxdb01:qcdcpltlxap01:pcdcplplxap01:pcdcpgwaxdb01:scdcplsaxdb01 </code>
+ - copy the data from pcdcunxaxap01:/usr/sap/trans to pcdcplpaxdb01.driv.com:/usr/sap/trans <code>sudo rsync -avv /usr/sap/trans/ pcdcplpaxdb01.driv.com:/usr/sap/trans/ </code>
+ -  compare count on pcdcplpaxdb01.driv.com:/usr/sap/trans  with count on dcdcpldaxdb01:/usr/sap/trans/  both should be the same <code>ls -liatR | wc -l must be equal to ls -liatR | wc -l  </code>
+ -  change the ownership of files in /usr/sap/trans on pcdcplpaxdb01.driv.com from pldadm to plpadm <code> cd /usr/sap/trans </code> <code>sudo chown -R plpadm * </code>
+ -  to refresh the NFS Daemons after the changes, stop and start NFS on pcdcplpaxdb01 <code>stopsrc -g nfs</code><code>startsrc -g nfs</code> 
+ -  if all match then export the /usr/sap/trans from pcdcplpaxdb01.driv.com<code> sudo exportfs -i /usr/sap/trans</code>
+ -  on dcdcpldaxdb01 umount /usr/sap/trans <code>sudo umount /usr/sap/trans </code>
+ -  rename  the file system - save it just in case <code>sudo chfs -m /usr/sap/trans-HOLD /usr/sap/trans </code>
+ -  mount the saved file system <code>sudo mount /usr/sap/trans-HOLD</code>
+ -  make a copy of /etc/exports- just in case <code> sudo cp -p /etc/exports /etc/exports-$(date +%Y%m%d-%H:%M:%S)</code>
+ -  on dcdcpldaxdb01 edit and remove the entry in /etc/exports <code>/usr/sap/trans -vers=2:3:4,sec=sys:none,rw,access=qcdcpltaxdb01:pcdcplpaxdb01,root=qcdcpltaxdb01:pcdcplpaxdb01 </code>
+ - make a copy of the /etc/filesystems file <code> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S)</code>
+ - add the NFS file definition to /etc/filesystems on dcdcpldaxdb01 and qcdcpltaxdb01.
+ - vi the /etc/filesystems file and add the following lines <code>/usr/sap/trans:
+       dev             = "/usr/sap/trans"
+       vfs             = nfs
+       nodename        = pplpci1a
+       mount           = true
+       options         = bg,soft,intr,sec=sys
+       account         = false</code>
+ - mount the new /usr/sap/trans <code> sudo mount /usr/sap/trans</code> results should look something like this <code> pplpci1a:/usr/sap/trans      48.00     34.86   28%     4025     1% /usr/sap/trans</code>
+ - if all looks good on the nfs mount above make the changes on  PLD - dcdcdsraxdb01, PLT - qcdcpltaxdb01, , and PLS - scdcplsaxdb01
+
+ - make a copy of the /etc/filesystems file <code> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S)</code>
+ - unmount the /usr/sap/trans file system <code> sudo umount /usr/sap/trans</code><code> sudo vi /etc/filesystem> </code>Find /usr/sap/trans and change the nodename From dpldci1a To pplpci1a an save the file<code>/usr/sap/trans:
+        dev             = "/usr/sap/trans"
+        vfs             = nfs
+        nodename        = pplpci1a
+        mount           = true
+        options         = rw,bg,soft,intr,sec=sys
+        account         = false</code>
+
+ - mount the new /usr/sap/trans <code> sudo mount /usr/sap/trans</code> results should look something like this <code>pplpci1a:/usr/sap/tra
+ns      48.00     34.86   28%     4025     1% /usr/sap/trans</code>
+
+
+ - on LINUX App Servers  pcdcplplxap01. and qcdcpltlxap01 make a copy of /etc/fstab <code> sudo cp -p /etc/fstab /etc/fstab-$(date +%Y%m%d-%H:%M:%S)</code>
+ - unmount the /usr/sap/trans file system <code> sudo umount /usr/sap/trans </code> vi the /etc/fstab file and change dpldci1a to pplpci1a and save tthe file
+ - remount the /usr/sap/trans file system <code> sudo mount /usr/sap/trans</code> Output should look something like this <code>pplpci1a:/usr/sap/trans      48.00     34.86   28%     4025     1% /usr/sap/trans</code>
+
+
+ - For Reference a list of server names and aliases names s listed below<code>
+
+Name=> pcdcplpaxdb01
+Address: => 10.128.44.49 
+Name:   pplpci1a.driv.com
+Address: 10.128.44.50
+
+Name=> pcdcplplxap01
+Address: 10.128.80.35
+Name=> pplpap1x.driv.com
+Address: 10.128.80.36
+
+
+Name=> qcdcpltaxdb01
+Address: 10.128.72.11
+Name=> qpltci1a.driv.com
+Address: 10.128.72.12
+
+
+Name=> qcdcpltlxap01
+Address: 10.128.82.14 
+Name=>   qqsrci1a.driv.com
+Address: 10.128.82.15
+
+
+Name=> dcdcpldaxdb01
+Address: 10.128.72.61
+Name:=>   dpldci1a.driv.com
+Address: 10.128.72.62
+
+Name=> scdcplsaxdb01
+Address: 10.128.72.75
+Name:  dpldci1a.driv.com
+Address: 10.128.72.76</code>

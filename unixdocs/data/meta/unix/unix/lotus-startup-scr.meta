@@ -1,0 +1,18 @@
+a:2:{s:7:"current";a:6:{s:4:"date";a:2:{s:7:"created";i:1574284005;s:8:"modified";i:1361399594;}s:4:"user";s:0:"";s:7:"creator";s:0:"";s:8:"internal";a:2:{s:5:"cache";b:1;s:3:"toc";b:1;}s:11:"description";a:1:{s:8:"abstract";s:503:"#!/bin/bash
+# DOM_HOME is the variable that tells the script where the Domino Data resides
+DOM_HOME=/lotus/domino/data
+# DOM_USER is the Linux account used to run the Domino 6 server
+DOM_USER=notes
+# DOM_PROG is the location of the Domino executables
+DOM_PROG=/opt/ibm/lotus/bin
+start()
+{
+echo -n Starting domino:
+if [ -f $DOM_HOME/.jsc_lock ]; then
+rm $DOM_HOME/.jsc_lock
+fi
+/bin/su - notes -c "cd ${DOM_HOME}; $DOM_PROG/server -jc -c" > /var/tmp/lotus.log 2>&1 &
+return 0
+}
+stop() {
+echo -n Stoppin…";}s:8:"relation";a:1:{s:10:"firstimage";s:0:"";}}s:10:"persistent";a:3:{s:4:"date";a:1:{s:7:"created";i:1574284005;}s:4:"user";s:0:"";s:7:"creator";s:0:"";}}

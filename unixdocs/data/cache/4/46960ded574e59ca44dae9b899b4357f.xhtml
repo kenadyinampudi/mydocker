@@ -1,0 +1,209 @@
+
+<h1 class="sectionedit1" id="pafodb01_migration_to_power8">pafodb01 migration to Power8</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "pafodb01 migration to Power8" [1-45] -->
+<h2 class="sectionedit2" id="pre-migration_tasks">Pre-migration tasks</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create the target LPAR (pafodb01) on Power8 system.</div>
+</li>
+<li class="level1"><div class="li"> Email the wwn number to SAN team(Storage team) and ask for bootdisks.</div>
+</li>
+<li class="level1"><div class="li"> Add pure ODM to 710TL04-01_spot and 710TL04-01_lppsrc<pre class="code">sudo nim -o cust -a filesets=devices.fcp.disk.pure.flasharray.mpio.rte -a lpp_source=710TL04-02_lppsrc 710TL04-01_spot
+sudo nim -o update -a packages=all -a source=/prod/images/storage/PureODM 710TL04-01_lppsrc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Build Aix using a temporary name,IP and use Pafodb01-mksysb, also use mksysbmigration script for postinstall<pre class="code">sudo nim -o bos_inst -a source=mksysb -a spot=710TL04-01_spot -a lpp_source=710TL04-01_lppsrc -a no_client_boot=yes -a script=mksysbmigration -a mksysb=pafodb01-mksysb xaerdb01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to console and finish the installation</div>
+</li>
+<li class="level1"><div class="li"> Login to the target system(xaerdb01)</div>
+</li>
+<li class="level1"><div class="li"> Update to 710TL04-02<pre class="code">sudo installp -s
+sudo installp -c all
+sudo mkdir -p /var/log/aso
+sudo chown root:system /var/log/aso
+
+sudo mkdir -p /mnt/aixupdates
+sudo mount pgnmsv01:/prod/images/lppsrc/710TL04-02 /mnt/aixupdates
+
+cd /mnt/aixupdates
+sudo install_all_updates -d . -c -p -r -V -Y
+
+cd /mnt/aixupdates
+sudo install_all_updates -d . -c -r -V -Y
+
+sudo rmitab &quot;xmdaily&quot;
+
+sudo /usr/esa/sbin/rmESAReminder
+
+sudo installp -s
+
+sudo installp -c all
+
+sudo shutdown -Fr
+
+oslevel -s 
+
+sudo lppchk -vm3
+
+sudo mount  pgnmsv01:/prod/images/service-packs/7100-04-02-1614-Efixes/Efix-To-Be-Applied /mnt/aixupdates
+
+cd /mnt/aixupdates
+
+sudo emgr -e IV85296s2a.160616.epkg.Z -X 
+sudo emgr -e IV84458s2a.160608.epkg.Z -X
+
+sudo shutdown -Fr </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure IOCP for DB system<pre class="code">sudo chdev -l iocp0 -a autoconfig=available
+sudo mkdev -l iocp0
+lsdev -Cc iocp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create New alt_disk_copy<pre class="code">sudo alt_disk_copy -B -d hdisk1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure time is in sync<pre class="code">date ; sudo ntpdate -u pgntpap01.amer.int.tenneco.com ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Pre-migration tasks" [46-1964] -->
+<h2 class="sectionedit3" id="during_the_migration">During the migration</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Make a copy of the mksysb image on pgnmsv01<pre class="code">sudo cp -p /mksysb-images/bos.obj.pafodb01.gz /preupgrade/mksysb/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown application(s) </div>
+</li>
+<li class="level1"><div class="li"> Shutdown the databases on pafodb01</div>
+</li>
+<li class="level1"><div class="li"> Shutdown pafodb01 server</div>
+</li>
+<li class="level1"><div class="li"> Rename the lpar name from <code>pafodb01</code> to <code>pafodb01-Do not start</code></div>
+</li>
+<li class="level1"><div class="li"> Unmap the disks from taprvio50 and taprvio51</div>
+<ol>
+<li class="level2"><div class="li"> taprvio50<pre class="code">rmvdev -vdev hdisk342
+rmvdev -vdev hdisk343
+rmvdev -vdev hdisk344
+rmvdev -vdev hdisk345
+rmvdev -vdev hdisk346
+rmvdev -vdev hdisk347
+rmvdev -vdev hdisk348
+rmvdev -vdev hdisk349
+rmvdev -vdev hdisk350</pre>
+
+<p>
+Then remove them from ODM
+</p>
+<pre class="code">sudo rmdev -dl hdisk342
+sudo rmdev -dl hdisk343
+sudo rmdev -dl hdisk344
+sudo rmdev -dl hdisk345
+sudo rmdev -dl hdisk346
+sudo rmdev -dl hdisk347
+sudo rmdev -dl hdisk348
+sudo rmdev -dl hdisk349
+sudo rmdev -dl hdisk350</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> taprvio51<pre class="code">rmvdev -vdev hdisk363
+rmvdev -vdev hdisk364
+rmvdev -vdev hdisk365
+rmvdev -vdev hdisk367
+rmvdev -vdev hdisk368
+rmvdev -vdev hdisk369
+rmvdev -vdev hdisk370
+rmvdev -vdev hdisk371
+rmvdev -vdev hdisk372</pre>
+
+<p>
+Then remove them from ODM
+</p>
+<pre class="code">sudo rmdev -dl hdisk363
+sudo rmdev -dl hdisk364
+sudo rmdev -dl hdisk365
+sudo rmdev -dl hdisk367
+sudo rmdev -dl hdisk368
+sudo rmdev -dl hdisk369
+sudo rmdev -dl hdisk370
+sudo rmdev -dl hdisk371
+sudo rmdev -dl hdisk372</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Ask storage team to move the following Pure storage devices from taprvio50/51 to pafodb01<pre class="code">PBBABD90D93D542ED00068E98
+PBBABD90D93D542ED00068E97
+PBBABD90D93D542ED00068E96
+PBBABD90D93D542ED00068E95
+PBBABD90D93D542ED00068E94
+PBBABD90D93D542ED00068E93
+PBBABD90D93D542ED00068E92</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Once storage team is done with their tasks, Discover the disks on target system ( xaerdb01 )<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.before
+sudo cfgmgr
+sudo lsvpcfg.sh &gt; lsvpcfg.after</pre>
+
+<p>
+Now check if all the devices are moved
+</p>
+<pre class="code">diff lsvpcfg.before lsvpcfg.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> import datavg01 on target system(xaerdb01)<pre class="code">sudo importvg -y datavg01 00ce6b859135a2f6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount all the fs<pre class="code">lsvgfs datavg01 | sort | xargs -n1 sudo mount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the IP and hostname of the target system ( xaerdb01 ) from 10.0.48.33 to 10.0.48.70<pre class="code">sudo /usr/sbin/mktcpip -h pafodb01 -a 10.0.48.70 -m 255.255.255.0 -i en0 -g 10.0.48.1 -A no -s</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the backup IP address<pre class="code">sudo chdev -l en1 -a netaddr=10.0.49.70 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron and openview ( they were disabled by the mksysbmigration post installation script )<pre class="code">sudo mkitab cron:23456789:respawn:/usr/sbin/cron  
+sudo mkitab &#039;OVCtrl:2:wait:/etc/rc.d/OVCtrl start &gt;/dev/console  # Start Agent&#039;
+sudo mkitab &#039;ovpa:2:wait:/etc/rc.ovpa start &gt;/dev/console  # Start OV Performance Agent &#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable NFS exports<pre class="code">sudo mv /etc/exports.premigration /etc/exports</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server.<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check NFS mounts are good on clients if any. If required, remount them.</div>
+</li>
+<li class="level1"><div class="li"> Ask the DBAs to bring up the database</div>
+</li>
+<li class="level1"><div class="li"> Start the applications</div>
+</li>
+<li class="level1"><div class="li"> Update /prod/images/etc/unix_sys_console<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Swap xaerdb01 with pafodb01
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Wait for 7 days  and then remove the bootdisk from taprvio50-51 and email the Storage team to reclaim the disk</div>
+</li>
+<li class="level1"><div class="li"> Remove the old lpar from the frame. <code>pafodb01-Do not start</code></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "During the migration" [1965-] -->

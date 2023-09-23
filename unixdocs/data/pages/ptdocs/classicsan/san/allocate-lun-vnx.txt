@@ -1,0 +1,27 @@
+====== Storage allocations - VNX 5300 ======
+
+  * Update the storage tasks log [[http://taitc212/storage/Shared%20Documents/Storage%20allocation%20log.xlsx]]
+
+**alias naviseccli='/usr/lpp/NAVICLI/naviseccli -User sysadmin -Password sysadmin -Scope 0'**
+
+  - List all the Pools<code>naviseccli -h ldcvnx53001spa storagepool -list | egrep "Pool\ Name|Pool\ ID"
+Pool Name:  NONPROD-POOL
+Pool ID:  1
+Pool Name:  PROD-POOL
+Pool ID:  0</code>
+  - Pick the next LUN number<code>naviseccli -h ldcvnx53001spa lun -list | grep "LOGICAL UNIT NUMBER" | awk '{print $NF}' | sort -n | tail -1 | awk '{print $1+1}'</code>
+  - Creating production LUN on VNX
+    - 34G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 34522 -sq mb -poolName "PROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+    - 68G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 69045 -sq mb -poolName "PROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+    - 102G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName "PROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+    - 138G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName "PROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+    - 272G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 276180 -sq mb -poolName "PROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+  - Creating non-production LUN on VNX
+    - 34G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 34522 -sq mb -poolName "NONPROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+    - 68G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 69045 -sq mb -poolName "NONPROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+    - 102G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 103566 -sq mb -poolName "NONPROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+    - 138G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 138090 -sq mb -poolName "NONPROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+    - 272G<code>naviseccli -h ldcvnx53001spa lun -create -type Thin -capacity 276180 -sq mb -poolName "NONPROD-POOL" -aa 1 -l 100 -name TAPRVIO3_100</code>
+  - Add the LUNs to the storage group
+    - List the luns allocated to the storage group and find the next HLU number(Host LUN number)<code>naviseccli -h ldcvnx53001spa storagegroup -list -gname <storage group name></code>
+    - Allocate the lun to storage group<code>naviseccli -h ldcvnx53001spa storagegroup -addhlu -gname <storage group> -alu <lun ser no> -hlu <host lun number></code>

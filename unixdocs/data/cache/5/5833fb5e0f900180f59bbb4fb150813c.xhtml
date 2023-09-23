@@ -1,0 +1,101 @@
+
+<h1 class="sectionedit1" id="lpars_moves_from_ldc_to_cdc_ptt_--_technical_steps">LPARs moves from LDC to CDC/PTT -- Technical Steps</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "LPARs moves from LDC to CDC/PTT -- Technical Steps" [1-66] -->
+<h2 class="sectionedit2" id="pre-cutover_tasks">Pre-cutover tasks</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Agree the list of lpars and get approval for down time - Jeff / PM</div>
+</li>
+<li class="level1"><div class="li"> Define LPARs at PTT - CSI</div>
+<ol>
+<li class="level2"><div class="li"> Email the WWNs to PTT Team for zoning and Storage team for host definitions.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Perform zoning at PTT - PTT</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=changeeventplans:ldc-cdc-ptt-mv-defhosts" class="wikilink1" title="changeeventplans:ldc-cdc-ptt-mv-defhosts">Perform host definitions at PTT Pure</a></div>
+</li>
+<li class="level1"><div class="li"> Create schedule for each day and time - CSI</div>
+</li>
+<li class="level1"><div class="li"> Make sure hosts in scope has their data replicated. - CSI</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=changeeventplans:ldc-cdc-ptt-disablenfs" class="wikilink1" title="changeeventplans:ldc-cdc-ptt-disablenfs">Capture the state and disable NFS and create alt disk copy</a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Pre-cutover tasks" [67-617] -->
+<h2 class="sectionedit3" id="cut_over_plan">Cut over plan</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> <a href="http://taitc212/cgi-bin/blackout/login.cgi" class="urlextern" title="http://taitc212/cgi-bin/blackout/login.cgi"  rel="nofollow">Enable blackout for servers</a></div>
+</li>
+<li class="level1"><div class="li"> Shutdown applications on the Server list – Check the worksheet.</div>
+</li>
+<li class="level1"><div class="li"> Shutdown databases (if any ) on the Server list – Check the worksheet.</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=changeeventplans:ldc-cdc-ptt-mv-disablenfsandshutdown" class="wikilink1" title="changeeventplans:ldc-cdc-ptt-mv-disablenfsandshutdown">Shutdown servers</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=changeeventplans:ldc-cdc-ptt-mv-finalsync" class="wikilink1" title="changeeventplans:ldc-cdc-ptt-mv-finalsync">Perform an adhoc replication, and provision storage at CDC/PTT</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=changeeventplans:ldc-cdc-ptt-mv-movelpars" class="wikilink1" title="changeeventplans:ldc-cdc-ptt-mv-movelpars">Start LPARs at CDC/PTT</a></div>
+</li>
+<li class="level1"><div class="li"> Start databases on PTT LPARs</div>
+</li>
+<li class="level1"><div class="li"> Start applications on PTT LPARs – Remember licenses.</div>
+</li>
+<li class="level1"><div class="li"> Email monitoring team that the systems have been moved.</div>
+</li>
+<li class="level1"><div class="li"> Email Backup team ( Andy Hill, James Fort )</div>
+</li>
+<li class="level1"><div class="li"> Rename the LPARs on tgprhmc6(LDC) to ”-migrated-to-CDC-PTT”</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Cut over plan" [618-1396] -->
+<h2 class="sectionedit4" id="functional_tests">Functional tests</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Validate the cloned applications work as expected.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Functional tests" [1397-1482] -->
+<h2 class="sectionedit5" id="backout_plan">Backout plan</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Shutdown applications on PTT lpars.</div>
+</li>
+<li class="level1"><div class="li"> Shutdown databases on PTT lpars.</div>
+</li>
+<li class="level1"><div class="li"> Shutdown servers PTT</div>
+</li>
+<li class="level1"><div class="li"> Boot LPARs at LDC.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Backout plan" [1483-1634] -->
+<h2 class="sectionedit6" id="cleanup_post_move_tasks">Cleanup / Post move tasks</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Cleanup LPARs and storage at LDC.</div>
+</li>
+<li class="level1"><div class="li"> For cloned systems, </div>
+<ol>
+<li class="level2"><div class="li"> Stop  LDC     →  DRIVE replication</div>
+</li>
+<li class="level2"><div class="li"> Start CDC/PTT →  DRIVE replication</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Cleanup / Post move tasks" [1635-] -->

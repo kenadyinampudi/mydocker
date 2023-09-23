@@ -1,0 +1,19 @@
+
+<h1 class="sectionedit1" id="sea_failover_manually">SEA failover manually</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> There are times when network outages occur where layer2 stays up but layer3 fails, like today 8/4/2014 at around 2:15 PM.</div>
+</li>
+<li class="level1"><div class="li"> To failover a SEA interface, login to the VIOS server whose SEA is primary at this time and designate it&#039;s role to standby<pre class="code">sudo chdev -l entX -a ha_mode=standby</pre>
+
+<p>
+entX is the SEA adapter name
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> To failback, <pre class="code">sudo chdev -l entX -a ha_mode=auto</pre>
+</div>
+</li>
+</ul>
+
+</div>

@@ -1,0 +1,99 @@
+====== Install SSH Solaris8 ======
+
+===== Get the packages for SSHD =====
+
+SSH needs the following packages
+
+  * openssh
+  * openssl (SSL)
+  * prngd (Psuedo Random Generator Daemon)
+  * zlib (Z library)
+
+  - Download them and store in the NIM server [ A lot of packages are found here [[ftp://ftp.fh-brandenburg.de/pub/fhb/software/sunfreeware/solaris8-sparc/index.html]]
+    - Login to taitc118<code>cd /prod/images/Sun/solaris8
+wget ftp://mirrors.easynews.com/sunfreeware/sparc/8/openssl-0.9.6c-sol8-sparc-local.gz
+wget ftp://sunsite.informatik.rwth-aachen.de/pub/mirror/ftp.sunfreeware.com/sparc/8/prngd-0.9.23-sol8-sparc-local.gz
+wget ftp://sunsite.informatik.rwth-aachen.de/pub/mirror/ftp.sunfreeware.com/sparc/8/zlib-1.1.4-sol8-sparc-local.gz
+wget ftp://sunsite.informatik.rwth-aachen.de/pub/mirror/ftp.sunfreeware.com/sparc/8/openssh-3.1p1-sol8-sparc-local.gz</code>
+
+===== Installing on a Solaris8 Server =====
+
+  - Get the files from NIM server<code>mkdir -p /var/tmp/ssh
+cd /var/tmp/ssh
+ftp 10.32.51.118
+ftp> cd /prod/images/Sun/solaris8
+prompt
+mget *</code>Gunzip them<code>gunzip openssl-0.9.6c-sol8-sparc-local.gz
+gunzip prngd-0.9.23-sol8-sparc-local.gz
+gunzip zlib-1.1.4-sol8-sparc-local.gz
+gunzip openssh-3.1p1-sol8-sparc-local.gz</code>
+  - Install OpenSSL<code>pkgadd -d openssl-0.9.6c-sol8-sparc-local</code>
+  - Install Pseudo Random number generator<code>pkgadd -d prngd-0.9.23-sol8-sparc-local</code>
+  - Install ZLIB<code>pkgadd -d zlib-1.1.4-sol8-sparc-local</code>
+  - Install OpenSSH<code>pkgadd -d openssh-3.1p1-sol8-sparc-local</code>
+  - Cleanup the directory<code>cd 
+rm -rf /var/tmp/ssh</code>
+  - Create a startup script<code>vi /etc/init.d/sshd</code>Here is the script<code>#! /bin/sh
+#
+# start/stop the secure shell daemon
+
+case "$1" in
+
+'start')
+     # Start the ssh daemon
+     if [ -f /usr/local/sbin/sshd ]; then
+          echo "starting SSHD daemon"
+          /usr/local/sbin/sshd &
+     fi
+     ;;
+
+'stop')
+     # Stop the ssh deamon
+     PID=`/usr/bin/ps -e -u 0 | /usr/bin/fgrep sshd | /usr/bin/awk '{print $1}'`
+     if [ ! -z "$PID" ] ; then
+          /usr/bin/kill ${PID} >/dev/null 2>&1
+     fi
+     ;;
+
+*)
+     echo "usage: /etc/init.d/sshd {start|stop}"
+     ;;
+
+esac</code>
+  - Make it executable<code>chmod +x /etc/init.d/sshd</code>
+  - Add it to the RC script<code>ln -s /etc/init.d/sshd /etc/rc2.d/S99sshd</code>
+  - Create a startup script for PRNGD<code>vi /etc/init.d/prngd</code>Enter this code<code>#! /bin/sh
+#
+# start/stop the pseudo random generator daemon
+
+case "$1" in
+
+'start')
+     # Start the ssh daemon
+     if [ -f /usr/local/bin/prngd ]; then
+          echo "starting PRNG daemon"
+          /usr/local/bin/prngd /var/spool/prngd/pool&
+     fi
+     ;;
+
+'stop')
+     # Stop the ssh deamon
+     PID=`/usr/bin/ps -e -u 0 | /usr/bin/fgrep prngd | /usr/bin/awk '{print $1}'`
+     if [ ! -z "$PID" ] ; then
+          /usr/bin/kill ${PID} >/dev/null 2>&1
+     fi
+     ;;
+
+*)
+     echo "usage: /etc/init.d/prngd {start|stop}"
+     ;;
+
+esac</code>
+  - Make it executable<code>chmod +x /etc/init.d/prngd</code>
+  - Add it to RC<code>ln -s /etc/init.d/prngd /etc/rc2.d/S99prngd</code>
+  - Make this directory<code>mkdir -p /var/spool/prngd</code>
+  - Start prngd<code>/etc/init.d/prngd start</code>
+  - Add the DSA keys<code>/usr/local/bin/ssh-keygen -d -f /usr/local/etc/ssh_host_dsa_key -N ""</code>
+  - Start SSH<code>/etc/init.d/sshd start</code>
+
+

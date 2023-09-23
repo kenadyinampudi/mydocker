@@ -1,0 +1,70 @@
+
+<h2 class="sectionedit1" id="migrate_fmmp_to_driv">Migrate FMMP to DRIV</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Note On all servers do not use the FDQN (Fully Qualified Domain Name) use the short name only.</div>
+</li>
+<li class="level1"><div class="li"> logon to the server to be migrated.</div>
+</li>
+<li class="level1"><div class="li"> Before starting the migration check for aliases in the /etc/hosts file <pre class="code">STBM=$(uname -n); grep -i $STBM /etc/hosts</pre>
+
+<p>
+  Example 
+</p>
+<pre class="code"> 10.135.2.242    sap1201  sfldmiax11</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Log into a NIM server either sfldmiax241, or cdcvilax118. Verify that the driv.com  <abbr title="Domain Name System">DNS</abbr> entries for the server to be migrated have been created by the Wintel Team.Do this for each hostname in the output from the line above. <pre class="code"> nslookup {server to be migrated} </pre>
+
+<p>
+ If the <abbr title="Domain Name System">DNS</abbr> entries are missing STOP! Contact the Wintel Team and have then create the new <abbr title="Domain Name System">DNS</abbr> entries for both the server names in the outoput from th step above. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li">  Make a backup copy of the /etc/hosts file <pre class="code"> sudo cp -p /etc/hosts /etc/hosts-$(date +%Y%m%d-%H:%M:%S)</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  make a backup copy of the /etc/resolv.conf file <pre class="code"> sudo cp -p /etc/resolv.conf /etc/resolv.conf-$(date +%Y%m%d-%H:%M:%S)</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  Edit the /etc/host file and correct the entries. Example OLD Entries:<pre class="code">10.135.2.242    sap1201  sfldmiax11</pre>
+
+<p>
+ CORRECTED Entries:
+</p>
+<pre class="code"> 10.135.2.242    sap1201 sap1201.driv.com sfldmiax11 sfldmiax11.driv.com</pre>
+
+<p>
+Save the File. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li">  Edit the /etc/resolv.conf file and remove the old entries.  Add the following entries.<pre class="code">search driv.com fmmotorparts.com fmmp.fmmotorparts.com federalmogul.com na.fmo.com fedmog.federalmogul.com
+rotate
+nameserver 10.128.11.200
+nameserver 10.128.11.201
+nameserver 10.128.11.202</pre>
+
+<p>
+ save the file.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li">  Make a backup copy of the /etc/mail/sendmail.cf file <pre class="code"> sudo cp -p /etc/mail/sendmail.cf /etc/mail/sendmail.cf-$(date +%Y%m%d-%H:%M:%S)</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  Check the /etc/mail/sendmail.cf “Smart” relay host entry and fix it<pre class="code">TOFIX=$(grep -p &#039;&quot;Smart&quot; relay host&#039; /etc/mail/sendmail.cf | grep DS)
+if [[ $TOFIX = &#039;DS&#039; ]]
+        then
+        echo $TOFIX
+        echo &quot;Nothing to FIX Here, Move along&quot;
+        else
+	echo &quot;Edit the /etc/mail/sendmai.cf file and change the /&quot;Smart/&quot; relay host from $TOFIX to DS&quot;
+fi</pre>
+</div>
+</li>
+<li class="level1"><div class="li">  reboot the server. </div>
+</li>
+</ol>
+
+</div>

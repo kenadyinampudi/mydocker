@@ -1,0 +1,61 @@
+
+<h1 class="sectionedit1" id="ps_mp_fdc_disaster_recovery_test_destroy_aix_server_s_data">PS/MP FDC Disaster Recovery test  Destroy AIX server&#039;s data</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> <strong>!!! Do Not Shutdown the VIOS Servers in the FDC phlypapv023, and phlypapv024 !!!</strong> </div>
+</li>
+<li class="level1"><div class="li"> Login to each server recovered in the Disaster Recovery Test </div>
+</li>
+<li class="level1"><div class="li"> Shutdown/kill applications<pre class="code">ps -ef | egrep &quot;sap|ora|unispool|edi&quot; | grep -v grep | awk &#039;{print $2}&#039; | xargs -n5 kill -9</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown the Server this includes the NIM server in the FDC. <pre class="code">shutdown -F </pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "PS/MP FDC Disaster Recovery test  Destroy AIX server's data" [1-460] -->
+<h1 class="sectionedit2" id="turn_off_capacity_on_demand_cod">Turn Off  Capacity on Demand (CoD).</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Logon to the FDC HMC phlypahmc007</div>
+</li>
+<li class="level1"><div class="li"> Go to PHPVM022-9040-MR9-78AAECX</div>
+</li>
+<li class="level1"><div class="li"> In General Settings on the left hand side select COD functions. The display should look like this </div>
+</li>
+</ol>
+
+<p>
+<a href="/lib/exe/detail.php?id=chris%3Adr%3Adestroydrdata-fdc&amp;media=dr:2021-07-21-phlypahmc007-hardware-management-console-cod.png" class="media" title="dr:2021-07-21-phlypahmc007-hardware-management-console-cod.png"><img src="/lib/exe/fetch.php?media=dr:2021-07-21-phlypahmc007-hardware-management-console-cod.png" class="media" alt="" /></a>
+</p>
+<ol>
+<li class="level1"><div class="li"> Select On/Off Processor.</div>
+</li>
+<li class="level2"><div class="li"> Select Manage.</div>
+</li>
+<li class="level2"><div class="li"> Type 0 for the number of On/Off CoD processors and type 0 for the number of days, then click OK.</div>
+</li>
+<li class="level2"><div class="li"> Select On/Off Memory.</div>
+</li>
+<li class="level2"><div class="li"> Select Manage.</div>
+</li>
+<li class="level2"><div class="li"> Type 0 for the number of On/Off CoD processors and type 0 for the number of days, then click OK.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Turn Off  Capacity on Demand (CoD)." [461-1073] -->
+<h1 class="sectionedit3" id="reclaim_all_cpu_and_memory_that_was_allocated_from_capacity_on_demand_cod_reserves">Reclaim all CPU and Memory that was allocated from Capacity on Demand (CoD) reserves.</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Log on to the Real NIM Server pcdcunxaxap01 in the Production Network</div>
+</li>
+<li class="level2"><div class="li"> Run the following script to reset all FDC lpars back to their pre test state. This is im perative if it is not done IBM will contunie to record the CoD Processors and memory as in use bill Tenneco for the use Next D.R test.<pre class="code">reset-CoD-Proc-Mem.sh</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Reclaim all CPU and Memory that was allocated from Capacity on Demand (CoD) reserves." [1074-] -->

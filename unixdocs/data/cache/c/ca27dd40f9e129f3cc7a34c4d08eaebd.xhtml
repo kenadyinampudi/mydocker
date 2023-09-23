@@ -1,0 +1,61 @@
+
+<h2 class="sectionedit1" id="set_ssh_startup_by_inetd">Set ssh startup by inetd</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> logon to server being built</div>
+</li>
+<li class="level1"><div class="li"> Make a copy of the inetd.conf file<pre class="code">sudo /usr/bin/cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y-%m-%d-%H:%M:%S)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Insert the entry into the inetd.conf file <pre class="code">grep -q ^ssh /etc/inetd.conf
+[[ ${?} -ne 0 ]] &amp;&amp; echo &quot;ssh stream   tcp      nowait   root  /usr/sbin/sshd  sshd -i&quot;  | sudo tee -a  /etc/inetd.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Refresh the inetd daemon so that it knows about the changes to the file <pre class="code">sudo  refresh -s inetd </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update the rc scripts that start/stop sshd. </div>
+<ol>
+<li class="level2"><div class="li"> First make a copy <pre class="code">sudo cp -p /etc/rc.d/rc2.d/Ssshd /etc/rc.d/rc2.d/Ssshd-original
+sudo cp -p /etc/rc.d/rc2.d/Ksshd /etc/rc.d/rc2.d/Ksshd-original</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Edit the Ssshd file and put in the following lines after the #!/bin/ksh statement <pre class="code">sudo vi /etc/rc.d/rc2.d/Ssshd</pre>
+
+<p>
+Add these lines right after the first line
+</p>
+<pre class="code"># inserted 2 lines - ssh is now started from initd
+exit 0
+exit 0 </pre>
+
+<p>
+ save the changes
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Edit the Ksshd file and put in the following lines after the #!/bin/ksh statement <pre class="code">sudo vi /etc/rc.d/rc2.d/Ksshd</pre>
+
+<p>
+Add these lined right after the first line
+</p>
+<pre class="code"># inserted 2 lines - ssh is now started from initd
+exit 0
+exit 0 </pre>
+
+<p>
+ save the changes
+</p>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Set ssh startup by inetd" [1-1272] -->
+<h2 class="sectionedit2" id="end_of_set_ssh_startup_by_inetd">End of Set ssh startup by inetd</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT2 SECTION "End of Set ssh startup by inetd" [1273-] -->

@@ -1,0 +1,64 @@
+====== Start LPARs at CDC/PTT ======
+
+** CDC PTT HMC is tgprhmc7.pt.int.tenneco.com **
+
+===== Switch console database from LDC to CDC =====
+
+  - Login to the NIM server ''pgnmsv01''
+  - Update console database<code>sudo vi /prod/images/etc/unix_sys_console</code>Chris has already defined few lpars in this file. So,
+    - Comment the entry that is uncommented.
+    - Uncomment the entry that is commented.
+
+===== Boot lpars at CDC/PTT =====
+
+  - Store variables that points to your systems<code>export hostname=name_of_the_system</code>
+  - Find our the frame and store than in a variable<code>export frame=$(grep -i ^${hostname} /prod/images/etc/unix_sys_console | awk -F: '{print $4}' )</code>
+  - Power on the lpar<code>ssh tgprhmc7.pt.int.tenneco.com "chsysstate -r lpar -o on -b sms -m ${frame} -n ${hostname}"</code>
+===== Perform post migration tasks at CDC/PTT =====
+
+  - Open a console session to your host<code>sudo getconsole ${hostname}</code>
+  - Make sure you booted from the right disk<code>lspv | grep rootvg</code>
+    - If you see a vg called "old_rootvg" -- then set the bootlist to the disk for that VG and reboot.<code>bootdisk=$(lspv | grep -w old_rootvg | awk '{print $1}')
+sudo bootlist -m normal ${bootdisk}</code>
+  - Re-configure NICs at PTT & assign the IP addres.(Validate it with the backup files in your home directory taken prior the migration)
+    - Remove all IP configs if any from kernel<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all device files for NICs<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Re-discover the NICs<code>sudo cfgmgr</code>
+    - Configure IP Addresses<code>cat /root/configure_ips.cmds</code>Check the output and execute the commands.
+  - On clustered CI systems, varyon and mount filesystems and nfs, virtual IPs etc. <code>paerap99
+paerap98
+
+peerap99
+peerap98</code>
+  - NTP update<code>sudo ntpdate -u pgntpap01</code>
+  - Enable NFS and reboot servers at PTT
+    - Enable NFS mounts<code>nfsfilesystems=$(grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | tr "\n" " " )
+
+for nfsfs in ${nfsfilesystems}
+do
+   sudo /usr/local/scripts/manage_auto_mount_nfs enable ${nfsfs}
+done</code>
+    - Enable NFS exports<code>if [ -f /etc/exports.move2cdc ]
+then
+   sudo mv /etc/exports.move2cdc /etc/exports
+   sudo exportfs -ua
+   sudo exportfs -a
+fi</code>   
+  - Cleanup the MPIO<code>lsdev -Cc disk | grep -i defined | awk '{print $1}' | awk '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - Install Actifio client
+    - Expand some filesystems<code>sudo chfs -a size=+1G /usr
+sudo chfs -a size=+1G /opt</code>
+    - Install the package<code>sudo installp -acX -d /tmp/connector-AIX-latestversion.bff udsagent.rte</code>
+    - Remove the installation file<code>sudo rm /tmp/connector-AIX-latestversion.bff</code>
+  - Set bootlist<code>lspv | grep -w rootvg | awk '{print $1}' | xargs -n1 sudo bootlist -m normal </code>
+  - Reboot the server<code>sudo shutdown -Fr</code>
+  - Please reconfigure the IP alias, if any.<code>cat /root/configure_ips.cmds</code>
+  - [[https://tenneco.service-now.com/cmdb_ci_server_list.do?sysparm_userpref_module=8233ee770a0a0a64018f2cc165cdf2ed&sysparm_clear_stack=true |In Service now locate the CI and change the location from Lincolnshire IL /US to Cyxtera DFT Data Center]] 
+
+

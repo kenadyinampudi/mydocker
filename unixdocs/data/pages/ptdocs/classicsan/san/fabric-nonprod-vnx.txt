@@ -1,0 +1,24 @@
+====== Fabric Zoning Nonproduction servers to VNX ======
+
+^Fabric^Target^Registration^
+|A|vnx53001_spa2 vnx53001_spb2|A6 B6|
+|B|vnx53001_spa3 vnx53001_spb3|A7 B7|
+
+
+  * **Ports SPA2, SPB2, SPA3, SPB3 ** are reserved for nonprod connectivity.
+  * Fabric A zoning
+    - Login to Fabric A principal switch<code>ssh admin@ldcds5300a1</code>
+    - Create WWN aliases if not already created<code>alicreate "taprvio3_06855f","21:00:00:1b:32:06:85:5f"</code>
+    - Create zoning to SPA2 and SPB2<code>zonecreate "taprvio4_052be6__vnx53001_spa2","taprvio4_052be6;vnx53001_spa2"
+zonecreate "taprvio4_052be6__vnx53001_spb2","taprvio4_052be6;vnx53001_spb2"</code>
+    - Add the zone to config<code>cfgadd "fab_a_act_config","taprvio4_052be6__vnx53001_spa2;taprvio4_052be6__vnx53001_spb2"</code>
+    - Save and enable the config<code>cfgsave
+cfgenable "fab_a_act_config"</code>
+  * Fabric B zoning
+    - Login to Fabric B principal switch<code>ssh admin@ldcds5300b1</code>
+    - Create WWN aliases if not already created<code>alicreate "taprvio3_274001","21:01:00:1b:32:27:40:01"</code>
+    - Create zoning to SPA3 and SPB3<code>zonecreate "taprvio4_279c4f__vnx53001_spa3","taprvio4_279c4f;vnx53001_spa3"
+zonecreate "taprvio4_279c4f__vnx53001_spb3","taprvio4_279c4f;vnx53001_spb3"</code>
+    - Add the zone to config<code>cfgadd "fab_b_act_config","taprvio4_279c4f__vnx53001_spa3;taprvio4_279c4f__vnx53001_spb3"</code>
+    - Save and enable the config<code>cfgsave
+cfgenable "fab_b_act_config"</code>

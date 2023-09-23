@@ -1,0 +1,270 @@
+
+<h1 class="sectionedit1" id="configuring_disks_on_dual_vios_present_disks_to_guest_and_create_filesystem">Configuring disks on Dual VIOS, present disks to guest and create filesystem</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Configuring disks on Dual VIOS, present disks to guest and create filesystem" [1-92] -->
+<h3 class="sectionedit2" id="request">Request</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> From time to time, we will get requests from application teams like the one below<pre class="code">Plase create a filesystem /usr/sap/CTA/SUM size 100G and change the owership to ctaadm:sapsys on daerdb01</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Request" [93-316] -->
+<h3 class="sectionedit3" id="prep_tasks">Prep tasks</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Logon to daerdb01 and check if the filesystem exists or not<pre class="code">ls -ld /usr/sap/CTA/SUM</pre>
+
+<p>
+If it does exist, even if it is a directory, please go back to the requestor and check with them and make sure it is okay to go ahead and create the filesystem.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure that the mount point is not on an NFS mounted filesystem.<pre class="code">df -k /usr/sap/CTA/SUM</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the correct VG for the requested filesystem.<pre class="code">lsvg</pre>
+
+<p>
+Check similar filesystems and figure out where they are
+</p>
+<pre class="code">lslv &lt;lvname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out if the VG has enough space or not<pre class="code">lsvg &lt;vg_name&gt;</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> If the VG has enough space, go to “Create the fileysstem step”</div>
+</li>
+<li class="level2"><div class="li"> If the VG does not have enough storage, we need to add an additional disk to it. AIX servers we maintain, use one of the following for storage</div>
+<ul>
+<li class="level3"><div class="li"> Local disks ( SAS, <abbr title="Small Computer System Interface">SCSI</abbr>, etc )<pre class="code">lsdev -Ccdisk | egrep -i &quot;sas|scsi&quot;
+hdisk3   Available 03-00-00 SAS Disk Drive
+hdisk4   Available 02-00-00 SAS RAID 0 SSD Array
+hdisk5   Available 02-00-00 SAS RAID 0 SSD Array
+hdisk6   Available 08-00-00 SAS Disk Drive
+hdisk7   Available 05-00-00 SAS RAID 0 SSD Array
+hdisk8   Available 05-00-00 SAS RAID 0 SSD Array</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Directly attached SAN storage<pre class="code">x1kxk630 on pggtdb01:/home/x1kxk630 $ lsdev -Ccdisk
+hdisk0  Available C5-T1-01 EMC Symmetrix FCP MPIO VRAID
+hdisk1  Available C7-T1-01 EMC Symmetrix FCP MPIO VRAID
+hdisk2  Available C7-T1-01 EMC Symmetrix FCP MPIO VRAID
+hdisk3  Available C4-T1-01 EMC Symmetrix FCP MPIO VRAID</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Virtual <abbr title="Small Computer System Interface">SCSI</abbr> disk presented through VIOS server(s)<pre class="code">hdisk0  Available  Virtual SCSI Disk Drive
+hdisk8  Available  Virtual SCSI Disk Drive
+hdisk9  Available  Virtual SCSI Disk Drive
+hdisk10 Available  Virtual SCSI Disk Drive</pre>
+</div>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Prep tasks" [317-2092] -->
+<h3 class="sectionedit4" id="adding_disks_to_a_dual_vios_guest">Adding disks to a Dual VIOS guest</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Find out which VIO server serves the storage for the given server using one of the following methods.</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:viodisksmap-summary" class="wikilink1" title="unix:viodisksmap-summary">Look up unix documentation</a></div>
+</li>
+<li class="level2"><div class="li"> Look at the HMC, find out the managed system, then find out the VIO servers.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:viodisksmap-summary" class="wikilink1" title="unix:viodisksmap-summary">Make a note of the array serial number from the documentation</a></div>
+</li>
+<li class="level1"><div class="li"> Find out the disk size used on the VG<pre class="code">lsvg -p , bootinfo -s</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send a request to Storage team requesting storage<pre class="code">How many disks are needed ?
+Size of each disk
+To which server they should provision the storage ?
+The array serial number from which the storage needs to be carved.</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Adding disks to a Dual VIOS guest" [2093-2791] -->
+<h3 class="sectionedit5" id="configure_the_storage_on_vios_servers">Configure the storage on VIOS servers</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> The storage, once provisioned, will come back to you with some comments like this<pre class="code">LUN xyz has been allocated to taprvio50 &amp; 51. Please run cfgmgr.</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the storage on VIOS servers</div>
+<ol>
+<li class="level2"><div class="li"> On the first VIOS server. Document the current disk layout<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.before</pre>
+
+<p>
+Run cfgmgr to rescan and detect the new disks
+</p>
+<pre class="code">sudo cfgmgr</pre>
+
+<p>
+Document the disk layout now
+</p>
+<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.after</pre>
+
+<p>
+Find out the new device using diff
+</p>
+<pre class="code">diff lsdiskcfg.out.before lsdiskcfg.out.after</pre>
+</div>
+<ol>
+<li class="level3"><div class="li"> If VIOS server is using powerpath, disable reserve_lock policy.</div>
+<ol>
+<li class="level4"><div class="li"> On some EMC ODM versions<pre class="code">sudo chdev -l &lt;hdiskpowername&gt; -a reserve_lock=no</pre>
+
+<p>
+On some other versions
+</p>
+<pre class="code">sudo chdev -l hdiskpowername -a reserve_policy=no_reserve</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> If VIOS server is using AIX MPIO<pre class="code">sudo chdev -l &lt;hdiskname&gt; -a reserve_policy=no_reserve</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Allocate a PVID<pre class="code">sudo chdev -l &lt;hdiskpowername&gt; -a pv=yes</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> On the second VIOS server, Document the current disk layout<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.before</pre>
+
+<p>
+Run cfgmgr to rescan and detect the new disks
+</p>
+<pre class="code">sudo cfgmgr</pre>
+
+<p>
+Document the disk layout now
+</p>
+<pre class="code">sudo /usr/local/scripts/lsdiskcfg &gt; lsdiskcfg.out.after</pre>
+
+<p>
+Find out the new device using diff
+</p>
+<pre class="code">diff lsdiskcfg.out.before lsdiskcfg.out.after</pre>
+
+<p>
+Make sure you see the new disk on the second VIOS server as well.
+</p>
+</div>
+<ol>
+<li class="level3"><div class="li"> If VIOS server is using powerpath, disable reserve_lock policy.</div>
+<ol>
+<li class="level4"><div class="li"> On some EMC ODM versions<pre class="code">sudo chdev -l &lt;hdiskpowername&gt; -a reserve_lock=no</pre>
+
+<p>
+On some other versions
+</p>
+<pre class="code">sudo chdev -l hdiskpowername -a reserve_policy=no_reserve</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level3"><div class="li"> If VIOS server is using AIX MPIO<pre class="code">sudo chdev -l &lt;hdiskname&gt; -a reserve_policy=no_reserve</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Configure the storage on VIOS servers" [2792-4709] -->
+<h3 class="sectionedit6" id="configure_storage_to_the_guest">Configure storage to the guest</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> On VIOS server 1, find out the vhost that is used by the guest<pre class="code">grep &lt;guestname&gt; lsdiskcfg.out.after</pre>
+
+<p>
+Make a note of it
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Login as padmin and add the disks to the vhost<pre class="code">sudo su - padmin</pre>
+
+<p>
+Add the VIOS mapping
+</p>
+<pre class="code">mkvdev -vdev &lt;hdiskpowername&gt; -vadapter &lt;vhost_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On VIOS server 2, find out the vhost that is used by the guest<pre class="code">grep &lt;guestname&gt; lsdiskcfg.out.after</pre>
+
+<p>
+Make a note of it
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Login as padmin and add the disks to the vhost<pre class="code">sudo su - padmin</pre>
+
+<p>
+Add the VIOS mapping
+</p>
+<pre class="code">mkvdev -vdev &lt;hdiskpowername&gt; -vadapter &lt;vhost_name&gt;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Configure storage to the guest" [4710-5352] -->
+<h3 class="sectionedit7" id="detect_and_configure_the_device_on_guest">Detect and configure the device on guest</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Document the current disks<pre class="code">lspv &gt; lspv.before</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run cfgmgr<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Document the current disks<pre class="code">lspv &gt; lspv.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find the difference which should list the disk we just added<pre class="code">diff lspv.before lspv.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check if the PVID matches to which we saw in the VIOS servers</div>
+</li>
+<li class="level1"><div class="li"> Add the disk to the VG<pre class="code">sudo extendvg &lt;vgname&gt; &lt;diskname&gt;</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Detect and configure the device on guest" [5353-5811] -->
+<h3 class="sectionedit8" id="create_the_filesystem">Create the filesystem</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Create the filesystem<pre class="code">sudo crfs -v jfs2 -A yes -t no -g &lt;vg_name&gt; -a size=&lt;size&gt;G -m &lt;mount_point&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then mount the filesystem<pre class="code">sudo mount &lt;mount_point&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the ownership<pre class="code">sudo chown ctaadm:sapsys &lt;mount_point&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Close the ticket and email the user.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT8 SECTION "Create the filesystem" [5812-] -->

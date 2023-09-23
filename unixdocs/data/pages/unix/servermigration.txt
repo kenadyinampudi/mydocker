@@ -1,0 +1,111 @@
+====== TGPRETL1 had to be migrated from taprvio3 to VIO cluster 40/41 ======
+
+  - Make sure the system is in blackout
+    - [[http://taitc212/cgi-bin/blackout/login.cgi|Use this URL to enter a new one]]
+    - [[http://taitc212/cgi-bin/active_bo.cgi|Use this URL to verify the blackout]]
+  - Get on to the console. Login to pgnmsv01<code>getconsole <servername></code>
+  - Get a list of running processes<code>ps -ef > /root/psef.$(date +%m%d%y)</code>
+  - Get a list of mounted filesystems<code>df -k > /root/mountedfs.$(date +%m%d%y)</code>
+  - Get a list of disks and vgs pagingspace etc<code>lsvg > /root/lsvg.$(date +%m%d%y)
+lspv > /root/lspv.$(date +%m%d%y)
+lsps -a > /root/lsps.$(date +%m%d%y)</code>
+  - Check the bootlist against the last booted device<code>bootlist -o -m normal > /root/bootlist.$(date +%m%d%y)
+bootinfo -b > /root/bootinfob.$(date +%m%d%y)</code>
+  - Copy the files to pgnmsv01<code>ssh pgnmsv01 mkdir /var/tmp/tspr1d01
+scp /root/*.$(date +%m%d%y) pgnmsv01:/var/tmp/tspr1d01</code>
+  - Disable all NFS mounts and NFS exports<code>vi /etc/filesystems
+mv /etc/exports /etc/exports.OLD</code>
+  - List of disks to be migrated<code>0000aaca591d50df        altinst_rootvg
+0000aaca591d632d        rootvg
+00c9f3a063f80afd        datavg01
+00c9f3a063f990b2        datavg01
+00c9f3908c008a39        datavg01
+00c9f3908bf90964        datavg01
+00c9f3a063f68b89        datavg01
+0000aaca4a2df90a        datavg01
+0000aada54836619        datavg01
+0000aaca591fff00        datavg01
+0000aacae23b3df1        datavg01</code>Saved this file as /var/tmp/sourcedisks.tgpretl1 on taprvio40 and taprvio41
+  - Make a note of the IP addresses<code>en4    10.32.6.128
+en5    10.32.51.128</code>
+  - Shutdown the LPAR
+  - Unmap the disks from taprvio3.
+    - Check first<code>lsdiskcfg | egrep "hdisk4|hdisk5|hdisk6|hdisk7|hdisk9|hdisk10|hdisk19|hdisk20|hdisk27|hdisk29|hdisk33"</code>   
+    - Unmap the disks from taprvio3<code>for disk in hdisk4 hdisk5 hdisk6 hdisk7 hdisk9 hdisk10 hdisk19 hdisk20 hdisk27 hdisk29 hdisk33
+do
+   rmvdev -vdev ${disk}
+done</code>
+  - Remove the disks from taprvio3<code>echo "hdisk4 hdisk5 hdisk6 hdisk7 hdisk9 hdisk10 hdisk19 hdisk20 hdisk27 hdisk29 hdisk33" | xargs -n1 rmdev -dl</code>
+  - Moon will swing the LUNs to taprvio40 and 41.
+  - On taprvio40, configure the disks
+    - Configure devices<code>cfgmgr
+cat /var/tmp/sourcedisks.tgpretl1 | awk '{print $1}' > /var/tmp/sourcedisks.tgpretl1.pvid
+lspv | grep -wf /var/tmp/sourcedisks.tgpretl1.pvid > /var/tmp/viodisks.tgpretl1</code>
+    - Make sure these disks are not in use(Impossible but still )<code>awk '{print $1}' /var/tmp/viodisks.tgpretl1 > /var/tmp/viodisks.tgpretl1.pvs
+lsdiskcfg | grep -f /var/tmp/viodisks.tgpretl1.pvs</code>
+    - Check if the devices are readable<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   echo ${dev} :: $(bootinfo -s ${dev} )
+done</code>
+    - Turn off reserve lock<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   chdev -l ${dev} -a reserve_policy=no_reserve
+done</code>
+  - On taprvio41, configure the disks
+    - Configure devices<code>cfgmgr
+cat /var/tmp/sourcedisks.tgpretl1 | awk '{print $1}' > /var/tmp/sourcedisks.tgpretl1.pvid
+lspv | grep -wf /var/tmp/sourcedisks.tgpretl1.pvid > /var/tmp/viodisks.tgpretl1</code>
+    - Make sure these disks are not in use(Impossible but still )<code>awk '{print $1}' /var/tmp/viodisks.tgpretl1 > /var/tmp/viodisks.tgpretl1.pvs
+lsdiskcfg | grep -f /var/tmp/viodisks.tgpretl1.pvs</code>
+    - Check if the devices are readable<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   echo ${dev} :: $(bootinfo -s ${dev} )
+done</code>
+    - Turn off reserve lock<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   chdev -l ${dev} -a reserve_policy=no_reserve
+done</code>
+  - On taprvio40, Map the devices<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs )
+do
+   mkvdev -vdev ${dev} -vadapter vhost5
+done</code>
+  - On taprvio41, Map the devices<code>for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs )
+do
+   mkvdev -vdev ${dev} -vadapter vhost5
+done</code>
+  - Boot tgpretl1<code>ssh hscroot@taitc051
+chsysstate -r lpar -o on -b sms -m MES-Dev-QA-8205-E6B-SN1048EEP -n tgpretl1 -f tgpretl1</code>
+  - At the console make sure we booted from the correct disk<code>lspv | grep rootvg</code>
+  - Configure the network
+    - Down detach all the interfaces<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>cfgmgr</code>
+    - Create etherchannel is required for both the front end and backup adapters<code>mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names='ent0'  -a backup_adapter='ent1'  -a netaddr='10.32.50.1'  -a num_retries='2' -a retry_time='2'</code>
+    - Run cfgmgr<code>cfgmgr</code>
+    - Configure the front end IP<code>/usr/sbin/mktcpip -h'peerap09' -a'10.32.50.x' -m'255.255.255.0' -i'en3' -n'10.32.8.53' -d'eu.ten' -g'10.32.50.1' -A'no' -t'N/A' -s''</code>
+    - Configure the backup network<code>chdev -l en2 -a netaddr=10.32.51.x -a netmask=255.255.255.0 -a state=up</code>
+    - Enable all NFS mounts and NFS exports<code>cp /etc/filesystems.OLD /etc/filesystems
+mv /etc/exports.OLD /etc/exports</code>
+  - **Update and make sure date and time on the server**
+  - Update the console database. On pgnmsv01<code>vi /prod/images/etc/unix_sys_console</code>
+  - Fix mksysb / alt_disk_copy scripts
+    - If the server has moved as a VIO guest which has no local tape drive, remove the mksysb-tape.sh from cron.
+    - If the server has moved from booting internal disks to virtual disks, Install this script<code>59 21 * * 4 /usr/local/scripts/cr_altdisk-nopower.sh 1>/dev/null 2>&1</code>
+  - If the server has been moved from single VIO setup to dual VIO server setup, perform the following steps.
+    - Make a note of the pvid of alt_rootvg disk and remove the hdisks that belonged to alt_rootvg<code>alt_root_disk=$(lspv | grep alt_rootvg | awk '{print $2}' | sort -u)
+lspv | grep alt_rootvg | awk '{print $1}' | xargs -n1 rmdev -dl</code>
+    - Remove the alt_rootvg<code>alt_disk_install -X alt_rootvg</code>
+    - Run cfgmgr<code>cfgmgr</code>
+    - Create a alt_rootvg<code>alt_disk_copy -d $(lspv | grep ${alt_root_disk} | awk '{print $1}' )</code>
+    - Reboot the server<code>shutdown -Fr</code>
+    - Make a note of the pvid of old_rootvg disk and remove the hdisks that belonged to it<code>old_root_disk=$(lspv | grep old_rootvg | awk '{print $2}' | sort -u)
+lspv | grep old_rootvg | awk '{print $1}' | xargs -n1 rmdev -dl</code>
+    - Remove the old_rootvg<code>alt_disk_install -X old_rootvg</code>
+    - Run cfgmgr<code>cfgmgr</code>
+    - Create a alt_rootvg<code>alt_disk_copy -d $(lspv | grep ${old_root_disk} | awk '{print $1}' )</code>

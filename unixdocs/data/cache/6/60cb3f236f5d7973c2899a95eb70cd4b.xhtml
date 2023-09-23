@@ -1,0 +1,47 @@
+
+<h1 class="sectionedit1" id="cleanup_driv_clones_-_unix_instructions">Cleanup DRiV clones - Unix instructions</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Perform this step only on the clones <strong>not on the Tenneco Legacy systems </strong></div>
+</li>
+<li class="level1"><div class="li"> Login to the host</div>
+</li>
+<li class="level1"><div class="li"> Terminate any SAP or Oracle processes<pre class="code">ps -ef | egrep &quot;sap|ora|sdb&quot; | grep -v grep | awk &#039;{print $2}&#039; | xargs -n1 sudo kill -9</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a snapshot of disks<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh &gt; lsvpcfg.out.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount datavg filesystems<pre class="code">for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   for fs in $(lsvgfs ${vg} | sort -r )
+   do
+      echo &quot;Working on ${vg} - ${fs} &quot;
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -uk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] &amp;&amp; echo &quot;We have a problem unmounting ${fs} &quot;
+      fi
+   done
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check for any open logical volumes and take action to close them<pre class="code">lsvg | grep -v rootvg | xargs -n1 lsvg -l | grep -i open</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export VGs and delete disks<pre class="code">for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+   grep ${vg} lsvpcfg.out.1 | awk -F: &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Send the output of this command to Storage team with the hostname, ask them to reclaim<pre class="code">grep -v rootvg lsvpcfg.out.1 | grep &quot;PURE-FLASH&quot;</pre>
+</div>
+</li>
+</ol>
+
+</div>

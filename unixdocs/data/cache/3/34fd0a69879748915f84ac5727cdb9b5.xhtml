@@ -1,0 +1,60 @@
+<pre class="code">auth  --useshadow  --enablemd5
+bootloader --location=mbr
+clearpart --all --initlabel
+text
+firewall --disabled
+firstboot --disable
+keyboard us
+lang en_US
+url --url=$tree
+reboot --eject
+rootpw --plaintext abc123
+selinux --disabled
+skipx
+timezone --utc America/Chicago
+install
+zerombr
+part /boot --fstype ext3 --size=1024 --ondisk=sda
+part pv.01 --size=1 --grow --ondisk=sda
+volgroup sysvg --pesize=65536 pv.01
+logvol swap --fstype swap --name=swap --vgname=sysvg --size=8192
+logvol /opt --fstype ext4 --name=opt --vgname=sysvg --size=6144
+logvol / --fstype ext4 --name=root --vgname=sysvg --size=10240
+logvol /home --fstype ext4 --name=home --vgname=sysvg --size=1024
+logvol /tmp --fstype ext4 --name=tmp --vgname=sysvg --size=2048
+logvol /var --fstype ext4 --name=var --vgname=sysvg --size=8192
+
+$yum_repo_stanza
+
+$SNIPPET(&#039;network_config&#039;)
+
+%pre
+$SNIPPET(&#039;log_ks_pre&#039;)
+$SNIPPET(&#039;kickstart_start&#039;)
+$SNIPPET(&#039;pre_install_network_config&#039;)
+$SNIPPET(&#039;pre_anamon&#039;)
+%end
+#
+%packages
+@base
+$SNIPPET(&#039;func_install_if_enabled&#039;)
+$SNIPPET(&#039;puppet_install_if_enabled&#039;)
+%end
+#
+%post
+$SNIPPET(&#039;log_ks_post&#039;)
+$yum_config_stanza
+$SNIPPET(&#039;post_install_kernel_options&#039;)
+$SNIPPET(&#039;post_install_network_config&#039;)
+$SNIPPET(&#039;func_register_if_enabled&#039;)
+$SNIPPET(&#039;puppet_register_if_enabled&#039;)
+$SNIPPET(&#039;download_config_files&#039;)
+$SNIPPET(&#039;koan_environment&#039;)
+$SNIPPET(&#039;redhat_register&#039;)
+$SNIPPET(&#039;cobbler_register&#039;)
+# Enable post-install boot notification
+$SNIPPET(&#039;post_anamon&#039;)
+# Start final steps
+$SNIPPET(&#039;kickstart_done&#039;)
+# End final steps
+%end</pre>

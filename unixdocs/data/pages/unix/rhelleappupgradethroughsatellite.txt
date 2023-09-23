@@ -1,0 +1,124 @@
+====== RHEL Upgrade from 7.9 to 8.6 ======
+  * **In place upgrade of Red Hat Enterprise Linux from 7.9 to 8.6 through Redhat Satellite Manager**
+  * This section outlines the process of upgrading Red Hat Enterprise Linux from version 7.9 to version 8.6 using the "leapp" utility and making necessary configuration adjustments.
+====== Pre-Upgrade ======
+  - ** Make sure the console of the server is accessible and able to login using your credentials **
+  - **Make sure a backup of the entire system available for recovery **:
+    * Take a VMWARE Snapshot , if the system is a VMWare VM 
+    * If it is a physical system , make sure a back up of the system is available for recovery 
+  - **Gather critical system information before the upgrade **:
+    * Run the following script to gather the information,<code>#!/bin/bash
+set -x
+# List of target systems (replace with actual IP addresses or hostnames)
+target_systems=(
+"hostname1"
+"hostname2"
+    # Add more target systems here if needed
+)
+
+# Function to gather system information and write to a file
+gather_info() {
+    local target="$1"
+    local info_file="$output_dir/${target}_$2.txt"
+    echo "Gathering $2 from $target..."
+    ssh "$target" "$2" > "$info_file" 2>&1
+}
+
+# Create a directory to store system information
+output_dir="/tmp"
+
+# Gather system information for each target system
+for target in "${target_systems[@]}"; do
+    gather_info "$target" "hostname"
+    gather_info "$target" "cat /etc/redhat-release"
+    gather_info "$target" "uname -a"
+    gather_info "$target" "lscpu"
+    gather_info "$target" "free -h"
+    gather_info "$target" "lsblk"
+    gather_info "$target" "df -hT"
+    gather_info "$target" "ip addr"
+    gather_info "$target" "yum list installed"
+    gather_info "$target" "cat /etc/resolv.conf"
+    gather_info "$target" "sysctl -a"
+    gather_info "$target" "crontab -l"
+    gather_info "$target" "systemctl status"
+done
+
+# Compress the gathered information
+tar -czvf "$output_dir/system_info.tar.gz" -C "$output_dir" .
+
+echo "System information has been gathered and saved to $output_dir/system_info.tar.gz"</code> 
+  - **Check if the system is registered to the Redhat Satellite **:
+    * Execute the following command "subscription-manager identity" to check, if it is registered the output will be like this:<code>$ subscription-manager identity
+system identity: 2d8f94a8-10ec-424a-9f8d-661016427676
+name: <hostname>
+org name: Tenneco
+org ID: tenneco
+environment name: Library/RHEL7to8Migration</code>
+  - **If the system is NOT registered to the Redhat Satellite, then register it first **:
+    * Execute the following command to register the system to Redhat Satellite :<code>curl -sS --insecure 'https://cdcpillx205.pt.int.tenneco.com/register?activation_keys=eerbody&operatingsystem_id=1&organization_id=4&update_packages=false' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxNywiaWF0IjoxNjg1NTU5MDI4LCJqdGkiOiIzZDY3ZDM4MTE3ZGYwOWYzYWE3ZTY2ZWJiMGMyM2FjOTkxMWI5YjMwYmM5Njc3YzJjN2VmZTVmNTk4ZDI5NGJkIiwic2NvcGUiOiJyZWdpc3RyYXRpb24jZ2xvYmFsIHJlZ2lzdHJhdGlvbiNob3N0In0.y0qZpk3Cim89Lw7-TkiVtg2H6UEfMQUKYJqbB2RsvCQ' | bash</code>
+  - **Enable Extras Repository**:
+    * Execute the following command to enable the "Extras" repository for Red Hat Enterprise Linux 7, "leapp" in place upgrade utility is part of this repo :<code>subscription-manager repos --enable rhel-7-server-extras-rpms</code>
+  - **Install "leapp" Utility**:
+    * Use the following command to install the "leapp" utility, which facilitates the in place upgrade process:<code>yum install leapp -y</code>
+  - **One Critical requirement for leapp in place upgrade**:
+    * Make sure that the /var file system has about 15GB of free space otherwise the upgrade process will fail during the actual upgrade
+    * If the /var file system does not have sufficient free space, need to create a file system of 15GB and mount it under /var as /var/lib/leapp
+  - **Update SSH Configuration**:
+    * Uncomment the "PermitRootLogin yes" line in the SSH server configuration file and restart the SSH service:<code>shell
+sed -i 's/^#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
+systemctl restart sshd</code>
+  - **Perform this steps , Only if the server manufacturer is DELL (Mostly Netbackup Servers) **:
+    * The Dell OMSA component installed on RHEL 7.x is not compatible with RHEL 8.x and need to be removed prior to the upgrade to RHEL 8.Run the following command to navigate to the directory where the srvadmin-uninstall.sh script is located:<code>cd /opt/dell/srvadmin/sbin
+./srvadmin-uninstall.sh -x</code>The -x option ensures that the uninstallation is done in a non-interactive mode, which is useful for automated or scripted uninstallation processes.Wait for the uninstallation process to complete. This might take a moment as the script removes the Dell OMSA components from your system.Once the uninstallation is finished, you can verify that Dell OMSA has been removed from your system.
+  - **Run Pre-Upgrade Check**:
+     * Execute the following command to run the pre-upgrade check using "leapp" for upgrading to Red Hat Enterprise Linux 8.6:<code>leapp preupgrade --target 8.6 --no-insights-register --enablerepo codeready-builder-for-rhel-8-x86_64-rpms</code>
+  - **Provide Pre-Upgrade Answer**:
+     * Confirm the removal of the PAM PKCS11 module by providing the following answer:<code>leapp answer --section remove_pam_pkcs11_module_check.confirm=True</code>
+     * **Review the /var/log/leapp/leapp-report.txt pre-upgrade report and fix any issues**:    
+     * A pre-upgrade report is generated and is available for review @ /var/log/leapp/leapp-report.txt, review it and fix any issues reported, especially the ones with a Risk Factor: Inhibitor
+  - **Re-Run the Pre-Upgrade Check and Confirm that all Risk Factors of type "Inhibitor" is fixed**:
+     * Execute the following command to run the pre-upgrade check using "leapp" for upgrading to Red Hat Enterprise Linux 8.6:<code>leapp preupgrade --target 8.6 --no-insights-register --enablerepo codeready-builder-for-rhel-8-x86_64-rpms</code>
+     * Review the /var/log/leapp/leapp-report.txt pre-upgrade report and make sure all Risk Factors of type Inhibitor is fixed
+====== Upgrade Process ======
+
+  - **Initiate Upgrade Process**:
+     * Begin the upgrade process to Red Hat Enterprise Linux 8.6 with the following command:<code>leapp upgrade --target 8.6 --no-insights-register --enablerepo codeready-builder-for-rhel-8-x86_64-rpms</code>
+  - **Reboot the system once the upgrade is finished **:
+     * The system will upgrade all the file sets and create a new kernel and will prompt you to reboot the system
+  - **Login into the system console and observe the post upgrade activities **:
+      * The system will perform some post upgrade configuration/migration activities own its own after the reboot and the system will not be available across the network,meaning SSH to the system wont be possible. 
+      * You may have to login into the system console and observe the activities from there. Upon completion of the post upgrade activities the system will be available on the network. Be very very patient , this might take some time !!!!
+  - **Login into the system and make sure the system is upgraded to RHEL 8.6 Version **: 
+      * You may refer the upgrade log available at /var/log/leapp/leapp-upgrade.log
+      * Run the command "hostnamectl" to see the Operating System reported is indeed RHEL 8.6<code>hostnamectl
+Static hostname: julnbuhmams
+Icon name: computer-server
+Chassis: server
+Machine ID: 607310852f32448bbb9b0e05cce33d85
+Boot ID: bac078055e504a5dbebc34a06f8f8eb1
+Operating System: Red Hat Enterprise Linux 8.6 (Ootpa)
+CPE OS Name: cpe:/o:redhat:enterprise_linux:8::baseos
+Kernel: Linux 4.18.0-372.32.1.el8_6.x86_64
+Architecture: x86-64</code>
+====== Post-Upgrade ======
+
+  - **Set Default Python Interpreter**:
+      * Set the system-wide default Python interpreter to Python 3:<code>alternatives --set python /usr/bin/python3</code>
+  - **Update SSH Configuration (Undo Change)**:
+      * Comment out the "PermitRootLogin yes" line in the SSH server configuration file and restart the SSH service:<code>shell
+sed -i 's/^PermitRootLogin yes/#PermitRootLogin yes/' /etc/ssh/sshd_config
+systemctl restart sshd</code>
+  - **Perform this steps , Only if the server being updated is of DELL make (mostly Netbackup Servers) **:
+      * Install RHEL 8.x compatible version of Dell OpenManage Server Administrator on the system:<code>scp cdcpillx055:/RHEL8.X/dell_omsa_RHEL8X/OM-SrvAdmin-Dell-Web-LX-9.3.1-3654.RHEL8.x86_64_A00.tar.gz /root/
+mkdir /root/dell_omsa
+cd /root/dell_omsa/
+mv ../OM-SrvAdmin-Dell-Web-LX-9.3.1-3654.RHEL8.x86_64_A00.tar.gz .
+tar zxvf OM-SrvAdmin-Dell-Web-LX-9.3.1-3654.RHEL8.x86_64_A00.tar.gz
+./setup.sh -x</code>
+  - **Do a validation of the server**:
+      * Perform a standard check/validation  of the system after the upgrade and make sure all the services, configuratons, file system etc are as expected from an OS prospective
+  - **Additional software that may need to be installed for Netbackup Servers Only**:
+      * GIOS Data Preservation Team has some dockerized admin utility that require "podman" to be installed. If Docker was previously installed, Podman replace Docker, which needs to be installed separately.<code>sudo yum install docker -y</code>
+
+

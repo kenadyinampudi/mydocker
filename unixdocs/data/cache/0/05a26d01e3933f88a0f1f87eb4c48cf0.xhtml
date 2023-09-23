@@ -1,0 +1,101 @@
+
+<h1 class="sectionedit1" id="configure_nim_server">Configure NIM server</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Logon to the HMC  <pre class="code">https://phlypahmc007/hmc/connect</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Boot tthe NIM server pcdcunxaxap01 in SMS mode. You will need to select the boot disks.</div>
+</li>
+<li class="level1"><div class="li"> <a href="/lib/exe/detail.php?id=chris%3Animrecoverycmds-2021&amp;media=chris:bootserverhmc.png" class="media" title="chris:bootserverhmc.png"><img src="/lib/exe/fetch.php?media=chris:bootserverhmc.png" class="media" alt="" /></a></div>
+</li>
+<li class="level1"><div class="li"> At the  SMS menu  Select 5: Boot Options, Select 1: Install/Boot Device, Select 5: List all Devices. Wait for all devices to be scanned. </div>
+</li>
+<li class="level1"><div class="li"> Scroll through the list of devices presented and look an entry that is like the following <pre class="code"> 148 GB   FC Harddisk, part=2 (AIX 7.1.0)</pre>
+
+<p>
+ Select that device number and continue.  On the next screen select 2: Normal Mode Boot and continue. Select 1 exit the boot memu and confunie the boot process. 
+</p>
+</div>
+</li>
+</ol>
+
+<p>
+mv /etc/resolv.conf /etc/resolv.conf.OLD
+</p>
+
+<p>
+# If a successful copy had been made, rename the exports file to prevent long boot times.
+</p>
+
+<p>
+# Disable CRON
+rmitab cron
+</p>
+
+<p>
+# Configure NTP
+#
+#
+stopsrc -s xntpd
+mv /etc/ntp.conf /etc/ntp.conf.DRtest
+</p>
+
+<p>
+cat « <abbr title="End of file">EOF</abbr> » /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+<abbr title="End of file">EOF</abbr>
+</p>
+
+<p>
+chrctcp -S -a xntpd
+</p>
+
+<p>
+ntpdate -u nim
+</p>
+
+<p>
+# Configure iocp0
+#
+#
+</p>
+
+<p>
+chdev -l iocp0 -a autoconfig=available
+mkdev -l iocp0
+</p>
+
+<p>
+# Create the root mirror script
+</p>
+
+<p>
+##### WORK TO DO ######
+</p>
+<ol>
+<li class="level1"><div class="li"> Create NTP server on NIM serverarallel / be extremely careful ) <strong>
+&lt;code&gt;mv /etc/ntp.conf /etc/ntp.conf.copyforDR&lt;/code&gt;&lt;code&gt; vi /etc/ntp.conf &lt;/code&gt;
+&lt;code&gt;server 127.127.1.0
+fudge 127.127.1.0 stratum 9
+driftfile /etc/ntp.drift
+tracefile /etc/ntp.trace&lt;/code&gt;
+    - Create a client NTP.conf file&lt;code&gt;rm /root/ntp.client.conf
+cat « <abbr title="End of file">EOF</abbr> » /root/ntp.client.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+<abbr title="End of file">EOF</abbr>&lt;/code&gt;
+  - Start NTP daemons&lt;code&gt;chrctcp -S -a xntpd&lt;/code&gt;
+
+</strong> When in doubt, ask <strong>
+
+<a href="/lib/exe/detail.php?id=chris%3Animrecoverycmds-2021&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+
+</strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremely careful ) **</div>
+</li>
+</ol>
+
+</div>

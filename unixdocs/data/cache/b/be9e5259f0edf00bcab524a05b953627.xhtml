@@ -1,0 +1,138 @@
+
+<h1 class="sectionedit1" id="ftp_server_fail-over_documentation">FTP Server fail-over documentation</h1>
+<div class="level1">
+
+<p>
+Unix team support the <abbr title="File Transfer Protocol">FTP</abbr> servers for incomming <abbr title="File Transfer Protocol">FTP</abbr> traffic. This <abbr title="File Transfer Protocol">FTP</abbr> solution is implemented on a cluster of 2 AIX servers
+</p>
+<ul>
+<li class="level1"><div class="li"> paft3p01 —&gt; Primary ( 170.64.0.68 )</div>
+</li>
+<li class="level1"><div class="li"> paft3p02 —&gt; Failover (170.64.0.69)</div>
+</li>
+</ul>
+
+<p>
+Users come in via regular ftp and sftp to this server. There is a framework that constantly replicates the config and data to the fail-over server.
+</p>
+
+<p>
+<strong> Fail-over documentation </strong>
+</p>
+
+<p>
+Should a hardware maintenance or operating system upgrade require a downtime on the primary server, the service can be failed over to secondary by “Re-ip”ing the hosts.
+</p>
+<ol>
+<li class="level1"><div class="li"> Open a console session to both the servers from taitc118<pre class="code">sudo getconsole paft3p01
+sudo getconsole paft3p02</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Backup <abbr title="Secure Shell">SSH</abbr> keys from both the servers</div>
+<ul>
+<li class="level2"><div class="li"> paft3p01<pre class="code">sudo tar cf /var/tmp/paft3p01.ssh.keys.tar /etc/ssh/ssh_host*
+sudo scp /var/tmp/paft3p01.ssh.keys.tar taitc118:/preupgrade/reports/
+sudo scp /var/tmp/paft3p01.ssh.keys.tar paft3p02:/var/tmp/
+sudo rm /var/tmp/paft3p01.ssh.keys.tar</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> paft3p02<pre class="code">sudo tar cf /var/tmp/paft3p02.ssh.keys.tar /etc/ssh/ssh_host*
+sudo scp /var/tmp/paft3p02.ssh.keys.tar taitc118:/preupgrade/reports/
+sudo scp /var/tmp/paft3p02.ssh.keys.tar paft3p01:/var/tmp/
+sudo rm /var/tmp/paft3p02.ssh.keys.tar</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Shutdown <abbr title="File Transfer Protocol">FTP</abbr> and SFTP daemons on paft3p01.</div>
+<ul>
+<li class="level2"><div class="li"> At the console execute these commands<pre class="code">sudo cp /etc/inetd.conf /etc/inetd.conf.$(date +%m%d%y)
+sudo perl -i -p -e &#039;s/^mailbox_lm/#mailbox_lm/&#039; /etc/inetd.conf
+sudo refresh -s inetd
+sudo stopsrc -s sshd</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Disable the <abbr title="File Transfer Protocol">FTP</abbr> daemons<pre class="code">cp -p /etc/inittab /etc/inittab.$(date +%m%d%y) 
+grep fwder /etc/inittab | perl -i -p -e &#039;s/respawn/off/&#039; /etc/inittab
+init q
+init Q</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Disable the refresh job on paft3p02. Comment this script<pre class="code">01 * * * * /usr/local/bin/backup.ksh 1&gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform last sync. Run this script on paft3p02<pre class="code">sudo /usr/local/bin/backup.ksh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the NFS mount and refresh process on paft3p02<pre class="code">sudo umount /taedi61-ftpserv1
+sudo crontab -e</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable the outbond <abbr title="File Transfer Protocol">FTP</abbr> / Shutdown <abbr title="File Transfer Protocol">FTP</abbr> server gentran instance - EDI Apps team</div>
+</li>
+<li class="level1"><div class="li"> Backup hosts file on both the servers<pre class="code">sudo cp /etc/hosts /etc/hosts.$(date +%m%d%y)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Detach interfaces</div>
+<ul>
+<li class="level2"><div class="li"> On paft3p01&#039;s console<pre class="code">sudo ifconfig en4 down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> On paft3p02&#039;s console<pre class="code">sudo ifconfig en6 down detach</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Re-ip the interfaces</div>
+<ul>
+<li class="level2"><div class="li"> On paft3p01&#039;s console, Change IP, hostname, make changes in /etc/hosts and reboot<pre class="code">sudo /usr/sbin/mktcpip -h&#039;paft3p02&#039; -a&#039;170.64.0.69&#039; -m&#039;255.255.255.192&#039; -i&#039;en4&#039; \
+-n&#039;10.32.8.53&#039; -d&#039;tenneco.com&#039; -g&#039;170.64.0.65&#039; -A&#039;no&#039; -t&#039;N/A&#039; -s&#039;&#039;
+sudo vi /etc/hosts
+sudo tar xvf /var/tmp/paft3p02.ssh.keys.tar
+sudo rm /var/tmp/paft3p02.ssh.keys.tar
+sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> On paft3p02&#039;s console, Change IP, make changes in /etc/hosts and reboot<pre class="code">sudo /usr/sbin/mktcpip -h&#039;paft3p01&#039; -a&#039;170.64.0.68&#039; -m&#039;255.255.255.192&#039; -i&#039;en6&#039; \
+-n&#039;10.32.8.53&#039; -d&#039;tenneco.com&#039; -g&#039;170.64.0.65&#039; -A&#039;no&#039; -t&#039;N/A&#039; -s&#039;&#039;
+sudo vi /etc/hosts
+sudo tar xvf /var/tmp/paft3p01.ssh.keys.tar
+sudo rm /var/tmp/paft3p01.ssh.keys.tar
+sudo shutdown -Fr</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Startup Gentran instance on <abbr title="File Transfer Protocol">FTP</abbr> server - paft3p01 - EDI Apps team has their own procedures</div>
+</li>
+<li class="level1"><div class="li"> Start perimeter server on new <abbr title="File Transfer Protocol">FTP</abbr> server - EDI Apps team has their own procedures</div>
+</li>
+<li class="level1"><div class="li"> Enable <abbr title="File Transfer Protocol">FTP</abbr> service and SFTP on paft3p01<pre class="code">sudo perl -i -p -e &#039;s/^#mailbox_lm/mailbox_lm/&#039; /etc/inetd.conf
+sudo refresh -s inetd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable <abbr title="File Transfer Protocol">FTP</abbr> daemons<pre class="code">cp -p /etc/inittab /etc/inittab.$(date +%m%d%y)
+grep fwder /etc/inittab | perl -i -p -e &#039;s/off/respawn/&#039; /etc/inittab
+init q
+init Q</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable refresh process on paft3p02<pre class="code">sudo mount /taedi61-ftpserv1
+sudo crontab -e</pre>
+
+<p>
+Un-comment this script
+</p>
+<pre class="code">#01 * * * * /usr/local/bin/backup.ksh 1&gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the lpar name on the managed system from HMC</div>
+</li>
+<li class="level1"><div class="li"> Update the information on the console database @ taitc118 <pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+</div>
+</li>
+</ol>
+
+</div>

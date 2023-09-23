@@ -1,0 +1,40 @@
+====== Old instructions for installing custom compiled NVidia drivers for SUSE 12. ======
+
+
+<markdown>
+
+Download the driver from [the NVIDIA  site]( http://www.nvidia.com/Download/index.aspx?lang=en-us)
+
+###From console
+Go to run level 3  
+`init 3`
+
+run the installer as root:  
+`sh ./xxxxxx.run`
+
+Confirm the driver version with   
+`nvidia-smi -q`
+
+If the driver has been updated, go to run level 5  
+`init 5`
+
+
+### Make sure the GPU permissions are set correctly
+Sometimes the permissions get hosed.  Very they are all still OK after running the "nvidia-smi".  
+The "nvidia-smi" creates the device files if they are not already present.
+`ls -lart /dev/nvidia*`
+
+You can make this permanent by adding "/etc/modprobe.d/50-nvidia.conf" with the following:
+```
+NVreg_DeviceFileMode=0666
+```
+
+!!! warning "The GUI will probably be hosed after this update."
+
+The GUI for SUSE will probaly be hosed after this.  It seems to be a Gnome thing ... if you switch over to X instead, it runs just fine.  According to Engineering, the GUI is still needed so they can install certain programs on the cluster nodes.
+
+In theory, this is not an issue if the configu channel has been applied.  The `/etc/systemconfig/displaymanager` and `/etc/systemconfig/windowmanager` files already have the defaults changed from Gnome to icewm.
+
+
+
+</markdown>

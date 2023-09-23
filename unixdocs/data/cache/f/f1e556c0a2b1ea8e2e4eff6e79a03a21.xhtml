@@ -1,0 +1,187 @@
+
+<h1 class="sectionedit1" id="redhat_server_post_installation_work">Redhat Server Post installation work</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Redhat Server Post installation work" [1-52] -->
+<h3 class="sectionedit2" id="steps_from_the_server_that_is_being_built">Steps from the server that is being built</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the ADMIN server</div>
+<ol>
+<li class="level2"><div class="li"> For DRiV or MP/PS<pre class="code">ssh pcdcunxaxap01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> For Tenneco or CA/PT<pre class="code">ssh pgnmsv01</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the server (as root) you just built<pre class="code">sudo ssh &lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupresolv.conf" class="wikilink1" title="unix:setupresolv.conf">A basic North American resolv.conf is installed, for specific sites in NA and EU, please click the link</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:timezone" class="wikilink1" title="unix:timezone">Setup correct timezone for servers please click the link</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:setupntp#redhat" class="wikilink1" title="unix:setupntp">For NA servers NTP is already configured, for European servers please click the link</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:createinformationfile#linux" class="wikilink1" title="unix:createinformationfile">Update the information file</a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Steps from the server that is being built" [53-721] -->
+<h3 class="sectionedit3" id="steps_from_the_master_server">Steps from the Master server</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to management server</div>
+<ol>
+<li class="level2"><div class="li"> For Driv or MP/PS - pcdcunxaxap01<pre class="code">ssh pcdcunxaxap01</pre>
+
+<p>
+<em class="u">OR</em>
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> For Tenneco or CA/PT - pgnmsv01<pre class="code">ssh pgnmsv01</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Only do followng on NEW BUILD  if not sure STOP !!! contact Chris Stachowiak</div>
+</li>
+<li class="level1"><div class="li"> Copy <abbr title="Secure Shell">SSH</abbr> keys, sudoers (add servername to Host_Alias BKPSRVR) and such<pre class="code">sudo vi /prod/images/etc/sudoers
+sudo /prod/images/scripts/config_tenneco_linux &lt;servername&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the system to Ansible Provisioning tool. Follow the link <a href="/doku.php?id=kennedy:manage-hosts-ansible" class="wikilink1" title="kennedy:manage-hosts-ansible">Managing Hosts in Ansible provisioning tool</a></div>
+</li>
+<li class="level1"><div class="li"> Copy the rapid7 agent file.  Rapid 7 agent can be installed after updating to latest RHEL7 <pre class="code">sudo scp /prod/images/rapid7-agent/agent_installer.sh &lt;servername&gt;:/tmp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:lpar2rrd-os-agent#installing_lpar2rrd_agent_-_rhel" class="wikilink1" title="unix:lpar2rrd-os-agent">~~Setup lpar2rrd agent - no longer needed~~</a></div>
+</li>
+<li class="level1"><div class="li"> Send ticket for netbackup</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:post_installation_steps_dell_server" class="wikilink1" title="unix:post_installation_steps_dell_server">For Dell hardware - additional steps are ~~no longer needed~~ -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> Create <a href="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=3ad014c9dbe353407785d12c5e9619d0&amp;sysparm_category=ed1dd647db3a909079a6a07c13961985&amp;catalog_id=e0d08b13c3330100c8b837659bba8fb4" class="urlextern" title="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=3ad014c9dbe353407785d12c5e9619d0&amp;sysparm_category=ed1dd647db3a909079a6a07c13961985&amp;catalog_id=e0d08b13c3330100c8b837659bba8fb4"  rel="nofollow">ticket</a> to the monitoring team. According to the new process, this doesn&#039;t cover Service NOW discovery.  Make sure to request them to be kept muted.  Once Application team completes the built, they should notify the monitoring team/unix team to unmute the alerts.  <strong>No longer needed, but remember to request the team in the change task to keep it muted</strong></div>
+</li>
+<li class="level1"><div class="li"> Create <a href="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=5de49a51dba11f807785d12c5e9619f5" class="urlextern" title="https://onetenneco.service-now.com/sp?id=sc_cat_item&amp;sys_id=5de49a51dba11f807785d12c5e9619f5"  rel="nofollow">a ticket</a> to discover the CI in CMDB - <strong>No longer needed, as the Std Change template now has a Change task created automatically</strong></div>
+</li>
+<li class="level1"><div class="li"> Send a ticket to “GIOS Operations - Entitlement” to add the systems.</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-sap" class="wikilink1" title="unix:postinstallationsteps-redhat-sap">For SAP servers - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-omi" class="wikilink1" title="unix:postinstallationsteps-redhat-omi">For OMI servers - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-network" class="wikilink1" title="unix:postinstallationsteps-redhat-network">For Network Monitoring servers - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-splunk" class="wikilink1" title="unix:postinstallationsteps-redhat-splunk">For Security servers - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-hpcc" class="wikilink1" title="unix:postinstallationsteps-redhat-hpcc">For HPCC nodes for Engineering team - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> Shutdown the VM<pre class="code">ssh ${server_tenneco}</pre>
+
+<p>
+Shutdown
+</p>
+<pre class="code">sudo init 0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the installation CDROM</div>
+<ol>
+<li class="level2"><div class="li"> On VMWARE based systems<pre class="code">Edit settings on the vSphere client and remove the isofile mapping to Virtual CDROM
+Make it client device</pre>
+
+<p>
+Once done –&gt; Power on the VM
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> On standalone NBU home made appliances<pre class="code">ssh LAN@${server_tenneco}rmb</pre>
+
+<p>
+Eject the CDROM
+</p>
+<pre class="code">vm cdrom eject
+OR 
+racadm remoteimage -d</pre>
+
+<p>
+Exit from iLO
+</p>
+<pre class="code">exit</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:rhelpatching-072022" class="wikilink1" title="unix:rhelpatching-072022">Click here to patch to the latest level RHEL7</a></div>
+</li>
+<li class="level1"><div class="li"> <strong>Contact Jinu - jinu.sureshbabu@driv.com before proceeding with the next steps. This is to upgrade to RHEL8</strong></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:ansibleinstall" class="wikilink1" title="unix:ansibleinstall">Systems that needs ansible - Install ansible</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:postinstallationsteps-redhat-nbu" class="wikilink1" title="unix:postinstallationsteps-redhat-nbu">For Netbackup home made appliances - additional steps are needed -- Click here</a></div>
+</li>
+<li class="level1"><div class="li"> Install RAPID 7 Agent on the server.<pre class="code">[ $(grep domain /etc/resolv.conf |awk &#039;{print $2}&#039;) == &#039;driv.com&#039; ] &amp;&amp; \
+sudo /tmp/agent_installer.sh install_start --token us:c58ccdc4-7f37-44ba-b13f-ede6b9decc76 || \
+sudo /tmp/agent_installer.sh install_start --token  us:c58ccdc4-7f37-44ba-b13f-ede6b9decc76
+
+sudo rm /tmp/agent_installer.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On physical systems directly connected to SAN storage arrays iSCSI or FC, please install multipath</div>
+<ol>
+<li class="level2"><div class="li"> Install<pre class="code">sudo yum -y install device-mapper-multipath</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure basic failover and enable multipath daemon<pre class="code">sudo mpathconf --enable --with_multipathd y</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> After the installation check the kickstart logs to make sure there were no errors<pre class="code">sudo more /root/ks-pre.log
+sudo more /root/ks-post.log</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Fix the messed up /etc/hosts file until a permanent fix is in place</div>
+<ol>
+<li class="level2"><div class="li"> Change this<pre class="code">x1kxk630 on plonbuhmams:/home/x1kxk630 $ cat /etc/hosts
+127.0.0.1       localhost
+10.5.128.150
+fe80::e63d:1aff:fe53:a2b2      plonbuhmams</pre>
+
+<p>
+To
+</p>
+<pre class="code">x1kxk630 on plonbuhmams:/home/x1kxk630 $ cat /etc/hosts
+127.0.0.1       localhost
+10.5.128.150    plonbuhmams</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> In one or two days after the server is added to monitoring, the snowscan will crawl and discover the new CIs.  </div>
+<ol>
+<li class="level2"><div class="li"> CI should be related to the change ticket before the change ticket is closed.  Typically, the CIs are in uppercase with shortname (and not FQDN) and is different from a <abbr title="Domain Name System">DNS</abbr> CI record. </div>
+</li>
+<li class="level2"><div class="li"> Update the CI with missing information (most details are captured automatically).  Make sure all the mandatory parameters are filled, and especially the following ones.</div>
+<ol>
+<li class="level3"><div class="li"> Environment &amp; Criticality in Category/Class</div>
+</li>
+<li class="level3"><div class="li"> Owned By, Managed By, Assignment Group, Support Group, DR Solution in Ownership/Support</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> If CI is not visible in Service Now, log a ticket with the Monitoring team to rediscover the CI</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If the site is new, add the details to <a href="/doku.php?id=unix:localcontacts" class="wikilink1" title="unix:localcontacts">localcontacts</a></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Steps from the Master server" [722-] -->

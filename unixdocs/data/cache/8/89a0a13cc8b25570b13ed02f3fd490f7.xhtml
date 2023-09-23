@@ -1,0 +1,209 @@
+
+<h1 class="sectionedit1" id="create_the_lpar_from_a_command_line">Create the lpar from a command line</h1>
+<div class="level1">
+
+<p>
+<strong>Creating a NPIV lpar</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Find out the next LPAR id available<pre class="code">lssyscfg -r lpar -m Server-8202-E4C-SN101260T -F lpar_id</pre>
+
+<p>
+Take the next number available for the new lpar. We are assuming “6” for the following steps.
+</p>
+</div>
+</li>
+</ul>
+
+<p>
+<strong>NPIV lpar standard config</strong>
+</p>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Adapter</th><th class="col1">Type</th><th class="col2">SlotNumber</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">vsa0</td><td class="col1">Virtual Serial</td><td class="col2">0</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">vsa1</td><td class="col1">Virtual Serial</td><td class="col2">1</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">ent0</td><td class="col1">Virtual Ethernet</td><td class="col2">2</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">ent1</td><td class="col1">Virtual Ethernet</td><td class="col2">3</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">fcs0</td><td class="col1">Virtual Fibre</td><td class="col2">4</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">fcs1</td><td class="col1">Virtual Fibre</td><td class="col2">5</td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">fcs2</td><td class="col1">Virtual Fibre</td><td class="col2">6</td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">fcs3</td><td class="col1">Virtual Fibre</td><td class="col2">7</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [312-529] --><ul>
+<li class="level1"><div class="li"> Perform a DLPAR operation to add a Virtual FC Server adapter on both the VIOS servers. They will be used on the new lpar on slot numbers 4 and 5(VIOS1) &amp; 5and 6 (VIOS2). <strong>0 and 1 are used for VSAs, 2 and 3 are used for Ethernet hence 4,5,6 and 7 will be the VFCs</strong></div>
+</li>
+<li class="level1"><div class="li"> VIOS1 - teprvio10<pre class="code">chhwres -r virtualio -m Server-8202-E4C-SN101260T -o a -p teprvio10 \
+--rsubtype fc -a &quot;adapter_type=server,remote_lpar_id=6,remote_slot_num=4&quot;</pre>
+<pre class="code">chhwres -r virtualio -m Server-8202-E4C-SN101260T -o a -p teprvio10 \
+--rsubtype fc  -a &quot;adapter_type=server,remote_lpar_id=6,remote_slot_num=5&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> VIOS2 - teprvio11<pre class="code">chhwres -r virtualio -m Server-8202-E4C-SN101260T -o a -p teprvio11 \
+--rsubtype fc  -a &quot;adapter_type=server,remote_lpar_id=6,remote_slot_num=6&quot;</pre>
+<pre class="code">chhwres -r virtualio -m Server-8202-E4C-SN101260T -o a -p teprvio11 \
+--rsubtype fc  -a &quot;adapter_type=server,remote_lpar_id=6,remote_slot_num=7&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Save the current configuration of the VIOS1 and VIOS2 lpars. So that the configuration is preserved for reboots.<pre class="code">mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p teprvio10  -n teprvio10 --force
+mksyscfg -r prof -m Server-8202-E4C-SN101260T -o save -p teprvio11  -n teprvio11 --force</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the VFC Server adapter&#039;s slot numbers<pre class="code">lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=teprvio10 -F virtual_fc_adapters \
+| sed -e &quot;s;\&quot;;;g&quot;  | sed &quot;s;,;\n;g&quot; | tail -2 | cut -f1 -d/</pre>
+<pre class="code">lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=teprvio11 -F virtual_fc_adapters \
+| sed -e &quot;s;\&quot;;;g&quot;  | sed &quot;s;,;\n;g&quot; | tail -2 | cut -f1 -d/</pre>
+
+<p>
+Make sure that both the VFC slot numbers are the same. We are looking for something like this
+</p>
+<pre class="code">hscroot@tgprhmc4:~&gt; lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=teprvio10 -F virtual_fc_adapters \
+| sed -e &quot;s;\&quot;;;g&quot;  | sed &quot;s;,;\n;g&quot; | tail -2 | cut -f1 -d/
+10
+11
+hscroot@tgprhmc4:~&gt; lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=teprvio11 -F virtual_fc_adapters \
+| sed -e &quot;s;\&quot;;;g&quot;  | sed &quot;s;,;\n;g&quot; | tail -2 | cut -f1 -d/
+10
+11</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now that we have all the VIOS configs done, let us create the lpar. The VFC clients will need to be mapped to the above slot numbers on the respective VIOS servers<pre class="code">mksyscfg -r lpar -m Server-8202-E4C-SN101260T -i \
+&quot;name=pehrdb98,\
+profile_name=pehrdb98,\
+lpar_env=aixlinux,\
+min_mem=2048,desired_mem=20480,max_mem=131072,\
+mem_mode=ded,\
+proc_mode=shared,\
+min_proc_units=0.1,\
+desired_proc_units=4.0,\
+max_proc_units=8.0,\
+min_procs=1,\
+desired_procs=7,\
+max_procs=8,\
+sharing_mode=uncap,\
+uncap_weight=150,\
+auto_start=0,\
+boot_mode=norm,\
+max_virtual_slots=100,\
+\&quot;virtual_serial_adapters=0/server/1/any//any/1,1/server/1/any//any/1\&quot;,\
+\&quot;virtual_eth_adapters=2/0/1//0/1/ETHERNET0//all/none,3/0/2//0/1/ETHERNET0//all/none\&quot;,\
+\&quot;virtual_fc_adapters=\
+4/client/2//10//1,\
+5/client/2//11//1,\
+6/client/3//10//1,\
+7/client/3//11//1\&quot;&quot;</pre>
+
+<p>
+Power8 has a new style I guess ?? or it may be the WWNs
+</p>
+<pre class="code">mksyscfg -r lpar -m Server-8284-22A-SN847584V -i &quot;name=pgnmsv01,\
+profile_name=pgnmsv01,\
+lpar_env=aixlinux,\
+min_mem=2048,\
+desired_mem=16384,\
+max_mem=24576,\
+mem_mode=ded,\
+hpt_ratio=1:128,\
+proc_mode=shared,\
+min_proc_units=0.1,\
+desired_proc_units=0.5,\
+max_proc_units=4.0,\
+min_procs=1,\
+desired_procs=2,\
+max_procs=4,\
+sharing_mode=uncap,\
+uncap_weight=128,\
+auto_start=0,\
+boot_mode=norm,\
+lpar_proc_compat_mode=default,\
+max_virtual_slots=100,\
+\&quot;virtual_serial_adapters=0/server/1/any//any/1,1/server/1/any//any/1\&quot;,\
+\&quot;virtual_eth_adapters=2/0/48//0/1/ETHERNET0//all/none,3/0/49//0/1/ETHERNET0//all/none\&quot;,\
+\&quot;virtual_fc_adapters=\
+\&quot;\&quot;4/client/2/taprvio130/5/c0507607fdbb0010,c0507607fdbb0011/1\&quot;\&quot;,\
+\&quot;\&quot;5/client/3/taprvio131/5/c0507607fdbb0018,c0507607fdbb0019/1\&quot;\&quot;\&quot;&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get a list of WWNs for the new lpar<pre class="code">lssyscfg -r prof -m Server-8202-E4C-SN101260T --filter lpar_names=penmsv01 -F virtual_fc_adapters | sed &quot;s;,;\n;g&quot; | grep client | cut -f6 -d/</pre>
+
+<p>
+Something like this is to be expected
+</p>
+<pre class="code">c0507606104e00b0
+c0507606104e00b2
+c0507606104e00b4
+c0507606104e00b6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Map the VFC adapters to real HBAs <strong> Remember the slot numbers of the vfchost adapter fdrom earlier steps.</strong></div>
+<ul>
+<li class="level2"><div class="li"> teprvio10<pre class="code">lscfg | grep vfc | egrep &quot;C12|C13&quot;
+* vfchost7         U8202.E4C.101260T-V2-C13              Virtual FC Server Adapter
+* vfchost6         U8202.E4C.101260T-V2-C12              Virtual FC Server Adapter</pre>
+
+<p>
+Switch to padmin
+</p>
+<pre class="code">sudo su - padmin</pre>
+
+<p>
+Map them
+</p>
+<pre class="code">vfcmap -vadapter vfchost6 -fcp fcs0
+vfcmap -vadapter vfchost7 -fcp fcs2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> teprvio11<pre class="code">lscfg | grep vfc | egrep &quot;C12|C13&quot;
+* vfchost7         U8202.E4C.101260T-V3-C13          Virtual FC Server Adapter
+* vfchost6         U8202.E4C.101260T-V3-C12          Virtual FC Server Adapter</pre>
+
+<p>
+Switch to padmin
+</p>
+<pre class="code">sudo su - padmin</pre>
+
+<p>
+Map them
+</p>
+<pre class="code">vfcmap -vadapter vfchost6 -fcp fcs0
+vfcmap -vadapter vfchost7 -fcp fcs2</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> <strong>Login HBA&#039;s into the Array</strong></div>
+<ol>
+<li class="level2"><div class="li"> Press 8 on the console during boot to get into open formware prompt</div>
+</li>
+<li class="level2"><div class="li"> type 0 &gt; ioinfo</div>
+</li>
+<li class="level2"><div class="li"> select menu item #6 for FCINFO</div>
+</li>
+<li class="level2"><div class="li"> pick first adapter by choosing menu item #1</div>
+</li>
+<li class="level2"><div class="li"> pick option# 1 List Attached FC Devices</div>
+</li>
+<li class="level2"><div class="li"> Q for quit</div>
+</li>
+</ol>
+</li>
+</ul>
+
+</div>

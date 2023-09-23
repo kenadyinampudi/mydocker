@@ -1,0 +1,74 @@
+
+<h1 class="sectionedit1" id="new_installation_using_an_rte">New installation using an RTE</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Define the target server <strong>xagi3p01</strong> on NIM<pre class="code">nim -o define -t standalone -a platform=chrp \
+-a netboot_kernel=mp -a if1=&quot;find_net xagi3p01 0&quot; \
+-a net_settings1=&quot;auto auto&quot; -a cable_type1=tp \
+xagi3p01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform an rte install</div>
+<ol>
+<li class="level2"><div class="li"> AIX 6<pre class="code">nim -o bos_inst -a bosinst_data=aixmigration-bosinst -a source=rte -a spot=610TL07-05_spot -a lpp_source=610TL07-05_lppsrc -a no_client_boot=yes -a accept_licenses=yes -a script=postinstallCloning xagi3p01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> AIX 7<pre class="code">nim -o bos_inst -a source=rte -a spot=710TL02-02_spot -a lpp_source=710TL02-02_lppsrc -a no_client_boot=yes -a accept_licenses=yes penmsv01</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+<p>
+ After the base installation is completed log in as root and do the following steps to allow Post Installation Steps to be successfully completed 
+</p>
+<ol>
+<li class="level1"><div class="li">  NFS mount the lppsrc location<pre class="code">sudo mkdir -p /mnt/aixupdates
+sudo mount &lt;nimserver&gt;:/path/to/lppsrc /mnt/aixupdates</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> For the smitty lovers,</div>
+<ol>
+<li class="level3"><div class="li"> Change to the mount point<pre class="code">cd /mnt/aixupdates</pre>
+
+<p>
+Invoke smitty
+</p>
+<pre class="code">sudo smitty install_all</pre>
+
+<p>
+Then select ”.”
+</p>
+</div>
+</li>
+<li class="level3"><div class="li"> press F4 or Esc4 to get a list of software that can be installed. From the list select the following items and select them using F7 or Esc7 as shown</div>
+</li>
+</ol>
+</li>
+</ol>
+<pre class="code">  &gt; openssh.base                                                       ALL
+  + 6.0.0.6103  Open Secure Shell Commands                             
+  + 6.0.0.6103  Open Secure Shell Server                               
+                                                                       
+  &gt; openssh.license                                                    ALL
+  + 6.0.0.6103  Open Secure Shell License                              
+                                                                       
+  &gt; openssh.man.en_US                                                  ALL
+  + 6.0.0.6103  Open Secure Shell Documentation - U.S. English </pre>
+<ol>
+<li class="level1"><div class="li"> After all have been selected as shown above press enter to retrun to the installation screen </div>
+<ul>
+<li class="level4"><div class="li"> PREVIEW only - should be set to no</div>
+</li>
+<li class="level4"><div class="li"> COMMIT software updates must be set to yes</div>
+</li>
+<li class="level4"><div class="li"> ACCEPT new license agreements? must be set to yes</div>
+</li>
+<li class="level4"><div class="li"> Then hit enter :)</div>
+</li>
+</ul>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,63 @@
+====== V9000 -1 ( first or old V9000 ) storage allocation -- generic steps ======
+
+
+** Define your SSH variable if you do not have SSH keys **
+
+  - If you have SSH keys<code>SSH2V9="/usr/bin/ssh ldcv9ac2vip1"</code>If you don't then login as ''sanmontr''<code>SSH2V9="sudo -u sanmontr /usr/bin/ssh ldcv9ac2vip1"</code>
+
+** Add a host to V9000 **
+
+  - Add a host using this command
+<code>${SSH2V9} mkhost -fcwwpn C0507607FDBD0004:C0507607FDBD0006:C0507607FDBD000A:C0507607FDBD0008 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pocafasv01 -type generic</code>
+    - Adding additional WWNs to an existing host
+<code>${SSH2V9} addhostport -force -fcwwpn C0507607FDBD0005:C0507607FDBD0007:C0507607FDBD0009:C0507607FDBD000B pocafasv01</code>
+
+
+** LUN Size standards **
+
+|34526 MiB|Unix - Small applications, databases - data|
+|103578 MiB|Unix - Medium size databases - data|
+|122880 MiB|Unix - PTA/TA2 and their copies only|
+|138105 MiB|Unix - AIX SAN Boot|
+|524288 MiB|Unix - TA2 database, IT0 database etc|
+
+** LUN Naming standard **
+
+  * Always use this format ''<hostname>_XYZ'' i.e. daerdb01_002, daerdb02_009 etc. This is very important as that is how we report storage.
+
+** Storage allocation **
+
+  - Request comes to us something like this<code>Please allocate 1 103GB disk to taprvio60 and taprvio70 from I IBM-v9000-600507680C80817D . This is for qggpdb01 organic growth</code>
+  - We always name a LUN to the actual server it is being requested for. This important as that is how we keep track of storage growth and trend.
+    - Hence, list the existing volumes to figure out the next number to use<code>${SSH2V9} lsvdisk | grep qggpdb01 | awk '{print $2"\t"$8}' | sort -k1</code>This is what we get<code>qggpdb01_001    134.87GB
+qggpdb01_002    134.87GB
+qggpdb01_003    101.15GB
+qggpdb01_004    101.15GB
+qggpdb01_005    101.15GB
+qggpdb01_006    101.15GB
+qggpdb01_007    101.15GB
+qggpdb01_008    101.15GB
+qggpdb01_009    101.15GB
+qggpdb01_010    101.15GB
+qggpdb01_011    101.15GB
+qggpdb01_012    101.15GB</code>
+    - From the above we know that we need to create<code>qggpdb01_013 of size 101.15GB or 103578 MiB and allocate it to taprvio60 & 70</code>
+  - Creating a LUN<code>${SSH2V9} mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name qggpdb01_013 -nofmtdisk -rsize 2% \
+-size 103578 -syncrate 50 -unit mb -vtype striped -warning 0% </code>
+  - Now map the LUN to the servers requested.
+    - taprvio60<code>${SSH2V9} mkvdiskhostmap -host taprvio60 qggpdb01_013</code>To allocate the same LUN to the next VIOS server ''taprvio70''<code>${SSH2V9} mkvdiskhostmap -force -host taprvio70 qggpdb01_013</code>
+  - We need to send the details to systems team.
+    - Find out the LUN id<code>${SSH2V9} lsvdisk qggpdb01_013 | grep -e ^vdisk_UID | awk '{print $2}' | cut -c 18-32</code>We would expect something like this<code>8000000000001D9</code>
+  - Now send the following information to System's team and close the ticket<code>LUN 8000000000001D9 has been allocated from V9000 to taprvio60 & 70 for qggpdb01</code>
+
+** Removing LUN(s) from V9000 **
+
+  -To show all the disk mapped to host<code>ssh ldcv9ac2vip1 lshostvdiskmap <hostname></code>Direct this to a file host.txt
+  - Removing a mapping<code>for disk in $(awk '{print $5}' host.txt)
+ do
+    echo "ssh ldcv9ac2vip1 rmvdiskhostmap -host <hostname> $disk"
+ done</code>Print the commands to verify Volume names are correct
+            b):To exicute the commands<code>for disk in $(awk '{print $5}' host.txt)
+ do
+    ssh ldcv9ac2vip1 rmvdiskhostmap -host <hostname> $disk
+ done</code>Delete the volumes from LDCV9000 after one week using GUI

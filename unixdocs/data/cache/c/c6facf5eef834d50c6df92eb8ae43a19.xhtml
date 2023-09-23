@@ -1,0 +1,48 @@
+
+<p>
+1. Down load the appropriate HMC Software Upgrade network Images from IBM Fix Central <a href="http://www14.software.ibm.com/webapp/set2/sas/f/netinstall/home.html" class="urlextern" title="http://www14.software.ibm.com/webapp/set2/sas/f/netinstall/home.html"  rel="nofollow">http://www14.software.ibm.com/webapp/set2/sas/f/netinstall/home.html</a>
+</p>
+
+<p>
+Down load them using the BULK <abbr title="File Transfer Protocol">FTP</abbr> method to the /prod/images/HMC-Code directory on taitc118.  This is the repository for the HMC Upgrade / update software.  The Naming convention is straight forward with M0 being the sufix M0 being the initial release. M1 being Service Pack / maintenance level 01  etc.  Efixes are noted and grouped under their associated releases.  Example V7R7.6M0_Efixes. 
+</p>
+
+<p>
+2) If the HMC is at a remote site (not in Lincolnshire) Copy the files to a server at the remote location.  Current convention is to copy them to the tayyy057 server and place them in the /HMC_UPGRADES/HMC directory.
+</p>
+
+<p>
+3) Back up the HMC
+</p>
+
+<p>
+4) Once the HMC hackup has completed log on to the HMC as hscroot. Clear the old log files by entering the following command 
+</p>
+<pre class="code"> chhmcfs -o f -d 0 </pre>
+
+<p>
+5 Next, run the getupgfiles command to copy the files from the server you downloaded or copied them to over to the bootable disk partition on the HMC. 
+getupgfiles -h hostname -u username  -d remote-directory See example below where hostname is taitc118.amer.int.tenneco.com and Directory is prod/images/HMC-Code/V7R7.6.0M0/
+</p>
+<pre class="code"> 
+getupgfiles -h taitc118.amer.int.tenneco.com -u root -d /prod/images/HMC-Code/V7R7.6.0M0/ </pre>
+
+<p>
+Enter the password for root on taitc118 when prompted.
+The HMC will return  to the command prompt when the file copy has completed.  If the file copy fails STOP DO NOT PROCEED !!! You will need to get a PESH password and clear the files and create additional space for the copy.  
+</p>
+
+<p>
+6. Once the files have been copied Enter the following at the HMC command line 
+</p>
+<pre class="code"> 
+chhmc -c altdiskboot -s enable --mode upgrade </pre>
+
+<p>
+7. Finally,reboot the HMC and start the upgrade.
+</p>
+<pre class="code">  hmcshutdown -r -t now </pre>
+
+<p>
+8. The process will take about 45 minutes to complete. 
+</p>

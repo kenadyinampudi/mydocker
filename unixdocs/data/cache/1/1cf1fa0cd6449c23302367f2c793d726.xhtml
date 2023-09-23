@@ -1,0 +1,54 @@
+
+<h1 class="sectionedit1" id="es1_restore">ES1 Restore</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:install_powercli_desktop" class="wikilink1" title="unix:install_powercli_desktop">Install PowerCLI on your desktop if not already installed or use the Storage Teams Jumpbox - pcdcstglxap01 </a></div>
+</li>
+<li class="level1"><div class="li"> Request the Storage Team to present the snapshots of the datastores.  When you request, please give the following details.</div>
+<ol>
+<li class="level2"><div class="li"> CI Server Name (in this case cdcvillx222)</div>
+</li>
+<li class="level2"><div class="li"> DB Server Name (in this case cdcvillx223)</div>
+</li>
+<li class="level2"><div class="li"> Day when the snapshot was taken</div>
+</li>
+<li class="level2"><div class="li"> To which VMWare cluster this snapshot should be presented (eg: NON-PROD-LINUX-2)</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Storage Team will typically give us the Name of the Disk &amp; serial Number. Sample below <pre class="code">Name                                                   Serial
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-000     451CEEAA321E480801E6D3AC
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-001     451CEEAA321E480801E6D3AD
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-002     451CEEAA321E480801E6D3AE
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-003     451CEEAA321E480801E6D3AF
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-004     451CEEAA321E480801E6D419
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-005     451CEEAA321E480801E6D41A
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-006     451CEEAA321E480801E6D41B
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-007     451CEEAA321E480801E6D41C
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-008     451CEEAA321E480801E6D41D
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-009     451CEEAA321E480801E6D41E
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-010     451CEEAA321E480801E6D41F
+cdc-v-non-prod-linux2_cdc-pure-es1-Aug1-nl-011     451CEEAA321E480801E6D420</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:powercli_resignature_rename" class="wikilink1" title="unix:powercli_resignature_rename">Scan and present the Snapshot disks to the cluster</a></div>
+</li>
+<li class="level1"><div class="li"> Create a new VM for CI &amp; DB each &amp; lets call them NEW_CDCVILLX222 &amp; NEW_CDCVILLX223. Currently done from <abbr title="Graphical User Interface">GUI</abbr>.  CLI not explored.  Please make sure of the following</div>
+<ol>
+<li class="level3"><div class="li"> Pick the Datastore corresponding to the primary datastore (000/001) for storing the VMX</div>
+</li>
+<li class="level3"><div class="li"> Compatibility of the VM should match with the source system (eg: ESXI 6.7 or later)</div>
+</li>
+<li class="level3"><div class="li"> <abbr title="Operating System">OS</abbr> details should match with the source system (Linux &amp; SLES12)</div>
+</li>
+<li class="level3"><div class="li"> Disk controller type should match (<abbr title="Small Computer System Interface">SCSI</abbr> Controller - LSI Logic/VmWare)</div>
+</li>
+<li class="level3"><div class="li"> Same number of <abbr title="Small Computer System Interface">SCSI</abbr> Controllers as in the source. </div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Present the Disk.  Inorder to present the disk, one should know how it is configured on the source system.  Check that using <a href="/doku.php?id=unix:powercli_disk_info" class="wikilink1" title="unix:powercli_disk_info">Get Disk Details of a VM using PowerCLI</a>.  <abbr title="Small Computer System Interface">SCSI</abbr> ID on the source system should match with the <abbr title="Small Computer System Interface">SCSI</abbr> ID on the target system which should match with the vmdk and the datastore name</div>
+</li>
+</ol>
+
+</div>

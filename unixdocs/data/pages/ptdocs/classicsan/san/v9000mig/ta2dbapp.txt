@@ -1,0 +1,71 @@
+====== V9000 Migration TA2DB, TA2CI and cleanup xnpr3d01 ======
+
+==== Fabric A work ====
+
+  - xnpr3d01 cleanup<code>cfgremove "fab_a_act_config","xnpr3d01_530018__vmax_0301_2g1;xnpr3d01_530019__vmax_0301_2g1"
+zonedelete "xnpr3d01_530018__vmax_0301_2g1"
+zonedelete "xnpr3d01_530019__vmax_0301_2g1"
+alidelete "xnpr3d01_530018"
+alidelete "xnpr3d01_530019"</code>
+  - peerap98 zoning to V9000 & VMAX<code>alicreate "peerap98_530018","c0:50:76:07:f3:53:00:18"
+alicreate "peerap98_530019","c0:50:76:07:f3:53:00:19"
+
+zonecreate "peerap98_530018__vmax_0301_2g1","peerap98_530018;vmax_0301_2g1"
+zonecreate "peerap98_530019__vmax_0301_2g1","peerap98_530019;vmax_0301_2g1"
+
+zonecreate "peerap98_530018__ldcv9ac2n1_212fbf__ldcv9ac2n2_212fc0","peerap98_530018;ldcv9ac2n1_212fbf;ldcv9ac2n2_212fc0"
+zonecreate "peerap98_530019__ldcv9ac2n1_212fbf__ldcv9ac2n2_212fc0","peerap98_530019;ldcv9ac2n1_212fbf;ldcv9ac2n2_212fc0"
+
+cfgadd "fab_a_act_config","peerap98_530018__vmax_0301_2g1;peerap98_530019__vmax_0301_2g1"
+cfgadd "fab_a_act_config","peerap98_530018__ldcv9ac2n1_212fbf__ldcv9ac2n2_212fc0;peerap98_530019__ldcv9ac2n1_212fbf__ldcv9ac2n2_212fc0"</code>
+  - peerdb98 cleanup<code>cfgremove "fab_a_act_config","peerdb98_6a3b63__dmx4_3339_9c0;peerdb98_6a3b63__vmax_0301_4f0"
+zonedelete "peerdb98_6a3b63__dmx4_3339_9c0"
+zonedelete "peerdb98_6a3b63__vmax_0301_4f0"
+alidelete "peerdb98_6a3b63"</code>
+  - peerdb98 zoning to V9000<code>zonecreate "peerdb98_98458c__ldcv9ac2n1_112fbf","peerdb98_98458c;ldcv9ac2n1_112fbf"
+zonecreate "peerdb98_98458c__ldcv9ac2n2_112fc0","peerdb98_98458c;ldcv9ac2n2_112fc0"
+
+cfgadd "fab_a_act_config","peerdb98_98458c__ldcv9ac2n1_112fbf;peerdb98_98458c__ldcv9ac2n2_112fc0"</code>
+  - peerdb99 zoning to V9000<code>zonecreate "peerdb99_563dce__ldcv9ac2n1_112fbf__ldcv9ac2n2_112fc0","peerdb99_563dce;ldcv9ac2n1_112fbf;ldcv9ac2n2_112fc0"
+zonecreate "peerdb99_726c38__ldcv9ac2n1_212fbf__ldcv9ac2n2_212fc0","peerdb99_726c38;ldcv9ac2n1_212fbf;ldcv9ac2n2_212fc0"
+
+cfgadd "fab_a_act_config","peerdb99_563dce__ldcv9ac2n1_112fbf__ldcv9ac2n2_112fc0;peerdb99_726c38__ldcv9ac2n1_212fbf__ldcv9ac2n2_212fc0"</code>
+  - peerap99 zoning to V9000<code>zonecreate "peerap99_0e0010__ldcv9ac2n1_112fbf__ldcv9ac2n2_112fc0","peerap99_0e0010;ldcv9ac2n1_112fbf;ldcv9ac2n2_112fc0"
+zonecreate "peerap99_0e0014__ldcv9ac2n1_112fbf__ldcv9ac2n2_112fc0","peerap99_0e0014;ldcv9ac2n1_112fbf;ldcv9ac2n2_112fc0"
+
+cfgadd "fab_a_act_config","peerap99_0e0010__ldcv9ac2n1_112fbf__ldcv9ac2n2_112fc0;peerap99_0e0014__ldcv9ac2n1_112fbf__ldcv9ac2n2_112fc0"</code>
+  - Save config and enable it<code>cfgsave
+cfgenable "fab_a_act_config"</code>
+
+
+==== Fabric B work ====
+
+  - Cleanup xnpr3d01<code>cfgremove "fab_b_act_config","xnpr3d01_53001a__vmax_0301_3g1;xnpr3d01_53001b__vmax_0301_3g1"
+zonedelete "xnpr3d01_53001a__vmax_0301_3g1"
+zonedelete "xnpr3d01_53001b__vmax_0301_3g1"
+alidelete "xnpr3d01_53001a"
+alidelete "xnpr3d01_53001b"</code>
+  - peerap98 zoning to V9000 & VMAX<code>alicreate "peerap98_53001a","c0:50:76:07:f3:53:00:1a"
+alicreate "peerap98_53001b","c0:50:76:07:f3:53:00:1b"
+
+zonecreate "peerap98_53001a__vmax_0301_3g1","peerap98_53001a;vmax_0301_3g1"
+zonecreate "peerap98_53001b__vmax_0301_3g1","peerap98_53001b;vmax_0301_3g1"
+
+zonecreate "peerap98_53001a__ldcv9ac2n1_222fbf__ldcv9ac2n2_222fc0","peerap98_53001a;ldcv9ac2n1_222fbf;ldcv9ac2n2_222fc0"
+zonecreate "peerap98_53001b__ldcv9ac2n1_222fbf__ldcv9ac2n2_222fc0","peerap98_53001b;ldcv9ac2n1_222fbf;ldcv9ac2n2_222fc0"
+
+cfgadd "fab_b_act_config","peerap98_53001a__vmax_0301_3g1;peerap98_53001b__vmax_0301_3g1"
+cfgadd "fab_b_act_config","peerap98_53001a__ldcv9ac2n1_222fbf__ldcv9ac2n2_222fc0;peerap98_53001b__ldcv9ac2n1_222fbf__ldcv9ac2n2_222fc0"</code>
+  - peerdb98 zoning to V9000<code>zonecreate "peerdb98_7d8d6c__ldcv9ac2n1_122fbf__ldcv9ac2n2_122fc0","peerdb98_7d8d6c;ldcv9ac2n1_122fbf;ldcv9ac2n2_122fc0"
+
+cfgadd "fab_b_act_config","peerdb98_7d8d6c__ldcv9ac2n1_122fbf__ldcv9ac2n2_122fc0"</code>
+  - peerdb99 zoning to V9000<code>zonecreate "peerdb99_563c0a__ldcv9ac2n1_122fbf__ldcv9ac2n2_122fc0","peerdb99_563c0a;ldcv9ac2n1_122fbf;ldcv9ac2n2_122fc0"
+zonecreate "peerdb99_72a7a0__ldcv9ac2n1_222fbf__ldcv9ac2n2_222fc0","peerdb99_72a7a0;ldcv9ac2n1_222fbf;ldcv9ac2n2_222fc0"
+
+cfgadd "fab_b_act_config","peerdb99_563c0a__ldcv9ac2n1_122fbf__ldcv9ac2n2_122fc0;peerdb99_72a7a0__ldcv9ac2n1_222fbf__ldcv9ac2n2_222fc0"</code>
+  - peerap99 zoning to V9000<code>zonecreate "peerap99_0e0012__ldcv9ac2n1_122fbf__ldcv9ac2n2_122fc0","peerap99_0e0012;ldcv9ac2n1_122fbf;ldcv9ac2n2_122fc0"
+zonecreate "peerap99_0e0016__ldcv9ac2n1_122fbf__ldcv9ac2n2_122fc0","peerap99_0e0016;ldcv9ac2n1_122fbf;ldcv9ac2n2_122fc0"
+
+cfgadd "fab_b_act_config","peerap99_0e0012__ldcv9ac2n1_122fbf__ldcv9ac2n2_122fc0;peerap99_0e0016__ldcv9ac2n1_122fbf__ldcv9ac2n2_122fc0"</code>
+  - Save & Enable the config<code>cfgsave
+cfgenable "fab_b_act_config"</code>

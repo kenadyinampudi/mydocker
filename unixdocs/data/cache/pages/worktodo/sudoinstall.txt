@@ -1,0 +1,197 @@
+====== Configure syslog to log sudo stuff ======
+
+  * AIX - Add this in syslog.conf<code>authpriv.info      /var/log/secure rotate size 128k time 7d</code>Create the file<code>sudo touch /var/log/secure</code>Change permissions<code>sudo chmod 600 /var/log/secure</code>Restart syslogd<code>sudo stopsrc -s syslogd ; sudo startsrc -s syslogd</code>
+  * HPUX -
+  * Linux -
+
+====== Configure rsyslog OR syslog-ng log sudo centrally ======
+
+  - Install syslog-ng, Apply this config.<code># External logs defined here
+
+# Listener to accept logs from external servers
+source r_sys {
+  udp(ip(0.0.0.0) port(514));
+  tcp(ip(0.0.0.0) port(514) max_connections(1024) );
+};
+
+# Define a destination for sudo logs
+destination rd_sudo { file("/var/sudologs/secure.log" ); };
+
+# Define a filter for just sudo logs
+filter rf_sudo { program("^sudo$"); };
+
+# Now define a rule so that the sudo logs goes to the sudo destination log file
+log { source(r_sys); filter(rf_sudo); destination(rd_sudo); };
+</code>
+
+  - Turns off iptables <code>chkconfig --level 0123456 iptables  off</code>
+  - 
+====== Must do ======
+
+  - No vncserver using root.
+  - Define bad commands ( nothing from /usr/bin, /bin, /usr/sbin, passwd, su, chmod , chown, ksh, csh, Rsh, ssh, bash, bash2, ksh93, remsh, rksh, rksh93,   )
+
+
+====== Implementation details ======
+
+  - Figure out and implement the "ODMDIR - variable "
+  - Systems with sudo access today<code>
+taqa1d01 orapta - runs backups
+teprbk01 orata2 - runs backups</code>
+  - Write up a sudo documentation and publish.
+  - Create these groups on all server and update the server build document<code>ovteam
+dbateam
+sapteam
+stgteam
+secteam</code>
+  - Enable syslog entries on all servers<code></code>
+====== Why sudo ? ======
+
+
+
+
+
+Improper usage of itocroot account has been found. It is impossible to find out who did what and when w/o a product like sudo.
+
+== Permission of /tmp and /var/tmp has been altered ==
+<code>tnpr3d01 drwxrwxrwx 21 sspadm sapinst 69632 Sep 29 19:10 /tmp
+tsdv1d01 drwxrwxrwt 28 dpiadm sapsys 21385216 Sep 29 19:13 /tmp
+taglk055 drwxrwxrwt 36 500 544 20480 Sep 30 01:13 /tmp
+tndv3d01 drwxrwxrwt 3 4141 sapsys 4096 Sep 29 19:22 /var/tmp
+</code>
+
+== Permission of /home has been altered ==
+
+On paerap06 /home permission is messed up
+
+<code>drwxr-xr-x   66 ptaadm   sapsys         4096 Sep 29 12:32 /home</code>
+
+== Many systems have nonroot owned directories inside the root filesystem ==
+
+Example
+
+teprbk01<code>-rw-r--r--    1 ptaadm   sapsys         2372 Feb 23 2008  /INSTDIR/dev_slic
+drwxrwxrwx    3 ptaadm   sapsys         4096 Feb 23 2008  /INSTDIR
+-rw-r--r--    1 ptaadm   sapsys         2347 Feb 16 2008  /INSTDIRcta/dev_slic
+drwxrwxrwx    3 ptaadm   sapsys         4096 Feb 16 2008  /INSTDIRcta
+drwxrwxr-x    2 orapta   sapsys         4096 Mar 21 2008  /sapmnt.old/PTA/exe
+drwxrwxr-x    3 orapta   sapsys          256 Mar 21 2008  /sapmnt.old/PTA
+drwxrwxr-x    3 orapta   sapsys          256 Mar 21 2008  /sapmnt.old</code>
+
+== Permission of device files have been messed up ==
+
+On qaerdb01
+
+crw--w--w-    1 ftaadm   sapsys       26,  1 Sep 28 09:53 /dev/pts/1
+
+Working on TEDV2D01
+crw--w--w-    1 it0adm   sapsys       19,  1 Jun 27 11:32 /dev/pts/1
+crw--w--w-    1 it0adm   sapsys       19,  2 Jun 25 10:59 /dev/pts/2
+crw--w--w-    1 it0adm   sapsys       19,  3 May 09 15:26 /dev/pts/3
+
+-rw-rw----    1 it0adm   sapsys      9951798 Jan 18 2011  /temp/BKPF_IB  _201001_20110118.TXT
+-rw-rw----    1 it0adm   sapsys      6191885 Jan 18 2011  /temp/BKPF_IB  _201002_20110118.TXT
+-rw-rw----    1 it0adm   sapsys       302081 Jan 18 2011  /temp/BKPF_IB  _201003_20110118.TXT
+-rw-rw----    1 it0adm   sapsys        26479 Jan 18 2011  /temp/BKPF_IB  _201004_20110118.TXT
+
+Working on tapr1d01
+
+crw--w--w-    1 ptaadm   sapsys       21,  1 Jun 29 01:33 /dev/pts/1
+
+Working on taitc111
+
+dr-xr-xr-x   53 traadm   sapsys         4096 Nov 17 2010  /usr
+
+x1kxk630 on tnpr3d01:/:/usr>df -k .
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/hd4          3670016   1246240   67%    60920    18% /
+x1kxk630 on tnpr3d01:/:/usr>
+
+Working on tndv3d01
+-rwxrwxr-x    1 commssd  sapsys          321 Sep 19 2006  /Comm/SSD/.profile
+-rw-------    1 commssd  sapsys         2454 Jan 08 2007  /Comm/SSD/.sh_history
+drwxrwxr-x    2 commssd  sapsys          256 Jun 05 2006  /Comm/SSD/recv/arch
+drwxrwxrwx    3 commssd  sapsys          256 Jan 08 2007  /Comm/SSD/recv/in
+
+Working on taitc109
+crw--w--w-    1 smaadm   sapsys       27,  2 Jul 25 2011  /dev/pts/2
+crw--w--w-    1 smaadm   sapsys       27,  3 Jul 25 2011  /dev/pts/3
+
+Working on qamesd02
+drwxr-xr-x    2 4088     sapsys          256 Dec 31 1969  /sapmnt/CTB/exe
+-rw-r-----    1 4088     sapsys    298219520 Jun 03 2008  /sapmnt/CTB/exe.tar
+
+Working on qamesd01
+drwxr-xr-x    2 4088     sapsys          256 Dec 31 1969  /sapmnt/CTB/exe
+-rw-r-----    1 4088     sapsys    298219520 Jun 03 2008  /sapmnt/CTB/exe.tar
+
+Working on deerap98
+-rw-rw-r--    1 c11adm   sapsys          518 Sep 07 2008  /dev_rout
+drwxrwxr-x    2 c11adm   sapsys          256 Dec 08 2011  /install
+
+Working on pehrdb01
+drwxr-xr-x    2 h1dadm   sapsys          256 Apr 23 2008  /ADK
+-rw-r-----    1 orah1p   sapsys         4331 Jan 25 2008  /root/aix_upgrade/pehrdb01-pre_upgrade.20091208224224/etc/isakmpd.conf
+-rw-r-----    1 orah1p   sapsys         4331 Jan 25 2008  /root/aix_upgrade/pehrdb01-pre_upgrade.20091211233747/etc/isakmpd.conf
+drwxr-xr-x    4 h1padm   sapsys          256 Jun 11 10:38 /sapcomm
+drwxrwxr-x    6 h1padm   sapsys          256 Aug 13 09:32 /sapmnt/H1P
+-rwxrwxr-x    1 h1padm   sapsys      6296599 Dec 09 2008  /sapmnt/SAPCAR
+drwxr-xr-x    3 h1dadm   sapsys          256 Dec 09 2008  /sapmnt
+-rwxrwxr-x    1 h1padm   sapsys      6296599 Dec 09 2008  /x/sapmnt/SAPCAR
+drwxrwxr-x    3 h1padm   sapsys          256 Jan 14 2006  /x/usr/sap/archive
+drwxr-xr-x    2 h1padm   sapsys          256 Jul 14 2008  /x/usr/sap/ccms/H1P_00/dsr
+drwxr-xr-x    2 h1padm   sapsys          256 Jul 14 2008  /x/usr/sap/ccms/H1P_00/logmon
+drwxr-xr-x    2 h1padm   sapsys          256 Jul 14 2008  /x/usr/sap/ccms/H1P_00/sapccmsr
+drwxr-xr-x    5 h1padm   sapsys          256 Jul 14 2008  /x/usr/sap/ccms/H1P_00
+drwxrwxr-x    3 root     sapsys          256 Jul 14 2008  /x/usr/sap/ccms
+-rw-rw----    1 h1padm   sapsys      1348809 Nov 06 2010  /x/usr/sap/ftp/hrHorizons/individ.txt
+drwxr-xr-x    2 h1padm   sapsys          256 Aug 07 2008  /x/usr/sap/ftp/hrHorizons
+drwxr-xr-x    3 h1padm   sapsys          256 Jul 28 2008  /x/usr/sap/ftp
+-rw-r--r--    1 h1padm   sapsys         1682 Nov 04 2010  /x/usr/sap/saprouter/dev_rout
+-rwxr-xr-x    1 h1padm   sapsys      1371182 Dec 05 2005  /x/usr/sap/saprouter/niping
+-rwxr-xr-x    1 h1padm   sapsys      1293813 Dec 05 2005  /x/usr/sap/saprouter/saprouter
+-rw-rw----    1 h1padm   sapsys       103923 Nov 06 2010  /x/usr/sap/saprouter/saprouter.log
+-rw-rw----    1 h1padm   sapsys           90 Mar 19 2009  /x/usr/sap/saprouter/saprouttab
+-rw-rw----    1 h1padm   sapsys           64 May 28 2008  /x/usr/sap/saprouter/saprouttab.old
+-rw-r-----    1 h1padm   sapsys          369 May 30 2006  /x/usr/sap/saprouter/saprouttab.org
+-rwxrwx---    1 h1padm   sapsys          363 Mar 21 2006  /x/usr/sap/saprouter/saprstart.sh
+drwxr-xr-x    2 h1padm   sapsys          256 May 28 2008  /x/usr/sap/saprouter
+-rw-rw----    1 4148     sapsys      4853760 May 12 2008  /x/usr/sap/saprouter_backup.tar
+-rwxrw-r--    1 root     sapsys          176 Jul 14 2008  /x/usr/sap/sapservices
+-rwxrwxr-x    1 h1padm   sapsys      1870188 Nov 07 2010  /x/usr/sap/tmp/coll.put
+-rw-rw----    1 h1padm   sapsys         2590 Nov 05 2010  /x/usr/sap/tmp/dev_coll
+-rw-rw----    1 h1padm   sapsys        23783 Oct 31 2010  /x/usr/sap/tmp/dev_coll.old
+
+Working on taglk055
+crw--w--w-    1 dataload sapsys       26,  6 Jan 31 2010  /dev/pts/6
+
+Working on tastr055
+crw--w--w-    1 dataload sapsys       28,  6 Oct 25 2009  /dev/pts/6
+
+Working on dahrap01
+-rw-r-----    1 ctbadm   sapsys    298219520 Jun 03 2008  /sapmnt/CTB/exe.tar
+
+Working on qahrap01
+-rw-r-----    1 qtbadm   sapsys    298219520 Jun 03 2008  /sapmnt/CTB/exe.tar
+
+Working on pahydb01
+-rw-r-----    1 4088     sapsys    298219520 Jun 03 2008  /sapmnt/CTB/exe.tar
+
+Working on daerap01
+drwxr-xr-x   74 ctaadm   sapsys         4096 Sep 29 23:22 /home
+-rwxr-xr-x    1 ctaadm   sapsys       589928 Feb 24 2009  /sapmnt/C46_old/exe/ABAP.pad
+-rwxr-xr-x    1 ctaadm   sapsys      9550071 Feb 24 2009  /sapmnt/C46_old/exe/R3check
+
+Working on pahrap01
+-rw-r-----    1 4088     sapsys    298219520 Jun 03 2008  /sapmnt/CTB/exe.tar
+
+
+
+== Permission of /etc has been altered ==
+
+<code>
+dahrdb01 :: drwxrwxrwx 34 root system 12288 Sep 29 22:49 /etc
+pahrdb01 :: drwxrwxrwx 36 root system 32768 Sep 29 23:02 /etc
+taitc109 :: drwxrwxrwx 45 bin bin 28672 Sep 29 23:19 /etc
+
+</code>

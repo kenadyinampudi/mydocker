@@ -1,0 +1,28 @@
+====== Backup the configuration / validation prior to a major OS work on a server ======
+
+  - Copy the pre-upgrade directory from NIM server taitc118 to the host(all references to ''host'' is to be interpreted as the server we are going to patch.
+    - Login to taitc118<code>sudo rsync -avv /prod/images/scripts/Pre_Upgrade/ <host>:/tmp/Pre_Upgrade/</code>
+  - Login to the host and execute the saveenv script<code>sudo /tmp/Pre_Upgrade/aix_upgrade/save_env.sh</code>
+    - This will create a directory in your home directory that contains all the backup files.
+    - For AIX migrations ( not TL upgrades ) Make sure you check the Language Environment in the file "LANGUAGE" in the directory just created by this script. NOTE the FIRST line "LANG=" and the last line for the language reference number  YOU WILL NEED THESE at the Initial Migration Configuration Settings.
+  - Make sure that the lppchk outputs are all 0 byte files<code>ls -l <directory>/pre-lppchk</code>
+  - Login to taitc118 and copy the backed up configurations from the host<code>sudo rsync -avv HOST:/home/YOURID/HOST-pre_upgradeDATEANDTIMESTAMP/ /preupgrade/reports/HOST-pre_upgradeDATEANDTIMESTAMP/</code>
+  - Preserve a copy of rootvg
+    - Disable the alt_disk_copy script<code>sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</code>
+      - On a SAN booting system, 
+        - Find out the alt_disk<code>lspv | grep rootvg
+hdisk0          00021ffb513afe5a                    rootvg          active
+hdisk1          00021ffb513aff90                    altinst_rootvg</code>In this case hdisk1 is the alternate boot disk.
+        - Remove the current alt_disk_rootvg<code>sudo alt_disk_install -X altinst_rootvg</code>
+        - Create a fresh alt_disk_copy<code>sudo alt_disk_copy -B -d hdiskX</code>-B option makes sure that it does not execute a bootlist - FYI.
+        - Check altinsta_rootvg has been created<code>lspv | grep rootvg</code>Make sure you see the altinst_rootvg in the output
+      - On a mirrored rootvg system do this,
+        - Unmirror the VG<code>sudo unmirrorvg rootvg hdiskX</code>
+        - Remove the disk from rootvg<code>sudo reducevg rootvg hdiskX</code>
+        - Clear the VGDA<code>sudo chpv -c hdiskX</code>
+        - Set the bootlist to boot from the remaining disk<code>sudo bootlist -m normal hdiskY</code>
+        - Perform an alt_disk_copy to the alt_rootvg<code>sudo alt_disk_copy -B -d hdiskX</code>
+  - Make sure that NIM server has a latest copy of mksysb
+    - On the server to be patched, find out the NIM server<code>grep mksysb /var/adm/.information
+mksysbhost:taitc118</code>In this case, it is taitc118
+    - Login to the NIM server we figured out above, make sure a latest copy of mksysb image backup exists<code>sudo ls -l /mksysb-images/bos.obj.<hostname>.gz</code>**Check the timestamp on the file, it has to be less than 7 days old**

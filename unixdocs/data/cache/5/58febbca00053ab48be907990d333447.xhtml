@@ -1,0 +1,169 @@
+<ol>
+<li class="level1"><div class="li"> Mounting filesystems on eu/na backup servers ( filesystems on the bcv devices ) <pre class="code"> /usr/lpp/EMC/Symmetrix/bin/mkbcv -a </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Miscellaneous command I ran while migrating vio10/11 to 30/31<pre class="code">VIO30
+
+Networks
+
+U9117.MMA.109F390-V15-C11-T1 - 10.32.6.71	4	U9117.MMA.109F390-V15-C81-T1
+U789D.001.DQD479K-P1-C1-T1	NIB
+U789D.001.DQD481Y-P1-C5-T1	NIB
+
++ ent6             U789D.001.DQD481Y-P1-C5-T1                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
++ ent0             U789D.001.DQD479K-P1-C1-T1                                    2-Port 10/100/1000 Base-TX PCI-Express Adapter (14104003)
+* ent14            U9117.MMA.109F390-V15-C81-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+* ent8             U9117.MMA.109F390-V15-C11-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+
+ent20
+
+mkvdev -sea ent20 -vadapter ent8 -default ent8 -defaultid 4 -attr ha_mode=auto ctl_chan=ent14
+
+ent24
+
+mktcpip -hostname taprvio30 -inetaddr 10.32.6.71 -interface en24 -netmask 255.255.255.0
+
+
+U9117.MMA.109F390-V15-C12-T1 - 10.0.5.10	5	U9117.MMA.109F390-V15-C82-T1
+U789D.001.DQD479K-P1-C1-T2	NIB
+U789D.001.DQD481Y-P1-C5-T2 	NIB
+
++ ent7             U789D.001.DQD481Y-P1-C5-T2                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
++ ent1             U789D.001.DQD479K-P1-C1-T2                                    2-Port 10/100/1000 Base-TX PCI-Express Adapter (14104003)
+* ent15            U9117.MMA.109F390-V15-C82-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+* ent9             U9117.MMA.109F390-V15-C12-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+
+ent21
+
+mkvdev -sea ent21 -vadapter ent9 -default ent9 -defaultid 5 -attr ha_mode=auto ctl_chan=ent15
+
+ent25
+
+mktcpip -hostname taprvio30 -inetaddr 10.0.5.10 -interface en25 -netmask 255.255.252.0
+
+
+U9117.MMA.109F390-V15-C13-T1 - 10.32.50.11	6	U9117.MMA.109F390-V15-C83-T1
+U7314.G30.060EFBA-P1-C2-T1 	Trunk
+U7314.G30.061679A-P1-C2-T1 	Trunk
+
++ ent4             U7314.G30.061679A-P1-C2-T1                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
++ ent2             U7314.G30.060EFBA-P1-C2-T1                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
+* ent16            U9117.MMA.109F390-V15-C83-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+* ent10            U9117.MMA.109F390-V15-C13-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+
+ent22
+
+mkvdev -sea ent22 -vadapter ent10 -default ent10 -defaultid 6 -attr ha_mode=auto ctl_chan=ent16
+
+ent26
+
+mktcpip -hostname taprvio30 -inetaddr 10.32.50.11 -interface en26 -netmask 255.255.255.0
+
+
+U9117.MMA.109F390-V15-C14-T1 - 10.32.51.11	7	U9117.MMA.109F390-V15-C84-T1
+U7314.G30.060EFBA-P1-C2-T2 	Trunk
+U7314.G30.061679A-P1-C2-T2  	Trunk
+
++ ent5             U7314.G30.061679A-P1-C2-T2                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
++ ent3             U7314.G30.060EFBA-P1-C2-T2                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
+* ent17            U9117.MMA.109F390-V15-C84-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+* ent11            U9117.MMA.109F390-V15-C14-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+
+ent23
+
+mkvdev -sea ent23 -vadapter ent11 -default ent11 -defaultid 7 -attr ha_mode=auto ctl_chan=ent17
+
+ent27
+
+mktcpip -hostname taprvio30 -inetaddr 10.32.51.11 -interface en27 -netmask 255.255.255.0
+
+VIO31
+
+Networks
+
+U9117.MMA.109F390-V16-C11-T1 - 10.32.6.72	4	U9117.MMA.109F390-V16-C81-T1
+U789D.001.DQD481X-P1-C1-T1
+U789D.001.DQD482X-P1-C5-T1
+
++ ent4             U789D.001.DQD482X-P1-C5-T1                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
++ ent6             U789D.001.DQD481X-P1-C1-T1                                    2-Port 10/100/1000 Base-TX PCI-Express Adapter (14104003)
+* ent14            U9117.MMA.109F390-V16-C81-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+* ent8             U9117.MMA.109F390-V16-C11-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+
+ent20
+
+mkvdev -sea ent20 -vadapter ent8 -default ent8 -defaultid 4 -attr ha_mode=auto ctl_chan=ent14
+
+ent24
+
+mktcpip -hostname taprvio31 -inetaddr 10.32.6.72 -interface en24 -netmask 255.255.255.0
+
+U9117.MMA.109F390-V16-C12-T1 - 10.0.5.11	5	U9117.MMA.109F390-V16-C82-T1
+U789D.001.DQD481X-P1-C1-T2
+U789D.001.DQD482X-P1-C5-T2
+
++ ent5             U789D.001.DQD482X-P1-C5-T2                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
++ ent7             U789D.001.DQD481X-P1-C1-T2                                    2-Port 10/100/1000 Base-TX PCI-Express Adapter (14104003)
+* ent15            U9117.MMA.109F390-V16-C82-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+* ent9             U9117.MMA.109F390-V16-C12-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+
+ent21
+
+mkvdev -sea ent21 -vadapter ent9 -default ent9 -defaultid 5 -attr ha_mode=auto ctl_chan=ent15
+
+ent25
+
+mktcpip -hostname taprvio31 -inetaddr 10.0.5.11 -interface en25 -netmask 255.255.252.0
+
+
+U9117.MMA.109F390-V16-C13-T1 - 10.32.50.12	6	U9117.MMA.109F390-V16-C83-T1
+U7314.G30.060EFBA-P1-C5-T1
+U7314.G30.061679A-P1-C5-T1
+
++ ent2             U7314.G30.061679A-P1-C5-T1                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
++ ent0             U7314.G30.060EFBA-P1-C5-T1                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
+* ent16            U9117.MMA.109F390-V16-C83-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+* ent10            U9117.MMA.109F390-V16-C13-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+
+ent22
+
+mkvdev -sea ent22 -vadapter ent10 -default ent10 -defaultid 6 -attr ha_mode=auto ctl_chan=ent16
+
+ent26
+
+mktcpip -hostname taprvio31 -inetaddr 10.32.50.12 -interface en26 -netmask 255.255.255.0
+
+
+U9117.MMA.109F390-V16-C14-T1 - 10.32.51.12	7	U9117.MMA.109F390-V16-C84-T1
+U7314.G30.060EFBA-P1-C5-T2
+U7314.G30.061679A-P1-C5-T2
+
++ ent3             U7314.G30.061679A-P1-C5-T2                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
++ ent1             U7314.G30.060EFBA-P1-C5-T2                                    2-Port 10/100/1000 Base-TX PCI-X Adapter (14108902)
+* ent17            U9117.MMA.109F390-V16-C84-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+* ent11            U9117.MMA.109F390-V16-C14-T1                                  Virtual I/O Ethernet Adapter (l-lan)
+
+ent23
+
+mkvdev -sea ent23 -vadapter ent11 -default ent11 -defaultid 7 -attr ha_mode=auto ctl_chan=ent17
+
+ent27
+
+mktcpip -hostname taprvio31 -inetaddr 10.32.51.12 -interface en27 -netmask 255.255.255.0
+
+
+
+
+
+mkvdev -lnagg ent0 ent2 # Aggregation
+
+mkvdev -lnagg ent0 -attr backup_adapter=ent1
+
+mkvdev -sea &lt;etherchannel&gt; -vadapter &lt;virt-ent&gt; -default &lt;virtualenet&gt; -defaultid 1 -attr ha_mode=auto ctl_chan=&lt;ctrlchannel&gt;
+
+mktcpip -hostname &lt;hostname&gt; -inetaddr &lt;ip&gt; -interface &lt;sea&gt; -netmask 255.255.255.0
+
+Fix /etc/hosts ..</pre>
+</div>
+</li>
+</ol>

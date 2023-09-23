@@ -1,0 +1,176 @@
+====== VIO Cluster build ======
+
+Turn dynamic tracking on, fine tune the number of commands and other s<code>chdev -l fscsi0 -a dyntrk=yes</code>
+
+Or if it is direct conencted, apply teh changes to ODM only. ( Needs reboot ) <code># chdev -Pl fscsi0 -a dyntrk=yes -a fc_err_recov=fast_fail
+fscsi0 changed
+# chdev -Pl fscsi1 -a dyntrk=yes -a fc_err_recov=fast_fail
+fscsi1 changed
+</code>
+
+For DMX3/4 <code>
+
+# chdev -Pl fcs0 -a max_xfer_size=0x1000000 -a num_cmd_elems=2048
+fcs0 changed
+# chdev -Pl fcs1 -a max_xfer_size=0x1000000 -a num_cmd_elems=2048
+fcs1 changed
+</code>
+
+VIOS tuning - Remove paging00 and add the space back to hd6
+
+Paging <code>
+padmin on taprvio21:/home/padmin>lsps -a
+Page Space      Physical Volume   Volume Group    Size %Used Active  Auto  Type
+paging00        hdiskpower4       rootvg        1024MB     1   yes   yes    lv
+hd6             hdiskpower4       rootvg         512MB     1   yes   yes    lv
+</code>
+
+====== On the VIO client ======
+
+Change the priority on vSCSI , Make sure odd and even hdisks are balanced across the vSCSIs.<code>
+chpath -l hdisk0 -p vscsi0 -a priority=2</code>
+
+====== VIO Notes ======
+
+
+<code>rmdev -dev vhost1 -ucfg -recursive
+padmin on taprvio20:/home/padmin>rmdev -dev vhost1 -ucfg -recursive
+vtscsi0 Defined
+vtscsi1 Defined
+vtscsi2 Defined
+vtscsi3 Defined
+vhost1 Defined
+</code>
+
+Check it
+
+<code>
+root on taprvio20:/>lsdev -Ccadapter | grep vhost
+vhost0  Available       Virtual SCSI Server Adapter
+vhost1  Defined         Virtual SCSI Server Adapter
+</code>
+
+====== VIO cilent tuning ======
+
+
+<code>root on xeerdb21:/root>for dev in $(lspv | awk '{print $1}')
+> do
+> chdev -Pl ${dev} -a hcheck_interval=60 -a queue_depth=12
+> done
+hdisk0 changed
+hdisk1 changed
+hdisk2 changed
+hdisk3 changed
+</code>
+
+====== HBA replacement procedure in a clustered VIO environment ======
+
+  * Capture and document VTD mappings<code>padmin on taprvio20:/home/padmin>viosbr -backup -file backup.today
+Backup of this node(taprvio20) successfull</code>
+  * Turn pprootdev off<code>pprootdev fix</code>
+  * Unmap the devices from VIO server<code>for DEV in `lsmap -all | grep -i backing | awk '{print $NF}' `
+do
+rmvdev -vdev $DEV
+done
+vtscsi0 deleted
+vtscsi1 deleted
+vtscsi2 deleted
+vtscsi3 deleted</code>
+  * Check powerpath adapters <code> powermt display
+Symmetrix logical device count=18
+CLARiiON logical device count=0
+Hitachi logical device count=0
+Invista logical device count=0
+HP xp logical device count=0
+Ess logical device count=0
+HP HSx logical device count=0
+==============================================================================
+----- Host Bus Adapters ---------  ------ I/O Paths -----  ------ Stats ------
+###  HW Path                       Summary   Total   Dead  IO/Sec Q-IOs Errors
+==============================================================================
+   0 fscsi0                        optimal      14      0       -     0      0
+   1 fscsi1                        optimal      14      0       -     0      0</code>
+  * Put he HBA on standby mode <code>powermt set mode=standby hba=0
+  *  powermt display dev=hdiskpower8
+Pseudo name=hdiskpower8
+Symmetrix ID=000190103339
+Logical device ID=0801
+state=alive; policy=SymmOpt; priority=0; queued-IOs=0
+==============================================================================
+---------------- Host ---------------   - Stor -   -- I/O Path -  -- Stats ---
+###  HW Path                I/O Paths    Interf.   Mode    State  Q-IOs Errors
+==============================================================================
+   0 fscsi0                    hdisk11   FA 10aA   standby alive      0      0
+   1 fscsi1                    hdisk26   FA  7aA   active  alive      0      0</code>
+  * Remove the HBA from powerpath <code># powermt remove hba=0
+Warning: removing last active path to volume 0081 of Symmetrix storage array 000190103339.
+Proceed? [y|n|a|q] a</code>
+  * rmdev -dl on fcs0 <code> # rmdev -R -dl fcs0
+fcnet0 deleted
+hdisk2 deleted
+hdisk3 deleted
+hdisk4 deleted
+hdisk5 deleted
+hdisk6 deleted
+hdisk7 deleted
+hdisk8 deleted
+hdisk9 deleted
+hdisk10 deleted
+hdisk11 deleted
+hdisk12 deleted
+hdisk13 deleted
+hdiskpower0 deleted
+hdiskpower1 deleted
+hdiskpower2 deleted
+hdiskpower3 deleted
+hdiskpower7 deleted
+hdiskpower8 deleted
+hdiskpower9 deleted
+sfwcomm0 deleted
+fscsi0 deleted
+fcs0 deleted
+</code>
+  * Replace the adapter do the magic . And run cfgmgr <code>cfgmgr</code>
+  * Set the fcsci and fcs tuning parameters into the ODM "-Pl"
+  * Set reserve lock off on all shared LUNs (hdiskpower). <code># for dev in hdiskpower8 hdiskpower9 hdiskpower12 hdiskpower13
+> do
+>  chdev -l $dev -a reserve_lock=no
+> done
+hdiskpower8 changed
+hdiskpower9 changed
+hdiskpower12 changed
+hdiskpower13 changed</code>
+  * Reboot the VIOS
+  * Check the reserve_lock and push the vio mappings <code>viosbr -restore -type vscsi -file backup.tod</code>
+
+====== Powerpath upgradation on a VIO ======
+
+  * One VIO server at a time in a VIO clustered environment OR shutdown guests in a single VIO environments.
+  * Unconfigure the hdiskpower devices used as backend devices. As padmin, execute this for all vhosts<code>for vhost in $(lsmap -all | grep ^vhost| awk '{print $1}')
+do
+  rmdev -vdev ${vhost} -ucfg -recursive
+done</code>
+  * smitty update_all to upgrade powerpath.
+  * Set reserve_lock=no for all hdiskpower devices.
+  * Reboot <code>shutdown -restart</code>
+
+====== Cleanup Missing Paths after a VIO guest migration ======
+
+  * Login to the VIO guest and make sure there are two active paths to each LUN <code>for dev in $(lspv | grep hdisk | awk '{print $1}')
+do
+lspath -l $dev
+read
+done</code>
+  * Delete one of the vscsi completely from the ODM <code>rmdev -dl vscsi0 -R</code>
+  * Run cfgmgr <code>cfgmgr</code>
+  * Make sure we have two active paths<code>for dev in $(lspv | grep hdisk | awk '{print $1}')
+do
+lspath -l $dev
+read
+done</code>
+  * Delete the second vscsi completely.<code>rmdev -dl vscsi1 -R</code>
+  * Make sure we have two active paths<code>for dev in $(lspv | grep hdisk | awk '{print $1}')
+do
+lspath -l $dev
+read
+done</code> 

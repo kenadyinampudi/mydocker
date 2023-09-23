@@ -1,0 +1,94 @@
+
+<h1 class="sectionedit1" id="rybnik_-_bad_block_recovery_procedures">Rybnik - bad block recovery procedures</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Wait for applications to go down.<pre class="code">sudo su -
+cd /etc/rc.d/rc2.d
+./K02content
+ps -ef | grep sdb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount the existing filesystems<pre class="code">sudo  umount /NEW/sapdb/SDB/sapdata6
+sudo  umount /sapdb/SDB/sapdata
+sudo  umount /sapdb/SDB/sapdata1
+sudo  umount /sapdb/SDB/sapdata2
+sudo  umount /sapdb/SDB/sapdata3
+sudo  umount /sapdb/SDB/sapdata4
+sudo  umount /sapdb/SDB/sapdata5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename the filesystems with a prefix /corrupted<pre class="code">sudo chfs -m /corrupted/NEW/sapdb/SDB/sapdata6 /NEW/sapdb/SDB/sapdata6
+sudo chfs -m /corrupted/sapdb/SDB/sapdata      /sapdb/SDB/sapdata
+sudo chfs -m /corrupted/sapdb/SDB/sapdata1     /sapdb/SDB/sapdata1
+sudo chfs -m /corrupted/sapdb/SDB/sapdata2     /sapdb/SDB/sapdata2
+sudo chfs -m /corrupted/sapdb/SDB/sapdata3     /sapdb/SDB/sapdata3
+sudo chfs -m /corrupted/sapdb/SDB/sapdata4     /sapdb/SDB/sapdata4
+sudo chfs -m /corrupted/sapdb/SDB/sapdata5     /sapdb/SDB/sapdata5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount the newly created filesystems<pre class="code">sudo umount /newlycreated/sapdb/SDB/sapdata
+sudo umount /newlycreated/sapdb/SDB/sapdata1
+sudo umount /newlycreated/sapdb/SDB/sapdata2
+sudo umount /newlycreated/sapdb/SDB/sapdata3
+sudo umount /newlycreated/sapdb/SDB/sapdata4
+sudo umount /newlycreated/sapdb/SDB/sapdata5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename the newly created filesystems to the original name<pre class="code">sudo chfs -m /sapdb/SDB/sapdata  /newlycreated/sapdb/SDB/sapdata
+sudo chfs -m /sapdb/SDB/sapdata1 /newlycreated/sapdb/SDB/sapdata1
+sudo chfs -m /sapdb/SDB/sapdata2 /newlycreated/sapdb/SDB/sapdata2
+sudo chfs -m /sapdb/SDB/sapdata3 /newlycreated/sapdb/SDB/sapdata3
+sudo chfs -m /sapdb/SDB/sapdata4 /newlycreated/sapdb/SDB/sapdata4
+sudo chfs -m /sapdb/SDB/sapdata5 /newlycreated/sapdb/SDB/sapdata5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the new filesystems<pre class="code">sudo mount /sapdb/SDB/sapdata
+sudo mount /sapdb/SDB/sapdata1
+sudo mount /sapdb/SDB/sapdata2
+sudo mount /sapdb/SDB/sapdata3
+sudo mount /sapdb/SDB/sapdata4
+sudo mount /sapdb/SDB/sapdata5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Handover the system to Kempe.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "Rybnik - bad block recovery procedures" [1-2038] -->
+<h2 class="sectionedit2" id="backout_procedure">Backout procedure</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Kempe to stop any applications or recovery procedures running.</div>
+</li>
+<li class="level1"><div class="li"> Unmount the new filesystems<pre class="code">echo &quot;/sapdb/SDB/sapdata  /sapdb/SDB/sapdata1 /sapdb/SDB/sapdata2 \
+/sapdb/SDB/sapdata3 /sapdb/SDB/sapdata4 /sapdb/SDB/sapdata5&quot; | xargs -n1 sudo umount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename the filesystems<pre class="code">sudo chfs -m /newlycreated/sapdb/SDB/sapdata  /sapdb/SDB/sapdata
+sudo chfs -m /newlycreated/sapdb/SDB/sapdata1 /sapdb/SDB/sapdata1
+sudo chfs -m /newlycreated/sapdb/SDB/sapdata2 /sapdb/SDB/sapdata2
+sudo chfs -m /newlycreated/sapdb/SDB/sapdata3 /sapdb/SDB/sapdata3
+sudo chfs -m /newlycreated/sapdb/SDB/sapdata4 /sapdb/SDB/sapdata4
+sudo chfs -m /newlycreated/sapdb/SDB/sapdata5 /sapdb/SDB/sapdata5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename the old filesystems<pre class="code">sudo chfs -m /NEW/sapdb/SDB/sapdata6 /corrupted/NEW/sapdb/SDB/sapdata6
+sudo chfs -m /sapdb/SDB/sapdata      /corrupted/sapdb/SDB/sapdata
+sudo chfs -m /sapdb/SDB/sapdata1     /corrupted/sapdb/SDB/sapdata1
+sudo chfs -m /sapdb/SDB/sapdata2     /corrupted/sapdb/SDB/sapdata2
+sudo chfs -m /sapdb/SDB/sapdata3     /corrupted/sapdb/SDB/sapdata3
+sudo chfs -m /sapdb/SDB/sapdata4     /corrupted/sapdb/SDB/sapdata4
+sudo chfs -m /sapdb/SDB/sapdata5     /corrupted/sapdb/SDB/sapdata5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount the old filesystems<pre class="code">echo &quot;/NEW/sapdb/SDB/sapdata6 /sapdb/SDB/sapdata /sapdb/SDB/sapdata1 \
+/sapdb/SDB/sapdata2 /sapdb/SDB/sapdata3 /sapdb/SDB/sapdata4 /sapdb/SDB/sapdata5&quot; | xargs -n1 sudo mount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Handover to Kempe for startup</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Backout procedure" [2039-] -->

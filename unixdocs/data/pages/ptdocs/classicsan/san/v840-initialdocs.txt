@@ -1,0 +1,49 @@
+====== v840 Documentation ======
+
+<code>svctask mkhost -fcwwpn C0507607FDBD0004:C0507607FDBD0006:C0507607FDBD000A:C0507607FDBD0008 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pocafasv01 -type generic
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name pocafasv01_0003 -nofmtdisk -rsize 2% -size 536870912000 -syncrate 50 -unit b -vtype striped -warning 80%
+svctask mkvdiskhostmap -force -host 0 -scsi 2 4
+
+First field is probably static ...
+
+600507680C80817DF 800000000000003
+
+
+IBM_FlashSystem:ldcv9000-1:superuser>lsvdiskhostmap
+CMMVC5707E Required parameters are missing.
+IBM_FlashSystem:ldcv9000-1:superuser>lsvdisk hostmap
+CMMVC5754E The specified object does not exist, or the name supplied does not meet the naming rules.
+IBM_FlashSystem:ldcv9000-1:superuser>lsvdiskhostmap 5
+id name            SCSI_id host_id host_name  vdisk_UID                        IO_group_id IO_group_name
+5  pocafasv01_0003 3       0       pocafasv01 600507680C80817DF800000000000006 0           io_grp0
+
+svctask mkhost -fcwwpn C0507607FDBD000C:C0507607FDBD000E -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pocafasv02 -type generic
+for vol in 0 1 2 3
+do
+   mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name pocafasv02_000${vol} -nofmtdisk -rsize 2% -size 500 -syncrate 50 -unit gb -vtype striped -warning 80%
+done
+
+for vol in 0 1 2 3 
+do
+   echo "mkvdiskhostmap -force -host 1 pocafasv02_000${vol}"
+done</code>
+  - Creating compressed, thin provisioned volumes(TA2)<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done</code>
+  - Creating the backup volumes<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2orabkp_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done</code>
+  - Mapping volumes to a host<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdiskhostmap -force -host pocafasv02 ta2orabkp_${vol}
+done</code>
+  - Creating a FlashCopy Consistency Group<code>ssh pocibmafa01 svctask mkfcconsistgrp -name TA2ORABKP</code>
+  - Creating snapshot pairs within a consistency group<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkfcmap -cleanrate 0 -consistgrp TA2ORABKP -copyrate 0 -source ta2oradb_${vol} -target ta2orabkp_${vol}
+done</code>
+  - Start Flash Copy<code>ssh pocibmafa01 svctask startfcconsistgrp -prep TA2ORABKP</code>
+  - Terminate FlashCopy<code>ssh pocibmafa01 svctask stopfcconsistgrp TA2ORABKP</code>
+  - Restore from FlashCopy<code>ssh pocibmafa01 svctask startfcconsistgrp -restore TA2ORABKP</code>

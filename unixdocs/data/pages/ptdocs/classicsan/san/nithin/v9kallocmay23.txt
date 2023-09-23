@@ -1,0 +1,254 @@
+
+====== TA2 storage allocation july 18th ======
+
+  -Allocating disk in v9000
+   <code>1):Make sure TA2 backup jobs for the day has finished it's threads . Login to taqa1d01
+
+   sudo bpdbjobs | grep -i active | grep -i SAP_TA2
+
+2):List the current ta2 database volumes
+
+   ssh ldcv9ac2vip1 lsvdisk | grep ta2dbdata | awk '{print $2"\t"$8}' | sort -k1
+
+
+x1nithsa on pgunap01:/home/x1nithsa $ ssh ldcv9ac2vip1 lsvdisk | grep ta2dbdata | awk '{print $2"\t"$8}' | sort -k1
+ta2dbdata_001   512.00GB
+ta2dbdata_002   512.00GB
+ta2dbdata_003   512.00GB
+ta2dbdata_004   512.00GB
+ta2dbdata_005   512.00GB
+ta2dbdata_006   512.00GB
+ta2dbdata_007   512.00GB
+ta2dbdata_008   512.00GB
+ta2dbdata_009   512.00GB
+ta2dbdata_010   512.00GB
+ta2dbdata_011   512.00GB
+ta2dbdata_012   512.00GB
+ta2dbdata_013   512.00GB
+ta2dbdata_014   512.00GB
+ta2dbdata_015   512.00GB
+ta2dbdata_016   512.00GB
+ta2dbdata_017   512.00GB
+ta2dbdata_018   512.00GB
+ta2dbdata_019   512.00GB
+ta2dbdata_020   512.00GB
+ta2dbdata_021   512.00GB
+ta2dbdata_022   512.00GB
+ta2dbdata_023   512.00GB
+ta2dbdata_024   512.00GB
+ta2dbdata_025   512.00GB
+ta2dbdata_026   512.00GB
+ta2dbdata_027   512.00GB
+ta2dbdata_028   512.00GB
+ta2dbdata_029   512.00GB
+ta2dbdata_030   512.00GB
+ta2dbdata_031   512.00GB
+ta2dbdata_032   512.00GB
+ta2dbdata_033   512.00GB
+ta2dbdata_034   512.00GB
+ta2dbdata_035   512.00GB
+ta2dbdata_036   512.00GB
+ta2dbdata_037   512.00GB
+
+
+
+
+
+3):List the current ta2 backup volumes
+
+  ssh ldcv9ac2vip1 lsvdisk | grep ta2dbbkup | awk '{print $2"\t"$8}' | sort -k1
+
+x1nithsa on pgunap01:/home/x1nithsa $ ssh ldcv9ac2vip1 lsvdisk | grep ta2dbbkup | awk '{print $2"\t"$8}' | sort -k1
+ta2dbbkup_001   512.00GB
+ta2dbbkup_002   512.00GB
+ta2dbbkup_003   512.00GB
+ta2dbbkup_004   512.00GB
+ta2dbbkup_005   512.00GB
+ta2dbbkup_006   512.00GB
+ta2dbbkup_007   512.00GB
+ta2dbbkup_008   512.00GB
+ta2dbbkup_009   512.00GB
+ta2dbbkup_010   512.00GB
+ta2dbbkup_011   512.00GB
+ta2dbbkup_012   512.00GB
+ta2dbbkup_013   512.00GB
+ta2dbbkup_014   512.00GB
+ta2dbbkup_015   512.00GB
+ta2dbbkup_016   512.00GB
+ta2dbbkup_017   512.00GB
+ta2dbbkup_018   512.00GB
+ta2dbbkup_019   512.00GB
+ta2dbbkup_020   512.00GB
+ta2dbbkup_021   512.00GB
+ta2dbbkup_022   512.00GB
+ta2dbbkup_023   512.00GB
+ta2dbbkup_024   512.00GB
+ta2dbbkup_025   512.00GB
+ta2dbbkup_026   512.00GB
+ta2dbbkup_027   512.00GB
+ta2dbbkup_028   512.00GB
+ta2dbbkup_029   512.00GB
+ta2dbbkup_030   512.00GB
+ta2dbbkup_031   512.00GB
+ta2dbbkup_032   512.00GB
+ta2dbbkup_033   512.00GB
+ta2dbbkup_034   512.00GB
+ta2dbbkup_035   512.00GB
+ta2dbbkup_036   512.00GB
+ta2dbbkup_037   512.00GB
+
+
+
+4):From the above output, we know that the next serial number to use is 038
+
+5):Create TA2 database LUN
+
+ssh ldcv9ac2vip1 mkvdisk -autoexpand -cache readwrite -compressed -copies 1 \
+-iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbdata_038 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 \
+-unit mb -vtype striped -warning 0%
+
+6):Create TA2 backup LUN
+
+ssh ldcv9ac2vip1 mkvdisk -autoexpand -cache readwrite -compressed -copies 1 \
+-iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbbkup_038 -nofmtdisk -rsize 2% -size 524288 -syncrate 50 \
+-unit mb -vtype striped -warning 0%
+
+7):Add the TA2 LUN to peerdb99
+
+   ssh ldcv9ac2vip1 mkvdiskhostmap -host peerdb99 ta2dbdata_038
+
+8):Discover the disk on peerdb99.
+
+ssh peerdb99
+
+ Capture the before state
+
+   sudo lsvpcfg.sh > lsvpcfg.out.before
+
+ Run cfgmgr
+
+   sudo cfgmgr 
+
+ Capture the after state
+
+   sudo lsvpcfg.sh > lsvpcfg.out.after
+
+
+Document the difference for communicating to the Unix team -----> > hdisk61:none:IBM-v9000-600507680C80817DF:80000000000033E:524288::None
+
+   diff lsvpcfg.out.before lsvpcfg.out.after
+
+9):Add the TA2 backup LUN to teprbk01
+
+   ssh ldcv9ac2vip1 mkvdiskhostmap -host teprbk01 ta2dbbkup_038
+
+10):Capture the before state
+
+ssh teprbk01
+
+  sudo lsvpcfg.sh > lsvpcfg.out.before
+
+Run cfgmgr
+
+  sudo cfgmgr 
+
+Capture the after state
+
+  sudo lsvpcfg.sh > lsvpcfg.out.after
+
+Document the difference. There is no need to send this to Unix team.----->> hdisk41:none:IBM-v9000-600507680C80817DF:80000000000033F:524288::None  
+
+  diff lsvpcfg.out.before lsvpcfg.out.after
+
+11):Stop the flashcopy task and add the LUNs to the consistency group
+
+   Login to teprbk01
+
+ sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1
+
+  a):Once done unmount and offline the filesystems/vgs
+
+for VG in $(sort -u /admin/backups/workdir/vgs.out  )
+do
+   echo "Working on ${VG} "
+   for FS in $(lsvgfs ${VG} )
+   do
+      echo "Unmounting ${VG} - ${FS} "
+      sudo umount ${FS}
+   done   
+   echo "Varying off ${VG} "
+   sudo varyoffvg ${VG}
+   echo "Exporting ${VG} "
+   sudo exportvg ${VG}
+done
+
+b):Get VGs to a file
+
+sort -u /admin/backups/workdir/vgs.out > vgs.out
+
+c):Delete disks
+
+  grep -wf vgs.out lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl
+
+d):Stop the flashcopy task
+
+  ssh ldcv9ac2vip1  stopfcconsistgrp TA2ONLINEBKP
+
+e):Add the new volumes to the consistency group with a unique name
+
+  ssh ldcv9ac2vip1 mkfcmap -source ta2dbdata_038 -target ta2dbbkup_038 -name TA2ONLINEBKP38 -consistgrp TA2ONLINEBKP -copyrate 0 -cleanrate 0
+
+f):Prepare the task and start the task
+
+  ssh ldcv9ac2vip1  prestartfcconsistgrp TA2ONLINEBKP
+
+  ssh ldcv9ac2vip1  startfcconsistgrp TA2ONLINEBKP</code>
+  
+
+  -Allocating disk in Vmax10k
+
+1):Allocate the LUN on VMAX<code>
+
+  Login to pgunap01 and create the LUN
+
+   sudo symconfigure -sid 0301 -cmd "configure 1 devices copying dev 40EF;" preview -nop
+   
+  Commit
+
+   sudo symconfigure -sid 0301 -cmd "configure 1 devices copying dev 40EF;" commit -nop 00ECC
+
+2):Add the LUN to peerdb98 Storage group
+
+    sudo symaccess -sid 0301 -name peerdb98-p8_SG -type storage add devs 00ECC  
+
+sudo symaccess -sid 0301 list -type storage -dev 00ECC 
+
+ssh peerdb98
+
+  sudo lsvpcfg.sh > lsvpcfg.out.before  
+
+  Run cfgmgr
+
+    sudo cfgmgr 
+
+  Capture the after state
+
+    sudo lsvpcfg.sh > lsvpcfg.out.after
+
+  Document the difference for communicating to the Unix team -----> > > hdisk51:none:EMC-SYMM/CLAR-000198700301:0ECC:524295::
+
+
+     diff lsvpcfg.out.before lsvpcfg.out.after
+
+
+
+Hello Unix team,
+
+The LUNs have been added
+
+peerdb99 :-> hdisk61:none:IBM-v9000-600507680C80817DF:80000000000033E:524288::None 
+peerdb98 :-> hdisk51:none:EMC-SYMM/CLAR-000198700301:0ECC:524295:: 
+
+Please proceed</code>
+
+

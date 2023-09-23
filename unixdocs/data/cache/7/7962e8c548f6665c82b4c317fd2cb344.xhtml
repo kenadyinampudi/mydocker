@@ -1,0 +1,164 @@
+
+<h1 class="sectionedit1" id="aix_migration_from_version_71_to_72">AIX Migration from Version 7.1 to 7.2</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "AIX Migration from Version 7.1 to 7.2" [1-52] -->
+<h1 class="sectionedit2" id="note_nim_client_to_be_upgraded_must_be_on_a_3x_level_vios_server">Note  Nim client to be upgraded Must be on a 3.x Level VIOS Server</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create proper change controls and paper work, get approvals from business, get apps contacts to manage applications etc. As Chris say <strong>The whole nine yards</strong></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:backupconfig" class="wikilink1" title="unix:backupconfig">Perform the configuration backup</a></div>
+</li>
+<li class="level1"><div class="li"> Login to the respective NIM server ( pcdcunxaxap01)</div>
+</li>
+<li class="level1"><div class="li"> Export the nim clinet to be upgraded export <pre class="code"> export  nimclient=Name of Server Being Upgraded </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare the NIM environment for the migration on pcdcunxaxap01<pre class="code">sudo nim -o bos_inst -a source=rte -a lpp_source=aix-7200-04-02-2028_lppsrc -a spot=aix-7200-04-02-2028_spot -a no_client_boot=yes -a accept_licenses=yes ${nimclient}</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> For a system outside the Lincolnshire datacentre, do the following</div>
+<ol>
+<li class="level3"><div class="li"> <a href="/doku.php?id=unix:tweaknimforworl" class="wikilink1" title="unix:tweaknimforworl">Tweak the NIM to avoid cross atlantic NIM installation</a></div>
+</li>
+<li class="level3"><div class="li"> Boot the server to SMS, setup to boot from the local server where we copied the lppsrc and spot.</div>
+</li>
+</ol>
+</li>
+<li class="level2"><div class="li"> For a system in the Lincolnshire datacentre, do the following</div>
+<ol>
+<li class="level3"><div class="li"> Boot the server to SMS, setup IPL and perform a NIM boot.</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> At this menu, change the language to the correct one as shown below using option 2, select option 4 and set the Remove Java Version 5 Software to no,  set the “Select Editon to standard, option 5 and select the right disk option 1<pre class="code">                            Installation and Settings
+
+ Either type 0 and press Enter to install with current settings, or type the
+ number of the setting you want to change and press Enter.
+
+    1  System Settings:
+         Method of Installation.............Migration
+         Disk Where You Want to Install.....hdisk0
+
+    2  Primary Language Environment Settings (AFTER Install):
+         Cultural Convention................English (United States)
+         Language...........................English (United States)
+         Keyboard...........................English (United States)
+         Keyboard Type......................Alternate
+    3  Security Model.......................Default
+    4  More Options  (Software install options)
+    5  Select Edition.......................standard
+&gt;&gt;&gt; 0  Install with the settings listed above.
+
+                       +-----------------------------------------------------
+    88  Help ?         |  WARNING: Base Operating System Installation will
+    99  Previous Menu  |destroy or impair recovery of SOME data on the
+                       |destination disk hdisk0.
+&gt;&gt;&gt; Choice [0]:</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At this installation menu, choose <strong>1</strong><pre class="code">                            Migration Installation Confirmation
+
+Disks:  hdisk0
+Cultural Convention:  en_US
+Language:  en_US
+Keyboard:  en_US@alt
+Import User Volume Groups:  yes
+Enable System Backups to install any system:  yes
+Remove Java Version 5 Software:  no
+Selected Edition:  standard
+
+
+&gt;&gt;&gt; 1   Continue with Install
+                       +-----------------------------------------------------
+    88  Help ?         |  WARNING: Base Operating System Installation will
+    99  Previous Menu  |destroy or impair recovery of SOME data on the
+                       |destination disk hdisk0.
+&gt;&gt;&gt; Choice [1]:</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At this menu choose <strong>0</strong><pre class="code">                                  Migration Confirmation
+
+  Either type 0 and press Enter to continue the installation, or type the
+  number of your choice and press Enter.
+
+    1  List the saved Base System configuration files which will not be
+       merged into the system.  These files are saved in /tmp/bos.
+    2  List the filesets which will be removed and not replaced.
+    3  List directories which will have all current contents removed.
+    4  Reboot without migrating.
+
+    Acceptance of license agreements is required before using system.
+    You will be prompted to accept after the system reboots.
+
+&gt;&gt;&gt; 0  Continue with the migration.
+   88  Help ?
+
++---------------------------------------------------------------------------
+  WARNING: Selected files, directories, and filesets (installable options)
+    from the Base System will be removed.  Choose 2 or 3 for more information.
+
+
+&gt;&gt;&gt; Choice[0]:</pre>
+
+<p>
+Ignore the error like this if installing a system outside of Lincolnshire
+</p>
+<pre class="code">nim_rcmd: getaddrinfo: Hostname and service name not provided or found
+0042-001 nimclient: processing error encountered on &quot;master&quot;:
+   0042-006 nimclient: (To_Master) rcmd Error 0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The system reboots after the install. Check the oslevel<pre class="code">oslevel -s
+7200-04-02-2028</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restore the <abbr title="Secure Shell">SSH</abbr> host &amp; root keys<pre class="code">sudo YOURID/Pre_Upgrade/aix_upgrade/copy-etcssh-keys.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the SFTP line on <code>/etc/ssh/sshd_config</code> and fix it. It should be <code>/usr/sbin/sftp-server</code> instead of <code>/usr/libexec/sftp-server</code></div>
+</li>
+<li class="level1"><div class="li"> Install any EFIXES on the lppsrc.</div>
+</li>
+<li class="level1"><div class="li"> For a system outside of the Lincolnshire datacentre do the following</div>
+<ol>
+<li class="level2"><div class="li"> Login to NIM server pcdcuncaxap01, reset the NIM client and de-allocate all resources<pre class="code">nim -F -o reset taerm057
+nim -o deallocate -a subclass=all taerm057</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Login to the local server where we setup the temporary NFS server and unexport the filesystems<pre class="code">exportfs -u /prod/nim/resources/spotspot/usr
+exportfs -u /prod/nim/resources/lppsrc/610TL07-05
+exportfs -u /export/nim/scripts/taerm057.script</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the bootp configuration<pre class="code">cat /etc/bootptab | grep -v ^taerm057 &gt; /var/tmp/bootptab
+cp /var/tmp/bootptab /etc/bootptab</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Kill the bootpd process<pre class="code">kill $(ps -ef | grep bootpd | grep -v grep | awk &#039;{print $2}&#039;)</pre>
+
+<p>
+Inetd will restart it when needed.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the temporary files we copied on taerm055<pre class="code">rm /tftpboot/taerm057.emea.int.tenneco.com
+rm /tftpboot/taerm057.emea.int.tenneco.com.info
+rm /tftpboot/taerm057.emea.int.tenneco.com.iplrecord
+rm /export/nim/scripts/taerm057.script</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Login to the NIM server and perform a NIM client cleanup<pre class="code">sudo nim -F -o reset &lt;hostname&gt;
+sudo nim -o deallocate -a subclass=all</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Note  Nim client to be upgraded Must be on a 3.x Level VIOS Server" [53-] -->

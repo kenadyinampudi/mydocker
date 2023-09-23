@@ -1,0 +1,7 @@
+When a critical ticket will come with the following subject:  TF failed prestartfcconsistgrp TA2ONLINEBKP: do the following:
+  * Log in to V9000 and check how many maps are in stopping state<code>lsfcmap |grep TA2ONLINEBKP|grep stopping|wc -l</code>
+  * We have two options - either do nothing and wait or speed up this stopping which can be done like this:<code>chfcmap -cleanrate 71 -copyrate 0 FC_map_ID</code> where FC_map_ID is the very first column from <code>lsfcmap |grep TA2ONLINEBKP|grep stopping</code>
+  * Once the consistency group is in stopped stated preparecopy again<code>prestartfcconsistgrp TA2ONLINEBKP</code>
+  * wait for minute or two and then <code>startfcconsistgrp TA2ONLINEBKP</code>
+  * again wait 2-5 minutes and after that ask DBA to retry their backup job for TA2.
+  * revertback the cleanrates you changed in ealier point back to 0 - which defaults to 50 to be frank... by executing<code>chfcmap -cleanrate 0 -copyrate 0 FC_map_ID</code>

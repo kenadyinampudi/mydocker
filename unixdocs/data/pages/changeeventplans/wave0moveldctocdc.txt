@@ -1,0 +1,43 @@
+====== LPARs moves from LDC to CDC/PTT -- Technical Steps ======
+
+===== Pre-cutover tasks =====
+
+  - Agree the list of lpars and get approval for down time - Jeff / PM
+  - Define LPARs at PTT - CSI
+    - Email the WWNs to PTT Team for zoning and Storage team for host definitions.
+  - Perform zoning at PTT - PTT
+  - [[changeeventplans:ldc-cdc-ptt-mv-defhosts|Perform host definitions at PTT Pure]]
+  - Create schedule for each day and time - CSI
+  - Make sure hosts in scope has their data replicated. - CSI
+  - [[changeeventplans:ldc-cdc-ptt-disablenfs|Capture the state and disable NFS and create alt disk copy]]
+
+===== Cut over plan =====
+
+  - [[http://taitc212/cgi-bin/blackout/login.cgi|Enable blackout for servers]]
+  - Shutdown applications on the Server list -- Check the worksheet.
+  - Shutdown databases (if any ) on the Server list -- Check the worksheet.
+  - [[changeeventplans:ldc-cdc-ptt-mv-disablenfsandshutdown|Shutdown servers]]
+  - [[changeeventplans:ldc-cdc-ptt-mv-finalsync|Perform an adhoc replication, and provision storage at CDC/PTT]]
+  - [[changeeventplans:ldc-cdc-ptt-mv-movelpars|Start LPARs at CDC/PTT]]
+  - Start databases on PTT LPARs
+  - Start applications on PTT LPARs -- Remember licenses.
+  - Email monitoring team that the systems have been moved.
+  - Email Backup team ( Andy Hill, James Fort )
+  - Rename the LPARs on tgprhmc6(LDC) to "-migrated-to-CDC-PTT"
+===== Functional tests =====
+
+  - Validate the cloned applications work as expected.
+
+===== Backout plan =====
+
+  - Shutdown applications on PTT lpars.
+  - Shutdown databases on PTT lpars.
+  - Shutdown servers PTT
+  - Boot LPARs at LDC.
+
+===== Cleanup / Post move tasks =====
+
+  - Cleanup LPARs and storage at LDC.
+  - For cloned systems, 
+    - Stop  LDC     ->  DRIVE replication
+    - Start CDC/PTT ->  DRIVE replication

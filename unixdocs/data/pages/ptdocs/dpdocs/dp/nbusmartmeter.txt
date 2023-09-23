@@ -1,0 +1,23 @@
+**About Veritas Smart Meter**
+Veritas Smart Meter helps you manage your NetBackup deployment more efficiently, spot trends, and plan for the future. With accurate, near real-time reporting, it reveals the total amount of data that is backed up. Smart Meter alerts you if you are close to exceeding your licensed capacity limits. Smart Meter requires Veritas NetBackup 8.1.2 and later.
+Smart Meter provides:
+  * Accurate, near real-time reporting of terabytes protected
+  * Usage trends that are shown in a graphical display
+  * Consumption assessments to alert before licensed capacity is exceeded
+  * Easy capacity planning and budgeting
+  * Identification of growth spikes or potential gaps in coverage
+**Best practices for Veritas Smart Meter**
+Veritas suggests certain best practices for use of the Smart Meter tool.
+  * Confirm your site's ability to transmit secure web traffic.
+Smart Meter uses HTTPS to send relevant information. Your master server must allow outbound HTTPS traffic to take advantage of the automatic upload feature.
+Manual uploads require HTTPS traffic from the upload location.
+  * Your customer registration key is not a license key. The registration key is required for Smart Meter to work, but it is not your NetBackup license key. The customer registration key is downloaded from the Smart Meter website and is specific to Smart Meter.
+  * If you have multiple account IDs, when you download your customer registration key, you may have an aggregate registration key. This aggregate registration key includes all of your account IDs. You can use the aggregate key on all of your master servers. NetBackup does, however, prompt you to assign the specific
+key with a specific account ID to a specific master server. If you want, you can use this aggregate key for all your master servers.
+  * During install and upgrade to NetBackup 8.1.2, please allow the installer to copy the veritas_customer_registration_key.json file to its final destination. NetBackup can set the file permission and ownership correctly through this process. If you place the file onto your systems outside of the install or the upgrade process, the process may not work correctly.
+  * Be aware that NetBackup does not support the short file name format (8.3 format) for the customer registration key file name.
+  * For answers to frequently asked questions, visit the URL shown: https://help.veritas.com/Welcome?context=veritas_smart_meter&token=vsm_nbu_faqs
+
+**To download the customer registration key click {{:dp:veritas_customer_registration_key.7z|here}}. Once downloaded you have to unzip it - as the json extension is forbidden by the wiki.
+During install and upgrade to NetBackup 8.1.2, please allow the installer to copy the veritas_customer_registration_key.json file to its final destination. NetBackup can set the file permission and ownership correctly through this process. If you place the file onto your systems outside of the install or the upgrade process, the process may not work correctly.**
+To copy it to appliance do this:<code>pscp C:\veritas_customer_registration_key.json admin@xxxnbu52y0ams:/inst/patch/incoming/customer_registration/</code>

@@ -1,0 +1,139 @@
+# yum list installed
+# yum list packageName
+# yum remove packageName
+
+ 
+
+Remove unwanted.
+
+ 
+
+chkconfig --list | grep '3:on'
+
+ 
+
+Turnoff ipv6
+
+ 
+
+#See all set user id files:
+find / -perm +4000
+# See all group id files
+find / -perm +2000
+# Or combine both in a single command
+find / \( -perm -4000 -o -perm -2000 \) -print
+find / -path -prune -o -type f -perm +6000 –ls
+
+ 
+
+ 
+
+find /dir -xdev -type d \( -perm -0002 -a ! -perm -1000 \) -print
+
+ 
+
+ 
+
+find /dir -xdev \( -nouser -o -nogroup \) -print
+
+ 
+
+ 
+
+Remove
+
+ 
+
+ca::ctrlaltdel:/sbin/shutdown -r -t 4 now
+
+ 
+
+chkconfig --list | awk '/xinetd based services/,/""/' - will show you all processes/services controlled be xinetd. 
+
+ 
+
+ 
+
+route | grep link-local
+
+ 
+
+How to disable zeroconf:
+
+    1. edit /etc/sysconfig/network and NOZEROCONF=yes
+    2. remove all traces of avahi. 
+
+SSH Config / Lockdown
+
+A few things you must (should) do. There are a pile of other options you may want to consider.
+
+    1. Change the 'PermitRootLogin yes' to 'PermitRootLogin no'
+    2. Change the 'ListenAddress' to 'ListenAddress <ip>'. Where <IP> is your management ip address.
+    3. Change the 'IgnoreRhosts no' to 'IgnoreRhosts yes'.
+    4. Change the 'HostbasedAuthentication yes' to 'HostbasedAuthentication no'.
+    5. Change the 'PermitEmptyPasswords' to 'PermitEmptyPasswords no'.
+    6. Setup a banner. Add a line 'Banner /etc/ssh/banner' to /etc/ssh/sshd_config and add the following in /etc/ssh/banner (or whatever you like): 
+
+·         There are a couple things you may want to add to the /etc/sysctl.conf file.
+
+·         # Don't reply to broadcasts. Prevents joining a smurf attack
+
+·         net.ipv4.icmp_echo_ignore_broadcasts = 1
+
+·          
+
+·         # Enable protection for bad icmp error messages
+
+·         net.ipv4.icmp_ignore_bogus_error_responses = 1
+
+·          
+
+·         # Enable syncookies for SYN flood attack protection
+
+·         net.ipv4.tcp_syncookies = 1
+
+·          
+
+·         # Log spoofed, source routed, and redirect packets
+
+·         net.ipv4.conf.all.log_martians = 1
+
+·         net.ipv4.conf.default.log_martians = 1
+
+·          
+
+·         # Don't allow source routed packets
+
+·         net.ipv4.conf.all.accept_source_route = 0
+
+·         net.ipv4.conf.default.accept_source_route = 0
+
+·          
+
+·         # Turn on reverse path filtering
+
+·         net.ipv4.conf.all.rp_filter = 1
+
+·         net.ipv4.conf.default.rp_filter = 1
+
+·          
+
+·         # Don't allow outsiders to alter the routing tables
+
+·         net.ipv4.conf.all.accept_redirects = 0
+
+·         net.ipv4.conf.default.accept_redirects = 0
+
+·         net.ipv4.conf.all.secure_redirects = 0
+
+·         net.ipv4.conf.default.secure_redirects = 0
+
+·          
+
+·         # Don't pass traffic between networks or act as a router
+
+·         net.ipv4.ip_forward = 0
+
+·         net.ipv4.conf.all.send_redirects = 0
+
+·         net.ipv4.conf.default.send_redirects = 0

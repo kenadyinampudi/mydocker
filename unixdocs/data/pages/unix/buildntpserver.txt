@@ -1,0 +1,43 @@
+====== NTP Server build on Redhat 7 ======
+
+  - Create firewall rules from the respective NTP server(s) to the following time servers for <code>
+Source    : NTP server
+Target    : <The below listed internet time servers for respective continent.>
+Port      : 123
+Protocol  : UDP
+Direction : Outbound</code>
+    - Time servers<code>ntp-0.cso.uiuc.edu
+ntp1.cs.wisc.edu
+ntp1.belbone.be
+time1.hs-augsburg.de
+ntp.neu6.edu.cn
+ntp.thaidns.co.th</code>
+  - Install NTP<code>sudo yum install ntp</code>
+  - Server configurations.
+    - Make a backup copy of ntp.conf<code>sudo mv /etc/ntp.conf /etc/ntp.conf.Original</code>
+    - Edit ntp.conf<code>sudo vi /etc/ntp.conf</code>Add this<code># Permit time synchronization with our time source, but do not
+# permit the source to query or modify the service on this system.
+restrict default kod nomodify notrap nopeer noquery
+restrict -6 default kod nomodify notrap nopeer noquery
+
+# Restrict the Tenneco subnet's -- we may need to add more -- check with network team. Commented out for now.
+# restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap
+
+# Local host needs to have the full access to query or modify
+restrict 127.0.0.1
+
+# Add local clock as a backup
+server  127.127.1.0 # local clock
+fudge   127.127.1.0 stratum 10</code>
+  - Add the list of time servers<code>ntp-0.cso.uiuc.edu
+ntp1.cs.wisc.edu
+ntp1.belbone.be
+time1.hs-augsburg.de
+ntp.neu6.edu.cn
+ntp.thaidns.co.th</code>
+  - Define logs and drift file<code># Define the drift and log file
+
+driftfile /var/lib/ntp/ntp.drift
+logfile /var/log/ntp.log</code>
+  - Start the NTPD daemon<code>sudo systemctl enable ntpd
+sudo systemctl start ntpd</code>

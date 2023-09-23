@@ -1,0 +1,132 @@
+
+<h1 class="sectionedit1" id="taqa1d01_-_network_ip_changes">taqa1d01 - Network IP changes.</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "taqa1d01 - Network IP changes." [1-46] -->
+<h3 class="sectionedit2" id="during_the_change">During the change</h3>
+<div class="level3">
+
+<p>
+<strong> VLAN 460 </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Deconfigure VLAN 460<pre class="code">sudo ifconfig en9 down detach</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure LACP pair for VLAN 60<pre class="code">sudo mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names=&#039;ent17,ent18&#039; -a mode=&#039;8023ad&#039; -a netaddr=&#039;10.32.60.1&#039; -a num_retries=&#039;3&#039; -a retry_time=&#039;1&#039;
+sudo cfgmgr
+sudo chdev -l en22 -a netaddr=10.32.60.12 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Test VLAN 460</div>
+</li>
+</ol>
+
+<p>
+<strong> VLAN 48 </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Deconfigure VLAN 48<pre class="code">sudo ifconfig en8 down detach</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure LACP pair for VLAN 48<pre class="code">sudo mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names=&#039;ent20,ent19&#039;  -a mode=&#039;8023ad&#039;  -a netaddr=&#039;10.0.48.1&#039;  -a num_retries=&#039;3&#039;  -a retry_time=&#039;1&#039;
+sudo cfgmgr
+sudo chdev -l en23 -a netaddr=10.0.48.127 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Test VLAN 48</div>
+</li>
+</ol>
+
+<p>
+<strong> VLAN 49 </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Deconfigure VLAN 49<pre class="code">sudo ifconfig en7 down detach</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure LACP pair for VLAN 49<pre class="code">sudo mkdev -c adapter -s pseudo -t ibm_ech -a adapter_names=&#039;ent21,ent16&#039; -a mode=&#039;8023ad&#039; -a netaddr=&#039;10.0.49.1&#039; -a num_retries=&#039;3&#039; -a retry_time=&#039;1&#039;
+sudo cfgmgr
+sudo chdev -l en24 -a netaddr=10.0.49.127 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Test VLAN 49</div>
+</li>
+</ol>
+
+<p>
+<strong> Re-read inet0 from ODM – Do this anytime you change anything on the interface that has the default router </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Re-read inet0<pre class="code">sudo mkdev -l inet0</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "During the change" [47-1415] -->
+<h3 class="sectionedit3" id="backout_plan">Backout plan</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Remove IPs from the existing adapters<pre class="code">sudo ifconfig en22 down detach
+sudo ifconfig en23 down detach
+sudo ifconfig en24 down detach</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure IPs on the old ones.<pre class="code">sudo mkdev -l en7
+sudo mkdev -l en8
+sudo mkdev -l en9</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Re-read ODM definitions for inet0<pre class="code">sudo mkdev -l inet0</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Backout plan" [1416-1757] -->
+<h3 class="sectionedit4" id="cleanup_plan_after_a_couple_of_days">Cleanup plan (After a couple of days )</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Remove ent7 - VLAN 49 etherchannel – ent3 + ent6<pre class="code">for dev in 7 6 3
+do
+   sudo rmdev -dl en$dev
+   sudo rmdev -dl ent$dev
+   sudo rmdev -dl et$dev
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove ent8 - VLAN 48 etherchannel – ent1 + ent4<pre class="code">for dev in 8 4 1
+do
+   sudo rmdev -dl en$dev
+   sudo rmdev -dl ent$dev
+   sudo rmdev -dl et$dev
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove ent9 - VLAN 60 etherchannel – ent2 + ent5<pre class="code">for dev in 9 5 2
+do
+   sudo rmdev -dl en$dev
+   sudo rmdev -dl ent$dev
+   sudo rmdev -dl et$dev
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove those adapters from IVE.<pre class="code">GUI work on HMC</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the Virtual NIC - ent0 as well.<pre class="code">sudo rmdev -dl en0
+sudo rmdev -dl ent0
+sudo rmdev -dl et0</pre>
+
+<p>
+Then remove from taqa1d01 profile
+</p>
+<pre class="code">GUI work on HMC</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Cleanup plan (After a couple of days )" [1758-] -->

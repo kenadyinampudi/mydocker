@@ -1,0 +1,295 @@
+
+<h1 class="sectionedit1" id="configure_nim_server">Configure NIM server</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Logon to the HMC  <pre class="code">https://phlypahmc007/hmc/connect</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Boot tthe NIM server pcdcunxaxap01 in SMS mode. You will need to select the boot disks.</div>
+</li>
+<li class="level1"><div class="li"> At the  SMS menu select </div>
+</li>
+</ol>
+
+<p>
+for file in /etc/filesystems /etc/exports /etc/hosts /etc/resolv.conf
+do
+</p>
+<pre class="code">cp ${file} ${file}.copyforDR</pre>
+
+<p>
+done
+</p>
+
+<p>
+cat /dev/null &gt; /var/tmp/filesystems.modified
+for fs in $(lsvgfs rootvg)
+do
+</p>
+<pre class="code"> grep -p ${fs}: /etc/filesystems &gt;&gt; /var/tmp/filesystems.modified</pre>
+
+<p>
+done
+</p>
+
+<p>
+grep -p proc /etc/filesystems » /var/tmp/filesystems.modified
+</p>
+
+<p>
+cp /var/tmp/filesystems.modified /etc/filesystems
+</p>
+
+<p>
+mv /etc/resolv.conf /etc/resolv.conf.OLD
+</p>
+
+<p>
+# If a successful copy had been made, rename the exports file to prevent long boot times.
+</p>
+
+<p>
+<a href="/doku.php?id=chris:f_etc_exports.copyfordr" class="wikilink2" title="chris:f_etc_exports.copyfordr" rel="nofollow">-f /etc/exports.copyforDR</a> &amp;&amp; mv /etc/exports /etc/exports.OLDD
+</p>
+
+<p>
+# Disable CRON
+rmitab cron
+</p>
+
+<p>
+# Configure AIO on AIX 5.3
+oslevel | grep ^”5.3” &gt; /dev/null 2&gt;&amp;1
+if [ ${?} -eq 0 ]
+then
+</p>
+<pre class="code"> chdev -l aio0 -a autoconfig=available
+ mkdev -l aio0</pre>
+
+<p>
+fi
+</p>
+
+<p>
+# Add public key from NBU appliance-1 to each Unix server
+</p>
+
+<p>
+cat « <abbr title="End of file">EOF</abbr> » /root/.ssh/authorized_keys
+ssh-rsa AAAB3NzaC1yc2EAAAABIwAAAQEAv8EzRJC/7X2mIkpnVFasEI6zNdwb28hu9LtE7oxBSxc6k3fKeIa0x6DmXA+U246Livk33Q4KrbPJvm1OfS52/tGQH7Y6mX8HZVWqOa3EiWccEZ7cTRYVN3im7aMR4iAfalDMQxuss7871lhi04n4RSyi4B31oJQsM6/rmA8No8IyA0i7dHHIp1uMSSf6jTwUNXXI7uNxiqM4Yh/gwbOL7GDE3boVBVjgFDupy9xSdYME9y7m3Ibi25bK8LnY5cL4I+sjsX4DVAUP/ZE/9580frEa7hec33N+mcRHuPCQIrmY/W16YPosDiQiZx9qtn6101PWGB6HYnoNj/aRQq6xiQ== SYM1105173
+<abbr title="End of file">EOF</abbr>
+# Add public key from NBU appliance-2 to each Unix server
+</p>
+
+<p>
+cat « <abbr title="End of file">EOF</abbr> » /root/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAwdPWNm48MXVRr4M0dw3E/vGR5w4vnbZp96sOoJG8WVK46JaY97E18yNIp3K2WT669C6WG7xGetS732FkWAy9fqIleigCxZskeyabscPyZjbJ+3b1dfnNogcnmyuJjYIxPA4tEn/g2Ek9OPKwOIPWtq19mEl92mY1GUKlX0iJBkfzQ1Se60kR6Z8ixPimS83f+7YTIfZjTT34ZcJ7xJfyg835aK1ds325MH7W5hdfstUOYBQHG/Yh8vhOBMENL/TEyNthvxSOgYzfKcf+oGVyfYGVbN6T4Q4NX4Okr4oWIsuioQCobrSmcNAC3PrjJ6LZDKoOZQfF+bcr8Gq2XhFDQ== SYM1105044
+<abbr title="End of file">EOF</abbr>
+</p>
+
+<p>
+# Add public keys from DR NIM server for automatic login.
+# Add the keys here.
+#
+</p>
+
+<p>
+cat « <abbr title="End of file">EOF</abbr> » /root/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNjdXlekSuP0UKN5VgfLdRpkmor06fKzeEFTMFeD9Y276I2tzcoUe4HNMvgPdZoNrZjB9Zjp189olMlVG/rrzfREmRLDinVO7LMg9cvaMMhEbK5WM2OHBC+CK2F7/b3ylVzPqtTNA2IQp0UOTStDiXG8wO9waiYki9FhtOe9rOcZta1ilzhbJV5/fA30dql1nYJK50flVJEAzCMUXauvV5Td2sFBk42w02vHBUUWeCd2kSrQbsmx7dKDjDY4dob0xolfoQ/7pWB8sUnGsOWIs2JlhvkOCQclqQf2lTOB7dTAsQYYc6y+DHctd2uisJ45ab3EubM5OqcI2ZFyufeESF root@localhost
+<abbr title="End of file">EOF</abbr>
+</p>
+
+<p>
+# Add steps to automate /etc/hosts file to 
+#
+#
+</p>
+
+<p>
+# Configure NTP
+#
+#
+stopsrc -s xntpd
+mv /etc/ntp.conf /etc/ntp.conf.DRtest
+</p>
+
+<p>
+cat « <abbr title="End of file">EOF</abbr> » /etc/ntp.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+<abbr title="End of file">EOF</abbr>
+</p>
+
+<p>
+chrctcp -S -a xntpd
+</p>
+
+<p>
+ntpdate -u nim
+</p>
+
+<p>
+# Remove netbackup software
+# 
+# 
+</p>
+
+<p>
+installp -u SYMCnbclt SYMCnbjava SYMCnbjre SYMCnbclt SYMCnbjava SYMCnbjre
+</p>
+
+<p>
+# Configure iocp0
+#
+#
+</p>
+
+<p>
+chdev -l iocp0 -a autoconfig=available
+mkdev -l iocp0
+</p>
+
+<p>
+# Create the root mirror script
+#
+#
+</p>
+
+<p>
+cat « <abbr title="End of file">EOF</abbr> &gt; /root/mirror.sh
+mirrorvg -c2 rootvg
+for disk in $(lspv | grep rootvg | awk &#039;{print $1}&#039;)
+do
+</p>
+<pre class="code"> sudo bosboot -ad /dev/${disk}</pre>
+
+<p>
+done
+rootdisks=$(lspv | grep rootvg | awk &#039;{print $1}&#039; | tr “\n” ” ” )
+bootlist -m normal ${rootdisks}
+<abbr title="End of file">EOF</abbr>
+</p>
+
+<p>
+chmod 755 /root/mirror.sh
+</p>
+
+<p>
+# Make /usr/openv – 6GB
+#
+#
+chfs -a size=6G /usr/openv
+</p>
+
+<p>
+# Change itocroot password to abc1234 using post install script
+#
+#
+</p>
+
+<p>
+echo “itocroot:ka95aLbJ7WER6” | chpasswd -e
+pwdadm -c itocroot
+</p>
+
+<p>
+##### WORK TO DO ######
+</p>
+
+<p>
+# Modify /etc/exports creation here
+#
+#&lt;/code&gt;
+</p>
+<ol>
+<li class="level1"><div class="li"> Define it as a resource now<pre class="code">sudo nim -o define -t script -a server=master -a location=/prod/nim/resources/scripts/postinstall.DR postinstallDR</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the mksysbs from data domain<pre class="code">for mksysb in $(ls &lt;mount_point_of_datadomain&gt;)
+do
+   cp &lt;datadomain&gt;/${mksysb} /prod/nim/resources/mksysb/${mksysb}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unzip mksysb files<pre class="code">cd /prod/nim/resources/mksysb
+for mksysb in $(ls )
+do
+   gunzip ${mksysb}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define the mksysb resources<pre class="code">for file in $(ls -1 /prod/nim/resources/mksysb | grep &quot;bos.obj&quot; )
+do
+   host=$(echo ${file} | sed &quot;s;bos.obj.;;g&quot;)
+   nim -o define -t mksysb -a server=master -a location=/prod/nim/resources/mksysb/${file} ${host}-mksysb
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install the latest hosts file on NIM server<pre class="code">cp /etc/hosts /etc/hosts.copyforDR</pre>
+<pre class="code">sudo vi /etc/hosts</pre>
+
+<p>
+Paste these in there <a href="/doku.php?id=dr:2018-host-file-v2" class="wikilink2" title="dr:2018-host-file-v2" rel="nofollow">DR hosts file - 2018 DR test</a>
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Define the DR network NIM resource</div>
+<ol>
+<li class="level2"><div class="li"> 10.39.11/24 network<pre class="code">sudo nim -o define -t ent -a net_addr=10.39.11.0 -a snm=255.255.255.0 -a routing1=&quot;default 10.39.11.1&quot; ent-10-39-11-0</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> 10.39.1/24 network<strong>Probably not required</strong><pre class="code">sudo nim -o define -t ent -a net_addr=10.39.1.0 -a snm=255.255.255.0 -a routing1=&quot;default 10.39.1.1&quot; ent-10-39-1-0</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Define the hosts on NIM server<pre class="code">for file in $(ls /prod/nim/resources/mksysb )
+do
+   host=$(echo ${file} | sed &quot;s;bos.obj.;;g&quot;)
+   nim -o define -t standalone -a platform=chrp -a if1=&quot;find_net ${host} 0&quot; -a netboot_kernel=mp ${host}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create NTP server on NIM server</div>
+<ol>
+<li class="level2"><div class="li"> Edit config file<pre class="code">mv /etc/ntp.conf /etc/ntp.conf.copyforDR</pre>
+<pre class="code">vi /etc/ntp.conf</pre>
+
+<p>
+Add these lines - replacing everything else
+</p>
+<pre class="code">server 127.127.1.0
+fudge 127.127.1.0 stratum 9
+driftfile /etc/ntp.drift
+tracefile /etc/ntp.trace</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a client NTP.conf file<pre class="code">rm /root/ntp.client.conf
+cat &lt;&lt; EOF &gt;&gt; /root/ntp.client.conf
+driftfile /etc/ntp.drift
+tracefile /tmp/xntpd.trace
+server nim
+EOF</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Start NTP daemons<pre class="code">chrctcp -S -a xntpd</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> When in doubt, ask </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=chris%3Animrecoverycmds-2018&amp;media=dr:whenindoubtask.jpg" class="media" title="dr:whenindoubtask.jpg"><img src="/lib/exe/fetch.php?w=400&amp;media=dr:whenindoubtask.jpg" class="media" alt="" width="400" /></a>
+</p>
+
+<p>
+<strong> Make sure you are on the DR host, not the production server ( don&#039;t do tickets in parallel / be extremely careful ) </strong>
+</p>
+
+</div>

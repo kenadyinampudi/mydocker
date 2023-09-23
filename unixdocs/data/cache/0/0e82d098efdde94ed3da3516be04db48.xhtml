@@ -1,0 +1,98 @@
+
+<h1 class="sectionedit1" id="vlan_tagging_on_blade_vio_server">VLAN Tagging on Blade VIO Server</h1>
+<div class="level1">
+
+<p>
+ent8 - 450,48,406,4
+</p>
+
+<p>
+ent9 - 451,49
+</p>
+<ol>
+<li class="level1"><div class="li"> Completely remove network configuration.</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interface<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Find out the adapter id<pre class="code">lshwres -r hea --rsubtype logical --level port -F adapter_id</pre>
+
+<p>
+It will be a series of numbers like 23000001 or 23000000
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the HEA membership from all guest lpars.<pre class="code">chhwres -r hea -o s -l 23000001 -g 1 -a vlan_id_list=all --id 2 --logport 3</pre>
+<pre class="code">chhwres -r hea -o s -l 23000001 -g 1 -a vlan_id_list=all --id 2 --logport 4</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set VIOS partition as the Promiscious lpar. </div>
+<ol>
+<li class="level2"><div class="li"> Set it<pre class="code">chhwres -r hea -o s -l 23000001 -g 1 -a promisc_lpar_id=1 --physport 0</pre>
+<pre class="code">chhwres -r hea -o s -l 23000001 -g 1 -a promisc_lpar_id=1 --physport 1</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Obtain &lt;Server name&gt; by executing as padmin the following for next two steps<pre class="code">lssyscfg -r sys -F name</pre>
+
+<p>
+ And &lt;vio lpar name&gt;
+</p>
+<pre class="code">lssyscfg -r lpar -F name</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create entxx virtual NIC with additional VLANs that we need. 450,48,406.  <pre class="code">chhwres -m &lt;Server name&gt; -p &lt;vio lpar name&gt; -o a -r virtualio --rsubtype eth -s 14 -a &quot;ieee_virtual_eth=1,port_vlan_id=14,\&quot;addl_vlan_ids=450,48,406\&quot;,is_trunk=1,trunk_priority=1&quot; -d 5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create entxx virtual NIC with additional VLANs that we need. 451,49.<pre class="code">chhwres -m &lt;Server name&gt; -p &lt;vio lpar name&gt; -o a -r virtualio --rsubtype eth -s 15 -a &quot;ieee_virtual_eth=1,port_vlan_id=15,\&quot;addl_vlan_ids=451,49\&quot;,is_trunk=1,trunk_priority=1&quot; -d 5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create etherchannels ent10 and ent11</div>
+<ol>
+<li class="level2"><div class="li"> ent0 + ent1 ⇒ ent10<pre class="code">mkvdev -lnagg ent0 -attr backup_adapter=ent1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> ent2 + ent3 ⇒ ent11<pre class="code">mkvdev -lnagg ent2 -attr backup_adapter=ent3</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create SEA ent12 ent10 + ent8 ⇒ ent12<pre class="code">mkvdev -sea ent10 -vadapter ent8 -default ent8 -defaultid 14</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create SEA ent13 ent11 + ent9 ⇒ ent13<pre class="code">mkvdev -sea ent11 -vadapter ent9 -default ent9 -defaultid 15</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure IP on SEA<pre class="code">mktcpip -hostname &lt;vio DNS name&gt; -inetaddr &lt;vio IP&gt; -interface en12 -netmask 255.255.255.0 -gateway &lt;default gateway&gt; -start</pre>
+
+<p>
+If hostname was not changed / you get a message like this 
+</p>
+<pre class="code">Hostname &quot;taprvio3&quot; does not match with system hostname &quot;taprvio3.amer.int.tenneco.com&quot;.
+System Hostname will not be altered. /etc/hosts file will be updated.</pre>
+
+<p>
+Change the hostname in ODM
+</p>
+<pre class="code">oem_setup_env</pre>
+<pre class="code">chdev -l inet0 -a hostname=&lt;vioservername&gt;</pre>
+</div>
+</li>
+</ol>
+
+</div>

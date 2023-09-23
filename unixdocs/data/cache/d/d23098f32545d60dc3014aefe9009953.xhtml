@@ -1,0 +1,75 @@
+
+<h2 class="sectionedit1" id="to_create_the_ssl_certificate_and_key">To create the SSL Certificate and Key</h2>
+<div class="level2">
+
+<p>
+Please follow the following steps:-
+</p>
+<ol>
+<li class="level1"><div class="li"> Check if openssl package is installed.<pre class="code">sudo lslpp -l openssl.base
+  Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  openssl.base             1.0.1.515  COMMITTED  Open Secure Socket Layer
+                                      EFIXLOCKED
+Path: /etc/objrepos
+  openssl.base             1.0.1.515  COMMITTED  Open Secure Socket Layer
+                                      EFIXLOCKED</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run command to generate the <abbr title="Secure Sockets Layer">SSL</abbr> KEY &amp; CERT together.<pre class="code">openssl req -x509 -nodes -days 999 -newkey rsa:2048 -keyout path.key -out path.crt </pre>
+
+<p>
+eg:-
+</p>
+<pre class="code">openssl req -x509 -nodes -days 999 -newkey rsa:2048 -keyout /opt/freeware/etc/httpd/conf/extra/unixdocsssl.key -out /opt/freeware/etc/httpd/conf/extra/unixdocsssl.crt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> After generating the <abbr title="Secure Sockets Layer">SSL</abbr> KEYS &amp; CERT which needs to be inserted in the *.conf file (eg:- /opt/freeware/etc/httpd/conf/extra/unixdocs.conf)<pre class="code">&lt;VirtualHost *:80&gt;
+DocumentRoot /apps/dokuwiki
+ServerName unixdocs
+ServerAlias unixdocs.amer.int.tenneco.com unixdocs.emea.int.tenneco.com
+Redirect &quot;/&quot; &quot;https://unixdocs/&quot;
+&lt;/virtualHost&gt;
+&lt;VirtualHost *:443&gt;
+DocumentRoot /apps/dokuwiki
+ServerName unixdocs
+ServerAlias unixdocs.amer.int.tenneco.com unixdocs.emea.int.tenneco.com
+SSLEngine on
+SSLCertificateFile	/opt/freeware/etc/httpd/conf/extra/unixdocsssl.crt
+SSLCertificateKeyFile	/opt/freeware/etc/httpd/conf/extra/unixdocsssl.key
+&lt;Directory &quot;/apps/dokuwiki&quot;&gt;
+    Options Indexes FollowSymLinks MultiViews
+    Order allow,deny
+    Allow from all
+    AllowOverride None
+    Require all granted
+    AuthType Basic
+&lt;/Directory&gt;
+ErrorLog logs/unixdocs.amer.int.tenneco.com-error_log
+CustomLog logs/unixdocs.amer.int.tenneco.com-access_log common
+&lt;/VirtualHost&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> After that create a ssl.conf file</div>
+</li>
+</ol>
+<pre class="code">LoadModule ssl_module modules/mod_ssl.so
+Listen 443
+SSLPassPhraseDialog  builtin
+#SSLSessionCache         shmcb:/var/cache/mod_ssl/scache(512000)
+SSLSessionCacheTimeout  300
+SSLMutex default
+SSLRandomSeed startup file:/dev/urandom  256
+SSLRandomSeed connect builtin
+SSLCryptoDevice builtin</pre>
+<ol>
+<li class="level1"><div class="li"> Once <abbr title="Secure Sockets Layer">SSL</abbr>.conf is created Check in the httpd.conf file and uncomment the “Include conf/extra/httpd-ssl.conf” which normaly in line number 502.</div>
+</li>
+</ol>
+<pre class="code">Before
+# Include conf/extra/httpd-ssl.conf</pre>
+<pre class="code">After
+  Include conf/extra/httpd-ssl.conf</pre>
+
+</div>

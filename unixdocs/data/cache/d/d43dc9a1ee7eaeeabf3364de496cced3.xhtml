@@ -1,0 +1,35 @@
+
+<h1 class="sectionedit1" id="apollo_aix_cleanup">Apollo AIX Cleanup</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Make sure you logged in to the right server which starts with <strong>ACDC</strong></div>
+</li>
+<li class="level1"><div class="li"> Once logged in please check for SAP &amp; ORACLE process running status<pre class="code">ps -aef | grep -i sap
+ps -aef | grep -i ora</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If something is running Kill it.</div>
+</li>
+<li class="level1"><div class="li"> Collect the disk details except Rootvg &amp; Alt_rootvg to give it to the storage team.<pre class="code">sudo /usr/local/scripts/lsvpcfg.sh | grep -v root</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run the below script which umounts,Varyoff &amp; Exports the filesystems in Descending order.<pre class="code">for vg in $(lsvg | grep -v rootvg | sort -r)
+do
+echo &quot;Working on ${vg} &quot;
+lsvgfs ${vg} | sort -r | xargs -n1 sudo umount
+sudo varyoffvg ${vg}
+sudo exportvg ${vg}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Please cross check the VG is anything got missed.<pre class="code">lsvg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now delete the disk other than Rootvg &amp; ALt_rootvg<pre class="code">lspv | grep -i none | awk &#039;{print $1}&#039; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>Now ask the Storage team to reclaim the disks</strong> by giving the output of point number 4.</div>
+</li>
+</ol>
+
+</div>

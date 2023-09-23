@@ -1,0 +1,32 @@
+<pre class="code">#!/bin/bash
+# DOM_HOME is the variable that tells the script where the Domino Data resides
+DOM_HOME=/lotus/domino/data
+# DOM_USER is the Linux account used to run the Domino 6 server
+DOM_USER=notes
+# DOM_PROG is the location of the Domino executables
+DOM_PROG=/opt/ibm/lotus/bin
+start()
+{
+echo -n Starting domino:
+if [ -f $DOM_HOME/.jsc_lock ]; then
+rm $DOM_HOME/.jsc_lock
+fi
+/bin/su - notes -c &quot;cd ${DOM_HOME}; $DOM_PROG/server -jc -c&quot; &gt; /var/tmp/lotus.log 2&gt;&amp;1 &amp;
+return 0
+}
+stop() {
+echo -n Stopping domino:
+/bin/su - notes -c &quot;cd ${DOM_HOME}; $DOM_PROG/server -q&quot;
+return 0
+}
+case $1 in
+start)
+start
+;;
+stop)
+stop
+;;
+*)
+echo &quot;Usage: domino {start|stop}&quot;
+exit 1
+esac</pre>

@@ -1,0 +1,29 @@
+===== TA2 Failover =====
+
+  * peerdb99 is the primary database
+  * peerdb98 is the dataguard standby.
+  * peerap99 is the primary CI / NFS server host
+  * peerap98 is the failover CI / NFS server host
+
+==== Database Failover from peerdb99 to peerdb98 ====
+
+  - Shutdown SAP application ( TA2 ). - Basis
+  - Shutdown / deactivate the primary TA2 database on peerdb99. - DBA
+  - confirm from DBA that datbases are in sync and we are ready to perform the failover.
+  - Login to peerdb99
+  - Deconfigure the VIPs<code>cd /root/cluster
+ksh ./del-alias99.sh</code>
+  - Login to peerdb98
+  - Configure the VIPs<code>cd /root/cluster
+ksh ./alias98.sh</code>
+  - Inform DBA that the VIP has been configured.
+
+==== CI / NFS Server failover from peerap99 to peerap98 ====
+
+  - Login to peerap99
+  - Deconfigure VIPs and unexport NFS<code>cd /root/cluster
+ksh ./umount99.sh</code>
+  - Login to peerap98
+  - Configure the VIPs and export the NFS<code>cd /root/cluster
+ksh ./mount98.sh</code>
+  - Inform the Basis person that the CI VIPs are now failed over.

@@ -1,0 +1,58 @@
+
+<h1 class="sectionedit1" id="disable_telnet_and_enable_sshd_startup_as_soon_as_possible">Disable telnet and enable sshd startup as soon as possible</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Disable telnet and enable sshd startup as soon as possible" [1-74] -->
+<h2 class="sectionedit2" id="disable_telnet_and_start_sshd_through_inetd">Disable telnet and start SSHD through inetd</h2>
+<div class="level2">
+<pre class="code">#!/bin/ksh
+# Author: stachowiak,c.m.
+# Date  : 2018-07-26
+# Function / purpose - script to disale telnet daemon and
+#                      move start of ssh subsystem / deamon
+#                      before nfs services.
+#
+#       Who             When            What
+#       stachowiak.c.m. 2018-06-25      Initial
+
+set -x
+# Set up variables for inetd insertion
+line=&#039;ssh       stream  tcp     nowait  root    /usr/sbin/sshd  sshd -i&#039;
+pattern=&#039;^ftp&#039;
+
+# Begin inetd insertion
+/usr/bin/cp -p /etc/inetd.conf /etc/inetd.conf-$(date +%Y-%m-%d-%H:%M:%S)  	&lt;= make a copy of inetd.conf 
+/usr/bin/startsrc -t telnet     						&lt;= make sure telnet daemon is running  Next comand line depends on that
+/usr/bin/lssrc -t telnet         						&lt;= verify telnet daemon is runnung
+/usr/bin/stopsrc -f -t telnet 							 &lt;= This stops telnet daemon and automatically coments it out in inetc.conf
+/usr/bin/lssrc -t telnet        						 &lt;= Verify telnet daemon is stopped
+
+# Next line does a neet insert after ftp entry in inetd.conf  outout is  /tmp/conf.test 
+awk -vpattern=&quot;$pattern&quot; -vline=&quot;$line&quot; &#039;$0 ~ pattern {print; print line; next} 1&#039; /etc/inetd.conf &gt; /tmp/conf.test
+/usr/bin/cp -p /tmp/conf.test /etc/inetd.conf  					 &lt;= Copy updated conf.test to inetd.conf
+/usr/bin/stopsrc -g sshd  							&lt;= Stop currently runing ssh
+/usr/bin/refresh -s inetd 							&lt;= start ssh for inetd.
+# End inetd insertion</pre>
+
+</div>
+<!-- EDIT2 SECTION "Disable telnet and start SSHD through inetd" [75-1539] -->
+<h2 class="sectionedit3" id="disable_telnet_and_start_sshd_through_inittab">Disable telnet and start SSHD through inittab</h2>
+<div class="level2">
+<pre class="code"># Begin inittab insertion
+/usr/bin/startsrc -t telnet      							&lt;= make sure telnet daemon is running  Next comand line depends on that
+/usr/bin/lssrc -t telnet         							&lt;= verify telnet daemon is runnung
+/usr/bin/stopsrc -f -t telnet   							&lt;= This stops telnet daemon and automatically coments it out in inetc.conf
+/usr/bin/lssrc -t telnet  								&lt;= Verify telnet daemon is stopped
+/usr/bin/cp -p /etc/inittab /etc/inittab-$(date +%Y-%m-%d-%H:%M:%S)  			&lt;= Copy of initab
+mkitab -i rctcpip &quot;stssh:2345678:once:/usr/bin/startsrc -g ssh &gt; dev/console 2&gt;&amp;1 # Start SSH subsystem&quot; &lt;= Insert entry fro ssh 
+
+#https://www.ibm.com/search?q=telinit&amp;lnk=mhsrch&amp;v=18&amp;en=utf&amp;lang=en&amp;cc=us
+#telinit or init Command
+
+/usr/sbin/telinit q  &lt;=  Force system to reread inittab and execute  Not really needed since ssh is already running 
+
+# End inittab insertion</pre>
+
+</div>
+<!-- EDIT3 SECTION "Disable telnet and start SSHD through inittab" [1540-] -->

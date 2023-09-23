@@ -1,0 +1,43 @@
+====== Applying VIOS 2.2.3.4 updates from a remotely mounted file system ======
+
+
+
+** Before installing the Service Release 2.2.3.4 **
+
+** Please ensure that your rootvg contains at least 30GB before you attempt to upgrade to VIOS service release 2.2.3.4.  Example: Run the lsvg rootvg command, and then ensure there is enough free space. **
+
+** If you are planning to update a version of VIOS lower than 2.1, you must first migrate your VIOS to VIOS version 2.1.0 using the Migration DVD. After the VIOS is at version 2.1.0, the Update Release VIOS 2.2.2.1 must be applied to bring the VIOS to the latest VIOS 2.2.2.1 level. The VIOS 2.2.3.4 service pack can then be applied to bring the VIOS to the latest level. **
+
+** Verirfy that the server is at VIOS Level 2.2.2.1 Level before you begin. Levels less than that will not "roll up" to the 2.2.3.4 release. Example .. a vios server at ioslevel 2.2.0.11-FP-24 SP-01 will need to be upgraded to 2.2.2.1 prior to applying 2.2.2.3 **
+
+** Upgrading from VIOS version 2.1.0 and above
+
+** VIOS Update Release 2.2.3.4 may be applied to VIOS level between 2.2.3.0 and 2.2.3.3. When the Single Step update procedure is used the current level of VIOS must be between 2.2.1.1 and 2.2.2.x.
+
+** NOTE: In order to update to Update Release 2.2.3.4 from a level between 2.2.1.1 and 2.2.3.1 in a single step, you can put the 2.2.3.1 and 2.2.3.4 updates in the same location and do the update using the updateios command.
+
+** The update could fail if there is a loaded media repository. **
+
+** Checking for a loaded media repository **
+
+** To check for a loaded media repository, and then unload it, follow these steps. **
+To check for loaded images, run the following command:<code>lsvopt</code>
+The Media column lists any loaded media. 
+To unload media images, run the following commands on all Virtual Target Devices that have loaded images.<code>unloadopt -vtd <file-backed_virtual_optical_device ></code>
+To verify that all media are unloaded, run the following command again.<code>lsvopt</code> The command output should show No Media for all VTDs.
+
+** UPGRADE PROCESS STARTS HERE **
+
+  - Log in to the VIOS as the user padmin.  If you use one or more File Backed Optical Media Repositories, you need to unload media images before you apply the Update Release. If you use Shared Storage Pools(**we do not use this**), then Shared Storage Pool Services must be stopped.<code>clstartstop -stop -n <cluster_name> -m <hostname></code>
+  - Mount the remote directory onto the Virtual I/O Server.<code>mount remote_machine_name:directory /mnt </code>
+  - Commit previous updates, by running the updateios command. <code>updateios -commit </code>
+  - Verify the updates files that were copied, this step can only be performed if the link to openssl was created.  <code> cp /mnt/ck_sum.bff /home/padmin</code> <code> chmod 755 /home/padmin/ck_sum.bff</code> <code> ck_sum.bff /mnt </code>
+    If there are missing updates or incomplete downloads, an error message is displayed.
+  - Apply the update by running the updateios command.<code> updateios -accept -install -dev /mnt</code>
+  - Run the following command to set authorization for padmin.</code>swrole - PAdmin</code>
+  - To load all changes, reboot the VIOS as user padmin .<code> shutdown -force -restart</code>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.3.4.<code>ioslevel</code>
+  - Run the license acept command for all uprdrates <code> updateios linense -accept</code>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.3.4.<code>ioslevel</code>
+  - Commit all the updates <code>updateios -commit</code>
+

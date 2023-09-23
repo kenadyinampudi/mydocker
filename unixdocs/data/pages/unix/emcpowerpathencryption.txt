@@ -1,0 +1,7 @@
+===== Issue will be emcp_xcryptd will be taking more CPU utilization. Workaround: Halt the currently running process. =====
+
+  - As far as emcp_xcryptd, you can stop this daemon from coming up since encryption is not yet supported for AIX Powerpath.<code>sudo /etc/rc.emcp_xcryptd stop</code>
+  - Disable it from starting automagically.<code>sudo vi /etc/PowerPathExtensions</code>It contains these lines:<code>mpxext:cfgmpx
+gpxext dmext:cfgdm 
+vlumdext:cfgvlumd 
+xcryptext:cfgxcrypt</code>Remove the last two lines, save the file. **Note: Do NOT comment out the lines with #. The last two lines must be removed entirely. Using # to comment out the lines will cause PowerPath to not configure devices on reboot.**

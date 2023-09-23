@@ -1,0 +1,78 @@
+
+<h1 class="sectionedit1" id="unix_admin_notes">Unix Admin notes</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Mount an iso file as a filesystem (Since AIX 6.1 TL4 - I guess )</div>
+<ul>
+<li class="level2"><div class="li"> If it does not exist, create the loopback device<pre class="code">mkdev -c loopback -s node -t loopback</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Mount an iso<pre class="code">loopmount -i /prod/images/cds/SLES-10-SP1-x86_64-DVD1.iso -l loop0 -o &quot;-V cdrfs -o ro&quot; -m /cdrom</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmount an iso<pre class="code">loopumount -l loop0 -m /cdrom</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Get to a unix servers console. Login to pgnmsv01<pre class="code">getconsole &lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unlock user and reset failed login count <pre class="code">chsec -f /etc/security/lastlog -a &quot;unsuccessful_login_count=0&quot; -s &lt;username&gt;
+chuser &quot;account_locked=false&quot; &lt;username&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reset user password <pre class="code">pwdadm &lt;username&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run a command on all servers. Login to pgnmsv01</div>
+<ul>
+<li class="level2"><div class="li"> Using for loop<pre class="code">for host in $(cat /prod/images/etc/unix_sys_console | grep -v ^# | grep -v ^$ | awk -F: &#039;{print $1}&#039;)
+do
+   ssh -o &#039;Batchmode=yes&#039; -o &#039;ConnectTimeout=10&#039; ${host} uname -n
+   echo &quot;Command executed on all servers &quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Using shmux<pre class="code">cat /prod/images/etc/allhosts.tenneco | /usr/local/bin/shmux -B -M 999 -C 3600s -S all -r ssh -c &quot;uname -a&quot; -</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Disable/Enable all printers on a given host<pre class="code">for printer in $(grep : /etc/qconfig |grep -v &quot;^*&quot; |  grep -v &quot;@&quot; | sed &quot;s;:;;g&quot;)
+do
+   echo &quot;Resetting ${printer} &quot;
+   disable ${printer}
+   date
+   enable ${printer}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Restore a single file from mksysb<pre class="code">restore -xqdf &lt;mksysbfilename&gt; ./etc/motd</pre>
+
+<p>
+The restore is relative
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Usage rsync :: To copy /abc/def from serverA to serverB</div>
+<ul>
+<li class="level2"><div class="li"> Option 1</div>
+<ul>
+<li class="level3"><div class="li"> login to serverA<pre class="code">rsync -avv /abc/def/ serverB:/abc/def/</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> Option 2</div>
+<ul>
+<li class="level3"><div class="li"> login to serverB<pre class="code">rsync -avv serverA:/abc/def/ /abc/def/</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>

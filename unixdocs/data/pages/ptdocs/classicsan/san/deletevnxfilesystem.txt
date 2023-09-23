@@ -1,0 +1,6 @@
+====== Deleting a VNX filesystem ======
+
+  - Find out if the filesystem has any check points.<code>fs_ckpt <fs_name> -list</code>
+  - Delete the checkpoints<code>nas_fs -delete <ckpt name> -o umount=yes</code>
+  - Unmount the filesystem from VDM<code>server_umount tamon050_VDM -perm fs_common</code>
+  - Delete the filesystem<code>nas_fs -delete <fsname> -o umount=yes</code>

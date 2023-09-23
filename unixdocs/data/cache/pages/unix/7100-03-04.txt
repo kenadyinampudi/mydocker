@@ -1,0 +1,69 @@
+====== AIX 7100-03-04 Technology Level Upgrade ======
+
+  - [[http://itchome/cgi-bin/active_bo.cgi|Verify blackouts are in place for all the servers we plan to work on]] 
+  - Create proper change controls and paper work, get approvals from business, get apps contacts to manage applications etc. As Chris say, **the whole nine yards**
+  - [[unix:backupconfig|Perform the configuration backup]]
+  - Check the target system for NTP configuration. If NTP is not configured, please configure it.
+    - Check NTP servers<code>sudo xntpdc -l</code>If you see server list as follows, we are good<code>client    penmsv01.emea.int.tenneco.com
+client    pgnmsv01.amer.int.tenneco.com</code>
+    - If the above out does not list as documented, setup NTP
+      - [[unix:setupntp|Setup and configure NTP]]
+  - [[changeeventplans:cleanupusrsap|Cleanup /usr/sap/ filesytem]]
+  - Check and remove e-Fixes
+    - List e-Fixes if any<code>sudo /usr/sbin/emgr -P</code>You should see something similar if the system has e-Fixes<code>xeerap01:/root> /usr/sbin/emgr -P
+
+PACKAGE                                                  INSTALLER   LABEL
+======================================================== =========== ==========
+bos.net.nfs.client                                       installp    IV41838s2a
+bos.mp64                                                 installp    IV41462s2a</code>
+    - Remove them<code>sudo /usr/sbin/emgr -r -L EFIXname</code>Something like<code>xeerap01:/root> /usr/sbin/emgr -r -L IV41838s2a
+xeerap01:/root> /usr/sbin/emgr -r -L IV41462s2a</code>
+  - Perform a reboot at this time<code>sudo shutdown -Fr</code>
+  - Make sure /var/log/aso exists
+    - Check if bos.aso is installed<code>lslpp -l bos.aso</code>If it exists, you should see something similar<code>lslpp -l bos.aso
+  Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  bos.aso                   7.1.2.15  COMMITTED  Active System Optimizer
+
+Path: /etc/objrepos
+  bos.aso                   7.1.2.15  COMMITTED  Active System Optimizer</code>
+    - If it does, then make sure there is a log directory for it.<code>ls -ld /var/log/aso</code>If the directory does not exist, create it<code>sudo mkdir -p /var/log/aso
+sudo chown root:system /var/log/aso</code>
+  - On the NIM server find the correct lppsrc and export the directory to the target server.
+    - To export AIX 7.1 TL 03 SP04<code>sudo exportfs -i /prod/images/lppsrc/710TL03-04</code>
+  - On the Server to be patched, NFS mount the lppsrc location<code>sudo mkdir -p /mnt/aixupdates
+sudo mount pgnmsv01:/prod/images/lppsrc/710TL03-04 /mnt/aixupdates</code>
+  - For the smitty lovers,
+      - Change to the mount point<code>cd /mnt/aixupdates</code>Invoke smitty<code>sudo smitty update_all</code>Then select "."
+        * PREVIEW only - should be set to no
+        * COMMIT software updates must be set to yes
+        * ACCEPT new license agreements? must be set to yes
+        * Then hit enter :)
+  - For the CLI lovers
+    - Perform a preview upgrade<code>cd /mnt/aixupdates
+sudo install_all_updates -d . -c -p -r -V -Y</code>
+    - If no errors found, perform the upgrade<code>cd /mnt/aixupdates
+sudo install_all_updates -d . -c -r -V -Y</code>More details on the arguments
+    * d  ---> Location
+    * c  ---> Commit the updates
+    * p  ---> Preview
+    * r  ---> Update rpms as well
+    * V  ---> Verbose output
+    * Y  ---> Accept license agreements
+
+  - NOTE #<># Before Rebooting the server execute the following command to remove the xmdaily entry from /etc/inittab. This will prevent it from starting after reboot of the server <code> rmitab "xmdaily"</code>
+  - After the upgrade has successfully completed, reboot the server to complete the upgrade<code>sudo shutdown -Fr</code>
+  - Once the server has successfully rebooted login and check to see that the upgrade completed successfully
+    - Run the following command to remove IBM Electrornic Service Agent Annoying Constant Reminder that fills root mail <code>/usr/esa/sbin/rmESAReminder</code>
+    - Check oslevel<code>oslevel -s </code> Verify against the expected results. 
+    - Check lppchk<code>sudo lppchk -vm3</code>No output is good.
+  - Check the /etc/sendmail/mail/sedndmsil.cf configuration file for to see if the Smart mailer Relay "DS" has changed.<code>sudo grep DS /etc/mail/sendmail.cf</code>If the DS entry is blank then check the copy created when you performed the Configuration Backup in Step 2 above. Update the DS entry in the current /etc/sendmail/mail/sendmail.cf file. Do NOT Overlay the current sendmail.cf file as it is compiled for the new version of sendmail.
+  - Confirm that the SSH host keys are not overwritten. Login to pgnmsv01, ssh to the server you just upgraded.<code> sudo ssh SERVERNAME ls -ld /tmp/</code>If successful, SSH keys were not over written, we are good. In case of failure due to SSH keys, Restore the SSH keys<code>sudo cp -p BACKUPDIR/etc/ssh/ssh_host_dsa_key /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_dsa_key.pub /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_key /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_key.pub /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_rsa_key /etc/ssh/
+sudo cp -p BACKUPDIR/etc/ssh/ssh_host_rsa_key.pub /etc/ssh/</code>BACKUPDIR is the directory you created by running the save_env.sh -- probably still in your home directory
+  - On the NIM Server, remove the exported lppsource file system from the exports list  example /usr/sbin/rmnfsexp -d '/prod/images/lppsrc/710TL03-04' '-B' <code> sudo /usr/sbin/rmnfsexp -d '/prod/images/lppsrc/{loosource that was exported for upgrade}' '-B' </code>  example /usr/sbin/rmnfsexp -d '/prod/images/lppsrc/710TL03-04' '-B'
+- [[unix:fix-failed-aso|FIX bos.aso issues - lppchk -vm3]]

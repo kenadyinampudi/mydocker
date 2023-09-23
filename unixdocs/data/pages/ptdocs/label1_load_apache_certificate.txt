@@ -1,0 +1,11 @@
+====== Load Apache Certificate on Redhat server relay1 ======
+
+
+  - The Network team should send you a Key and Certificate to load on to the server. There will be no need for the "CSR" file
+  - In **/etc/httpd/conf** there will be 2 files "_.tenneco.com.crt" "_.tenneco.com.key" make a backup copy of them, you will see other backups of old ones in old folders e.g. "2020_certs"
+  - Create a empty file anywhere on the server called **cert.key** and copy the contents of the key file sent from the network team into that file  
+  - Run the following command: **openssl rsa -in cert.key -out cert.key** This will need a password which the network team will provide.
+  - It will then require a 2nd password, just hit enter
+  - Copy the **cert.key** to **/etc/httpd/conf/_.tenneco.com.key**
+  - replace the /etc/httpd/conf/_.tenneco.com.crt with the Cert file sent to us by the network team  
+  - Finally restart http **"service httpd restart"**

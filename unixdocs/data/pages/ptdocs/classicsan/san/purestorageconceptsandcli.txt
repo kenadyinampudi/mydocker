@@ -1,0 +1,74 @@
+====== Purestorage - Basic concepts - Commands etc ======
+
+===== Basic units, acronyms and what they mean =====
+
+^Acronym / Logical Components^Description^
+|Volume|A volume is a LUN that you present to a host for storing data|
+|Drive|A drive is a pair of SSDs that they insert into the slots on controllers / I/O expansion disk drawers|
+|Controller|The brain of the storage array. There are two of them on each Pure Storage array|
+|Host|This is the definition of a host AIX, Linux, ESXi etc. It contains World Wide names. LUNs may be added to a host|
+|HostGroup|A hostgroup is a group of two or more hosts. Mostly used in clustered storage environments.|
+|Puregroup|A group of LUNs with a definition attached to them as source or target. Commonly used for crash consistent snapshots and replication|
+|Purity|The name of the Operating system that runs on Pure storage group|
+|pureuser|The only local account that is available at this time|
+
+
+===== Basic commands =====
+
+  - List all the available commands.
+    - Login to the Pure storage array console as "pureuser". For example<code>x1kxk630 on pgnmsv01:/home/x1kxk630 $ ssh pureuser@inxpm20v1
+pureuser@inxpm20v1's password: 
+Last login: Mon Dec 19 22:48:39 2016 from 10.0.48.12
+
+Mon Dec 19 23:09:44 2016
+Welcome pureuser. This is Purity Version 4.7.7 on FlashArray INXPM20V1
+http://www.purestorage.com/
+pureuser@INXPM20V1></code>"help" is the command<code>pureuser@INXPM20V1> help
+Available commands:
+-------------------
+pureadmin
+purealert
+purearray
+purecert
+pureconfig
+puredns
+puredrive
+pureds
+purehelp
+purehgroup
+purehost
+purehw
+purelog
+pureman
+puremessage
+purenetwork
+purepgroup
+pureplugin
+pureport
+puresmis
+puresnmp
+puresubnet
+puresw
+purevol
+exit
+logout</code>
+  - Create a 102G volume called kapiltest1<code>purevol create --size 102G kapiltest1</code>The result is<code>pureuser@INXPM20V1> purevol create --size 102G kapiltest1
+Name        Size  Source  Created                  Serial                  
+kapiltest1  102G  -       2016-12-19 23:11:16 CET  2E954D8D74EF4B8D00011143</code>
+  - List an existing volume<code>purevol list kapiltest1</code>You should see something like this<code>pureuser@INXPM20V1> purevol list kapiltest1              
+Name        Size  Source  Created                  Serial                  
+kapiltest1  102G  -       2016-12-19 23:11:16 CET  2E954D8D74EF4B8D00011143</code>
+  - Resize the volume from 102G to 200G<code>purevol setattr --size 200G kapiltest1</code>You should see<code>pureuser@INXPM20V1> purevol setattr --size 200G kapiltest1
+Name        Size
+kapiltest1  200G</code>
+  - Create a host called testhost1<code>purehost create testhost1 --wwnlist C0507606CF0C0076,C0507606CF0C0078</code>
+  - Allocate a volume to host<code>purevol connect --host testhost1 kapiltest1</code>
+  - Remove a volume from a host<code>purevol disconnect --host testhost1 kapiltest1</code>
+  - Create a host called testhost2<code>purehost create testhost2 --wwnlist C0507606CF0C0079,C0507606CF0C0080</code>
+  - Create a hostgroup called testcluster using testhost1 and testhost2<code>purehgroup create testcluster --hostlist testhost1,testhost2</code>
+  - Allocate a volume to this cluster<code>purevol connect --hgroup testcluster kapiltest1</code>
+  - Remove a volume from a hgroup<code>purevol disconnect --hgroup testcluster kapiltest1</code>
+  - Remove a hgroup. First you need to empty the hosts<code>purehgroup setattr --remhostlist testhost1,testhost2 testcluster</code>Then delete<code>purehgroup delete testcluster</code>
+  - Remove a host<code>purehost delete testhost1</code>
+  - Remove a volume<code>purevol destroy kapiltest1</code>
+  - Remove a volume irrecoverably<code>purevol eradicate kapiltest1</code>

@@ -1,0 +1,60 @@
+
+<h1 class="sectionedit1" id="move_a_red_hat_client_into_the_patching_process">Move a Red Hat Client into the patching process</h1>
+<div class="level1">
+
+<p>
+In order to control the patching process, Red Hat implements a life-cycle policy in which a bundle of packages are promoted from dev to QA to prod.<br/>
+
+</p>
+
+<p>
+This allows the administrator to update servers in a more controlled fashion.<br/>
+
+Currently, registering a server directly to Red Hat will present packages which will update the server up to the latest and greatest for that major version.  This means that servers getting patched will be moved to the latest point release and will be at different versions depending on when servers were patched.<br/>
+
+</p>
+
+<p>
+A 7.5 server patched today will end up 7.7 with the latest patches, where as one patched a month ago will have 7.7 but be missing patches from the last month in comparison.<br/>
+
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Move a Red Hat Client into the patching process" [1-788] -->
+<h2 class="sectionedit2" id="process">Process</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Log into <a href="https://cdcpillx205.pt.int.tenneco.com" class="urlextern" title="https://cdcpillx205.pt.int.tenneco.com"  rel="nofollow"> Red Hat Satellite Server</a></div>
+</li>
+<li class="level1"><div class="li"> Click on Hosts/All Hosts on the left tree</div>
+</li>
+<li class="level1"><div class="li"> Find the host you care about and click on it.</div>
+</li>
+<li class="level1"><div class="li"> Click on the “Content” button under the “Details” section</div>
+</li>
+<li class="level1"><div class="li"> Under the “Details” tab, look at the “Content Host Content” section.  (Brought to you by the Department of Redundancy Department.)</div>
+</li>
+<li class="level1"><div class="li"> Click the Pencil icon next to “Default Content View” in the “Content View” entry.</div>
+<ol>
+<li class="level2"><div class="li"> Change this to your desired Content View</div>
+</li>
+<li class="level2"><div class="li"> Click “Save” to save this change.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Under the “Lifecycle Environment” entry, check the box next to this server&#039;s environment.</div>
+<ol>
+<li class="level2"><div class="li"> Click “Save” to save this change as well.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> This box should now see the correct packages and errata.</div>
+</li>
+<li class="level1"><div class="li"> You might need to run <code>subscription-manager refresh</code> followed by <code>yum clean all</code> to clear out old data first.</div>
+</li>
+<li class="level1"><div class="li"> Run <code>yum update</code> on the host to patch up to the relevant level</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Process" [789-] -->

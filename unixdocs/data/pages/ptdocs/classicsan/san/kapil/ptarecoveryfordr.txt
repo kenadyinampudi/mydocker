@@ -1,0 +1,65 @@
+====== 2017 PTA recovery steps - notes etc ======
+
+  - Copy the BCV PTA copy to Pure.<code>ssh taqa1d01
+sudo su -
+
+cd /home/x1kxk630/ptacopy
+nohup /home/x1kxk630/ptacopy/thread01 >> thread1.log &
+nohup /home/x1kxk630/ptacopy/thread02 >> thread2.log &
+nohup /home/x1kxk630/ptacopy/thread03 >> thread3.log &
+nohup /home/x1kxk630/ptacopy/thread04 >> thread4.log &</code>
+  - Some DBA steps<code>Hello Kapil,
+Here is the plan.
+
+restore PTA on  pocfasv02  - > Kapil
+
+On tapr1d01  -  Alter database create standby  contorlfile  as  ‘/oracle/PTA/control01.dbf ‘    - > This is for  creating standby controlfile.
+
+Copy this controlfile to  controlfile location on pocfasv02 
+
+Startup mount  -> pocfasv02
+
+Alter database recover managed standby database disconnect from session  - > pocfasv02 ( This will take care of applying logs in the background)
+
+During DR drill
+
+Alter database recover managed standby database cancel;
+
+Alter database recover managed standby database finish;
+
+Alter database activate standby database;
+
+Alter database open;
+
+</code>
+  - More stuff <code>x1kxk630 on pocafasv02:/home/x1kxk630 $ sudo crontab -l orapta
+20,50 * * * * /oracle/PTA/scripts/raghu_standby.sh > /oracle/PTA/logs/raghu_standby.log 2>&1
+
+30 22 * * * /oracle/PTA/scripts/cleanup_duplexarch.ksh > /oracle/PTA/logs/cleanup_duplexarch.cron.log 
+x1kxk630 on pocafasv02:/home/x1kxk630 $ cat /oracle/PTA/scripts/raghu_standby.sh
+#!/usr/bin/ksh
+#
+#
+#       Who             When            What
+#       Kapil/Raghu     09/18/2017      Apply archive logs to the manual standby database
+#
+sqlplus ' / as sysdba ' << EOF
+recover automatic standby database ;
+cancel
+EOF
+x1kxk630 on pocafasv02:/home/x1kxk630 $ cat /oracle/PTA/scripts/cleanup_duplexarch.ksh
+find /oracle/PTA/oraarch/duplex -name "*.*" -mtime +1 -exec rm {} \;
+x1kxk630 on pocafasv02:/home/x1kxk630 $ 
+</code>
+  - And more <code>#ftparchlog to pocafasv02
+15,45 * * * * /oracle/PTA/scripts/ftpragu.ksh > /oracle/PTA/logs/ftparchlogs.cron.log 2>&1
+### Jobs to clean up the archive duplex filesystem created 2hours before
+05 * * * *  /oracle/PTA/scripts/cleanup_duplexarch.ksh > /oracle/PTA/logs/cleanup_duplexarch.cron.log
+x1kxk630 on tapr1d01:/home/x1kxk630 $ cat /oracle/PTA/scripts/ftpragu.ksh
+#!/bin/ksh
+HOST='pocafasv02'
+rsync -avv /oracle/PTA/oraarch/duplex ${HOST}:/oracle/PTA/oraarch/
+
+x1kxk630 on tapr1d01:/home/x1kxk630 $ cat /oracle/PTA/scripts/cleanup_duplexarch.ksh
+find /oracle/PTA/oraarch/duplex -name "*.*" -mmin +120 -exec rm {} \;
+</code>

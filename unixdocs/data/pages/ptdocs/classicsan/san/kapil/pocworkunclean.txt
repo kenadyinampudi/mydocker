@@ -1,0 +1,980 @@
+====== POC work from here and there -- may be useful ======
+
+<code>
+
+chfs -m /GoldenCopy/oracle/TA2/sapdata200 /oracle/TA2/sapdata200
+chfs -m /GoldenCopy/oracle/TA2/sapdata207 /oracle/TA2/sapdata207
+chfs -m /GoldenCopy/oracle/TA2/sapdata208 /oracle/TA2/sapdata208
+chfs -m /GoldenCopy/oracle/TA2/sapdata201 /oracle/TA2/sapdata201
+chfs -m /GoldenCopy/oracle/TA2/sapdata206 /oracle/TA2/sapdata206
+chfs -m /GoldenCopy/oracle/TA2/sapdata202 /oracle/TA2/sapdata202
+chfs -m /GoldenCopy/oracle/TA2/sapdata203 /oracle/TA2/sapdata203
+chfs -m /GoldenCopy/oracle/TA2/sapdata204 /oracle/TA2/sapdata204
+chfs -m /GoldenCopy/oracle/TA2/sapdata205 /oracle/TA2/sapdata205
+chfs -m /GoldenCopy/oracle/TA2/sapdata209 /oracle/TA2/sapdata209
+chfs -m /GoldenCopy/oracle/TA2/sapdata210 /oracle/TA2/sapdata210
+chfs -m /GoldenCopy/oracle/TA2/sapdata211 /oracle/TA2/sapdata211
+chfs -m /GoldenCopy/oracle/TA2/sapdata212 /oracle/TA2/sapdata212
+chfs -m /GoldenCopy/oracle/TA2/sapdata213 /oracle/TA2/sapdata213
+chfs -m /GoldenCopy/oracle/TA2/sapdata214 /oracle/TA2/sapdata214
+chfs -m /GoldenCopy/oracle/TA2/sapdata215 /oracle/TA2/sapdata215
+chfs -m /GoldenCopy/oracle/TA2/sapdata216 /oracle/TA2/sapdata216
+chfs -m /GoldenCopy/oracle/TA2/sapdata217 /oracle/TA2/sapdata217
+chfs -m /GoldenCopy/oracle/TA2/sapdata218 /oracle/TA2/sapdata218
+chfs -m /GoldenCopy/oracle/TA2/sapdata219 /oracle/TA2/sapdata219
+chfs -m /GoldenCopy/oracle/TA2/sapdata220 /oracle/TA2/sapdata220
+chfs -m /GoldenCopy/oracle/TA2/sapdata221 /oracle/TA2/sapdata221
+chfs -m /GoldenCopy/oracle /oracle
+chfs -m /GoldenCopy/oracle/TA2 /oracle/TA2
+chfs -m /GoldenCopy/oracle/TA2/11203 /oracle/TA2/11203
+chfs -m /GoldenCopy/oracle/TA2/oraarch /oracle/TA2/oraarch
+chfs -m /GoldenCopy/oracle/TA2/saparch /oracle/TA2/saparch
+chfs -m /GoldenCopy/oracle/TA2/sapreorg /oracle/TA2/sapreorg
+chfs -m /GoldenCopy/oracle/TA2/origlogA /oracle/TA2/origlogA
+chfs -m /GoldenCopy/oracle/TA2/origlogB /oracle/TA2/origlogB
+chfs -m /GoldenCopy/oracle/TA2/mirrlogA /oracle/TA2/mirrlogA
+chfs -m /GoldenCopy/oracle/TA2/mirrlogB /oracle/TA2/mirrlogB
+chfs -m /GoldenCopy/oracle/client /oracle/client
+chfs -m /GoldenCopy/users/unispool /users/unispool
+chfs -m /GoldenCopy/home/ta2adm /home/ta2adm
+chfs -m /GoldenCopy/usr/sap /usr/sap
+chfs -m /GoldenCopy/usr/sap/TA2 /usr/sap/TA2
+chfs -m /GoldenCopy/sapmnt/TA2 /sapmnt/TA2
+chfs -m /GoldenCopy/usr/sap/TA2/DVEBMGS01/data/abapsort /usr/sap/TA2/DVEBMGS01/data/abapsort
+chfs -m /GoldenCopy/usr/sap/TA2/SUM /usr/sap/TA2/SUM
+chfs -m /GoldenCopy/usr/sap/trans /usr/sap/trans
+chfs -m /GoldenCopy/sapmnt/TA2/global/docwh /sapmnt/TA2/global/docwh
+chfs -m /GoldenCopy/oracle/TA2/standbylog /oracle/TA2/standbylog
+
+
+for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08 binvg01
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+   done
+done
+
+for vg in datavg01 datavg02 datavg03 datavg04 datavg05 datavg06 datavg07 datavg08 binvg01
+do
+   echo ${vg} $(lsvg ${vg} | grep "USED PPs:"  | awk '{print $(NF-1) }' | sed "s;(;;g" | awk '{print $0/1024}')
+done
+
+datavg01 1588.62
+datavg02 1143.12
+datavg03 1199.62
+datavg04 1242.62
+datavg05 1509
+datavg06 2010.25
+datavg07 1050.12
+datavg08 1300.12
+binvg01 285.25
+
+
+Random - uncompressable data
+
+
+
+while true
+do
+   filename=/randomfs/${RANDOM}.test
+   dd if=/dev/urandom of=${filename} bs=1M count=1000000
+done
+
+pocafasv02
+
+sudo dd if=/dev/urandom of=/dev/rhdisk4 bs=1M count=1048576
+sudo dd if=/dev/urandom of=/dev/rhdisk5 bs=1M count=1048576
+sudo dd if=/dev/urandom of=/dev/rhdisk6 bs=1M count=1048576
+
+pocafasv03
+
+sudo dd if=/dev/urandom of=/dev/rhdisk1 bs=1M count=1048576
+sudo dd if=/dev/urandom of=/dev/rhdisk2 bs=1M count=1048576
+sudo dd if=/dev/urandom of=/dev/rhdisk6 bs=1M count=1048576
+
+
+
+
+
+./vdbench -f parmfile lun=/dev/x.
+
+
+
+ vdbench –f fill_unique.vdb
+
+POC status as of 2/5/2015 ..
+
+a. Array installation complete.
+b. Array management tool -- validated both GUI/CLI
+c. AIX functionality tests are in progress.
+d. 
+
+
+
+
+sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1
+
+
+for vg in datavg01 datavg02 datavg03 datavg04 redovg01 binvg01
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+   done
+done
+
+
+for vg in binvg01
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+   done
+done
+
+for vg in datavg01 datavg02 datavg03 datavg04 redovg01 binvg01
+do
+   sudo varyoffvg ${vg}
+done
+
+for ps in paging00 paging01 paging02 paging07 paging08
+do
+   sudo swapoff /dev/${ps}
+done
+
+sudo varyoffvg sanpagevg01
+
+for power in $(grep hdiskpower lsvpcfg.out.1 | awk -F: '{print $1}')
+do
+   sudo powermt remove dev=${power}
+done
+
+grep hdiskpower lsvpcfg.out.1 | tr ":" "\n" | grep hdisk | xargs -n1 sudo rmdev -dl
+
+sudo installp -u 'EMC*'
+
+
+sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc
+
+sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte
+
+sudo cfgmgr
+
+lsdev -Ccdisk | grep MPIO | awk '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l
+
+sudo varyonvg sanpagevg01
+
+for ps in paging00 paging01 paging02 paging07 paging08
+do
+   sudo swapon /dev/${ps}
+done
+
+for vg in datavg01 datavg02 datavg03 datavg04 redovg01 binvg01
+do
+   sudo varyonvg ${vg}
+done
+
+for vg in binvg01 datavg01 datavg02 datavg03 datavg04 redovg01 
+do
+   for fs in $(lsvgfs ${vg} | sort )
+   do
+      sudo mount ${fs}
+   done
+done
+
+
+
+histogram=(default,100u,200u,300u,400u,500u,600u,700u,800u,900u,1m,1100u,1200u,1300u,1400u,1500u,1600u,1700u,1800u,1900u,2m,2250u,2500u,2750u,3m,3250u,3500u,3750u,4m,4250u,4500u,4750u,5m,5250u,5500u,5750u,6m,6250u,6500u,6750u,7m,7250u,7500u,7750u,8m,8500u,9m,9500u,10m,10500u,11m,12m,13m,14m,15m,16m,17m,18m,19m,20m,30m,40m,50m)
+dedupratio=1
+dedupunit=4k
+compratio=1
+hd=default,user=root,shell=ssh,jvms=8
+hd=host1,system=pocafasv01
+hd=host2,system=pocafasv02
+hd=host3,system=pocafasv03
+sd=default,openflags=directio,align=8k
+sd=sd1_host1,host=host1,lun=/dev/hdiskX
+sd=sd2_host1,host=host1,lun=/dev/hdiskY
+sd=sd3_host1,host=host1,lun=/dev/hdiskY
+sd=sd4_host1,host=host1,lun=/dev/hdiskZ
+sd=sd1_host2,host=host2,lun=/dev/hdiskX
+sd=sd2_host2,host=host2,lun=/dev/hdiskY
+sd=sd3_host2,host=host2,lun=/dev/hdiskY
+sd=sd4_host2,host=host2,lun=/dev/hdiskZ
+sd=sd1_host3,host=host3,lun=/dev/hdiskX
+sd=sd2_host3,host=host3,lun=/dev/hdiskY
+sd=sd3_host3,host=host3,lun=/dev/hdiskY
+sd=sd4_host3,host=host3,lun=/dev/hdiskZ
+wd=wd_default,sd=*
+rd=default,curve=(10,20,30,40,50,60,70,80,90,92,94,96,98),iorate=curve,interval=1,warmup=5,elapsed=120,pause=0,maxdata=10t
+rd=small,wd=wd_default,forxfersize=(4k,8k,16k),forrdpct=(0,50,70,80,90,95),forseekpct=100,forthreads=8
+rd=large,wd=wd_default,forxfersize=(64k,256k),forrdpct=(0,50,70,80,90,95),forseekpct=100,forthreads=8
+ 
+What that does is do a variety of IOsizes and workloads so you can see how it responds across a large dataset.
+ 
+Todd
+ 
+ 
+https://pocemcxms01/xtremapp/index.html
+
+
+fcs0 C0507607FDBD0004
+fcs1 C0507607FDBD0006
+fcs2 C0507607FDBD0008
+fcs3 C0507607FDBD000A
+
+
+
+x1kxk630 on pocafasv01:/home/x1kxk630 $ ssh pocafasv02 /usr/local/scripts/listwwns
+fcs0 C0507607FDBD000C
+fcs1 C0507607FDBD000E
+
+
+
+
+
+
+C0507607FDBD000A
+
+
+
+
+ssh-dss AAAAB3NzaC1kc3MAAACBAMFQTyyvzKMObax5izA0K55aitcdGh6qRC9ShLFfSeAey/Z6sC4pdrUtFuc20b64YaHbh7DPR6S5s5/ASVoTdEncahArKg+nYGbEbdWdkUcCXjB94PRx/I5O0GUp8tKHfk4tKYf9T7FqfK2wzSmodP14RMZ5Wzind0J+Yqj8nwLJAAAAFQDy/Pa0FRl1cD7yNogNKpIQZ7JlJwAAAIBfHX7fJtbAW7zn3P7U4L9MqUtQePSZn77B1WFszGErguerDBidOTynpQwzDg5EeG/DS+oWo6rz2uUU708vdDXoferTm1zhpKOxdtCaRAeb+oFw4+bBdLyxbzAr/fNdUbFlqMtPrvJTKsIBFa7sOLRYTqBjudgE5PluencrnZ1K5QAAAIBgdUtZzgqwh9+oUREX3lVQ8tK53MpdGDyC1slY7vfNEtpgiarUQJHe0aU7Y+iVVQEd7X0VxXVPOt1zvJILw/NciFmifojqICsoue9OOdSLYeN9OmOsfcnp22q/6/fZ9Y7UmX8qogQ8W6k4JY0HAVVcVViTEwpDZ6n319tDs0ThLA== x1kxk630@taitc118
+
+
+
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh xmsadmin@pocemcxms01
+Warning: Permanently added 'pocemcxms01,10.32.6.151' (RSA) to the list of known hosts.
+xmsadmin@pocemcxms01's password:
+Last login: Wed Feb 18 14:58:25 2015 from kaps-w7-64-dt01.amer.int.tenneco.com
+Username: admin
+Password:
+Connect XMS on 10.32.6.151:443: version 3.0.1 build 11
+xmcli (admin)>
+Connection to pocemcxms01 closed.
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01
+Connect XMS on 10.32.6.151:443: version 3.0.1 build 11
+xmcli (tenneco)>
+
+
+
+xmcli (tenneco)> show-volumes
+Volume-Name    Index Vol-Size LB-Size VSG-Space-In-Use Offset Ancestor-Name Index VSG-Index Cluster-Name Index Parent-Folder-Name Index Small-IO-Alerts Unaligned-IO-Alerts VAAI-TP-Alerts Total-Writes Total-Reads Certainty-State
+pocafasv01_001 1     500G     512     0                0                          1         XIO01        1     /                  1     disabled        disabled            disabled       0            0           ok
+pocafasv01_002 2     100G     512     0                0                          2         XIO01        1     /                  1     disabled        disabled            disabled       0            0           ok
+xmcli (tenneco)> show-initiator
+Unknown command: 'show-initiator'. Try 'help'
+xmcli (tenneco)> show-initiator
+show-initiator-group                         show-initiator-groups-performance            show-initiator-groups-performance-unaligned  show-initiators-connectivity                 show-initiators-performance-small
+show-initiator-groups                        show-initiator-groups-performance-small      show-initiators                              show-initiators-performance                  show-initiators-performance-unaligned
+xmcli (tenneco)> show-initiatorgroups
+Unknown command: 'show-initiatorgroups'. Try 'help'
+xmcli (tenneco)> show-initiator-groups
+IG-Name    Index Parent-Folder-Name Index Certainty-State
+pocafasv01 1     /                  1     ok
+xmcli (tenneco)>
+xmcli (tenneco)>
+xmcli (tenneco)>
+xmcli (tenneco)> show-lun-mappings
+Volume-Name    Index IG-Name    Index TG-Name Index LUN Mapping-Index Certainty-State
+pocafasv01_001 1     pocafasv01 1     Default 1     0   1             ok
+pocafasv01_002 2     pocafasv01 1     Default 1     1   2             ok
+
+
+xmcli (tenneco)> show-initiator-groups
+IG-Name    Index Parent-Folder-Name Index Certainty-State
+pocafasv01 1     /                  1     ok
+xmcli (tenneco)>
+xmcli (tenneco)>
+xmcli (tenneco)>
+xmcli (tenneco)> show-lun-mappings
+Volume-Name    Index IG-Name    Index TG-Name Index LUN Mapping-Index Certainty-State
+pocafasv01_001 1     pocafasv01 1     Default 1     0   1             ok
+pocafasv01_002 2     pocafasv01 1     Default 1     1   2             ok
+xmcli (tenneco)> add-initiator-group ig-name="pocafasv02" initiator-list=[port-address="C0507607FDBD000C",port-address="C0507607FDBD000E"]
+Added Initiator Group pocafasv02 [2]
+xmcli (tenneco)> add-volume vol-name="pocafasv02_001" vol-size="500g"
+Added Volume pocafasv02_001 [3]
+xmcli (tenneco)> map-lun vol-id="pocafasv02_001" ig-id="pocafasv02"
+LUN 1 mapped to Volume pocafasv02_001 [3]
+
+
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 add-volume vol-name=\"pocafasv02_002\" vol-size=\"500g\"
+Added Volume pocafasv02_002 [4]
+
+
+ x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 "add-volume vol-name="pocafasv02_002" vol-size="500g"
+>
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 add-volume vol-name="pocafasv02_002" vol-size="500g"
+add-volume vol-name=pocafasv02_002 vol-size=500g
+Usage: add-volume property=value list
+PROPERTY                                MANDATORY           DESCRIPTION                   VALUE
+----------------------------------------------------------------------------------------------------------------------------------
+alignment-offset                        No                  Alignment Offset              range 0-15
+cluster-id                              No                  Cluster ID                    name or index
+lb-size                                 No                  LB Size                       512 or 4096
+parent-folder-id                        No                  Parent folder ID              name or index
+small-io-alerts                         No                  Small IO Alerts               enabled or disabled
+unaligned-io-alerts                     No                  Unaligned IO Alerts           enabled or disabled
+vaai-tp-alerts                          No                  VAAI TP Alerts                enabled or disabled
+vol-name                                No                  Volume Name                   string
+vol-size                                Yes                 Volume Size                   integer suffixed by [mgtp]
+
+** Error: CLI Command Syntax Error: vol-name property must have a quoted string value
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 add-volume vol-name=\"pocafasv02_002\" vol-size=\"500g\"
+Added Volume pocafasv02_002 [4]
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 add-volume vol-name=\"pocafasv02_002\" vol-size=\"500g\"
+x1kxk630 on taitc118:/home/x1kxk630 $ for vol in 003 004 005 006 007 008 009
+> do
+> ssh tenneco@pocemcxms01 add-volume vol-name=\"pocafasv02_${vol}\" vol-size=\"500g\"
+> done
+Added Volume pocafasv02_003 [5]
+Added Volume pocafasv02_004 [6]
+Added Volume pocafasv02_005 [7]
+Added Volume pocafasv02_006 [8]
+Added Volume pocafasv02_007 [9]
+Added Volume pocafasv02_008 [10]
+Added Volume pocafasv02_009 [11]
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $ for vol in 003 004 005 006 007 008 009; do ssh tenneco@pocemcxms01 add-volume vol-name=\"pocafasv03_${vol}\" vol-size=\"500g\"; done
+Added Volume pocafasv03_003 [12]
+Added Volume pocafasv03_004 [13]
+Added Volume pocafasv03_005 [14]
+Added Volume pocafasv03_006 [15]
+Added Volume pocafasv03_007 [16]
+Added Volume pocafasv03_008 [17]
+Added Volume pocafasv03_009 [18]
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 add-folder folder-type=\"vol\" caption=\"ta2oradb\" parent-folder-id=\"/\"
+Added Folder /ta2oradb [2]
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $ for vol in 1 2 3 4; do ssh tenneco@pocemcxms01 add-volume vol-name=\"ta2oradb_${vol}\" vol-size=\"200g\"; done
+Added Volume ta2oradb_1 [3]
+Added Volume ta2oradb_2 [4]
+Added Volume ta2oradb_3 [5]
+Added Volume ta2oradb_4 [6]
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 move-to-folder parent-folder-id=\"ta2oradb\" vol-id=\"ta2oradb_1
+x1kxk630 on taitc118:/home/x1kxk630 $ for vol in ta2oradb_1 ta2oradb_2 ta2oradb_3 ta2oradb_4
+> do
+> ssh tenneco@pocemcxms01 move-to-folder parent-folder-id=\"ta2oradb\" vol-id=\"${vol}\"
+> done
+move-to-folder parent-folder-id="ta2oradb" vol-id="ta2oradb_1"
+*** XMS Completion Code: parent_folder_not_found
+move-to-folder parent-folder-id="ta2oradb" vol-id="ta2oradb_2"
+*** XMS Completion Code: parent_folder_not_found
+move-to-folder parent-folder-id="ta2oradb" vol-id="ta2oradb_3"
+*** XMS Completion Code: parent_folder_not_found
+Killed by signal 2.
+x1kxk630 on taitc118:/home/x1kxk630 $ for vol in ta2oradb_1 ta2oradb_2 ta2oradb_3 ta2oradb_4; do ssh tenneco@pocemcxms01 move-to-folder parent-folder-id=\"/ta2oradb\" vol-id=\"${vol}\"; done
+Moved Volume ta2oradb_1 to Folder /ta2oradb
+Moved Volume ta2oradb_2 to Folder /ta2oradb
+Moved Volume ta2oradb_3 to Folder /ta2oradb
+Moved Volume ta2oradb_4 to Folder /ta2oradb
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 create-snapshot source-folder-id=\"/ta2oradb\" folder-id=\"/ta2bcv\"
+create-snapshot source-folder-id="/ta2oradb" folder-id="/ta2bcv"
+*** XMS Completion Code: snap_vol_name_not_unique
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 add-folder folder-type=\"vol\" caption=\"ta2bcv\" parent-folder-id=\"/\"
+Added Folder /ta2bcv [3]
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 create-snapshot source-folder-id=\"/ta2oradb\" folder-id=\"/ta2bcv\"
+create-snapshot source-folder-id="/ta2oradb" folder-id="/ta2bcv"
+*** XMS Completion Code: snap_vol_name_not_unique
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 create-snapshot
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 create-snapshot source-folder-id=\"/ta2oradb\" folder-id=\"/ta2bcv\" suffix=\"today\"
+Created Snapshot ta2oradb_1today [11]
+Created Snapshot ta2oradb_3today [12]
+Created Snapshot ta2oradb_2today [13]
+Created Snapshot ta2oradb_4today [14]
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 create-snapshot source-folder-id=\"/ta2oradb\" folder-id=\"/ta2bcv\" suffix=\"today\"
+create-snapshot source-folder-id="/ta2oradb" folder-id="/ta2bcv" suffix="today"
+*** XMS Completion Code: snap_vol_name_not_unique
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 create-snapshot source-folder-id=\"/t
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 create-snapshot snap-list=[snap-vol-name=ta2oradb_1,snap-vol-name=ta2oradb_2,snap-vol-name=ta2oradb_3,snap-vol-name=ta2oradb_4] folder-id=\"/ta2bcv\" suffix=\"today\"
+create-snapshot snap-list=[snap-vol-name=ta2oradb_1,snap-vol-name=ta2oradb_2,snap-vol-name=ta2oradb_3,snap-vol-name=ta2oradb_4] folder-id="/ta2bcv" suffix="today"
+Usage: create-snapshot property=value list
+PROPERTY                                MANDATORY           DESCRIPTION                   VALUE
+----------------------------------------------------------------------------------------------------------------------------------
+ancestor-vol-id                         One from Group 1    Ancestor Volume ID            name or index
+folder-id                               No                  Folder ID                     name or index
+snap-list                               One from Group 1    Snapshot List                 [ancestor-vol-id=value snap-vol-name=value, ...]
+snap-vol-name                           No                  Snapshot Volume Name          string
+source-folder-id                        One from Group 1    Folder ID                     name or index. Create snapshot from the volumes under hat folder, not including subfolders
+suffix                                  No                  Snapshot Volume Name          string
+
+Mandatory Groups:
+Group 1: ['ancestor-vol-id', 'snap-list', 'source-folder-id']
+
+** Error: CLI Command Syntax Error: snap-vol-name property must have a quoted string value
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $
+x1kxk630 on taitc118:/home/x1kxk630 $ ssh tenneco@pocemcxms01 create-snapshot snap-list=[snap-vol-name=\"ta2oradb_1\",snap-vol-name=\"ta2oradb_2\",snap-vol-name=\"ta2oradb_3\",snap-vol-name=\"ta2oradb_4\"] folder-id=\"/ta2bcv\" suffix=\"today\"
+create-snapshot snap-list=[snap-vol-name="ta2oradb_1",snap-vol-name="ta2oradb_2",snap-vol-name="ta2oradb_3",snap-vol-name="ta2oradb_4"] folder-id="/ta2bcv" suffix="today"
+Usage: create-snapshot property=value list
+PROPERTY                                MANDATORY           DESCRIPTION                   VALUE
+----------------------------------------------------------------------------------------------------------------------------------
+ancestor-vol-id                         One from Group 1    Ancestor Volume ID            name or index
+folder-id                               No                  Folder ID                     name or index
+snap-list                               One from Group 1    Snapshot List                 [ancestor-vol-id=value snap-vol-name=value, ...]
+snap-vol-name                           No                  Snapshot Volume Name          string
+source-folder-id                        One from Group 1    Folder ID                     name or index. Create snapshot from the volumes under hat folder, not including subfolders
+suffix                                  No                  Snapshot Volume Name          string
+
+Mandatory Groups:
+Group 1: ['ancestor-vol-id', 'snap-list', 'source-folder-id']
+
+** Error: CLI Command Syntax Error: Missing some of mandatory properties list: ['ancestor-vol-id']
+
+
+
+
+
+Functional test testsupplyweb.tenneco.com	1/8/2014	19:00 CST	Raj Palanivel
+Functional test qatsp.tenneco.com		1/8/2014	19:00 CST	Claire Jaques
+
+
+export TMOUT=0
+
+nohup sudo rsync -avv /oracle/TA2/sapdata200/ /randomfs/sapdata200/ > /dev/null 2>/dev/null &
+nohup sudo rsync -avv /oracle/TA2/sapdata207/ /randomfs/sapdata207/ > /dev/null 2>/dev/null &
+nohup sudo rsync -avv /oracle/TA2/sapdata208/ /randomfs/sapdata208/ > /dev/null 2>/dev/null &
+nohup sudo rsync -avv /oracle/TA2/sapdata201/ /randomfs/sapdata201/ > /dev/null 2>/dev/null &
+nohup sudo rsync -avv /oracle/TA2/sapdata206/ /randomfs/sapdata206/ > /dev/null 2>/dev/null &
+nohup sudo rsync -avv /oracle/TA2/sapdata202/ /randomfs/sapdata202/ > /dev/null 2>/dev/null &
+
+vdbench90-10.conf & 6 rsync sessions created a spike in response time.
+
+15:23 - controller 1 rebooted... IO paused for about 5 seconds. ( as long as Host I/O timeout -- 5 seconds ..)
+
+15:30 - controller 0 rebooted for code upgrades,
+
+
+it0oradata_01     1T    1    -           pocafasv03
+it0oradata_02     1T    2    -           pocafasv03
+it0oradata_03     1T    3    -           pocafasv03
+it0oradata_04     1T    4    -           pocafasv03
+it0oradata_05     1T    5    -           pocafasv03
+it0oradata_06     1T    6    -           pocafasv03
+it0oradata_07     1T    7    -           pocafasv03
+it0oradata_08     1T    8    -           pocafasv03
+it0oradata_09     1T    9    -           pocafasv03
+it0oradata_10     1T    10   -           pocafasv03
+it0oradata_11     1T    11   -           pocafasv03
+it0oradata_12     1T    12   -           pocafasv03
+pocafasv01_01     100G  1    -           pocafasv01
+pocafasv01_02     100G  2    -           pocafasv01
+pocafasv01_03     100G  3    -           pocafasv01
+pocafasv01_04     100G  16   -           pocafasv01
+pocafasv04_01     100G  1    -           pocafasv04
+randomafasv01_01  1T    17   -           pocafasv01
+randomafasv01_02  1T    18   -           pocafasv01
+randomafasv01_03  1T    19   -           pocafasv01
+randomafasv01_04  1T    20   -           pocafasv01
+randomafasv02_01  1T    13   -           pocafasv02
+randomafasv02_02  1T    14   -           pocafasv02
+randomafasv02_03  1T    15   -           pocafasv02
+randomafasv02_04  1T    16   -           pocafasv02
+ta2orabkp_01      1T    1    -           pocafasv02
+ta2orabkp_02      1T    2    -           pocafasv02
+ta2orabkp_03      1T    3    -           pocafasv02
+ta2orabkp_04      1T    4    -           pocafasv02
+ta2orabkp_05      1T    5    -           pocafasv02
+ta2orabkp_06      1T    6    -           pocafasv02
+ta2orabkp_07      1T    7    -           pocafasv02
+ta2orabkp_08      1T    8    -           pocafasv02
+ta2orabkp_09      1T    9    -           pocafasv02
+ta2orabkp_10      1T    10   -           pocafasv02
+ta2orabkp_11      1T    11   -           pocafasv02
+ta2orabkp_12      1T    12   -           pocafasv02
+ta2oradata_01     1T    4    -           pocafasv01
+ta2oradata_02     1T    5    -           pocafasv01
+ta2oradata_03     1T    6    -           pocafasv01
+ta2oradata_04     1T    7    -           pocafasv01
+ta2oradata_05     1T    8    -           pocafasv01
+ta2oradata_06     1T    9    -           pocafasv01
+ta2oradata_07     1T    10   -           pocafasv01
+ta2oradata_08     1T    11   -           pocafasv01
+ta2oradata_09     1T    12   -           pocafasv01
+ta2oradata_10     1T    13   -           pocafasv01
+ta2oradata_11     1T    14   -           pocafasv01
+ta2oradata_12     1T    15   -           pocafasv01
+unixtestvol01     100G  13   -           pocafasv03
+unixtestvol02     100G  14   -           pocafasv03
+unixtestvol03     100G  15   -           pocafasv03
+unixtestvol04     100G  16   -           pocafasv03
+vdbench_sv01_01   1T    33   -           pocafasv01
+vdbenchtestvol1   500G  34   -           pocafasv01
+vdbenchtestvol10  500G  34   -           pocafasv03
+vdbenchtestvol11  500G  35   -           pocafasv03
+vdbenchtestvol12  500G  36   -           pocafasv03
+vdbenchtestvol2   500G  35   -           pocafasv01
+vdbenchtestvol3   500G  36   -           pocafasv01
+vdbenchtestvol4   500G  37   -           pocafasv01
+vdbenchtestvol5   500G  17   -           pocafasv02
+vdbenchtestvol6   500G  18   -           pocafasv02
+vdbenchtestvol7   500G  19   -           pocafasv02
+vdbenchtestvol8   500G  20   -           pocafasv02
+vdbenchtestvol9   500G  33   -           pocafasv03
+
+
+pocafasv01	Server-8284-22A-SN847585V	taprvio120	taprvio121	0879 087B	vhost0	C5
+pocafasv02	Server-8284-22A-SN847585V	taprvio120	taprvio121	087C 088D	vhost1	C9
+pocafasv03	Server-8284-22A-SN847584V	taprvio130	taprvio131	08B1 08B2	vhost0	C5
+pocafasv04	Server-8284-22A-SN847584V	taprvio130	taprvio131	08B3 08B4	vhost1	C8
+
+Shutdown pocafasv01, pocafasv02 and 03.
+
+Remove LUNs 
+
+sudo symaccess -sid 0301 -type storage -name pocafasv01_SG remove devs 0879,087B
+sudo symaccess -sid 0301 -type storage -name pocafasv02_SG remove devs 087C,088D
+sudo symaccess -sid 0301 -type storage -name pocafasv03_SG remove devs 08B1,08B2
+
+Zone taprvio120 and taprvio130 to 2G1_3G1_PG
+
+taprvio120	10000090FA713CC4	ldcds6510a1
+taprvio130	10000090FA7B06BC	ldcds6510a1
+
+alicreate "taprvio120_713cc4","10:00:00:90:fa:71:3c:c4"
+alicreate "taprvio130_7b06bc","10:00:00:90:fa:7b:06:bc"
+
+zonecreate "taprvio120_713cc4__vmax_0301_2g1","taprvio120_713cc4;vmax_0301_2g1"
+zonecreate "taprvio130_7b06bc__vmax_0301_2g1","taprvio130_7b06bc;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","taprvio120_713cc4__vmax_0301_2g1;taprvio130_7b06bc__vmax_0301_2g1"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+taprvio120	10000090FA713CC5	ldcds6510b1
+taprvio130	10000090FA7B06BD	ldcds6510b1
+
+alicreate "taprvio120_713cc5","10:00:00:90:Fa:71:3c:c5"
+alicreate "taprvio130_7b06bd","10:00:00:90:Fa:7b:06:Bd"
+
+zonecreate "taprvio120_713cc5__vmax_0301_3g1","taprvio120_713cc5;vmax_0301_3g1"
+zonecreate "taprvio130_7b06bd__vmax_0301_3g1","taprvio130_7b06bd;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","taprvio120_713cc5__vmax_0301_3g1;taprvio130_7b06bd__vmax_0301_3g1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+sudo symaccess -sid 0301 -name pocafavios_IG -type initiator create
+sudo symaccess -sid 0301 -name pocafavios_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pocafavios_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pocafavios_IG -type initiator -wwn 10000090FA713CC4 add
+sudo symaccess -sid 0301 -name pocafavios_IG -type initiator -wwn 10000090FA713CC5 add
+sudo symaccess -sid 0301 -name pocafavios_IG -type initiator -wwn 10000090FA7B06BC add
+sudo symaccess -sid 0301 -name pocafavios_IG -type initiator -wwn 10000090FA7B06BD add
+
+sudo symaccess -sid 0301 -name pocafavios_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pocafavios_SG add devs 0879,087B,087C,088D,08B1,08B2
+
+sudo symaccess -sid 0301 create view -name pocafavios_MV -sg pocafavios_SG -pg 2G1_3G1_PG -ig pocafavios_IG
+
+cfgmgr on taprvio120, 130.
+
+Create vSCSI for pocafasv01,02 taprvio120
+Create vSCSI for pocafasv03 taprvio130
+
+
+
+installp -ad . EMC.XtremIO.fcp.rte
+
+
+To configure PowerPath multi-pathing for XtremIO volumes:
+1. Uncompress, untar, and install the PowerPath fileset by running the following
+commands:
+a. gunzip EMCPower.AIX.5.7.SP1.b013.tar.gz
+tar -xvf EMCPower.AIX.5.7.SP1.b013.tar
+x EMCpower_install, 36915200 bytes, 72100 tape blocks
+b. rm .toc
+c. inutoc .
+d. installp -ad . EMCpower 
+
+emcpreg -install
+
+
+x1kxk630 on pocafasv04:/home/x1kxk630/XtremeIOODM $ /usr/local/scripts/listwwns
+fcs0 C0507607FDBB000A
+fcs1 C0507607FDBB0008
+
+
+sudo installp -acX -d /home/x1kxk630/Xtexport TMOUT=0
+remeIOODM/EMC.AIX.6.0.0.5 EMC.XtremIO.aix.rte EMC.XtremIO.fcp.MPIO.rte
+
+sudo cfgmgr
+
+lsdev -Ccdisk | grep XtremIO | awk '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l
+
+
+
+
+fcs0 C0507607FDBB0006
+fcs1 C0507607FDBB0004
+
+
+
+
+
+
+svctask mkhost -fcwwpn C0507607FDBD0004:C0507607FDBD0006:C0507607FDBD0008:C0507607FDBD000A -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pocafasv01 -type generic
+svctask mkvdiskhostmap -force -host 0 -scsi 0 0
+
+
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp FS_840_1 -name pocafasv019 -rsize 2% -size 214748364800 -syncrate 50 -unit b -vtype striped -warning 0%
+
+svctask mkfcconsistgrp
+
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name pocafasv017_01 -rsize 0% -size 214748364800 -unit b
+
+svctask mkfcmap -cleanrate 0 -consistgrp 2 -copyrate 0 -source pocafasv017 -target pocafasv017_01
+
+svctask startfcconsistgrp -prep 2
+
+
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name pocafasv01_01 -rsize 0% -size 204800 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name pocafasv01_02 -rsize 0% -size 204800 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_01 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_02 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_03 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_04 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_05 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_06 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_07 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_08 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_09 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_10 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_11 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_12 -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+
+
+Consumed 14Gig immediately. That is 1G being allocated for every volume.
+
+
+
+ssh pocibmafa01 svctask mkfcconsistgrp -name TA2ORABKP
+
+for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done
+
+for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2orabkp_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done
+   
+for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkfcmap -cleanrate 0 -consistgrp TA2ORABKP -copyrate 0 -source ta2oradb_${vol} -target ta2orabkp_${vol}
+done
+
+
+for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdiskhostmap -force -host pocafasv02 ta2orabkp_${vol}
+done   
+
+svctask rmvdiskhostmap -host pocafasv02 ta2orabkp_01
+
+ssh pocibmafa01 svctask startfcconsistgrp -prep TA2ORABKP
+ssh pocibmafa01 svctask stopfcconsistgrp TA2ORABKP
+
+
+ssh pocibmafa01 svctask mkfcmap -autodelete -cleanrate 50 -consistgrp TA2IT0REFRESH -copyrate 50 -source ta2oradb_${vol} -target it0oradb_${vol}
+
+
+-autodelete
+
+
+ps -ef | grep dw | wc -l 
+
+
+
+for vol in 01 02
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name newta2orabinary_${vol} -rsize 0% -size 204800 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done
+
+
+for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name newta21oradata_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done
+
+
+
+
+
+
+
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv01_01 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv01_02 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv01_03 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv01_04 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv02_01 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv02_02 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv02_03 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv02_04 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv03_01 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv03_02 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv03_03 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name vdbench_sv03_04 -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+
+
+a. In subject there is no space between "pgitap01" and "from"
+b. Subject change to "Upgrade RHEL from 6.4 to 6.6 -- pgitap01 (Unix documentation lpar2rrd server)"
+
+Application is "lpar2rrd for EU p Series servers "
+
+System has apache, you dont have to stop or start it -- it will automatically do it along with reboot.
+
+Functional test would be to check this URL and sign off by Unix team.
+
+http://pgitap01/lpar2rrd/index.html
+
+This VM is on taitc320 vCentre. You have access to it, please take the snapshot yourself. You don't need me.
+
+
+
+
+
+
+Mar 24 03:10:53 10.32.10.37 raslogd: 2015/03/24-09:29:22, [AN-1010], 52741, WWN 10:00:00:27:f8:3d:55:88 | FID 128, WARNING, ldcds5300b1, Severe latency bottleneck detected at slot 0 port 1.
+
+
+
+LDCDS6510A1	19	SAN1	A2-19--POC-IBM-1-1	POC AFA IBM		50:05:07:68:0c:51:1e:55		SVC2	50:05:07:68:0c:11:1e:55		ibm_v840_c1_p1	ibm_v840_c1_p3
+LDCDS6510A1	20	SAN1	A2-20--POC-IBM-2-1	POC AFA IBM		50:05:07:68:0c:31:1e:4e		SVC1	50:05:07:68:0c:11:1e:4e		ibm_v840_c2_p1	ibm_v840_c2_p3
+
+Fabric A
+
+alicreate "ibm_v840_c1_p3","50:05:07:68:0c:51:1e:55"
+alicreate "ibm_v840_c2_p3","50:05:07:68:0c:31:1e:4e"
+
+zonecreate "pocafasv01_bd0004__ibm_v840_c1_c2_p3","pocafasv01_bd0004;ibm_v840_c1_p3;ibm_v840_c2_p3"
+zonecreate "pocafasv01_bd0008__ibm_v840_c1_c2_p3","pocafasv01_bd0008;ibm_v840_c1_p3;ibm_v840_c2_p3"
+zonecreate "pocafasv02_bd000c__ibm_v840_c1_c2_p3","pocafasv02_bd000c;ibm_v840_c1_p3;ibm_v840_c2_p3"
+zonecreate "pocafasv03_bb0004__ibm_v840_c1_c2_p3","pocafasv03_bb0004;ibm_v840_c1_p3;ibm_v840_c2_p3"
+zonecreate "pocafasv04_bb000a__ibm_v840_c1_c2_p3","pocafasv04_bb000a;ibm_v840_c1_p3;ibm_v840_c2_p3"
+
+cfgadd "fab_a_act_config","pocafasv01_bd0004__ibm_v840_c1_c2_p3;pocafasv01_bd0008__ibm_v840_c1_c2_p3;pocafasv02_bd000c__ibm_v840_c1_c2_p3;pocafasv03_bb0004__ibm_v840_c1_c2_p3;pocafasv04_bb000a__ibm_v840_c1_c2_p3"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+ zone:  pocafasv01_bd0004__ibm_v840_c1_c2_p1
+                pocafasv01_bd0004; ibm_v840_c1_p1; ibm_v840_c2_p1
+ 
+ zone:  pocafasv01_bd0008__ibm_v840_c1_c2_p1
+                pocafasv01_bd0008; ibm_v840_c1_p1; ibm_v840_c2_p1
+ 
+ zone:  pocafasv02_bd000c__ibm_v840_c1_c2_p1
+                pocafasv02_bd000c; ibm_v840_c1_p1; ibm_v840_c2_p1
+ 
+ zone:  pocafasv03_bb0004__ibm_v840_c1_c2_p1
+                pocafasv03_bb0004; ibm_v840_c1_p1; ibm_v840_c2_p1
+ 
+ zone:  pocafasv04_bb000a__ibm_v840_c1_c2_p1
+                pocafasv04_bb000a; ibm_v840_c1_p1; ibm_v840_c2_p1
+
+
+
+
+
+LDCDS6510B1	19	SAN1	B2-19--POC-IBM-1-2	POC AFA IBM		50:05:07:68:0c:31:1e:55		SVC2	50:05:07:68:0c:12:1e:55		ibm_v840_c1_p2	ibm_v840_c1_p4
+LDCDS6510B1	20	SAN1	B2-20--POC-IBM-2-2	POC AFA IBM		50:05:07:68:0c:51:1e:4e		SVC1	50:05:07:68:0c:12:1e:4e		ibm_v840_c2_p2	ibm_v840_c2_p4
+
+
+alicreate "ibm_v840_c1_p4","50:05:07:68:0c:31:1e:55"
+alicreate "ibm_v840_c2_p4","50:05:07:68:0c:51:1e:4e"
+
+
+ zone:  pocafasv01_bd0006__ibm_v840_c1_c2_p2
+                pocafasv01_bd0006; ibm_v840_c1_p2; ibm_v840_c2_p2
+ zone:  pocafasv01_bd000a__ibm_v840_c1_c2_p2
+                pocafasv01_bd000a; ibm_v840_c1_p2; ibm_v840_c2_p2
+ zone:  pocafasv02_bd000e__ibm_v840_c1_c2_p2
+                pocafasv02_bd000e; ibm_v840_c1_p2; ibm_v840_c2_p2
+ zone:  pocafasv03_bb0006__ibm_v840_c1_c2_p2
+                pocafasv03_bb0006; ibm_v840_c1_p2; ibm_v840_c2_p2
+ zone:  pocafasv04_bb0008__ibm_v840_c1_c2_p2
+                pocafasv04_bb0008; ibm_v840_c1_p2; ibm_v840_c2_p2
+
+zonecreate "pocafasv01_bd0006__ibm_v840_c1_c2_p4","pocafasv01_bd0006;ibm_v840_c1_p4;ibm_v840_c2_p4"
+zonecreate "pocafasv01_bd000a__ibm_v840_c1_c2_p4","pocafasv01_bd000a;ibm_v840_c1_p4;ibm_v840_c2_p4"
+zonecreate "pocafasv02_bd000e__ibm_v840_c1_c2_p4","pocafasv02_bd000e;ibm_v840_c1_p4;ibm_v840_c2_p4"
+zonecreate "pocafasv03_bb0006__ibm_v840_c1_c2_p4","pocafasv03_bb0006;ibm_v840_c1_p4;ibm_v840_c2_p4"
+zonecreate "pocafasv04_bb0008__ibm_v840_c1_c2_p4","pocafasv04_bb0008;ibm_v840_c1_p4;ibm_v840_c2_p4"
+
+cfgadd "fab_b_act_config","pocafasv01_bd0006__ibm_v840_c1_c2_p4;pocafasv01_bd000a__ibm_v840_c1_c2_p4;pocafasv02_bd000e__ibm_v840_c1_c2_p4;pocafasv03_bb0006__ibm_v840_c1_c2_p4;pocafasv04_bb0008__ibm_v840_c1_c2_p4"
+
+
+svctask mkhost -fcwwpn C0507607FDBD0004:C0507607FDBD0006:C0507607FDBD0008:C0507607FDBD000A -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pocafasv01 -type generic
+
+
+svctask mkhost -fcwwpn C0507607FDBD000C:C0507607FDBD000E -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pocafasv02 -type generic
+svctask mkhost -fcwwpn C0507607FDBB0006:C0507607FDBB0004 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pocafasv03 -type generic
+svctask mkhost -fcwwpn C0507607FDBB000A:C0507607FDBB0008 -force -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name pocafasv04 -type generic
+
+
+
+lsdev -Ccdisk | grep IBM | awk '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l
+
+
+pgscdb01
+
+c0507607f34d0010		ldcds6510b1		7
+c0507607f34d0012		ldcds6510a1		14
+
+
+pagi3p01
+
+c0507607f34d0014		ldcds6510a1		7
+c0507607f34d0016		ldcds6510b1		14
+
+	
+Fabric A
+
+VMAX --> zone to vmax_0301_2g1
+DMX4 --> zone to dmx4_3339_9d1
+
+
+alicreate "dmx4_3339_9d1","50:06:04:8a:d5:2f:ca:f8"
+
+alicreate "pgscdb01_4d0012","c0:50:76:07:f3:4d:00:12"
+alicreate "pagi3p01_4d0014","c0:50:76:07:f3:4d:00:14"
+
+zonecreate "pgscdb01_4d0012__vmax_0301_2g1","pgscdb01_4d0012;vmax_0301_2g1"
+zonecreate "pgscdb01_4d0012__dmx4_3339_9d1","pgscdb01_4d0012;dmx4_3339_9d1"
+zonecreate "pagi3p01_4d0014__vmax_0301_2g1","pagi3p01_4d0014;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","pgscdb01_4d0012__vmax_0301_2g1;pgscdb01_4d0012__dmx4_3339_9d1;pagi3p01_4d0014__vmax_0301_2g1"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+
+
+Fabric B
+
+VMAX --> zone to vmax_0301_3g1
+DMX4 --> zone to dmx4_3339_8d1
+
+alicreate "dmx4_3339_8d1","50:06:04:8a:d5:2f:ca:f7"
+
+alicreate "pgscdb01_4d0010","c0:50:76:07:f3:4d:00:10"
+alicreate "pagi3p01_4d0016","c0:50:76:07:f3:4d:00:16"
+
+zonecreate "pgscdb01_4d0010__vmax_0301_3g1","pgscdb01_4d0010;vmax_0301_3g1"
+zonecreate "pgscdb01_4d0010__dmx4_3339_8d1","pgscdb01_4d0010;dmx4_3339_8d1"
+zonecreate "pagi3p01_4d0016__vmax_0301_3g1","pagi3p01_4d0016;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","pgscdb01_4d0010__vmax_0301_3g1;pgscdb01_4d0010__dmx4_3339_8d1;pagi3p01_4d0016__vmax_0301_3g1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator create
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator -wwn c0507607f34d0012 add
+sudo symaccess -sid 0301 -name pgscdb01_IG -type initiator -wwn c0507607f34d0010 add
+
+
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator create
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator -wwn c0507607f34d0014 add
+sudo symaccess -sid 0301 -name pagi3p01_IG -type initiator -wwn c0507607f34d0016 add
+
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 08FA;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 08FA;" commit -nop
+
+sudo symaccess -sid 0301 -name pgscdb01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pgscdb01_SG add devs 
+sudo symfast -sid 0301 -fp_name Gold associate -sg pgscdb01_SG -priority 2
+sudo symaccess -sid 0301 create view -name pgscdb01_MV -sg pgscdb01_SG -pg 2G1_3G1_PG -ig pgscdb01_IG
+
+sudo symaccess -sid 0301 -name pagi3p01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name pagi3p01_SG add devs 
+sudo symfast -sid 0301 -fp_name Gold associate -sg pagi3p01_SG -priority 2
+sudo symaccess -sid 0301 create view -name pagi3p01_MV -sg pagi3p01_SG -pg 2G1_3G1_PG -ig pagi3p01_IG
+
+
+
+600507680C8180F27000000000000005
+
+
+for vol in 01 02 03 04
+do
+   for host in pocafasv01 pocafasv02 pocafasv03 pocafasv04
+   do
+      purevol create --size=512G ${host}_${vol}
+	  purevol connect --host ${host} ${host}_${vol}
+   done
+done
+
+
+for FCS in $(lscfg | grep fcs | awk '{print $2}' )
+do
+   sudo rmdev -dl ${FCS} -R
+   sudo cfgmgr
+done   
+
+for dev in $(lsdev -Ccdisk | grep -i pure | awk '{print $1 }' )
+do
+   lspath -l ${dev}
+   echo ""
+   lsattr -El ${dev} -a algorithm -a reserve_policy 
+   echo ""
+done
+   
+
+ssh pocemcxms01 add-folder folder-type=\"vol\" caption=\"vdbench\" parent-folder-id=\"/\"
+
+for vol in 01 02 03 04
+do
+   for host in pocafasv01 pocafasv02 pocafasv03 pocafasv04
+   do
+      ssh pocemcxms01 add-volume vol-name=\"${host}_${vol}\" vol-size=\"512g\" parent-folder-id=\"/vdbench\"
+      ssh pocemcxms01 map-lun vol-id=\"${host}_${vol}\" ig-id=\"${host}\"
+   done
+done
+
+
+for vol in 01 02 03 04
+do
+   for host in pocafasv01 pocafasv02 pocafasv03 pocafasv04
+   do
+      ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ${host}_${vol} -rsize 0% -size 524288 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+      ssh pocibmafa01 svctask mkvdiskhostmap -force -host ${host} ${host}_${vol}
+   done   
+done
+
+
+for vol in 01 02 03 04
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oradb_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done
+
+
+for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   
+done
+
+
+sudo installp -u ibm2105.rte ibmpfe.essutil.rte  ibmpfe.essutil.scsi.data
+
+</code>

@@ -1,0 +1,164 @@
+
+<h1 class="sectionedit1" id="upgrade_memory_and_move_pggtdb01">Upgrade memory and move pggtdb01</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Upgrade memory and move pggtdb01" [1-48] -->
+<h2 class="sectionedit2" id="memory_upgrade">Memory upgrade</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Shutdown applications on xggtdb01 and xeerdb99</div>
+</li>
+<li class="level1"><div class="li"> Shutdown <abbr title="Operating System">OS</abbr> xggtdb01, xeerdb99, xeerdb03, taprvio80 and taprvio81</div>
+</li>
+<li class="level1"><div class="li"> Poweroff the frame, perform memory upgrades.</div>
+</li>
+<li class="level1"><div class="li"> Startup <abbr title="Operating System">OS</abbr> taprvio80, taprvio81, xggtdb01 and xeerdb99</div>
+</li>
+<li class="level1"><div class="li"> Startup applications on xggtdb01 and xeerdb99</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Memory upgrade" [49-357] -->
+<h2 class="sectionedit3" id="migrate_pggtdb01_from_55a_to_e6d">Migrate pggtdb01 from 55A to E6D</h2>
+<div class="level2">
+
+</div>
+<!-- EDIT3 SECTION "Migrate pggtdb01 from 55A to E6D" [358-403] -->
+<h3 class="sectionedit4" id="shutdown_apps_and_os">Shutdown apps and OS</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Shutdown GTS application on pggtdb01</div>
+</li>
+<li class="level1"><div class="li"> Unmount NFS mounted filesystems from clients</div>
+<ol>
+<li class="level2"><div class="li"> tspr1d03<pre class="code">sudo umount /comm</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> dggtdb01 and qggtdb01<pre class="code">sudo umount /usr/sap/trans</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove IP configurations and shutdown pggtdb01</div>
+<ol>
+<li class="level2"><div class="li"> Login to the console<pre class="code">sudo getconsole pggtdb01</pre>
+
+<p>
+Login as root
+</p>
+<pre class="code">sudo ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+
+<p>
+Remove all network device files
+</p>
+<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   sudo rmdev -dl en${dev}
+   sudo rmdev -dl et${dev}
+   sudo rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+
+<p>
+Shutdown pggtdb01 <abbr title="Operating System">OS</abbr>
+</p>
+<pre class="code">sudo shutdown -F</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Shutdown apps and OS" [404-1169] -->
+<h3 class="sectionedit5" id="swing_the_storage">Swing the storage</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Magic <abbr title="Graphical User Interface">GUI</abbr> on VMAX</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Swing the storage" [1170-1221] -->
+<h3 class="sectionedit6" id="change_identity_and_bring_up_xeerdb03_as_pggtdb01">Change identity and bring up xeerdb03 as pggtdb01</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Change the lpar name on HMC</div>
+</li>
+<li class="level1"><div class="li"> Change the VLAN on Virtual NIC on slot 2 to vlan &#039;406&#039;</div>
+</li>
+<li class="level1"><div class="li"> Boot the sytem, Open a console, login as root and change the IP<pre class="code">sudo /usr/sbin/mktcpip -h pggtdb01 -a 10.32.6.60 -m 255.255.255.0 -i en0 -g 10.32.6.1 -A no -s</pre>
+
+<p>
+Chane IP of the backup NIC
+</p>
+<pre class="code">sudo chdev -l en1 -a netaddr=10.32.51.60 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable MPIO <pre class="code">lsdev -Ccdisk | grep MPIO | awk &#039;{print $1}&#039; | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure we have all the devices<pre class="code">for pvid in $(awk &#039;{print $2 }&#039; /home/x1kxk630/pggtdb01.pvids )
+do
+   lspv | grep -q ${pvid}
+   [[ ${?} -eq 0 ]] &amp;&amp; echo &quot;Good :: Found ${pvid}&quot; || echo &quot;Bad :: Cannot find ${pvid}&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import vgs<pre class="code">sudo importvg -y binvg01 000d9cdacbfd543b
+sudo importvg -y datavg01 000d9cda2ee4ca5c
+sudo importvg -y logvg01 000d9cdacbeba980</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable CIO<pre class="code">for fs in /oracle/PGT/mirrlogA /oracle/PGT/mirrlogB /oracle/PGT/origlogB\
+ /oracle/PGT/origlogA /oracle/PGT/sapdata1 /oracle/PGT/sapdata2 /oracle/PGT/sapdata3 /oracle/PGT/sapdata4
+do
+   sudo chfs -a options=rw ${fs}
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount filesystems<pre class="code">for vg in binvg01 logvg01 datavg01
+do
+   for fs in $(sudo lsvgfs ${vg} )
+   do
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Populate .information file<pre class="code">sudo cp /home/x1kxk630/.information /var/adm/.information</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron<pre class="code">sudo mkitab cron:23456789:respawn:/usr/sbin/cron</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> NFS export filesystems<pre class="code">sudo exportfs -av</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> NFS mount the filesystems<pre class="code">echo &quot;&quot; | sudo tee -a /etc/filesystems
+sudo cat /home/x1kxk630/filesystems.nfs | sudo tee -a /etc/filesystems
+sudo mount /sapsoft</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> NFS remount the filesystems on tspr1d03, dggtdb01 and qggtdb01</div>
+<ol>
+<li class="level2"><div class="li"> tspr1d03<pre class="code">sudo mount /comm</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> dggtdb01 and qggtdb01<pre class="code">sudo mount /usr/sap/trans</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Handover to Basis to startup applications on pggtdb01.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Change identity and bring up xeerdb03 as pggtdb01" [1222-] -->

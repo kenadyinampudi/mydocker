@@ -1,0 +1,54 @@
+
+<h1 class="sectionedit1" id="install_addtional_softwares_on_aix_vios_sudo_and_rsync">Install addtional softwares on AIX / VIOS ( sudo and rsync )</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Login to NIM server pgnmsv01.</div>
+</li>
+<li class="level1"><div class="li"> If this is not during a system build, define the targethost variable<pre class="code">export targethost=&lt;host_name&gt;</pre>
+</div>
+</li>
+</ul>
+
+<p>
+<strong> sudo </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Copy the latest sudo RPM from the NIM server ( pgnmsv01 ) to the server where we need it installed<pre class="code">sudo scp /prod/images/rpms/sudo-1.6.9p23-2noldap.aix5.3.ppc.rpm ${targethost}:/tmp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install / Upgrade sudo on the target host<pre class="code">sudo ssh ${targethost} &quot;rpm -Uvh /tmp/sudo-1.6.9p23-2noldap.aix5.3.ppc.rpm&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the latest sudoers file to the target server.<pre class="code">sudo scp /prod/images/etc/sudoers ${targethost}:/etc/sudoers</pre>
+</div>
+</li>
+</ul>
+
+<p>
+<strong> rsync </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Copy the latest RPM from the NIM server ( pgnmsv01 ) to the server where we need it installed<pre class="code">sudo scp /prod/images/rpms/rsync-3.0.6-1.aix5.3.ppc.rpm ${targethost}:/tmp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install / Upgrade rsync on the target host<pre class="code">sudo ssh ${targethost} &quot;rpm -Uvh /tmp/rsync-3.0.6-1.aix5.3.ppc.rpm&quot;</pre>
+</div>
+</li>
+</ul>
+
+<p>
+<strong> bash </strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Copy the latest RPM from the NIM server ( pgnmsv01 ) to the server where we need it installed<pre class="code">sudo scp /prod/images/rpms/bash-4.2-3.aix6.1.ppc.rpm ${targethost}:/tmp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install / Upgrade bash on the target host<pre class="code">sudo ssh ${targethost} &quot;rpm -Uvh bash-4.2-3.aix6.1.ppc.rpm&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add <code>/usr/bin/bash</code> to <code>/etc/security/login.cfg</code><pre class="code">sudo ssh ${targethost} &quot;chsec -f /etc/security/login.cfg -s usw -a shells=/bin/sh,/bin/bsh,/bin/csh,/bin/ksh,/bin/tsh,/usr/bin/sh,/usr/bin/bsh,/usr/bin/csh,/usr/bin/ksh,/usr/bin/tsh,/usr/sbin/sliplogin,/usr/sbin/uucp/uucico,/usr/sbin/snappd,/usr/bin/rksh,/usr/bin/rksh93,/usr/bin/bash&quot;</pre>
+</div>
+</li>
+</ul>
+
+</div>

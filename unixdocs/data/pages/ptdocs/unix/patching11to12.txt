@@ -1,0 +1,108 @@
+====== Patching SLES From 11.4 To 12.4 ======
+These are notes to upgrade SUSE from version 11.4 to 12.4
+
+  - Build new 12.4 VM. ok
+  - Change root password on the source host.
+  - Add the following two users to the source host to make sure the services on the destination end still work\\ 
+<code>
+statd:x:489:65534:NFS statd daemon:/var/lib/nfs:/sbin/nologin
+rpc:x:495:65534:user for rpcbind:/var/lib/empty:/sbin/nologin 
+</code>
+  - Run the following script on the source to gather the data to be ftp-ed to the destination:<code>
+#!/bin/bash
+
+cp /etc/fstab /etc/fstab_original
+
+tar cvf /tmp/etc.tar /etc/exports /etc/fstab_original  /etc/ora* /etc/hosts /etc/services /etc/sudoers /etc/passwd /etc/shadow /etc/group /etc/credentials /etc/ftpusers /etc/resolv.conf /usr/local/bin /usr/local/etc /etc/snmp/snmpd.conf 
+
+tar cvf /tmp/cron.tar /var/spool/cron
+tar cvf /tmp/home.tar /home /root/.ssh
+tar cvf /tmp/scripts.tar /scripts
+tar cvf /tmp/lrs.tar /opt/lrs
+</code>
+  - Perform an Actifio/Veeam snapshot of the old host.
+  - On the host being migrated perform lsscsi, pvs, df -h, lvs and lsblk and put the information to notepad++ or notepad.
+  - For the VM identify non rootvg disks from the above.
+  - Notify Ops that you will be shutting down the application & host so they won’t need to call out.
+  - Stop application + db where applicable.
+  - Shutdown both the original host and the new one using ‘shutdown -h now’.
+  - Locate the non rootvg  Lun ID on the original host and add to notepad. You should alread have this information from the previous lsscsi command you ran
+  - Login to Vcenter > Select the original host > Edit Settings > Expand hard disks and note original lun/vmdk/datastore info for both non rootvg filesystems.\\ {{ :unix:editvmsettings1.png?nolink&400 |}}\\ When you remove the disk(s), ensure that ‘Delete from data store’ option is NOT selected\\ {{ :unix:editvmsettings2.png?nolink&400 |}}
+  - For the new host > Edit Settings > Add New Device > Existing Hard Disk > Choose Original Data Store Information > Expand and Choose the original host.\\ {{ :unix:editvmsettings3.png?nolink&400 |}}
+  - Before the server is powered on, you need to adjust the VLAN to the correct (Edit Settings > Network). Also ensure the ‘Connected’ box is ticked.\\ {{ :unix:editvmsettings4.png?nolink&400 |}}
+  - Power on new host.
+  - Change the IP address of new host to match the original (Yast > System > Network Settings); Also change the hostname to match the original (/etc/hostname)
+  - Add the entries for the non rootvg filesystems to /etc/fstab
+  - <code>mkdir -p</code> for any new mount points
+  - Run <code>rcnfsserver restart</code> from the source. 
+  - <code>mount -a</code>
+  - Ensure information from step 2 is updated on the new host.
+  - Should you need to bring up old host – Edit Settings > Ensure network adapter is NOT connected by unticking ‘connect’.
+  - Power on the original host > To change the IP & hostname, see step 14. Change Vlan ID to match what it was originally set to\\ {{ :unix:editvmsettings5.png?nolink&400 |}}
+  - Check the time and timezone match up.
+  - Check you can login from the jump box (cdcpillx111). (Remove entry from known_hosts – look for hostname & old IP).
+  - Rename the destination VM back to the original VM once the work has completed.
+  - Check the migrated host are in the correct VM group (May need Jeremy to move it).
+  - May want to adjust the email addresses in the /scripts file to use Tenneco.com instead of federalmogul.com addresses).
+  - Ensure sudo access is working for <SID>adm
+  - Change the /tmp/.sapstream* & .sapstartsrv*_sapstartsrv.log to the <SID>adm.
+  - Reboot the host again before handing back to Basis.
+  - Remove the old host from [[https://cdcpillx086.federalmogul.com | SUSE Manager]]\\ Find the server in the SUSE Manager GUI and delete the entry.
+  - Start and enable vsftp ''%%systemctl enable --now vsftpd%%''
+  - Start and enable snmpd ''%%systemctl enable --now snmpd%%''
+  - Start and enable nfsd  ''%%systemctl enable --now nfs-server%%''
+  - Start and enable chrony ''%%systemctl enable --now chronyd%%''
+  - Check the /etc/hosts file to make sure there are no temporary IPs written to the file. \\ Also make sure the hostname does not resolve to the local loopback.
+  - Reregister the host to SUSE Manager using [[unix:registersusemanager | these instructions]].\\ Make sure you follow the directions to redo the machine identification.  VM clones act strangely with Suse Manager until a new ID is generated for the clone.
+  - Make sure the subscriptions match the system.  This generally means something like "pt-sle12-sp4-yearly-sle12-sp4-dev" for a 12.4 development system.
+  - Change all appropriate backups to use the new VM instead of the old VM.  Verify both Veeam and Actifio.
+
+==== Troubleshooting ====
+Sometimes you can have an error similar to ''Unable to find file libstdc++-libc6.2-2.so.3 '' \\ 
+This usually indicated a missing library which is required for running a box.  This may happen when you move apps from an 11.x OS to a 12.x OS. \\
+You can verify this using ''ldd''
+<cli prompt="#">
+cdcpillx072:/progress/dlc91e/bin # ldd _mprosrv
+        linux-gate.so.1 (0xf771f000)
+        libdl.so.2 => /lib/libdl.so.2 (0xf76f8000)
+        libstdc++-libc6.2-2.so.3 => not found
+        libm.so.6 => /lib/libm.so.6 (0xf7664000)
+        libc.so.6 => /lib/libc.so.6 (0xf74b7000)
+        /lib/ld-linux.so.2 (0xf7721000)
+</cli>
+This is probably caused because the application is 32 bit.  Verify that using ''file''\\
+<cli prompt="#">
+cdcpillx072:~ # file /progress/dlc91e/bin/_mprosrv
+/progress/dlc91e/bin/_mprosrv: setuid ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked, interpreter /lib/ld-, for GNU/Linux 2.2.5, not stripped, too many notes (256)
+</cli>
+You should be able to fix this by installing the 32-bit compatibility libraries. \\ 
+''zypper in compat-32bit''\\ 
+
+<cli prompt="#">
+cdcpillx072:/progress/dlc91e/bin # zypper in compat-32bit
+Refreshing service 'spacewalk'.
+Loading repository data...
+Reading installed packages...
+Resolving package dependencies...
+
+The following NEW package is going to be installed:
+  compat-32bit
+
+1 new package to install.
+Overall download size: 312.1 KiB. Already cached: 0 B. After the operation, additional 2.3 MiB will be used.
+Continue? [y/n/...? shows all options] (y):
+Retrieving package compat-32bit-2010.1.31-18.11.x86_64                                                                                                                                                  (1/1), 312.1 KiB (  2.3 MiB unpacked)
+Retrieving: compat-32bit-2010.1.31-18.11.x86_64.rpm ...................................................................................................................................................................................[done]
+
+Checking for file conflicts: ..........................................................................................................................................................................................................[done]
+(1/1) Installing: compat-32bit-2010.1.31-18.11.x86_64 .................................................................................................................................................................................[done]
+cdcpillx072:/progress/dlc91e/bin # ldd _mprosrv
+        linux-gate.so.1 (0xf771f000)
+        libdl.so.2 => /lib/libdl.so.2 (0xf76f8000)
+        libstdc++-libc6.2-2.so.3 => /usr/lib/libstdc++-libc6.2-2.so.3 (0xf76ab000)
+        libm.so.6 => /lib/libm.so.6 (0xf7664000)
+        libc.so.6 => /lib/libc.so.6 (0xf74b7000)
+        /lib/ld-linux.so.2 (0xf7721000)
+cdcpillx072:/progress/dlc91e/bin # exit
+  /lib/ld-linux.so.2 (0xf7721000)
+</cli>

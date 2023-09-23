@@ -1,0 +1,38 @@
+====== Redhat subscription notes ======
+
+  - The plan is to have the build server registered to Redhat network.
+  - Make sure that the system can reach Redhat
+    - Either it has a proxy / firewall rule
+    - Edit the proxy information<code>sudo vi /etc/rhsm/rhsm.conf</code>Add proxy information as follows<code># an http proxy server to use
+proxy_hostname = 170.64.0.72
+# port for http proxy server
+proxy_port = 8080
+# user name for authenticating to an http proxy, if needed
+proxy_user = x1kxk630
+# password for basic http proxy auth, if needed
+proxy_password = <Password></code>
+  - Registering a system to Redhat portal<code>sudo subscription-manager register --username <username> --password <password></code>
+  - Listing all repositories<code>sudo subscription-manager repos</code>
+  - Sync a specific repository to local directory<code>sudo mkdir -p /var/www/html/sources/rhel-6-server-extras-rpms</code>Download<code>sudo reposync -p /var/www/html/sources/rhel-6-server-extras-rpms -r rhel-6-server-extras-rpms -l</code>Createrepo<code>sudo createrepo /var/www/html/sources/rhel-6-server-extras-rpms</code>
+  - And this one<code>sudo mkdir -p /var/www/html/sources/rhel-6-server-optional-rpms</code>Download<code>sudo reposync -p /var/www/html/sources/rhel-6-server-optional-rpms -r rhel-6-server-optional-rpms -l</code>Createrepo<code>sudo createrepo /var/www/html/sources/rhel-6-server-optional-rpms</code>
+
+===== Redhat upgrade =====
+
+
+From this redhat documentation ''https://access.redhat.com/solutions/637583''
+
+  - Install the pre-upgrade packages. **Make sure you have RHEL Core, Extras and Optional repositories enabled**.<code>sudo yum install preupgrade-assistant preupgrade-assistant-ui preupgrade-assistant-el6toel7</code>
+  - Move /usr filesystem to a directory
+    - Enlarge the "/" filesystem<code>sudo lvextend -L 7G /dev/sysvg/root
+sudo resize2fs /dev/sysvg/root</code>Boot through a Redhat ISO<code>Select 'Rescue Installed System' --> Mount the root read & write under /mnt/sysimage --> Open a Shell --> Get to the prompt</code>Copy /usr<code>sudo rsync -avv /mnt/sysimage/usr/ /mnt/sysimage/usrnew/</code>Unmount and rename /usr filesystem<code>sudo vi /mnt/sysimage/etc/fstab
+
+Remove the line that starts with /dev/mapper/sysvg-usr</code>Unmount<code>sudo umount /mnt/sysimage/usr</code>Remove the directory<code>sudo rmdir /mnt/sysimage/usr</code>Rename<code>sudo mv -f /mnt/sysimage/usrnew /mnt/sysimage/usr</code>
+  - Run preupg command<code>sudo preupg</code>Answer "y" to this question<code>Preupg tool doesn't do the actual upgrade.
+Please ensure you have backed up your system and/or data in the event of a failed upgrade
+ that would require a full re-install of the system from installation media.
+Do you want to continue? y/n</code>
+  - Copy ''/root/preupgrade/result.html '' file to a PC and review the results. Take actions on reported errors.
+  - Install the upgrade tool<code>sudo yum install redhat-upgrade-tool</code>
+  - Import the Redhat GPG key<code>sudo rpm --import http://<buildserver>/sources/rhel-6.8-x86_64/RPM-GPG-KEY-redhat-release</code>
+  - Run the upgrade tool<code>sudo redhat-upgrade-tool --network <the-latest-rhel-7-version> --instrepo ftp://ftp.example.com/pub/rhel7/</code>E.g.<code>sudo redhat-upgrade-tool --network 7.2 --instrepo http://<buildserver>/sources/rhel-7.2-x86_64</code>** Disable proxy in /etc/yum.conf **
+  - Wait until this screen comes<code>Finished. Reboot to start upgrade.</code>Then reboot<code>sudo init 6</code>

@@ -1,0 +1,55 @@
+====== Building a SAP HANA database VM --> SAP HANA VMWARE cluster ======
+
+
+===== Deploy the VM using the template =====
+
+  * Login to vSphere using fat client or web client and point to "taitc176"
+  * On the address space click and select "VMs and Templates" --> Expand on "Linux Servers"
+  * Right click on the template "RHEL7.2-saphana-template" --> Click "Deploy Virtual Machine using this template"
+  * Type in the hostname of the VM to be built --> Select Inventory location -> Lincolnshire -> Linux Servers ( click Next )
+  * Select ITC-SAP HANA cluster --> Pick the correct ESXi host
+
+===== Configure storage locations for ''vmx'' and vmdk(s) =====
+
+  * At the storage tab - click on advanced and perform the tasks mentioned in this table.
+
+^Item              ^Description                   ^Action                                                         ^Datastore                                                                ^
+|Configuration File|Configuration File            |Do not change anything                                         |v9ac2_sap_hana_esx_data03                                                |
+|Hard disk 1       |Boot disk                     |Do not change anything                                         |v9ac2_sap_hana_esx_data03                                                |
+|Hard disk 2       |Data/Binary disk              |Do not change anything                                         |v9ac2_sap_hana_esx_data03                                                |
+|Hard disk 3       |Paging device                 |Do not change anything                                         |v9ac2_sap_hana_esx_data03                                                |
+|Hard disk 4       |Data disk - equal to memory   |Click on the hyperlink on Datastore column to browse and select|v9ac2_sap_hana_esx_data03 for nonprod, dedicated datastore for production|
+|Hard disk 5       |Log disk - half of memory     |Click on the hyperlink on Datastore column to browse and select|v9ac2_sap_hana_esx_data03 for nonprod, dedicated datastore for production|
+
+
+===== Customize the HANA virtual machine =====
+
+  * After the storage tasks are complete, click Next --> At the Guest Customization screen Click Next --> At the ''Ready to Complete'' screen, Click Finish.
+  * At this point, we need to adjust resources and capacity.
+  * Select the VM -> Edit settings -> 
+  * At the hardware tab -- correct memory and CPU
+  * Change the size of ''Hard disk 2'' to the size needed for these filesystems<code>
+/usr/sap                  10GB     Standard unless specified otherwise
+/usr/openv                4GB      Created from tenneco_post install snippet
+/usr/sap/<SID>            ?GB      As per the requirement from Basis
+/usr/sap/hostctrl         1GB      Created from sap_basic snippet
+/usr/sap/DAA              3GB      Standard unless specified otherwise
+/home/daaadm              0.5GB    Standard unless specified otherwise
+/home/<sid>adm            0.5GB    Standard unless specified otherwise
+/home/sapadm              0.5GB    Standard unless specified otherwise
+/hana/shared              ?        As per the requirement from Basis</code>
+  * Change the size of ''Hard disk 3'' to 16GB -- This is for paging space. ( HANA systems should not page )
+  * Change the size of ''Hard disk 4'' to the size needed for this filesystem. This is normally equal to the memory of the HANA DB server<code>/hana/data</code>
+  * Change the size of ''Hard disk 5'' to the size needed for this filesystem. This is normally half of memory of the HANA DB server<code>/hana/log</code>
+
+
+
+
+===== End state, we should have Virtual disks as follows =====
+
+^Disk Name  ^Purpose               ^Size                ^Type                ^Datastore (if dev/test)  ^Datastore                                     ^Controller^
+|Hard disk 1|Boot                  |70G                 |Thin                |v9ac2_sap_hana_esx_data01|v9ac2_sap_hana_esx_data01                     |SCSI0:0   |
+|Hard disk 2|hana/shared and other |500G                |Thin                |v9ac2_sap_hana_esx_data01|v9ac2_sap_hana_esx_data01                     |SCSI0:1   |
+|Hard disk 3|swap                  |32G                 |Thin                |v9ac2_sap_hana_esx_data01|v9ac2_sap_hana_esx_data01                     |SCSI0:2   |
+|Hard disk 4|hana/data             |256G                |Thick - Eager zeroed|v9ac2_sap_hana_esx_data01|Each HANA prod DB must have it's own datastore|SCSI1:0   |
+|Hard disk 5|hana/logs             |256G                |Thick - Eager zeroed|v9ac2_sap_hana_esx_data01|Each HANA prod DB must have it's own datastore|SCSI2:0   |

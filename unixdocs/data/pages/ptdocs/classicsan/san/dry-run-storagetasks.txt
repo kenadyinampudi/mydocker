@@ -1,0 +1,224 @@
+====== Production Dry-Run ( 7-25-2019 ) Storage Instructions ======
+
+** Scope - Live systems **
+
+^Source system ( Legacy Tenneco )^Target system (DRiV)^Location^AIX/Wintel^Datastore - LUN                              ^
+|pgdmr055                        |pcdcccsaxdb01       |CDC     |AIX       |N/A                                          |
+|pggpdb01                        |pcdcplpaxdb01       |CDC     |AIX       |N/A                                          |
+|pgimdb01                        |pcdcpimaxdb01       |CDC     |AIX       |N/A                                          |
+|pehrap99                        |pcdch1paxap99       |INX     |AIX       |N/A                                          |
+|pehrdb99                        |pcdch1paxdb99       |INX     |AIX       |N/A                                          |
+|tnpr3d01                        |pcdcsspaxdb01       |CDC     |AIX       |N/A                                          |
+|pggtdb01                        |pcdcpgtaxdb01       |CDC     |AIX       |N/A                                          |
+|pgsndb01                        |pcdcpsnaxdb01       |CDC     |AIX       |N/A                                          |
+|paarfs01                        |pcdcptaaxfs01       |CDC     |AIX       |N/A                                          |
+|paerap99                        |pcdcptaaxap99       |CDC     |AIX       |N/A                                          |
+|paerdb99                        |pcdcptaaxdb99       |CDC     |AIX       |N/A                                          |
+|peerap99                        |pcdcta2axap99       |CDC     |AIX       |N/A                                          |
+|peerdb99                        |pcdcta2axdb99       |CDC     |AIX       |N/A                                          |
+|pgscdb01                        |pcdcpscaxdb01       |CDC     |AIX       |N/A                                          |
+|tspr1d01                        |pcdcpsraxdb01       |CDC     |AIX       |N/A --- This was added later - New Install   |
+|TAITC274                        |cdcusms093          |LDC     |Wintel    |Ignore - physical                            |
+|TAITC064                        |cdcusms088          |CDC     |Wintel    |prod_esx_ten_live_001                        |
+|taitc493_COPY                   |cdcusms086          |CDC     |Wintel    |prod_esx_ten_live_001                        |
+
+
+===== T(-) activities =====
+
+==== T(-) activities - Cleanup test data from DRiV Live systems ====
+
+^Target system (DRiV)^
+|pcdcccsaxdb01       |
+|pcdcplpaxdb01       |
+|pcdcpimaxdb01       |
+|pcdch1paxap99       |
+|pcdch1paxdb99       |
+|pcdcsspaxdb01       |
+|pcdcpgtaxdb01       |
+|pcdcpsnaxdb01       |
+|pcdcptaaxfs01       |
+|pcdcptaaxap99       |
+|pcdcptaaxdb99       |
+|pcdcta2axap99       |
+|pcdcta2axdb99       |
+|pcdcpscaxdb01       |
+|pcdcpsraxdb01       |
+
+** Disconnect volumes from current host -- Unix tasks **
+
+  - Login to the host<code>ssh <host_name></code>
+  - Terminate any SAP or Oracle processes<code>ps -ef | egrep "sap|ora|sdb" | grep -v grep | awk '{print $2}' | xargs -n1 sudo kill -9</code>
+  - Take a snapshot of disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Unmount all NFS filesystems<code>df -k | grep : | awk '{print $NF}' | sort -r | xargs -n1 sudo umount</code>
+  - Unexport all NFS filesystems<code>sudo exportfs -ua</code>
+  - Unmount datavg filesystems<code>for vg in $(lsvg | sort -r | grep -v rootvg | grep -v pagevg01 | grep -v sanpagevg01 )
+do
+   for fs in $(lsvgfs ${vg} | sort -r )
+   do
+      echo "Working on ${vg} - ${fs} "
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -uk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] && echo "We have a problem unmounting ${fs} "
+      fi
+   done
+done</code>
+  - Check for any open logical volumes and take action to close them<code>lsvg | grep -v rootvg | grep -v pagevg01 | grep -v sanpagevg01 | xargs -n1 lsvg -l | grep -i open</code>
+  - Export VGs and delete disks<code>for vg in $(lsvg | sort -r | grep -v rootvg | grep -v pagevg01 | grep -v sanpagevg01 )
+do
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+   grep ${vg} lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl
+done</code>
+  - Send the output of this command to Storage team with the hostname, ask them to reclaim<code>grep -v rootvg lsvpcfg.out.1 | grep "PURE-FLASH" | grep -v pagevg01 | grep -v sanpagevg01</code>
+
+** Remove current volumes from the host -- Storage tasks **
+
+//FIXME// Deal with pagevg devices
+
+  - Login to pgunap01, Connect to the target array - In this case -- DRiV 
+    - CDC/MP - cdcvilns018<code>export SSH2PURE="ssh kapil.koroth@cdcvilns018.fmmotorparts.com"</code>
+  - Export a variable to define the Tenneco server<code>export tensrv="hostname"</code>
+  - Disconnect the volumes
+    - Get a list<code>${SSH2PURE} purevol list | grep "^${tensrv}_" > ${tensrv}.luns</code>
+    - Disconnect the volumes except boot disks ** Check paging space devices **<code>vollist=$(grep -v 138G ${tensrv}.luns | awk '{print $1}' | tr "\n" " ")
+${SSH2PURE} purevol disconnect --host ${tensrv} ${vollist}</code>
+    - Rename and destroy the volumes except boot disks to a host definition<code>volumes=""
+for volume in $(grep -v 138G ${tensrv}.luns | awk '{print $1}' )
+do
+   newname=$(echo ${volume} | sed "s;$;_deleted;g")
+   volumes="${volumes} ${newname}"
+   ${SSH2PURE} purevol rename ${volume} ${newname}
+done
+${SSH2PURE} purevol destroy ${volumes}</code>
+
+==== T(-) activities - Create Protection Groups ====
+
+** Tenneco Systems **
+
+  - Connect to the respective array and take a local snapshot and replicate
+    - CDC
+      - Storage AIX systems in a variable<code>export ten_aix_hosts="pgdmr055,pggpdb01,pgimdb01,tnpr3d01,pggtdb01,pgsndb01,paarfs01,paerap99,paerdb99,peerap99,peerdb99,pgscdb01,tspr1d01"</code>
+      - Store PGname prefix in a variable<code>export pg_name="dry-run-jul25"</code>
+      - Connect to CDC array<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+      - Create a protection group for AIX systems<code>${SSH2PURE} purepgroup create --hostlist ${ten_aix_hosts} --targetlist cdcvilns018 ${pg_name}-aix</code>
+      - Create a protection group for VMWARE systems<code>${SSH2PURE} purepgroup create --hostlist mock1-vmware --targetlist cdcvilns015 ${pg_name}-vmware</code>
+      - Allow snapshots on cdcvilns018<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns018.fmmotorparts.com"</code>Then<code>${SSH2PURE} purepgroup allow taprpur001:${pg_name}-aix</code>
+      - Allow snapshots on cdcvilns015<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>Then<code>${SSH2PURE} purepgroup allow taprpur001:${pg_name}-vmware</code>
+    - INX
+      - Storage AIX systems in a variable<code>export ten_aix_hosts="pehrap99,pehrdb99"</code>
+      - Store PGname prefix in a variable<code>export pg_name="dry-run-jul25"</code>
+      - Connect to INX array<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@inxpm20v1"</code>
+      - Create a protection group for AIX systems<code>${SSH2PURE} purepgroup create --hostlist ${ten_aix_hosts} --targetlist cdcvilns018 ${pg_name}-aix</code>
+      - Allow snapshots on cdcvilns018<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns018.fmmotorparts.com"</code>Then<code>${SSH2PURE} purepgroup allow INXPM20V1:${pg_name}-aix</code>
+
+** DRiV Systems **
+
+  - AIX systems are on cdcvilns018
+    - Store hosts in a variable
+      - CDC<code>export driv_hosts="pcdch1paxdb99,pcdch1paxap99,pcdcccsaxdb01,pcdcplpaxdb01,pcdcpimaxdb01,pcdcsspaxdb01,pcdcpgtaxdb01,pcdcpsnaxdb01,pcdcptaaxfs01,pcdcptaaxap99,pcdcptaaxdb99,pcdcta2axap99,pcdcta2axdb99,pcdcpscaxdb01,pcdcpsraxdb01"</code>
+      - Store PGname in a variable<code>export pg_name="dry-run-jul25"</code>
+      - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns018.fmmotorparts.com"</code>
+      - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist ${driv_hosts} ${pg_name}-aix</code>
+  - VMWARE systems are on cdcvilns015
+    - Store hosts in a variable
+      - CDC<code>export driv_hosts="mock1-vmware"</code>
+      - Store PGname in a variable<code>export pg_name="dry-run-jul25"</code>
+      - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+      - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist ${driv_hosts} ${pg_name}-vmware</code>
+
+===== T(0) activity =====
+
+==== Execute Pre-Cutover Snapshot & Storage Sync from Tenneco to DRiV Environment ====
+
+  - Wait for all Live servers in bundles are stopped at source **Dry run will be a crash consistent copy **
+  - Connect to the respective array and take a local snapshot and replicate
+    - Store PGname in a variable<code>export pg_name="dry-run-jul25"</code>
+    - Snapshots at CDC/PTT
+      - Connect to CDC array<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+      - Take a snapshot and replicate - AIX<code>${SSH2PURE} purepgroup snap --replicate --suffix precut ${pg_name}-aix</code>
+      - Take a snapshot and replicate - VMWARE<code>${SSH2PURE} purepgroup snap --replicate --suffix precut ${pg_name}-vmware</code>
+    - Snapshots at INX
+      - Connect to INX array<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@inxpm20v1"</code>
+      - Take a snapshot and replicate<code>${SSH2PURE} purepgroup snap --replicate --suffix precut ${pg_name}-aix</code>
+
+==== Present replicated Storage to target DRiV Server ====
+
+  - Connect to the respective array and provision storage
+  - Check the progress on GUI
+    - Login to pgunap01 and define this function<code>function copy_and_provision_snapshot {
+export type=${1}
+export source=${2}
+export target=${3}
+
+ser_no=400
+
+volumes=""
+
+for snapshot in $(grep "${source}_" snapshots.mp | grep -v 138G | awk '{print $1}' )
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${target}_${ser_no}
+   volumes="${volumes} ${target}_${ser_no}"
+   ser_no=$(echo "${ser_no} + 1 " | bc )
+done
+case ${type} in 
+host)
+   ${SSH2PURE} purevol connect --host   ${target} ${volumes}
+;;
+hgroup)
+   ${SSH2PURE} purevol connect --hgroup ${target} ${volumes}
+;;
+esac   
+}</code>
+    - CDC systems
+      - Connect to cdcvilns018<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns018.fmmotorparts.com"</code>
+      - Store all AIX snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist taprpur001:${pg_name}-aix.precut > snapshots.mp</code>
+      - Provision storage<code>copy_and_provision_snapshot host pgdmr055 pcdcccsaxdb01
+copy_and_provision_snapshot host pggpdb01 pcdcplpaxdb01
+copy_and_provision_snapshot host pgimdb01 pcdcpimaxdb01
+copy_and_provision_snapshot host tnpr3d01 pcdcsspaxdb01
+copy_and_provision_snapshot host pggtdb01 pcdcpgtaxdb01
+copy_and_provision_snapshot host pgsndb01 pcdcpsnaxdb01
+copy_and_provision_snapshot host paarfs01 pcdcptaaxfs01
+copy_and_provision_snapshot host paerap99 pcdcptaaxap99
+copy_and_provision_snapshot host paerdb99 pcdcptaaxdb99
+copy_and_provision_snapshot host peerap99 pcdcta2axap99
+copy_and_provision_snapshot host peerdb99 pcdcta2axdb99
+copy_and_provision_snapshot host pgscdb01 pcdcpscaxdb01
+copy_and_provision_snapshot host tspr1d01 pcdcpsraxdb01</code>
+      - Wintel systems
+        - Connect to cdcvilns015<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+        - Copy the volume<code>${SSH2PURE} purevol copy taprpur001:${pg_name}-vmware.precut.prod_esx_ten_live_001 prod_esx_ten_live_001</code>
+        - Present ''prod_esx_ten_live_001'' to the ''PROD-MS2'' VMWare cluster<code>${SSH2PURE} purevol connect --hgroup PROD-MS2 prod_esx_ten_live_001</code>
+        - Also add ''prod_esx_ten_live_001'' to ''mock1-vmware'' host definition<code>${SSH2PURE} purevol connect --host mock1-vmware prod_esx_ten_live_001</code>
+    - INX systems
+      - Connect to cdcvilns018<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns018.fmmotorparts.com"</code>
+      - Store all AIX snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist INXPM20V1:${pg_name}-aix.precut > snapshots.mp</code>
+      - Provision storage<code>copy_and_provision_snapshot host pehrap99 pcdch1paxap99
+copy_and_provision_snapshot host pehrdb99 pcdch1paxdb99</code>
+
+==== Hot Snapshot - Pre-Carve & Pre-Functional Testing Validation ====
+
+** DRiV Systems **
+
+  - Store PGname in a variable<code>export pg_name="dry-run-jul25"</code>
+  - AIX systems are on cdcvilns018
+    - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns018.fmmotorparts.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix postfunc ${pg_name}-aix</code>
+  - VMWARE systems are on cdcvilns015
+    - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix postfunc ${pg_name}-vmware</code>
+
+==== Hot Snapshot - Post Go/No-Go & Post Functional Testing ====
+
+** DRiV Systems **
+
+  - Store PGname in a variable<code>export pg_name="dry-run-jul25"</code>
+  - AIX systems are on cdcvilns018
+    - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns018.fmmotorparts.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix final ${pg_name}-aix</code>
+  - VMWARE systems are on cdcvilns015
+    - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix final ${pg_name}-vmware</code>

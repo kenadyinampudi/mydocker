@@ -1,0 +1,58 @@
+====== Restoring a filesystem from it's checkpoint - VNX/Celerra ======
+
+FIXME '' Not tested Yet ''
+
+  - List all the NAS filesystems<code>[nasadmin@MONVNXCS1 ~]$ nas_fs -list | grep -v -e "ckpt_" -e "root_"
+id      inuse type acl   volume    name                server
+28        y    1   0     151       fs_groups           v1
+29        y    1   0     153       fs_apps             v1
+30        y    1   0     156       fs_common           v1
+33        y    1   0     183       fs_users            v1
+4862      y    1   0     460       fs_newcommon        v1</code>
+  - Say, we need to restore checkpoints from ''fs_common''
+    - List the checkpoints for that filesystem<code>[nasadmin@MONVNXCS1 ~]$ /nas/sbin/rootfs_ckpt fs_common -list
+id    ckpt_name                creation_time           inuse fullmark   total_savvol_used  ckpt_usage_on_savvol
+61    ckpt_daily_ckpt_fs_commo 03/22/2016-22:00:01-EDT   y   90%        INACTIVE           N/A
+66    ckpt_daily_ckpt_fs_commo 03/23/2016-22:00:01-EDT   y   90%        INACTIVE           N/A
+71    ckpt_daily_ckpt_fs_commo 03/24/2016-22:00:02-EDT   y   90%        INACTIVE           N/A
+76    ckpt_daily_ckpt_fs_commo 03/25/2016-22:00:01-EDT   y   90%        INACTIVE           N/A
+80    ckpt_daily_ckpt_fs_commo 03/26/2016-22:00:02-EDT   y   90%        INACTIVE           N/A
+85    ckpt_daily_ckpt_fs_commo 03/27/2016-22:00:00-EDT   y   90%        INACTIVE           N/A
+55    ckpt_daily_ckpt_fs_commo 03/28/2016-21:00:10-EDT   y   90%        0%                 0%
+Info 26306752329: The value of ckpt_usage_on_savvol for read-only checkpoints may not be consistent with the total_savvol_used.
+
+id    wckpt_name               inuse fullmark total_savvol_used  base  ckpt_usage_on_savvol</code>You can also see the checkpoints mounted on datamover<code>[nasadmin@MONVNXCS1 ~]$ server_df server_2 | awk '{if (NF==1) {printf $0;getline;print $0} else print $0 }'
+server_2 :
+Filesystem          kbytes         used        avail capacity Mounted on
+fs_newcommon     826060784    627887104    198173680   76%    /root_vdm_1/fs_newcommon
+ckpt_daily_ckpt_fs_common_001                 567916784    567819320        97464  100%    /root_vdm_1/ckpt_daily_ckpt_fs_common_001
+ckpt_daily_ckpt_fs_users_002                4238001256   3926146416    311854840   93%    /root_vdm_1/ckpt_daily_ckpt_fs_users_002
+ckpt_daily_ckpt_fs_users_001                4238001256   3905240160    332761096   92%    /root_vdm_1/ckpt_daily_ckpt_fs_users_001
+ckpt_daily_ckpt_fs_users_006                4238001256   3930665232    307336024   93%    /root_vdm_1/ckpt_daily_ckpt_fs_users_006
+ckpt_daily_ckpt_fs_users_004                4238001256   3930829992    307171264   93%    /root_vdm_1/ckpt_daily_ckpt_fs_users_004
+ckpt_daily_ckpt_fs_users_003                4238001256   3933411592    304589664   93%    /root_vdm_1/ckpt_daily_ckpt_fs_users_003
+ckpt_daily_ckpt_fs_users_007                4238001256   3901813824    336187432   92%    /root_vdm_1/ckpt_daily_ckpt_fs_users_007
+ckpt_daily_ckpt_fs_groups_004                4130303984   3579519952    550784032   87%    /root_vdm_1/ckpt_daily_ckpt_fs_groups_004
+ckpt_daily_ckpt_fs_groups_003                4130303984   3578889992    551413992   87%    /root_vdm_1/ckpt_daily_ckpt_fs_groups_003
+ckpt_daily_ckpt_fs_groups_001                4130303984   3575878712    554425272   87%    /root_vdm_1/ckpt_daily_ckpt_fs_groups_001
+ckpt_daily_ckpt_fs_groups_002                4130303984   3576466320    553837664   87%    /root_vdm_1/ckpt_daily_ckpt_fs_groups_002
+ckpt_daily_ckpt_fs_groups_007                4130303984   3571851000    558452984   86%    /root_vdm_1/ckpt_daily_ckpt_fs_groups_007
+ckpt_daily_ckpt_fs_groups_006                4130303984   3571841880    558462104   86%    /root_vdm_1/ckpt_daily_ckpt_fs_groups_006
+ckpt_daily_ckpt_fs_apps_007                  10325744      3941424      6384320   38%    /root_vdm_1/ckpt_daily_ckpt_fs_apps_007
+ckpt_daily_ckpt_fs_apps_002                  10325744      3941424      6384320   38%    /root_vdm_1/ckpt_daily_ckpt_fs_apps_002
+ckpt_daily_ckpt_fs_apps_004                  10325744      3941424      6384320   38%    /root_vdm_1/ckpt_daily_ckpt_fs_apps_004
+ckpt_daily_ckpt_fs_apps_003                  10325744      3941424      6384320   38%    /root_vdm_1/ckpt_daily_ckpt_fs_apps_003
+ckpt_daily_ckpt_fs_apps_001                  10325744      3941424      6384320   38%    /root_vdm_1/ckpt_daily_ckpt_fs_apps_001
+ckpt_daily_ckpt_fs_apps_006                  10325744      3941424      6384320   38%    /root_vdm_1/ckpt_daily_ckpt_fs_apps_006
+ckpt_daily_ckpt_fs_groups_005                4130303984   3571839600    558464384   86%    /root_vdm_1/ckpt_daily_ckpt_fs_groups_005
+ckpt_daily_ckpt_fs_apps_005                  10325744      3941424      6384320   38%    /root_vdm_1/ckpt_daily_ckpt_fs_apps_005
+ckpt_daily_ckpt_fs_users_005                4238001256   3930665208    307336048   93%    /root_vdm_1/ckpt_daily_ckpt_fs_users_005
+root_fs_common       15368         5280        10088   34%    /.etc_common
+fs_users        4238001256   3929426208    308575048   93%    /root_vdm_1/fs_users
+fs_common        567916784    567819320        97464  100%    /root_vdm_1/fs_common
+fs_groups       4130303984   3578029320    552274664   87%    /root_vdm_1/fs_groups
+fs_apps           10325744      3941424      6384320   38%    /root_vdm_1/fs_apps
+root_fs_vdm_tamon051_VDM                    114592         8616       105976    8%    /root_vdm_2/.etc
+root_fs_vdm_tamon050_VDM                    114592         9784       104808    9%    /root_vdm_1/.etc
+root_fs_2           258128        17048       241080    7%    /</code>This is usefull to get the rest of the checkpoint name which gets trimmed at the end from the earlier command.
+    - To restore from a checkpoint, execute this command<code>/nas/sbin/rootfs_ckpt <check_point_name> -Restore</code>e.g. To restore the checkpoint created on 27th, we would execute<code>/nas/sbin/rootfs_ckpt id=85 -Restore</code>

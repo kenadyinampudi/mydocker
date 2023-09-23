@@ -1,0 +1,103 @@
+
+<p>
+<strong>Data Disks to be migrated</strong>
+</p>
+<pre class="code">hdiskpower14    00c9f3902eb3a21e                    appvg           active
+hdiskpower15    00c9f3902eb7c5e0                    appvg           active
+hdiskpower20    00c9f3902eb9faf5                    pagingvg        active
+hdiskpower31    00c9f3902eb9ed68                    exportvg        active
+hdiskpower32    00c9f3902eaf7394                    exportvg        active
+hdiskpower33    00c9f3902eb43109                    exportvg        active
+hdiskpower34    00c9f3902eb89116                    exportvg        active
+hdiskpower35    00c9f3902eae068c                    exportvg        active
+hdiskpower36    00c9f3902eb27383                    exportvg        active
+hdiskpower37    00c9f390321534cd                    datavg01        active
+hdiskpower38    00c9f3903219eb92                    datavg01        active
+hdiskpower39    00c9f390321e3f96                    datavg01        active
+hdiskpower40    00c9f3903222fbdd                    datavg01        active</pre>
+
+<p>
+<strong>Operating systems disks to be migrated</strong>
+</p>
+<pre class="code">hdisk42         00c9f39022763247                    rootvg          active
+hdisk43         00c9f3902269986b                    altinst_rootvg</pre>
+
+<p>
+<strong>Tasks to be performed before the migration</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Create an empty lpar on taprvio40/41 with 3 processors and 20 Gig of memory</div>
+</li>
+<li class="level1"><div class="li"> Provide BASIS with new serial Machine Serial Number: 1048EEP to be used for generation of SAP key</div>
+</li>
+<li class="level1"><div class="li"> Provide Storage team with serial numbers of devices to be unmapped and mapped:<pre class="code">  * hdiskpower14:00c9f3902eb3a21e:000198700301:07D7:34526:hdisk44:hdisk63:appvg
+  * hdiskpower15:00c9f3902eb7c5e0:000198700301:07D8:34526:hdisk45:hdisk64:appvg
+  * hdiskpower20:00c9f3902eb9faf5:000198700301:0E91:34526:hdisk46:hdisk65:pagingvg
+  * hdiskpower31:00c9f3902eb9ed68:000198700301:0F23:103578:hdisk57:hdisk76:exportvg
+  * hdiskpower32:00c9f3902eaf7394:000198700301:0F24:103578:hdisk58:hdisk77:exportvg
+  * hdiskpower33:00c9f3902eb43109:000198700301:0F25:103578:hdisk59:hdisk78:exportvg
+  * hdiskpower34:00c9f3902eb89116:000198700301:0F26:103578:hdisk60:hdisk79:exportvg
+  * hdiskpower35:00c9f3902eae068c:000198700301:0F27:103578:hdisk61:hdisk80:exportvg
+  * hdiskpower36:00c9f3902eb27383:000198700301:0F28:103578:hdisk62:hdisk81:exportvg
+  * hdiskpower37:00c9f390321534cd:000198700301:0F32:103578:hdisk82:hdisk86:datavg01
+  * hdiskpower38:00c9f3903219eb92:000198700301:0F33:103578:hdisk83:hdisk87:datavg01
+  * hdiskpower39:00c9f390321e3f96:000198700301:0F34:103578:hdisk84:hdisk88:datavg01
+  * hdiskpower40:00c9f3903222fbdd:000198700301:0F35:103578:hdisk85:hdisk89:datavg01
+  * hdisk42:00c9f39022763247: : :138097::rootvg --&gt; Symmetrix ID=000198700301, Logical device ID=081F (vio30/31) cluster
+  * hdisk43:00c9f3902269986b: : :138097::altinst_rootvg  --&gt; Symmetrix ID=000198700301, Logical device ID=0820 (vio 30/31) cluster</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take mksysb backup of the <abbr title="Operating System">OS</abbr></div>
+</li>
+<li class="level1"><div class="li"> Perform alt_disk_copy</div>
+</li>
+</ul>
+
+<p>
+<strong>PTB Migration starts on 07/06/2013 at 6AM CDT and it is scheduled to end at 8:30AM (2.5 hours)</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> Stop SAP and Oracle</div>
+</li>
+<li class="level1"><div class="li"> Check bootlist and perform bosboor<pre class="code">bootlist -m normal -o
+bosboot -ad hdisk42
+shutdown -F</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On taprvio30 unmap the boot devices<pre class="code">su - padmin
+set -o vi
+for i in hdiskpower45 hdiskpower46
+do
+rmvdev -vdev $i
+done
+exit
+for i in hdiskpower45 hdiskpower46
+do
+powermt remove dev=$i
+rmdev -dl $i
+done
+rmdev -dl hdisk70
+rmdev -dl hdisk99
+rmdev -dl hdisk69
+rmdev -dl hdisk98</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On taprvio31 unmap the boot devices<pre class="code">su - padmin
+set -o vi
+for i in hdiskpower45 hdiskpower46
+do
+rmvdev -vdev $i
+done
+exit
+for i in hdiskpower45 hdiskpower46
+do
+powermt remove dev=$i
+rmdev -dl $i
+done
+rmdev -dl hdisk194
+rmdev -dl hdisk210
+rmdev -dl hdisk195
+rmdev -dl hdisk211</pre>
+</div>
+</li>
+</ul>

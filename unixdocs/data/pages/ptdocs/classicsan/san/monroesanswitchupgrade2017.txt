@@ -1,0 +1,89 @@
+====== Procedure to upgrade Monroe SAN switches from 7.4.0a to 7.4.1d ======
+
+  - Login to the Admin server<code>ssh pgunap01</code>Switch to sanmontr<code>sudo su - sanmontr</code>Just to make it easier, define the staging server as a variable<code>export stagesrvr=tamon057</code>
+  - Check if the target system has enough space to stage the upgrade. We need 3G in /home. If there is not enough space Ask Unix team to make it temporarily bigger<code>ssh ${stagesrvr} df -k /home</code>
+  - Create the brocade directory if it does not exist<code>ssh ${stagesrvr} "mkdir -p brocade"</code>
+  - Start the rsync for v 7.4.1d<code>rsync -avv /prod/storageteam/soft/Brocade/v7.4.1d/v7.4.1d/ ${stagesrvr}:brocade/v7.4.1d/</code>
+====== Upgrade to FOS 7.4.1d ======
+
+  -Make a note of the IP address of the staging server<code>nslookup ${stagesrvr}</code>
+  -Define a variable to the switch<code>export switch=monds300a</code>Change this for the second switch
+  -Login to the switch<code>ssh admin@${switch}</code>
+  -Upgrade the firmware<code></code>Monroe<code>firmwaredownload -p scp 10.36.208.23,sanmontr,/home/sanmontr/brocade/v7.4.1d</code>
+  -You should see a message similar to this<code>You should see a message similar to this
+Secure mode is enabled. SCP protocol is used for firmwaredownload.
+Verifying if the public key authentication is available.Please wait ...Success.
+Server IP: 10.36.208.23, Protocol IPv4
+Checking system settings for firmwaredownload...
+System settings check passed.
+
+You can run firmwaredownloadstatus to get the status
+of this command.
+
+This command will cause a warm/non-disruptive boot but will 
+require that existing telnet, secure telnet or SSH sessions 
+be restarted.
+ 
+
+
+Do you want to continue (Y/N) [Y]:
+Hit enter to choose “Y”. Then see some messages like this
+
+Firmware is being downloaded to the switch. This step may take up to 30 minutes.
+Preparing for firmwaredownload...
+Start to install packages...
+dir                         ##################################################
+ldconfig                    ##################################################
+...... lines deleted ...
+...... lines deleted ...
+Finished removing unneeded files. 
+
+INFO: Ciphersuite change on switch
+HTTPS ciphers will be modified to be compatible with new firmware version
+All packages have been downloaded successfully.
+Firmware has been downloaded to the secondary partition of the switch.
+HA Rebooting ...</code>At this time, your ssh session to the switch will break<code>Write failed: Broken pipe</code>Login back to the switch<code>ssh admin@${switch}</code>Check the firmware upgrade status<code>firmwareDownloadStatus</code>You should see<code>[1]: Sat February  18 20:45:48 2017
+Firmware is being downloaded to the switch. This step may take up to 30 minutes.
+
+[2]: Sat February  18 20:50:58 2017
+Firmware has been downloaded to the secondary partition of the switch.
+
+[3]: Sat February  18 20:52:57 2017
+The firmware commit operation has started. This may take up to 10 minutes.
+
+[4]: Sat February  18 20:57:03 2017
+The commit operation has completed successfully.
+
+[5]: Sat February  18 20:57:03 2017
+Firmwaredownload command has completed successfully. Use firmwareshow to verify the firmware versions.
+Check firmwareshow as well
+
+firmwareShow
+You should see this
+
+Appl     Primary/Secondary Versions 
+------------------------------------------
+FOS      v7.4.1d
+         v7.4.1d
+Perform functional testing
+
+Login and check hosts if all paths are active. If any are down, work with systems team to ensure the paths came back online.</code>
+
+
+ 
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+

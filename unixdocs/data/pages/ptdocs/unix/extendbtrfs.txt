@@ -1,0 +1,42 @@
+====== Steps to extend a BTRFS filesystem  ======
+
+===== the *easy* way =====
+
+  * Extend the disk in VMWare.  (If there are outstanding snapshots, you might not be able to do this.)
+  * Echo one into the the rescan command for the disk device to detect the changes while running.\\ <code>cdcpillx096:/mnt # echo 1 > /sys/class/scsi_disk/0\:0\:1\:0/device/rescan
+cdcpillx096:/mnt # fdisk -l /dev/sdb
+Disk /dev/sdb: 8 GiB, 8589934592 bytes, 16777216 sectors
+Disk model: Virtual disk
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes</code>
+  * Use btrfs to grow to the max amount of size available\\  <code>cdcpillx096:/mnt # btrfs filesystem resize max /mnt</code>
+  * Tada!\\  <code>cdcpillx096:/mnt # df -h
+Filesystem               Size  Used Avail Use% Mounted on
+
+/dev/sdb                 8.0G  2.5G  5.1G  33% /mnt
+</code>
+
+===== the *Hard* way =====
+  * Add a disk via VMWare or whatever. 
+  * Echo one into the the rescan command for the disk device to detect the changes while running.\\ <code>cdcpillx096:/tmp # echo "- - -" > /sys/class/scsi_host/host0/scan
+cdcpillx096:/tmp # fdisk -l /dev/sdb
+Disk /dev/sdb: 2 GiB, 2147483648 bytes, 4194304 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+</code>
+  * Find the new disk.
+  * Add the disk to the btrfs filesystem. \\ <code>cdcpillx096:/tmp # btrfs device add /dev/sdb /</code>
+  * You should be good now.  Doublecheck with more BTRFS commands. \\ <code>cdcpillx096:/tmp # btrfs device usage /
+/dev/sda3, ID: 1
+   Device size:            19.57GiB
+   Data,single:             5.01GiB
+   Metadata,DUP:          768.00MiB
+   System,DUP:            128.00MiB
+   Unallocated:            13.69GiB
+
+/dev/sdb, ID: 2
+   Device size:             2.00GiB
+   Unallocated:             2.00GiB
+</code>

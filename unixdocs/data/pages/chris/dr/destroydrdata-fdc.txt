@@ -1,0 +1,29 @@
+====== PS/MP FDC Disaster Recovery test  Destroy AIX server's data ======
+
+
+  - **!!! Do Not Shutdown the VIOS Servers in the FDC phlypapv023, and phlypapv024 !!!** 
+  - Login to each server recovered in the Disaster Recovery Test 
+  - Shutdown/kill applications<code>ps -ef | egrep "sap|ora|unispool|edi" | grep -v grep | awk '{print $2}' | xargs -n5 kill -9</code>
+  - Shutdown the Server this includes the NIM server in the FDC. <code>shutdown -F </code> 
+
+====== Turn Off  Capacity on Demand (CoD). ======
+
+   - Logon to the FDC HMC phlypahmc007
+   - Go to PHPVM022-9040-MR9-78AAECX
+   - In General Settings on the left hand side select COD functions. The display should look like this 
+{{:dr:2021-07-21-phlypahmc007-hardware-management-console-cod.png}}
+     - Select On/Off Processor.
+     - Select Manage.
+     - Type 0 for the number of On/Off CoD processors and type 0 for the number of days, then click OK.
+     - Select On/Off Memory.
+     - Select Manage.
+     - Type 0 for the number of On/Off CoD processors and type 0 for the number of days, then click OK.
+
+====== Reclaim all CPU and Memory that was allocated from Capacity on Demand (CoD) reserves. ======
+
+    - Log on to the Real NIM Server pcdcunxaxap01 in the Production Network
+    - Run the following script to reset all FDC lpars back to their pre test state. This is im perative if it is not done IBM will contunie to record the CoD Processors and memory as in use bill Tenneco for the use Next D.R test.<code>reset-CoD-Proc-Mem.sh</code>
+
+
+
+

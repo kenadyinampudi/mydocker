@@ -1,0 +1,54 @@
+Using ILO virtual floppy drive for holding YAST autoyast installation file
+News	HP Servers	Recommended Links	Command line interface	ILO3 TCP ports	Firmware upgrade
+Initial setup	Fiasco: some additional information	Fiasco: some preliminary recommendations	Rebooting the iLO	"Remote Console - in use" Problem	Serial console
+Security	
+Using virtual CDROM
+
+Using virtual Floppy/USB stick
+
+Using ILO virtual floppy drive for holding YAST autoyast installation file	 	 
+Sysadmin Horror Stories	Administration of Remote Servers	Dell DRAC	Humor	Random Findings	Etc
+Network Install HOWTO SuSE Client Install
+Automatic Installation
+If you followed the section above about creating AutoYaST config files then this is the way in which you should boot your client machines.
+
+Copy your config file that you have already created as above from your repository directory on your hard disk to your floppy disk as a file called autoinst.xml. You can do this as follows:
+Insert and mount a floppy disk
+cp /var/lib/autoinstall/repository/Your-File /dev/fd0/autoinst.xml
+Unmount the floppy disk
+Put your floppy disk with the config file in your client machine
+Turn on your machine, ensure the CD drive is in the boot list of your BIOS, insert the CD. You should be faced with the normal boot menu of the SuSE installation program. As an alternative to booting from CD, you can boot from floppy images, from the network, or using whichever method you would normally use to boot the installation program.
+At the boot menu leave the default line as Linux to do the standard boot, but add the following parameters in order to read your configuration file from the floppy disk:
+linux autoyast=floppy
+Your client should now boot the installation program and it will try to load appropriate modules and install the system with the information that you have provided in the config file.
+If you are prompted to input any information for any reason then do so e.g. if the installer cannot connect to your network.
+Once the installation is running then you can remove the CD and the floppy disk and grab a cup of something while you wait for your shiny new installation to finish, no changing of installation media needed.
+Further Boot Options
+This is an extension to the technique used to boot client machines for Automatic Installations as described above. You should try this method if you have tried and failed with the method above. This section should help you if you have had network connection problems during boot, for example, if you do not have a DHCP server on your network.
+
+You can create what we call an "info" file to hold information about your clients network details. This can then be used more explicitly by the install process to contact your network. This is a plain text file in which you put certain keyword and value combinations that are recognised by the installer.
+
+The list of keywords you can use is as follows:
+
+autoyast - the location of your configuration file
+gateway - the gateway your client should use (if any)
+insmod - any special kernel modules you need to be loaded
+install - a full path to your server installation directory
+ip - the address of your client machine. If this is blank then the installer will try BOOTP/DHCP
+nameserver - the nameserver address on your network
+netdevice - the network adaptor you want to be used
+netmask - your client's netmask
+server - the hostname or IP address of the server you have set up i.e. the machine you have your NFS exports from
+serverdir - the directory on your server the installation should be taken from
+Using the above keywords in an example info file, you might end up with something looking a little bit like this:
+
+install: nfs://10.0.0.100/install/SuSE8.0
+netdevice: eth0
+server: 10.0.0.100
+serverdir: /install/SuSE8.0
+ip: 10.0.0.200
+netmask: 255.0.0.0
+gateway: 10.0.0.1
+nameserver: 10.0.0.2
+autoyast: floppy
+Substitute the IP addresses above for relevant ones for your particular network and save this file with filename info in the root directory of your floppy disk that contains your configuration file autoinst.xml

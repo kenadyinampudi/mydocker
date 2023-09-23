@@ -1,0 +1,35 @@
+
+<h1 class="sectionedit1" id="generating_ssh_keys_and_using_them_with_putty">Generating SSH keys and using them with putty.</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Download putty from here <a href="http://the.earth.li/~sgtatham/putty/latest/x86/putty.exe" class="urlextern" title="http://the.earth.li/~sgtatham/putty/latest/x86/putty.exe"  rel="nofollow">http://the.earth.li/~sgtatham/putty/latest/x86/putty.exe</a></div>
+</li>
+<li class="level1"><div class="li"> Download puttygen from here <a href="http://the.earth.li/~sgtatham/putty/latest/x86/puttygen.exe" class="urlextern" title="http://the.earth.li/~sgtatham/putty/latest/x86/puttygen.exe"  rel="nofollow">http://the.earth.li/~sgtatham/putty/latest/x86/puttygen.exe</a></div>
+</li>
+</ol>
+<pre class="code">How to do it</pre>
+<pre class="code">First log in on A as user a and generate a pair of authentication keys. Do not enter a passphrase:</pre>
+<pre class="code">a@A:~&gt; ssh-keygen -t rsa
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/a/.ssh/id_rsa): 
+Created directory &#039;/home/a/.ssh&#039;.
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /home/a/.ssh/id_rsa.
+Your public key has been saved in /home/a/.ssh/id_rsa.pub.
+The key fingerprint is:
+3e:4f:05:79:3a:9f:96:7c:3b:ad:e9:58:37:bc:37:e4 a@A</pre>
+<pre class="code">Now use ssh to create a directory ~/.ssh as user b on B. (The directory may already exist, which is fine):</pre>
+<pre class="code">a@A:~&gt; ssh b@B mkdir -p .ssh
+b@B&#039;s password: </pre>
+<pre class="code">Finally append a&#039;s new public key to b@B:.ssh/authorized_keys and enter b&#039;s password one last time:</pre>
+<pre class="code">a@A:~&gt; cat .ssh/id_rsa.pub | ssh b@B &#039;cat &gt;&gt; .ssh/authorized_keys&#039;
+b@B&#039;s password: </pre>
+<pre class="code">From now on you can log into B as b from A as a without password:</pre>
+<pre class="code">a@A:~&gt; ssh b@B</pre>
+<pre class="code">you might also have to do the following changes:</pre>
+<pre class="code">  Put the public key in .ssh/authorized_keys
+  Change the permissions of .ssh to 700
+  Change the permissions of .ssh/authorized_keys to 640</pre>
+
+</div>

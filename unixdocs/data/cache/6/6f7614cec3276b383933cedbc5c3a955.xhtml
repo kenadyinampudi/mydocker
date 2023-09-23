@@ -1,0 +1,63 @@
+
+<h1 class="sectionedit1" id="vlan_tagging_on_dual_vios_on_a_standard_p_series_frame">VLAN Tagging on dual VIOS on a standard P Series frame</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Completely remove network configuration.</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interface<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -C | grep ^en | awk &#039;{print $1}&#039; )
+do
+   rmdev -dl ${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create Etherchannels (trunk - LACP)</div>
+<ol>
+<li class="level2"><div class="li"> Front-end network<pre class="code">mkvdev -lnagg ent0,ent1,ent4,ent5 -attr mode=&#039;8023ad&#039;</pre>
+
+<p>
+Creates ent10
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Backup network   <pre class="code">mkvdev -lnagg ent2,ent3,ent6,ent7 -attr mode=&#039;8023ad&#039;</pre>
+
+<p>
+Creates ent11
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create Shared Ethernet Adapters</div>
+<ol>
+<li class="level2"><div class="li"> Front end SEA<pre class="code">mkvdev -sea ent10 -vadapter ent8 -default ent8 -defaultid 1 -attr ha_mode=auto ctl_chan=ent10</pre>
+
+<p>
+Creates ent12
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Back  up  SEA<pre class="code">mkvdev -sea ent11 -vadapter ent9 -default ent9 -defaultid 2 -attr ha_mode=auto ctl_chan=ent11</pre>
+
+<p>
+Creates ent13
+</p>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure IP on front end SEA<pre class="code">mktcpip -hostname &lt;vio DNS name&gt; -inetaddr &lt;vio IP&gt; -interface en12 -netmask 255.255.255.0 -gateway &lt;default gateway&gt; -start</pre>
+</div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,176 @@
+
+<h1 class="sectionedit1" id="etherchannel_lacp_failover_test_on_vios_sea">Etherchannel LACP failover test on VIOS / SEA</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Configuration of taprvio150 where I tested this,</div>
+</li>
+</ul>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Interface name</th><th class="col1">Type</th><th class="col2">Role</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">ent0</td><td class="col1">Physical</td><td class="col2">Link to Core 1</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">ent1</td><td class="col1">Physical</td><td class="col2">Link to Core 2</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">ent2</td><td class="col1">Virtual</td><td class="col2">Links SEA to Power VM virtual switch for vlan ids 4, 48, 450, 406 (This is also the Control channel)</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">ent3</td><td class="col1">Virtual</td><td class="col2">Links SEA to Power VM virtual switch for vlan ids 49, 451, 460</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">ent4</td><td class="col1">Virtual</td><td class="col2">VLAN tagged (vlan 4)</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">ent5</td><td class="col1">Etherchannel</td><td class="col2">Ether channel aggregated(LACP) ent0+ent1</td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">ent6</td><td class="col1">SEA</td><td class="col2">SEA adapter over ent5</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [116-528] --><ul>
+<li class="level1"><div class="li"> Standard etherchannel management commands do not work on ent5 as you would expect, thanks to IBM programmers  —  — <img src="/lib/images/smileys/facepalm.gif" class="icon" alt="m(" /></div>
+</li>
+<li class="level1"><div class="li"> Let us define this confusing entstat command to a function so we don&#039;t have to repeat it. <strong> Change ent6 to the SEA device name </strong><pre class="code">function run_entstat {
+sudo entstat -d ent6 | sed -n \
+-e &quot;/^Real Adapter:/,/^$/&quot;p \
+-e &quot;/Control Channel Adapter/,/^$/&quot;p \
+-e &quot;/Statistics for every adapter in the IEEE 802.3ad Link Aggregation:/,/Aggregation status/&quot;p \
+-e &quot;/^VLAN Ids/,/^Real Side/&quot;p \
+-e &quot;/^Virtual Adapter:/,/^$/&quot;p
+}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> When everything is normal, if we were to execute this command<pre class="code">run_entstat</pre>
+
+<p>
+We get something similar to this in the output
+</p>
+<pre class="code">VLAN Ids :
+    ent3: 2 49 451 460
+    ent2: 1 4 48 406 450
+Real Side Statistics:
+Real Adapter: ent5
+Statistics for every adapter in the IEEE 802.3ad Link Aggregation:
+------------------------------------------------------------------
+Number of adapters: 2
+Operating mode: Standard mode (IEEE 802.3ad)
+IEEE 802.3ad Link Aggregation Statistics:
+Aggregation status: Aggregated
+Virtual Adapter: ent3
+Virtual Adapter: ent2
+Control Channel Adapter: ent2</pre>
+
+<p>
+The fields are self explanatory.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> To remove ent0 from LACP configuration of ent6(ent5), execute this command<pre class="code">sudo /usr/lib/methods/ethchan_config -d ent6 ent0</pre>
+
+<p>
+We would see something like this in the terminal output <strong>Please ignore it</strong>
+</p>
+<pre class="code">ethchan_config: 0950-016 Unable to access attributes for device ent6, errno = 0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Let us re-run the entstat function and see what is different<pre class="code">run_entstat</pre>
+
+<p>
+We get something similar to this in the output
+</p>
+<pre class="code">VLAN Ids :
+    ent3: 2 49 451 460
+    ent2: 1 4 48 406 450
+Real Side Statistics:
+Real Adapter: ent5
+Statistics for every adapter in the IEEE 802.3ad Link Aggregation:
+------------------------------------------------------------------
+Number of adapters: 1
+Operating mode: Standard mode (IEEE 802.3ad)
+IEEE 802.3ad Link Aggregation Statistics:
+Aggregation status: Aggregated
+Virtual Adapter: ent3
+Virtual Adapter: ent2
+Control Channel Adapter: ent2</pre>
+
+<p>
+As we see, the Number of adapters have decreased to “1”
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> To add ent0 back to LACP configuration of ent6(ent5), execute this command<pre class="code">sudo /usr/lib/methods/ethchan_config -a ent6 ent0</pre>
+
+<p>
+Ignore this error message
+</p>
+<pre class="code">ethchan_config: 0950-016 Unable to access attributes for device ent6, errno = 0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At this time if we execute the entstat function<pre class="code">run_entstat</pre>
+
+<p>
+We would see
+</p>
+<pre class="code">VLAN Ids :
+    ent3: 2 49 451 460
+    ent2: 1 4 48 406 450
+Real Side Statistics:
+Real Adapter: ent5
+
+Statistics for every adapter in the IEEE 802.3ad Link Aggregation:
+------------------------------------------------------------------
+
+Number of adapters: 2
+Operating mode: Standard mode (IEEE 802.3ad)
+IEEE 802.3ad Link Aggregation Statistics:
+Aggregation status: Negotiating
+Virtual Adapter: ent3
+
+Virtual Adapter: ent2
+
+Control Channel Adapter: ent2</pre>
+
+<p>
+The number of adapters have changed to “2”, Aggregation status is “Negotiating”. After a few seconds, you repeat the same command
+</p>
+<pre class="code">run_entstat</pre>
+
+<p>
+We will see …
+</p>
+<pre class="code">VLAN Ids :
+    ent3: 2 49 451 460
+    ent2: 1 4 48 406 450
+Real Side Statistics:
+Real Adapter: ent5
+
+Statistics for every adapter in the IEEE 802.3ad Link Aggregation:
+------------------------------------------------------------------
+
+Number of adapters: 2
+Operating mode: Standard mode (IEEE 802.3ad)
+IEEE 802.3ad Link Aggregation Statistics:
+Aggregation status: Aggregated
+Virtual Adapter: ent3
+
+Virtual Adapter: ent2
+
+Control Channel Adapter: ent2</pre>
+
+<p>
+It is now “Aggregated”, number of adapters are “2” - All good.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Repeat the same for ent1 or whichever is the second physical NIC is.</div>
+</li>
+<li class="level1"><div class="li"> We could also use this shell script on the VIOS server instead of the function<pre class="code">/usr/local/scripts/chkviosnet</pre>
+</div>
+</li>
+</ul>
+
+</div>

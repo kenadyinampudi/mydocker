@@ -1,0 +1,63 @@
+
+<h1 class="sectionedit1" id="vlan_tagging_on_taprvio7">VLAN Tagging on taprvio7</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> From the IVM, remove all network ports from all VIOCs (HEA &amp; the Virtual NIC )</div>
+</li>
+<li class="level1"><div class="li"> Remove all network configuration as root</div>
+<ol>
+<li class="level2"><div class="li"> Down and detach the active interfaces as root<pre class="code">ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove all network device files<pre class="code">for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Set VIOS partition as the Promiscious lpar as padmin<pre class="code">chhwres -r hea -o s -l 23000000 -g 1 -a promisc_lpar_id=1 --physport 0
+chhwres -r hea -o s -l 23000000 -g 1 -a promisc_lpar_id=1 --physport 1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create Virtual NICs as padmin<pre class="code">chhwres -m Server-7998-61X-SN0614BEA -p 06-14BEA -o a -r virtualio --rsubtype eth -s 14 -a &quot;ieee_virtual_eth=1,port_vlan_id=14,\&quot;addl_vlan_ids=450,48,406\&quot;,is_trunk=1,trunk_priority=1&quot; -d 5
+chhwres -m Server-7998-61X-SN0614BEA -p 06-14BEA -o a -r virtualio --rsubtype eth -s 15 -a &quot;ieee_virtual_eth=1,port_vlan_id=15,\&quot;addl_vlan_ids=451,49\&quot;,is_trunk=1,trunk_priority=1&quot; -d 5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create NIBs as padmin.</div>
+<ol>
+<li class="level2"><div class="li"> ent0 + ent1 ⇒ ent10<pre class="code">mkvdev -lnagg ent0 -attr backup_adapter=ent1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> ent2 + ent3 ⇒ ent11<pre class="code">mkvdev -lnagg ent2 -attr backup_adapter=ent3</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create SEA as padmin</div>
+<ol>
+<li class="level2"><div class="li"> ent12 ent10 + ent8 ⇒ ent12<pre class="code">mkvdev -sea ent10 -vadapter ent8 -default ent8 -defaultid 14</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> ent13 ent11 + ent9 ⇒ ent13<pre class="code">mkvdev -sea ent11 -vadapter ent9 -default ent9 -defaultid 15</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure IP on SEA<pre class="code">mktcpip -hostname taprvio7 -inetaddr 10.0.4.X -interface en12 -netmask 255.255.252.0 -gateway 10.0.4.1 -start</pre>
+
+<p>
+<strong>Note the IP isn&#039;t there</strong>
+</p>
+</div>
+</li>
+</ol>
+
+</div>

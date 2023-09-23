@@ -1,0 +1,100 @@
+<code>
+unixsandbox3 :-
+
+host0 10000000c97ea256		ldcds6510a1	26
+host4 10000000c97c2602		ldcds6510b1	26
+
+
+Fabric A :-
+-----------
+
+alicreate "unixsandbox3_7ea256","10:00:00:00:c9:7e:a2:56"
+
+zonecreate "unixsandbox3_7ea256__ldcv9ac3n1_52843c","unixsandbox3_7ea256;ldcv9ac3n1_52843c"
+zonecreate "unixsandbox3_7ea256__ldcv9ac3n2_52847e","unixsandbox3_7ea256;ldcv9ac3n2_52847e"
+
+
+cfgadd "fab_a_act_config","unixsandbox3_7ea256__ldcv9ac3n1_52843c;unixsandbox3_7ea256__ldcv9ac3n2_52847e"
+
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+Fabric B :- 
+-----------
+
+alicreate "unixsandbox3_7c2602","10:00:00:00:c9:7c:26:02"
+
+zonecreate "unixsandbox3_7c2602__ldcv9ac3n1_51843c","unixsandbox3_7c2602;ldcv9ac3n1_51843c"
+zonecreate "unixsandbox3_7c2602__ldcv9ac3n2_51847e","unixsandbox3_7c2602;ldcv9ac3n2_51847e"
+
+cfgadd "fab_b_act_config","unixsandbox3_7c2602__ldcv9ac3n1_51843c;unixsandbox3_7c2602__ldcv9ac3n2_51847e"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+
+
+
+${SSH2V9} mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_6885667 -name unixsandbox_001 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 0%
+${SSH2V9} mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_6885667 -name unixsandbox_002 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 0%
+${SSH2V9} mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_6885667 -name unixsandbox_003 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 0%
+${SSH2V9} mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_6885667 -name unixsandbox_004 -nofmtdisk -rsize 2% -size 103578 -syncrate 50 -unit mb -vtype striped -warning 0%
+
+
+
+
+for hba in $(ls /sys/class/fc_host)
+do
+   echo "- - -" | sudo tee -a /sys/class/scsi_host/${hba}/scan
+done
+
+
+
+
+unixsandbox3 :-
+
+host0 10000000c97ea256		ldcds6510a1	26	unixsandbox3_7ea256
+host4 10000000c97c2602		ldcds6510b1	26	unixsandbox3_7c2602
+
+pgscdb01
+
+c0507607f34d0010		ldcds6510b1		7
+c0507607f34d0012		ldcds6510a1		14
+
+Fabric A
+
+VMAX --> zone to vmax_0301_2g1
+
+zonecreate "unixsandbox3_7ea256__vmax_0301_2g1","unixsandbox3_7ea256;vmax_0301_2g1"
+
+cfgadd "fab_a_act_config","unixsandbox3_7ea256__vmax_0301_2g1"
+cfgsave
+cfgenable "fab_a_act_config"
+
+Fabric B
+
+VMAX --> zone to vmax_0301_3g1
+
+zonecreate "unixsandbox3_7c2602__vmax_0301_3g1","unixsandbox3_7c2602;vmax_0301_3g1"
+
+cfgadd "fab_b_act_config","unixsandbox3_7c2602__vmax_0301_3g1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+
+sudo symaccess -sid 0301 -name unixsandbox3_IG -type initiator create
+sudo symaccess -sid 0301 -name unixsandbox3_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name unixsandbox3_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name unixsandbox3_IG -type initiator -wwn 10000000c97ea256 add
+sudo symaccess -sid 0301 -name unixsandbox3_IG -type initiator -wwn 10000000c97c2602 add
+
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 3E37;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 3E37;" commit -nop
+
+sudo symaccess -sid 0301 -name unixsandbox3_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name unixsandbox3_SG add devs 
+sudo symfast -sid 0301 -fp_name Gold associate -sg unixsandbox3_SG -priority 2
+sudo symaccess -sid 0301 create view -name unixsandbox3_MV -sg unixsandbox3_SG -pg 2G1_3G1_PG -ig unixsandbox3_IG</code>

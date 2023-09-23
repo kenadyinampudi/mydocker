@@ -1,0 +1,23 @@
+
+<h1 class="sectionedit1" id="if_the_system_needs_unispool_-_installation">If the system needs unispool - installation</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create the unispool filesystem<pre class="code">sudo lvcreate -n users_unispool -L 2048MB datavg01
+sudo mkfs -t ext4 /dev/datavg01/users_unispool
+echo &quot;/dev/mapper/datavg01-users_unispool   /users/unispool                    ext4    defaults        1 2&quot; | sudo tee -a /etc/fstab
+sudo mkdir -p /users/unispool
+sudo mount /users/unispool</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Download and untar the unispool binaries<pre class="code">cd /var/tmp
+wget http://pablsv02/unispool/unispool.rhel.6.23.gz
+cd /users/unispool
+sudo gtar xzf /var/tmp/unispool.rhel.6.23.gz</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup<pre class="code">sudo rm /var/tmp/unispool.rhel.6.23.gz</pre>
+</div>
+</li>
+</ol>
+
+</div>

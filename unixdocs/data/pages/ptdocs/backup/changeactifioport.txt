@@ -1,0 +1,35 @@
+====== Change Actifio Connector Port ======
+
+Refer to the Actifio documentation at [[https://actifio.force.com/c2/kA2G0000000XZclKAG]]
+\\ 
+\\ 
+==== Prereqs ====
+First, determine the port which will be used for the Actifio connector.
+The default port is 5106 as defined in the [[http://docs.actifio.com/9.0/PDFs/NetworkConfiguration.pdf|Network Configuration doc.]]
+\\ 
+Fun diagnostic techniques:\\ 
+  * [[unix:portscan| Scanning from outside the server]]
+  * [[unix:openports| Scanning from within the server]]
+I chose to use non-standard port 8443 for this DMZ server behind a firewall.
+\\ 
+==== Steps ====
+First I checked if there was anything already listening on the port using netstat.
+  root on tsdv1d02:/var/act/log>netstat -Aan | grep LIST | grep 443
+
+There was nothing on port 443 or 8443.
+Then I added this line to the Actifio connector per the instructions:
+  vi /act/config/connector.conf
+  port = 8443
+
+I restarted the UDS agent on the client side.
+  root on tsdv1d02:/etc>/etc/udsagent restart
+  Stopping udsagent...
+  Starting /opt/act/bin/udsagent as a daemon
+  root on tsdv1d02:/etc>
+\\ 
+The host was already added to CDCPILREP009, so I modified the settings to talk to the connector over port 8443.\\ 
+{{:backup:changeactifioport1.jpg?nolink&400|}}
+\\ 
+\\ 
+Finally, I went to the application manager and discovered apps on the host just like usual.  I set up a job and ran the backup.\\ 
+{{:backup:changeactifioport2.jpg?nolink&400|}}

@@ -1,0 +1,106 @@
+====== v840 - backup / recovery tests ======
+
+==== Pre-requisite Tasks ====
+
+  - Create consistency group for TA2 hot backup<code>ssh pocibmafa01 svctask mkfcconsistgrp -name TA2HOTBKP</code>
+    - Create the oracle db volumes and add to consistency group.<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2orabkp_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done</code>
+    - Add to consistency group<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkfcmap -cleanrate 0 -consistgrp TA2HOTBKP -copyrate 0 -source ta2oradb_${vol} -target ta2orabkp_${vol}
+done</code>
+    - Map them to backup host pocafasv02<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdiskhostmap -host pocafasv02 ta2orabkp_${vol}
+done</code>
+  - Create consistency group for TA2 cold backup<code>ssh pocibmafa01 svctask mkfcconsistgrp -name TA2COLDBKP</code>
+    - Create the binary volumes and add to consistency group<code>for vol in 01 02
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2binary_${vol} -rsize 0% -size 204800 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done</code>
+    - Add binary volumes to consistency group<code>for vol in 01 02
+do
+   ssh pocibmafa01 svctask mkfcmap -cleanrate 0 -consistgrp TA2COLDBKP -copyrate 0 -source pocafasv01_${vol} -target ta2binary_${vol}
+done</code>   
+    - Create the oracle db volumes and add to consistency group.<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name ta2oracoldbkp_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done</code>
+    - Add oradata volumes to consistency group<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkfcmap -cleanrate 0 -consistgrp TA2COLDBKP -copyrate 0 -source ta2oradb_${vol} -target ta2oracoldbkp_${vol}
+done</code>
+  - Create consistency group for IT0 refresh<code>ssh pocibmafa01 svctask mkfcconsistgrp -name TA2IT0REFRESH</code>
+    - Create the oracle db volumes and add to consistency group.<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdisk -autoexpand -iogrp io_grp0 -mdiskgrp mdiskgrp0 -name it0oradb_${vol} -rsize 0% -size 1048576 -syncrate 50 -vtype striped -warning 0% -cache readwrite -compressed -copies 1
+done</code>
+    - Add to consistency group<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkfcmap -autodelete -cleanrate 50 -consistgrp TA2IT0REFRESH -copyrate 50 -source ta2oradb_${vol} -target it0oradb_${vol}
+done</code>
+    - Map to pocafasv03<code>for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+   ssh pocibmafa01 svctask mkvdiskhostmap -host pocafasv03 it0oradb_${vol}
+done</code>
+
+==== During the test ====
+
+  - Shutdown SAP and Database on pocafasv01
+  - Perform a cold backup of POC TA2 database and binary<code>ssh pocibmafa01 svctask startfcconsistgrp -prep TA2COLDBKP</code>
+  - Startup SAP and database on pocafasv01
+  - Document the space used by snapshots
+  - Put database pocafasv01/TA2 into hot backup mode
+  - Take a hot backup of TA2<code>ssh pocibmafa01 svctask startfcconsistgrp -prep TA2HOTBKP</code>
+  - Put DB to end backup mode.
+  - Import VGs on pocafasv02<code>sudo cfgmgr
+sudo importvg -y datavg01 00f975852f0cc330</code>fsck and mount them<code>for fs in $(lsvgfs datavg01 )
+do
+   sudo fsck -y $fs
+   sudo mkdir -p $fs
+   sudo mount $fs
+done</code>
+  - Check timestamp and contents on pocafasv02.
+  - Document space consumed by snapshots.
+  - Make changes on POC TA2 database ( drop some table, delete data things of that nature )
+  - Document space consumed by snapshots
+  - Shutdown SAP and Database on pocafasv01
+  - Unmount sapdata filesystems on pocafasv01 and export.<code>for fs in $(lsvgfs ibmdatavg01 )
+do
+   sudo umount $fs
+done
+
+sudo varyoffvg ibmdatavg01
+
+echo "hdisk143 hdisk144 hdisk145 hdisk146 hdisk147 hdisk148 hdisk149 hdisk150 hdisk151 hdisk152 hdisk153 hdisk154" | xargs -n1 sudo rmdev -l</code>
+  - Restore from FlashCopy backups<code>ssh pocibmafa01 svctask startfcconsistgrp -restore TA2HOTBKP</code>
+  - Restore datavg on pocafasv01<code>echo "hdisk143 hdisk144 hdisk145 hdisk146 hdisk147 hdisk148 hdisk149 hdisk150 hdisk151 hdisk152 hdisk153 hdisk154" | xargs -n1 sudo mkdev -l
+
+sudo varyonvg ibmdatavg01
+
+for fs in $(lsvgfs ibmdatavg01 )
+do
+   sudo fsck -y $fs
+   sudo mount $fs
+done</code>
+  - Recover database on pocafasv01
+  - Startup SAP on pocafasv01
+  - Validate the deleted contents are now visible on the database
+  - Put database pocafasv01/TA2 into hot backup mode
+  - Make a clone for IT0<code>ssh pocibmafa01 svctask startfcconsistgrp -prep TA2IT0REFRESH</code>
+  - Database end backup mode.
+  - Import and mount IT0 datavg on pocafasv03<code>sudo cfgmgr
+
+sudo importvg -y datavg01 00f975852f0cc330</code>fsck and mount them<code>for fs in $(lsvgfs datavg01 )
+do
+   sudo fsck -y $fs
+   newfs=$(echo ${fs} | sed "s;TA2;IT0;g" )
+   sudo chfs -m ${newfs} ${fs}
+   sudo mkdir -p $fs
+   sudo mount $fs
+   sudo chown -R orait0:dba ${fs}
+done</code>
+  - Recover and rename TA2 to IT0
+  - Validate & sign off.

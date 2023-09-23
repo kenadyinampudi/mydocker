@@ -1,0 +1,298 @@
+====== Dress Rehearsal - 2 Storage Instructions ======
+
+** Scope - Live systems **
+
+^Source system ( Legacy Tenneco )^Target system (DRiV)^Reset Tenneco System^Reset to snapshot                  ^Comments                            ^
+|pgdmr057                        |qcdcccsaxdb01       |Yes                 |mock1-may2-cdc-aix.Mock1DoNotDelete|                                    |
+|qggpdb01                        |qcdcpltaxdb01       |Yes                 |mock1-may2-cdc-aix.Mock1DoNotDelete|                                    |
+|qggtdb01                        |qcdcqgtaxdb01       |Yes                 |mock1-may2-cdc-aix.Mock1DoNotDelete|                                    |
+|qgsndb01                        |qcdcqsnaxdb01       |Yes                 |mock1-may2-cdc-aix.Mock1DoNotDelete|                                    |
+|qgimdb01                        |qcdcqimaxdb01       |Yes                 |mock1-may2-cdc-aix.Mock1DoNotDelete|                                    |
+|tsqa1d01                        |qcdcqsraxdb01       |Yes                 |mock1-may2-cdc-aix.Mock1DoNotDelete|                                    |
+|taitc269                        |cdcusms074          |No                  |N/A                                |Wintel VMWare                       |
+|taitc493                        |cdcusms086          |No                  |N/A                                |Wintel VMWare                       |
+|qaerdb01                        |qcdcftaaxdb01       |No                  |N/A                                |                                    |
+|TEDV2D01                        |qcdcit0axdb01       |No                  |N/A                                |                                    |
+|qgscdb01                        |qcdcqscaxdb01       |No                  |N/A                                |                                    |
+
+
+===== T(-) activities =====
+
+==== T(-) activities - Cleanup test data from DRiV Live systems ====
+
+^DRiV System  ^
+|qcdcit0axdb01|
+|qcdcftaaxdb01|
+|qcdcqscaxdb01|
+|qcdcpltaxdb01|
+|qcdcqsraxdb01|
+|qcdcqgtaxdb01|
+|qcdcqimaxdb01|
+|qcdcqsnaxdb01|
+|qcdcccsaxdb01|
+
+
+** Disconnect volumes from current host -- Unix tasks **
+
+  - Login to the host **DO NOT WORK ON H1T systems qehrdb01, qehrap01, qcdch1taxdb01, qcdch1taxap01**<code>ssh <host_name></code>
+  - Terminate any SAP or Oracle processes<code>ps -ef | egrep "sap|ora|sdb" | grep -v grep | awk '{print $2}' | xargs -n1 sudo kill -9</code>
+  - Take a snapshot of disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Unmount all NFS filesystems<code>df -k | grep : | awk '{print $NF}' | sort -r | xargs -n1 sudo umount</code>
+  - Unexport all NFS filesystems<code>sudo exportfs -ua</code>
+  - Unmount datavg filesystems<code>for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   for fs in $(lsvgfs ${vg} | sort -r )
+   do
+      echo "Working on ${vg} - ${fs} "
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -uk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] && echo "We have a problem unmounting ${fs} "
+      fi
+   done
+done</code>
+  - Check for any open logical volumes and take action to close them<code>lsvg | grep -v rootvg | xargs -n1 lsvg -l | grep -i open</code>
+  - Export VGs and delete disks<code>for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+   grep ${vg} lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl
+done</code>
+  - Send the output of this command to Storage team with the hostname, ask them to reclaim<code>grep -v rootvg lsvpcfg.out.1 | grep "PURE-FLASH"</code>
+
+** Remove current volumes from the host -- Storage tasks **
+
+  - Login to pgunap01, Connect to the target array - In this case -- DRiV 
+    - CDC/MP - cdcvilns015<code>export SSH2PURE="ssh kapil.koroth@cdcvilns015.fmmotorparts.com"</code>
+  - Export a variable to define the Tenneco server<code>export tensrv="hostname"</code>
+  - Disconnect the volumes
+    - Get a list<code>${SSH2PURE} purevol list | grep "^${tensrv}_" > ${tensrv}.luns</code>
+    - Disconnect the volumes except boot disks<code>vollist=$(grep -v 138G ${tensrv}.luns | awk '{print $1}' | tr "\n" " ")
+${SSH2PURE} purevol disconnect --host ${tensrv} ${vollist}</code>
+    - Rename and destroy the volumes except boot disks to a host definition<code>volumes=""
+for volume in $(grep -v 138G ${tensrv}.luns | awk '{print $1}' )
+do
+   newname=$(echo ${volume} | sed "s;$;_deleted;g")
+   volumes="${volumes} ${newname}"
+   ${SSH2PURE} purevol rename ${volume} ${newname}
+done
+${SSH2PURE} purevol destroy ${volumes}</code>
+
+
+==== T(-) activities - Reset Tenneco Live systems to the Mock 1 snapshot ====
+
+^Source system ( Legacy Tenneco )^
+|pgdmr057                        |
+|qggpdb01                        |
+|qggtdb01                        |
+|qgsndb01                        |
+|qgimdb01                        |
+|tsqa1d01                        |
+
+
+** Disconnect volumes from current host -- Unix tasks **
+
+  - Login to the host**DO NOT WORK ON H1T systems qehrdb01, qehrap01, qcdch1taxdb01, qcdch1taxap01**<code>ssh <host_name></code>
+  - Terminate any SAP or Oracle processes<code>ps -ef | egrep "sap|ora|sdb" | grep -v grep | awk '{print $2}' | xargs -n1 sudo kill -9</code>
+  - Take a snapshot of disks<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Unmount all NFS filesystems<code>df -k | grep : | awk '{print $NF}' | sort -r | xargs -n1 sudo umount</code>
+  - Unexport all NFS filesystems<code>sudo exportfs -ua</code>
+  - Stop Openview<code>sudo /usr/lpp/OV/bin/ovc -stop</code>
+  - Unmount datavg filesystems<code>for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   for fs in $(lsvgfs ${vg} | sort -r )
+   do
+      echo "Working on ${vg} - ${fs} "
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         sudo fuser -uk ${fs}
+         sudo umount ${fs}
+         [[ ${?} -ne 0 ]] && echo "We have a problem unmounting ${fs} "
+      fi
+   done
+done</code>
+  - Check for any open logical volumes and take action to close them<code>lsvg | grep -v rootvg | xargs -n1 lsvg -l | grep -i open</code>
+  - Export VGs and delete disks<code>for vg in $(lsvg | sort -r | grep -v rootvg )
+do
+   sudo varyoffvg ${vg}
+   sudo exportvg ${vg}
+   grep ${vg} lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl
+done</code>
+  - Send the output of this command to Storage team with the hostname, ask them to reclaim<code>grep -v rootvg lsvpcfg.out.1 | grep "PURE-FLASH"</code>
+
+** Remove current volumes from the host -- Storage tasks **
+
+  - Login to pgunap01, Connect to the target array - In this case we are only resetting systems in CDC/PTT
+    - CDC/PTT - taprpur001<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+  - Export a variable to define the Tenneco server<code>export tensrv="hostname"</code>
+  - Disconnect the volumes
+    - Get a list<code>${SSH2PURE} purevol list | grep "^${tensrv}_" > ${tensrv}.luns</code>
+    - Disconnect the volumes except boot disks<code>vollist=$(grep -v 138G ${tensrv}.luns | awk '{print $1}' | tr "\n" " ")
+${SSH2PURE} purevol disconnect --host ${tensrv} ${vollist}</code>
+    - Rename and destroy the volumes except boot disks to a host definition<code>volumes=""
+for volume in $(grep -v 138G ${tensrv}.luns | awk '{print $1}' )
+do
+   newname=$(echo ${volume} | sed "s;$;_deleted;g")
+   volumes="${volumes} ${newname}"
+   ${SSH2PURE} purevol rename ${volume} ${newname}
+done
+${SSH2PURE} purevol destroy ${volumes}</code>
+
+
+** Connect the Mock1 - snapshot LUNs to the host -- Storage tasks **
+
+  - Export system name you do work on<code>export tensrv=server-name</code>
+  - Provision from ''mock1-may2-cdc-aix.Mock1DoNotDelete''<code>vol_no=200
+volumes=""
+
+for snapshot in $(${SSH2PURE} purevol list --snap --pgrouplist mock1-may2-cdc-aix.Mock1DoNotDelete | grep ${tensrv}_ | grep -v "138G" | awk '{print $1}')
+do
+   volumes="${volumes} ${tensrv}_${vol_no}"
+   ${SSH2PURE} purevol copy ${snapshot} ${tensrv}_${vol_no}
+   vol_no=$(echo "${vol_no} + 1 " | bc )
+done   
+
+${SSH2PURE} purevol connect --host ${tensrv} ${volumes}</code>
+
+** Import volume groups from May 2nd snapshot -- Unix tasks **
+
+  - Login to the server<code>ssh <servername></code>
+  - Copy the last snapshot to a temporary file<code>cp lsvpcfg.out.1 lsvpcfg.out.1.OldMap</code>
+  - Take a fresh snapshot of LUNs and VGs<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Discover new devices<code>sudo cfgmgr</code>
+  - Take another snapshot of LUNs<code>sudo lsvpcfg.sh > lsvpcfg.out.3</code>
+  - Import, fsck and mount filesystems<code>for vg in $(cat lsvpcfg.out.1.OldMap | grep PURE | grep -v rootvg | grep vg | awk -F: '{print $NF}' | sort -u | sort )
+do
+   count=1
+   while [ ${count} -lt 99 ]
+   do
+      pvid=$(grep :${vg}$ lsvpcfg.out.1.OldMap | awk -F: '{print $2}' | head -${count} | tail -1 )
+      lspv | grep ${pvid} > /dev/null 2>&1
+      if [ ${?} -eq 0 ]
+      then
+         PVID=${pvid}
+         echo "${vg} :: Importing from ${PVID} "
+         sudo importvg -y ${vg} ${PVID}
+         echo "${vg} :: fsck and mount"
+         for fs in $(lsvgfs ${vg} | sort )
+         do
+            echo "${vg} :: ${fs} -- fsck and mount "
+            sudo fsck -y ${fs}
+            sudo mkdir -p ${fs}
+            sudo mount ${fs}
+         done   
+         break
+      fi 
+      count=$(echo "${count} + 1" | bc )
+   done
+done</code>
+  - Export filesystems<code>sudo exportfs -a</code>
+  - Mount the NFS filesystems<code>grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | sort | xargs -n1 sudo mount</code>
+  - Start Openview<code>sudo /usr/lpp/OV/bin/ovc -start</code>
+
+
+
+==== T(-) activities - Create Protection Groups ====
+
+** Tenneco Systems **
+
+  - Connect to the respective array and take a local snapshot and replicate
+    - Store hosts in a variable **Remember to include mock1-vmwares** to the host list. It contains the VMWARE LUNs in scope.
+      - CDC<code>export ten_hosts="pgdmr057,qggpdb01,qggtdb01,qgsndb01,qgimdb01,tsqa1d01,qaerdb01,TEDV2D01,qgscdb01,mock1-vmware"</code>
+      - Store PGname in a variable<code>export pg_name="mock-dress-jul11"</code>
+      - Connect to CDC array<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+      - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist ${ten_hosts} --targetlist cdcvilns015 ${pg_name}</code>
+      - Allow snapshots on cdcvilns015<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>Then<code>${SSH2PURE} purepgroup allow taprpur001:${pg_name}</code>
+
+** DRiV Systems **
+
+  - Connect to the respective array and take a local snapshot and replicate
+    - Store hosts in a variable **Remember to include mock1-vmwares** to the host list. It contains the VMWARE LUNs in scope.
+      - CDC<code>export driv_hosts="qcdcccsaxdb01,qcdcpltaxdb01,qcdcqgtaxdb01,qcdcqsnaxdb01,qcdcqimaxdb01,qcdcqsraxdb01,qcdcftaaxdb01,qcdcit0axdb01,qcdcqscaxdb01,mock1-vmware"</code>
+      - Store PGname in a variable<code>export pg_name="mock-dress-jul11"</code>
+      - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+      - Create a protection group<code>${SSH2PURE} purepgroup create --hostlist ${driv_hosts} ${pg_name}</code>
+
+===== T(0) activity =====
+
+==== Execute Pre-Cutover Snapshot & Storage Sync from Tenneco to DRiV Environment ====
+
+  - Wait for all Live servers in bundles are stopped at source
+  - Connect to the respective array and take a local snapshot and replicate
+    - Store PGname in a variable<code>export pg_name="mock-dress-jul11"</code>
+    - Snapshots at CDC/PTT ** This mock does not have a system that needs to be refreshed from Interxion **
+      - Connect to CDC array<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"</code>
+      - Take a snapshot and replicate<code>${SSH2PURE} purepgroup snap --replicate --suffix precut ${pg_name}</code>
+
+==== Present replicated Storage to target DRiV Server ====
+
+  - Connect to the respective array and provision storage
+  - Check the progress<code>${SSH2PURE} purevol list --total --snap --transfer --pgrouplist taprpur001:${pg_name}.precut</code>
+    - Login to pgunap01 and define this function<code>function copy_and_provision_snapshot {
+export source_host=${1}
+export target_host=${2}
+
+ser_no=200
+
+volumes=""
+
+for snapshot in $(grep "${source_host}_" snapshots.mp | grep -v 138G | awk '{print $1}' )
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${target_host}_${ser_no}
+   volumes="${volumes} ${target_host}_${ser_no}"
+   ser_no=$(echo "${ser_no} + 1 " | bc )
+done
+
+${SSH2PURE} purevol connect --host ${target_host} ${volumes}
+}</code>
+    - CDC systems
+      - Connect to cdcvilns015<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+      - Store all snapshots to a file<code>${SSH2PURE} purevol list --snap --pgrouplist taprpur001:${pg_name}.precut > snapshots.mp</code>
+      - Provision storage<code>copy_and_provision_snapshot pgdmr057 qcdcccsaxdb01
+copy_and_provision_snapshot qggpdb01 qcdcpltaxdb01
+copy_and_provision_snapshot qggtdb01 qcdcqgtaxdb01
+copy_and_provision_snapshot qgsndb01 qcdcqsnaxdb01
+copy_and_provision_snapshot qgimdb01 qcdcqimaxdb01
+copy_and_provision_snapshot tsqa1d01 qcdcqsraxdb01
+copy_and_provision_snapshot qaerdb01 qcdcftaaxdb01
+copy_and_provision_snapshot TEDV2D01 qcdcit0axdb01
+copy_and_provision_snapshot qgscdb01 qcdcqscaxdb01</code>
+      - Wintel systems
+        - Copy the volume<code>${SSH2PURE} purevol copy taprpur001:${pg_name}.precut.nonprod_esx_ten_live_001 nonprod_esx_ten_live_001</code>
+        - Present ''nonprod_esx_ten_live_001'' to the ''non-prod-ms2'' VMWare cluster<code>${SSH2PURE} purevol connect --hgroup non-prod-ms2 nonprod_esx_ten_live_001</code>
+        - Also add ''nonprod_esx_ten_live_001'' to ''mock1-vmwares'' host definition<code>${SSH2PURE} purevol connect --host mock1-vmware nonprod_esx_ten_live_001</code>
+
+==== Hot Snapshot - Pre-Carve & Pre-Functional Testing Validation ====
+
+** Tenneco Systems **
+
+  - Connect to the respective array and take a local snapshot
+    - Store PGname in a variable<code>export pg_name="mock-dress-jul11"</code>
+    - Connect to CDC array<code>export SSH2PURE="ssh x1nithsa@taprpur001.pt.int.tenneco.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix postfunc ${pg_name}</code>
+
+** DRiV Systems **
+
+  - Connect to the respective array and take a local snapshot
+    - Store PGname in a variable<code>export pg_name="mock-dress-jul11"</code>
+    - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix postfunc ${pg_name}</code>
+
+==== Hot Snapshot - Post Go/No-Go & Post Functional Testing ====
+
+** Tenneco Systems **
+
+  - Connect to the respective array and take a local snapshot
+    - Store PGname in a variable<code>export pg_name="mock-dress-jul11"</code>
+    - Connect to CDC array<code>export SSH2PURE="ssh x1nithsa@taprpur001.pt.int.tenneco.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix final ${pg_name}</code>
+
+** DRiV Systems **
+
+  - Connect to the respective array and take a local snapshot
+    - Store PGname in a variable<code>export pg_name="mock-dress-jul11"</code>
+    - Connect to CDC array<code>export SSH2PURE="ssh nithin.sankaran@cdcvilns015.fmmotorparts.com"</code>
+    - Take a snapshot<code>${SSH2PURE} purepgroup snap --suffix final ${pg_name}</code>

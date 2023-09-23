@@ -1,0 +1,145 @@
+
+<h1 class="sectionedit1" id="tgpretl1_had_to_be_migrated_from_taprvio3_to_vio_cluster_40_41">TGPRETL1 had to be migrated from taprvio3 to VIO cluster 40/41</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> List of disks to be migrated<pre class="code">0000aaca591d50df        altinst_rootvg
+0000aaca591d632d        rootvg
+00c9f3a063f80afd        datavg01
+00c9f3a063f990b2        datavg01
+00c9f3908c008a39        datavg01
+00c9f3908bf90964        datavg01
+00c9f3a063f68b89        datavg01
+0000aaca4a2df90a        datavg01
+0000aada54836619        datavg01
+0000aaca591fff00        datavg01
+0000aacae23b3df1        datavg01</pre>
+
+<p>
+Saved this file as /var/tmp/sourcedisks.tgpretl1 on taprvio40 and taprvio41
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown the LPAR</div>
+</li>
+<li class="level1"><div class="li"> Unmap the disks from taprvio3.</div>
+<ol>
+<li class="level2"><div class="li"> Check first<pre class="code">lsdiskcfg | egrep &quot;hdisk4|hdisk5|hdisk6|hdisk7|hdisk9|hdisk10|hdisk19|hdisk20|hdisk27|hdisk29|hdisk33&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmap the disks from taprvio3<pre class="code">for disk in hdisk4 hdisk5 hdisk6 hdisk7 hdisk9 hdisk10 hdisk19 hdisk20 hdisk27 hdisk29 hdisk33
+do
+   rmvdev -vdev ${disk}
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove the disks from taprvio3<pre class="code">echo &quot;hdisk4 hdisk5 hdisk6 hdisk7 hdisk9 hdisk10 hdisk19 hdisk20 hdisk27 hdisk29 hdisk33&quot; | xargs -n1 rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Moon will swing the LUNs to taprvio40 and 41.</div>
+</li>
+<li class="level1"><div class="li"> On taprvio40, configure the disks</div>
+<ol>
+<li class="level2"><div class="li"> Configure devices<pre class="code">cfgmgr
+cat /var/tmp/sourcedisks.tgpretl1 | awk &#039;{print $1}&#039; &gt; /var/tmp/sourcedisks.tgpretl1.pvid
+lspv | grep -wf /var/tmp/sourcedisks.tgpretl1.pvid &gt; /var/tmp/viodisks.tgpretl1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Make sure these disks are not in use(Impossible but still )<pre class="code">awk &#039;{print $1}&#039; /var/tmp/viodisks.tgpretl1 &gt; /var/tmp/viodisks.tgpretl1.pvs
+lsdiskcfg | grep -f /var/tmp/viodisks.tgpretl1.pvs</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check if the devices are readable<pre class="code">for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   echo ${dev} :: $(bootinfo -s ${dev} )
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Turn off reserve lock<pre class="code">for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   chdev -l ${dev} -a reserve_policy=no_reserve
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On taprvio41, configure the disks</div>
+<ol>
+<li class="level2"><div class="li"> Configure devices<pre class="code">cfgmgr
+cat /var/tmp/sourcedisks.tgpretl1 | awk &#039;{print $1}&#039; &gt; /var/tmp/sourcedisks.tgpretl1.pvid
+lspv | grep -wf /var/tmp/sourcedisks.tgpretl1.pvid &gt; /var/tmp/viodisks.tgpretl1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Make sure these disks are not in use(Impossible but still )<pre class="code">awk &#039;{print $1}&#039; /var/tmp/viodisks.tgpretl1 &gt; /var/tmp/viodisks.tgpretl1.pvs
+lsdiskcfg | grep -f /var/tmp/viodisks.tgpretl1.pvs</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check if the devices are readable<pre class="code">for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   echo ${dev} :: $(bootinfo -s ${dev} )
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Turn off reserve lock<pre class="code">for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs)
+do
+   chdev -l ${dev} -a reserve_policy=no_reserve
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> On taprvio40, Map the devices<pre class="code">for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs )
+do
+   mkvdev -vdev ${dev} -vadapter vhost5
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> On taprvio41, Map the devices<pre class="code">for dev in $(cat /var/tmp/viodisks.tgpretl1.pvs )
+do
+   mkvdev -vdev ${dev} -vadapter vhost5
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Boot tgpretl1<pre class="code">ssh hscroot@taitc051
+chsysstate -r lpar -o on -b sms -m MES-Dev-QA-8205-E6B-SN1048EEP -n tgpretl1 -f tgpretl1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Access the console and do the rest.</div>
+</li>
+<li class="level1"><div class="li"> If the server has been moved from qa single VIO setup, perform the following step.</div>
+<ol>
+<li class="level2"><div class="li"> Make a note of the pvid of alt_rootvg disk and remove the hdisks that belonged to alt_rootvg<pre class="code">alt_root_disk=$(lspv | grep alt_rootvg | awk &#039;{print $2}&#039; | sort -u)
+lspv | grep alt_rootvg | awk &#039;{print $1}&#039; | xargs -n1 rmdev -dl</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the alt_rootvg<pre class="code">alt_disk_install -X alt_rootvg</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a alt_rootvg<pre class="code">alt_disk_copy -d $(lspv | grep ${alt_root_disk} | awk &#039;{print $1}&#039; )</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Reboot the server<pre class="code">shutdown -Fr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Make a note of the pvid of old_rootvg disk and remove the hdisks that belonged to it<pre class="code">old_root_disk=$(lspv | grep old_rootvg | awk &#039;{print $2}&#039; | sort -u)
+lspv | grep old_rootvg | awk &#039;{print $1}&#039; | xargs -n1 rmdev -dl</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove the old_rootvg<pre class="code">alt_disk_install -X old_rootvg</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Run cfgmgr<pre class="code">cfgmgr</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create a alt_rootvg<pre class="code">alt_disk_copy -d $(lspv | grep ${old_root_disk} | awk &#039;{print $1}&#039; )</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

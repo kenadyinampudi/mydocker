@@ -1,0 +1,72 @@
+====== AIX/VIOS Server Post installation work ======
+
+===== Steps from the NIM Server (pgnmsv01) =====
+
+  - Login to pgnmsv01 and store the hostname<code>export targethost=<host></code>'host' is the one being built.
+  - Setup resolv.conf
+    - North America<code>sudo scp /prod/images/etc/resolv.conf.na ${targethost}:/etc/resolv.conf</code>
+    - Europe<code>sudo scp /prod/images/etc/resolv.conf.eu ${targethost}:/etc/resolv.conf</code>
+    - Others - refer this document[[unix:setupresolv.conf| Setup resolv.conf - Click here]]
+  - Setup NTP
+    - AIX<code>sudo scp /prod/images/etc/ntp.conf.aix ${targethost}:/etc/ntp.conf</code>
+    - VIOS<code>sudo scp /prod/images/etc/ntp.conf.vios ${targethost}:/home/padmin/config/ntp.conf</code>
+    - Refresh the daemons<code>sudo ssh ${targethost} "chrctcp -S -a xntpd"
+sudo ssh ${targethost} "ntpdate -u 10.56.1.1"</code>Check the date and time<code>sudo ssh ${targethost} date</code>
+  - Configure default ssh configs<code>sudo scp /prod/images/etc/global_ssh_config ${targethost}:/etc/ssh/ssh_config</code>
+  - Configure sysinter<code>sudo ssh ${targethost} "mkdir -p /usr/local/bin"
+sudo scp /prod/images/applications/csi/sysinter.aix5 ${targethost}:/usr/local/bin/sysinter.aix5
+sudo ssh ${targethost} grep -q ^sysinter /etc/services
+[[ ${?} -ne 0 ]] && sudo ssh ${targethost} "echo 'sysinter                40035/tcp' >> /etc/services "
+sudo ssh ${targethost} grep -q ^sysinter /etc/inetd.conf
+[[ ${?} -ne 0 ]] && sudo ssh ${targethost} "echo 'sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5' >> /etc/inetd.conf "
+sudo ssh ${targethost} "refresh -s inetd"</code>
+  - Copy the scripts<code>sudo ssh ${targethost} "mkdir -p /usr/local/scripts"
+sudo scp /usr/local/scripts/* ${targethost}:/usr/local/scripts/</code>
+  - Create a mksysb filesystem<code>sudo ssh ${targethost} "crfs -vjfs2 -g rootvg -m /bkpmksb -A yes -t no -a size=20G"
+sudo ssh ${targethost} "mount /bkpmksb"</code>
+  - [[unix:installothersoftwaresaix|On AIX and VIOS, install additional softwares]]
+  - Setup mksysb backup<code>sudo scp /prod/images/etc/id_dsa.mksysb ${targethost}:/usr/local/scripts/id_dsa.mksysb
+sudo scp /prod/images/scripts/mksysb.sh ${targethost}:/usr/local/scripts/mksysb.sh</code>
+  - If AIX, Add the system to UUMA<code>sudo ssh taqa1a03 "echo ${targethost} >> /home/oracle/uuma/hosts.txt"</code>
+  - If AIX, configure snmpd<code>sudo scp /etc/snmpdv3.conf ${targethost}:/etc/snmpdv3.conf</code>
+
+===== Steps from the server that is being built =====
+
+  - Login to the server and perform the rest of the steps
+  - [[unix:aixnetworkmemparam|Configure Network and Memory parameters]]
+  - [[unix:aixsaninitconfig|Perform initial SAN configuration on AIX ]]
+  - Cleanup cron jobs<code>for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v "^root$|^adm$|^sys$|^uucp$")
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</code>
+  - Enable cron if disabled<code>sudo mkitab cron:23456789:respawn:/usr/sbin/cron</code>
+  - [[unix:syslogconfigtenneco&#configuring_an_aix_host_to_send_errpt_entries_to_centralized_syslog_server|Enable Centralised syslog]]
+  - [[unix:createinformationfile|Create information file]]
+  - Add the TMOUT variable to /etc/profile if it wasn't a clone<code>sudo vi /etc/profile</code><code># Automatic logout, include in export line if uncommented
+TMOUT=3600
+readonly TMOUT</code>
+  - [[unix:usersandgroups|Create basic unix group and users]]
+  - Schedule standard cron jobs<code>sudo crontab -e</code>Add these<code># Customized for Tenneco
+59 21 * * 4 /usr/local/scripts/cr_altdisk.sh 1>/dev/null 2>&1
+00 23 * * * /usr/local/scripts/mksysb.sh 1>/dev/null 2>&1
+03 03 * * 6 /usr/local/scripts/clean_var 1>/dev/null 2>&1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1>/dev/null 2>&1
+05 * * * * /usr/local/scripts/stales.sh 1>/dev/null 2>&1</code>
+  - If booting from SAN, Create an alt_disk_copy.<code>sudo alt_disk_copy -B -d hdiskX</code>
+  - If VIO install updates
+    - [[unix:vioupdatesinstall|Install updates on VIO servers.]]
+  - If booting from internal disks, Mirror rootvg
+    - AIX<code>extendvg rootvg hdiskX
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdiskX
+sudo bootlist -m normal hdiskX hdiskY</code>
+    - VIOS
+      - Mirror boot disk<code>extendvg -f rootvg hdiskX
+mirrorios -f hdiskX</code>**This will reboot the VIOS**
+        - For some reason, IBM does not set up bootlist, so let us do it<code>oem_setup_env</code><code>bootlist -m normal hdiskX hdiskY</code>
+  - If AIX,Send ticket for netbackup
+  - Send ticket for Monitoring
+  - If AIX, Send a ticket to "GIOS Operations - Entitlement" to add the systems.
+  - Do a final reboot<code>sudo shutdown -Fr</code>
+  - Login to the NIM server and perform a NIM client cleanup<code>sudo nim -F -o reset <hostname>
+sudo nim -o deallocate -a subclass=all <hostname></code>

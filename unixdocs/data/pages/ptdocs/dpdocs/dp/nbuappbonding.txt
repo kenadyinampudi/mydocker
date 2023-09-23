@@ -1,0 +1,10 @@
+In some circumstance it may turn out that there is a need to add yet another card to existing bonding interface on NBU appliance. In order to do so follow these points on CLISH logged from ipmi console:
+  * stop NBU<code>glknbu5230ams.Support> Processes
+glknbu5230ams.Processes> NetBackup Stop
+glknbu5230ams.Processes> Return
+glknbu5230ams.Main_Menu> Return
+glknbu5230ams.Main_Menu> Network
+glknbu5230ams.Network> Show Status</code>rewrite current settings<code>glknbu5230ams.Network> LinkAggregation Disable
+glknbu5230ams.Network> Show Status
+glknbu5230ams.Network> LinkAggregation Enable eth1,eth2,eth3 802.3ad</code>
+This above assumes that there is already exisitng bond device, eth3 was not part of the bond interface, all interfaces are having the same speed. More can be found on [[https://vmtek.wordpress.com/2013/07/30/configuring-and-re-configuring-nics-and-bonds-on-netbackup-appliance/]]

@@ -1,0 +1,12 @@
+<php>
+if ($handle = opendir('/prod/storageteam/dokuwiki/data/pages/san/stats/pawel/mon9003')) {
+    while (false !== ($entry = readdir($handle))) {
+        if ($entry != "." && $entry != ".." && substr($entry,0,2) == "fs" ) {
+	    $dis=str_replace(".txt","",$entry);
+            echo "<a href=https://storagedocs/doku.php?id=san:stats:pawel:mon9003:$dis>$dis</a>\n";
+		echo '<BR>';
+        }
+    }
+    closedir($handle);
+}
+</php>

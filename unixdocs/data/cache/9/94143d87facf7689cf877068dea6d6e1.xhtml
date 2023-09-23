@@ -1,0 +1,292 @@
+
+<h1 class="sectionedit1" id="imo_project_clones_-_rhel_build_documentation">IMO Project clones - RHEL build documentation</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> In most cases , the <abbr title="Domain Name System">DNS</abbr> name and IP addresses are already secured.</div>
+</li>
+<li class="level1"><div class="li"> <abbr title="In my opinion">IMO</abbr> builds are <abbr title="Domain Name System">DNS</abbr> disabled to prevent corruption to production.</div>
+</li>
+<li class="level1"><div class="li"> <abbr title="In my opinion">IMO</abbr> clones are built by Wintel team, so secure the map or search in the MP vCEnter<pre class="code">cdcvilms156.fmmp.fmmotorparts.com</pre>
+
+<p>
+Use the standard FAT client, the Web based UI isn&#039;t all good at that version.
+</p>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "IMO Project clones - RHEL build documentation" [1-412] -->
+<h2 class="sectionedit2" id="secure_details_you_need_to_build_the_system">Secure details you need to build the system</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Details you need<pre class="code">Hostname    : The hostname of the system you are building i.e. the target hostname. Mostly &#039;&#039;nslookup &lt;host&gt;/fmmotorparts.com&#039;&#039; should tell you.
+Host IP     : a.b.c.d 
+Netmask     : 255.255.255.0
+Def Route   : a.b.c.d</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Secure details you need to build the system" [413-722] -->
+<h2 class="sectionedit3" id="define_temporary_ip_address_so_that_you_can_putty_in">Define temporary IP address so that you can putty in</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Access the console using vSphere</div>
+</li>
+<li class="level1"><div class="li"> Remove <abbr title="Domain Name System">DNS</abbr> client<pre class="code">rm /etc/resolv.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove hosts file<pre class="code">rm /etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List available NICs<pre class="code">ip link show</pre>
+
+<p>
+You should see a “ens192” adapter – that is what we need.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure an IP on it, so that we can perform rest of the work from a putty session<pre class="code">ifconfig ens192 a.b.c.d netmask 255.255.255.0 up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure a default route<pre class="code">route add -net 0.0.0.0 gw a.b.c.1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> At this point, we should be able to ssh to it from <code>pgnmsv01</code></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Define temporary IP address so that you can putty in" [723-1328] -->
+<h2 class="sectionedit4" id="post_clone_work_from_nim_server">Post clone work from NIM server</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Disconnect from console and Login to <code>pgnmsv01</code></div>
+</li>
+<li class="level1"><div class="li"> Login to pgnmsv01 and define a variable pointing to the system you are building<pre class="code">export targethost=&lt;host_name&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable <abbr title="Domain Name System">DNS</abbr>, push hosts file, NTP etc<pre class="code">sudo scp /prod/images/etc/hostsfile.imoclone ${targethost}:/etc/hosts
+sudo scp /prod/images/etc/ntp.conf.rhel.imoclone ${targethost}:/etc/ntp.conf
+sudo ssh ${targethost} &quot;/usr/sbin/ntpdate -u 10.43.8.130&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Push a standard information file<pre class="code">sudo scp /prod/images/etc/.information.rhel.imoclone ${targethost}:/var/adm/.information</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Push <abbr title="In my opinion">IMO</abbr> clone services file<pre class="code">sudo scp /prod/images/etc/services.imoclone ${targethost}:/etc/services.imoclone</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change hostname of the targethost<pre class="code">ssh ${targethost} &quot;echo ${targethost} | sudo tee /etc/hostname&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a primary NIC config and copy it to the server</div>
+<ol>
+<li class="level2"><div class="li"> Create<pre class="code">echo &quot;DEVICE=ens192&quot;                                                                           &gt;  /var/tmp/${targethost}.ifcfg
+echo &quot;BOOTPROTO=static&quot;                                                                        &gt;&gt; /var/tmp/${targethost}.ifcfg
+echo &quot;IPADDR=$(host ${targethost} | awk &#039;{print $3}&#039; | sed &quot;s;,;;g&quot;)&quot;                          &gt;&gt; /var/tmp/${targethost}.ifcfg
+echo &quot;NETMASK=255.255.255.0&quot;                                                                   &gt;&gt; /var/tmp/${targethost}.ifcfg
+echo &quot;NETWORK=$(host ${targethost} | awk &#039;{print $3}&#039; | awk -F&quot;.&quot; &#039;{print $1&quot;.&quot;$2&quot;.&quot;$3&quot;.0&quot;}&#039;)&quot; &gt;&gt; /var/tmp/${targethost}.ifcfg
+echo &quot;ONBOOT=yes&quot;                                                                              &gt;&gt; /var/tmp/${targethost}.ifcfg</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Copy<pre class="code">sudo scp /var/tmp/${targethost}.ifcfg ${targethost}:/var/tmp/ifcfg.imoclone</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Post clone work from NIM server" [1329-3135] -->
+<h3 class="sectionedit5" id="post_installation_-_generic_tasks_from_the_host">Post installation - generic tasks from the host</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Login to the host you are building<pre class="code">ssh ${targethost}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove openview client<pre class="code">sudo /opt/OV/bin/OpC/install/oasetup.sh -remove</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Delete application cron jobs<pre class="code">for file in $(sudo ls -1 /var/spool/cron | egrep -v &quot;^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$&quot;)
+do
+   sudo rm /var/spool/cron/crontabs/${file} 
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add additional services entries<pre class="code">cat /etc/services.imoclone | sudo tee -a /etc/services</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define a meaningful PS1 variable<pre class="code">sudo vi /etc/profile</pre>
+
+<p>
+Append this to the end
+</p>
+<pre class="code">HNAME=$(uname -n)
+export PS1=&#039;$HNAME:-IMO-CLONE:$PWD&gt;&#039;
+TMOUT=3600
+readonly TMOUT</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove old configurations for network<pre class="code">sudo rm /etc/sysconfig/network-scripts/ifcfg-eth*</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure primary network interface<pre class="code">sudo cp /var/tmp/ifcfg.imoclone /etc/sysconfig/network-scripts/ifcfg-ens192</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure a permanent default route<pre class="code">grep ^NETWORK /etc/sysconfig/network-scripts/ifcfg-ens192 | awk -F &quot;=&quot; &#039;{print $2}&#039; |\
+awk -F&quot;.&quot; &#039;{print &quot;GATEWAY=&quot;$1&quot;.&quot;$2&quot;.&quot;$3&quot;.1&quot;}&#039; | sudo tee /etc/sysconfig/network</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Post installation - generic tasks from the host" [3136-4302] -->
+<h3 class="sectionedit6" id="post_installation_-_protect_the_host_from_production_vlans">Post installation - protect the host from production VLANs</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Shutdown the VM<pre class="code">sudo init 0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Access vCenter </div>
+<ol>
+<li class="level2"><div class="li"> Add an additional NIC on VLAN <code>DV-101</code> Picked RANDOM - It could have been anything</div>
+</li>
+<li class="level2"><div class="li"> Power on the VM</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> ssh to the system<pre class="code">ssh ${targethost}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check the new interface name<pre class="code">sudo ip link show</pre>
+
+<p>
+It should show ens224, if not – change the name in the following steps
+</p>
+</div>
+<ol>
+<li class="level2"><div class="li"> Configure the master interface<pre class="code">echo &quot;DEVICE=ens224&quot;  | sudo tee    /etc/sysconfig/network-scripts/ifcfg-ens224
+echo &quot;TYPE=Ethernet&quot;  | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-ens224
+echo &quot;BOOTPROTO=none&quot; | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-ens224
+echo &quot;ONBOOT=yes&quot;     | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-ens224</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Configure the dummy addresses<pre class="code">for dummyvlan in 600 601 602 603 604 605
+do
+   case ${dummyvlan} in
+   600)IP=&quot;10.0.48.22&quot;
+   ;;
+   601)IP=&quot;10.0.49.21&quot;
+   ;;
+   602)IP=&quot;10.32.50.23&quot;
+   ;;
+   603)IP=&quot;10.32.51.31&quot;
+   ;;
+   604)IP=&quot;10.32.6.44&quot;
+   ;;
+   601)IP=&quot;10.56.1.121&quot;
+   ;;
+   esac
+   echo &quot;DEVICE=ens224.${dummyvlan}&quot; | sudo tee    /etc/sysconfig/network-scripts/ifcfg-ens224.${dummyvlan}
+   echo &quot;BOOTPROTO=none&quot;             | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-ens224.${dummyvlan}
+   echo &quot;ONBOOT=yes&quot;                 | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-ens224.${dummyvlan}
+   echo &quot;IPADDR=${IP}&quot;               | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-ens224.${dummyvlan}
+   echo &quot;NETMASK=255.255.255.0&quot;      | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-ens224.${dummyvlan}
+   echo &quot;VLAN=yes&quot;                   | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-ens224.${dummyvlan}
+   sudo ifup ifcfg-ens224.${dummyvlan}
+   echo &quot;ifup ifcfg-ens224.${dummyvlan} -- Configured &quot;
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT6 SECTION "Post installation - protect the host from production VLANs" [4303-6154] -->
+<h3 class="sectionedit7" id="rename_the_system_to_the_target_sid">Rename the system to the target SID</h3>
+<div class="level3">
+<ol>
+<li class="level1"><div class="li"> Set a variable pointing to new and old names<pre class="code">export oldsid=PTA
+export newsid=ENP</pre>
+
+<p>
+Massage it
+</p>
+<pre class="code">export oldsidlowercase=$(echo ${oldsid} | tr [A-Z] [a-z])
+export newsidlowercase=$(echo ${newsid} | tr [A-Z] [a-z])
+export oldsiduppercase=$(echo ${oldsid} | tr [a-z] [A-Z])
+export newsiduppercase=$(echo ${newsid} | tr [a-z] [A-Z])</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename the service accounts, if the oracle user is not there than it will give you error so ignore it<pre class="code">sudo usermod -l ora${newsidlowercase} ora${oldsidlowercase}
+neworaclehome=$(grep ^oracle: /etc/passwd | awk -F: &#039;{print $6}&#039; | sed &quot;s;${oldsiduppercase};${newsiduppercase};g&quot; )
+sudo usermod -d ${neworaclehome} oracle
+sudo usermod -d /oracle/${newsiduppercase} ora${newsidlowercase}
+
+sudo usermod -l ${newsidlowercase}adm ${oldsidlowercase}adm
+newsidadmhome=$(grep ^${newsidlowercase}adm /etc/passwd | awk -F: &#039;{print $6}&#039; | sed &quot;s;${oldsidlowercase};${newsidlowercase};g&quot; )
+sudo usermod -d ${newsidadmhome} ${newsidlowercase}adm
+sudo mv /home/${oldsidlowercase}adm /home/${newsidlowercase}adm</pre>
+
+<p>
+If it shows resource busy ignore it as we will be renaming in later steps.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Set a generic password for Database and SAP accounts<pre class="code">echo &quot;oracle:saiq8abFEuNbo&quot; | sudo chpasswd -e
+echo &quot;ora${newsidlowercase}:saiq8abFEuNbo&quot; | sudo chpasswd -e
+echo &quot;${newsidlowercase}adm:sapGnLWHKGvf6&quot; | sudo chpasswd -e</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rename filesystems</div>
+<ol>
+<li class="level2"><div class="li"> Terminate SAP processes if any<pre class="code">ps -ef | grep sap | grep -v grep | awk &#039;{print $2}&#039; | xargs -n1 sudo kill -9</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Unmount all local filesystems<pre class="code">grep datavg /etc/fstab | grep -v -e &quot;/usr/openv&quot; -e &quot;/users/unispool&quot; | awk &#039;{print $2}&#039; | sort -r  | xargs -n1 sudo umount</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Cleanup fstab<pre class="code">grep -v nfs /etc/fstab &gt; fstab.1
+cat fstab.1 | sed -e &quot;s;${oldsidlowercase};${newsidlowercase};g&quot; -e &quot;s;${oldsiduppercase};${newsiduppercase};g&quot; &gt; fstab.2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Install the new fstab<pre class="code">sudo cp fstab.2 /etc/fstab</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Prep for LV rename<pre class="code">sudo lvs | grep datavg | awk &#039;{print $1}&#039; &gt; lvs.1
+sudo lvs | grep datavg | awk &#039;{print $1}&#039; | sed -e &quot;s;${oldsidlowercase};${newsidlowercase};g&quot; -e &quot;s;${oldsiduppercase};${newsiduppercase};g&quot; &gt; lvs.2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Rename the logical volumes<pre class="code">paste lvs.1 lvs.2 | while read line
+do
+   orig=$(echo ${line} | awk &#039;{print $1}&#039; )
+   new=$(echo ${line} | awk &#039;{print $2}&#039; )
+   if [ &quot;${orig}&quot; != &quot;${new}&quot; ]
+   then
+      sudo lvrename datavg01 ${orig} ${new}
+   fi
+done</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Mount all filesystems<pre class="code">for fs in $(grep datavg /etc/fstab | awk &#039;{print $2}&#039; | sort )
+do
+   sudo mkdir -p ${fs}
+   sudo mount ${fs}
+done</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure NFS as per the checklist # Hard to automate.</div>
+</li>
+<li class="level1"><div class="li"> Perform a final reboot<pre class="code">sudo init 6</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT7 SECTION "Rename the system to the target SID" [6155-] -->

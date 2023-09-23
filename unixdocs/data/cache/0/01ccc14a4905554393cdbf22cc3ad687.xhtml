@@ -1,0 +1,24 @@
+
+<h1 class="sectionedit1" id="additional_steps_to_be_performed_on_a_nbu_appliance_based_on_rhel_on_wintel_uefi_dl380_gen10">Additional steps to be performed on a NBU appliance based on RHEL on Wintel UEFI DL380 Gen10</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Copy EFI related files to the buildiso directory.<pre class="code">sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/images/ /var/cache/cobbler/buildiso/images/
+sudo rsync -avv /var/www/html/sources/rhel-7.2-x86_64/EFI/ /var/cache/cobbler/buildiso/EFI/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure grub.cfg for UEFI boot<pre class="code">echo &quot;menuentry ${shortname} --class fedora --class gnu-linux --class gnu --class os {&quot; | sudo tee /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo linuxefi /images/pxeboot/vmlinuz $(sudo grep append /var/cache/cobbler/buildiso/isolinux/isolinux.cfg  | sed &quot;s;append initrd=1.img ;;g&quot;) | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;initrdefi /images/pxeboot/initrd.img&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg
+echo &quot;}&quot; | sudo tee -a /var/cache/cobbler/buildiso/EFI/BOOT/grub.cfg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a fresh iso file which now has UEFI boot files<pre class="code">cd /var/cache/cobbler/buildiso
+sudo mkisofs -o /var/www/html/servers/${shortname}.iso -R -J -A &quot;CobblerBuild&quot; -hide-rr-moved \
+-v -d -N -no-emul-boot -boot-load-size 4 -boot-info-table -b isolinux/isolinux.bin -c isolinux/isolinux.boot \
+-eltorito-alt-boot -no-emul-boot -eltorito-boot images/efiboot.img -x /var/cache/cobbler/buildiso/isolinux -x \
+/var/cache/cobbler/buildiso/images -x /var/cache/cobbler/buildiso/EFI .</pre>
+</div>
+</li>
+</ol>
+
+</div>

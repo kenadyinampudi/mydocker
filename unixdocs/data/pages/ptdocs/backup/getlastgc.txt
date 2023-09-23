@@ -1,0 +1,83 @@
+====== Get last GC runs ======
+===== Make a file with a list of current appliances. =====
+'''appliances.txt'''
+<code>
+cdcpilrep001.federalmogul.com
+cdcpilrep004.federalmogul.com
+cdcpilrep005.federalmogul.com
+cdcpilrep006.federalmogul.com
+cdcpilrep007.federalmogul.com
+cdcpilrep008.federalmogul.com
+cdcpilrep009.pt.int.tenneco.com
+sfldmirep001.federalmogul.com
+sfldmirep004.federalmogul.com
+phlyparep001.federalmogul.com
+phlyparep007.federalmogul.com
+phlyparep008.federalmogul.com
+phlyparep009.federalmogul.com
+phlyparep104.federalmogul.com
+phlyparep105.federalmogul.com
+phlyparep106.federalmogul.com
+phlyparep107.federalmogul.com
+phlyparep108.federalmogul.com
+</code> 
+===== Make sure you have command line access to each appliance. =====
+Good!
+<code>
+leedsn16@cdcpillx151:~/projects/actifio/reporting> ssh cdcpilrep004
+Last login: Thu Aug 15 09:27:34 2019 from 10.131.12.109
+Unauthorized access to this system is not permitted.
+User activity may be logged for auditing or other purposes.
+
+leedsn16@cdcpilrep004>
+</code>
+Bad!
+<code>
+leedsn16@cdcpillx151:~/projects/actifio/reporting> ssh storage@cdcpilrep004
+storage@cdcpilrep004's password:
+
+</code>
+\\ 
+To generate this, we make use of a newer "reportsweeps" command, which itself is an alias to "udsinfo lsjobhistory  -filtervalue jobclass=gc"\\ 
+
+<code>
+for x in `cat appliances.txt`
+do 
+ssh $x reportsweeps -c | tail -2 | gawk "{print \"${x},\",\$2,\$3,\$4,\$5}" >> last_garbage_sweeps.txt
+done</code>
+
+This will give you a CSV formatted list of the last couple of runs of garbage collection jobs.  These ought to be run in pairs, a garbage collection to mark unused sectors and a sweep to actually delete the sectors.
+<code>
+cdcpilrep001.federalmogul.com, 20:00:00,2019-06-30 19:14:19,gc_11477450,gc,succeeded,n/a,47:14:19,-,-
+cdcpilrep001.federalmogul.com, 19:14:19,2019-07-03 11:21:36,sweep_11514409,gc,succeeded,n/a,64:07:17,20102.458,21064.000
+cdcpilrep004.federalmogul.com, 01:00:00,2019-08-10 23:55:31,gc_2755891,gc,succeeded,n/a,22:55:31,-,-
+cdcpilrep004.federalmogul.com, 23:55:31,2019-08-11 19:52:05,sweep_2763489,gc,succeeded,n/a,19:56:34,2888.137,3268.000
+cdcpilrep005.federalmogul.com, 05:00:00,2019-08-11 21:58:25,gc_2511593,gc,succeeded,n/a,16:58:26,-,-
+cdcpilrep005.federalmogul.com, 21:58:25,2019-08-12 11:58:58,sweep_2517891,gc,succeeded,n/a,14:00:33,1969.164,2300.000
+cdcpilrep006.federalmogul.com, 01:00:00,2019-08-04 19:24:08,gc_1328954,gc,succeeded,n/a,18:24:08,-,-
+cdcpilrep006.federalmogul.com, 19:24:08,2019-08-06 06:59:16,sweep_1335739,gc,succeeded,n/a,35:35:08,4084.719,4744.000
+cdcpilrep007.federalmogul.com, 01:00:00,2019-06-29 12:03:40,gc_617418,gc,succeeded,n/a,11:03:40,-,-
+cdcpilrep007.federalmogul.com, 12:03:40,2019-07-02 00:55:24,sweep_618915,gc,succeeded,n/a,60:51:44,11698.922,13036.000
+cdcpilrep008.federalmogul.com, 01:00:00,2019-08-03 15:15:17,gc_1157045,gc,succeeded,n/a,14:15:18,-,-
+cdcpilrep008.federalmogul.com, 15:15:17,2019-08-03 15:52:47,sweep_1163599,gc,succeeded,n/a,00:37:30,4.000,4.000
+sfldmirep001.federalmogul.com, 20:00:00,2019-08-02 20:53:48,gc_12266927,gc,failed,n/a,00:53:48,-,-
+sfldmirep001.federalmogul.com, 20:00:00,2019-08-09 20:51:43,gc_12288081,gc,failed,n/a,00:51:44,-,-
+phlyparep001.federalmogul.com, 20:34:40,,sweep_5198947_002C,gc,running,100,17:32:54,-,-
+phlyparep001.federalmogul.com, 20:34:40,,sweep_5198947,gc,running,100,17:32:54,-,-
+phlyparep007.federalmogul.com, 07:02:09,2019-08-10 05:01:28,gc_2335494,gc,succeeded,n/a,21:59:20,-,-
+phlyparep007.federalmogul.com, 05:01:28,2019-08-11 00:38:32,sweep_2338045,gc,succeeded,n/a,19:37:04,2103.214,2280.000
+phlyparep008.federalmogul.com, 20:00:00,2019-08-10 16:26:25,gc_2001572,gc,succeeded,n/a,20:26:25,-,-
+phlyparep008.federalmogul.com, 16:26:25,2019-08-10 20:52:56,sweep_2005693,gc,succeeded,n/a,04:26:31,506.438,568.000
+phlyparep009.federalmogul.com, 00:11:12,,sweep_1673597_0037,gc,running,24,12:56:24,-,-
+phlyparep009.federalmogul.com, 00:11:12,,sweep_1673597,gc,running,24,12:56:24,-,-
+phlyparep104.federalmogul.com, 01:00:00,2019-08-11 19:20:41,gc_1129961,gc,succeeded,n/a,42:20:41,-,-
+phlyparep104.federalmogul.com, 19:20:41,2019-08-13 01:03:47,sweep_1137727,gc,succeeded,n/a,29:43:06,2761.301,3280.000
+phlyparep105.federalmogul.com, 01:00:00,2019-08-11 04:25:52,gc_1068905,gc,succeeded,n/a,27:25:53,-,-
+phlyparep105.federalmogul.com, 04:25:52,2019-08-11 21:07:56,sweep_1074904,gc,succeeded,n/a,16:42:03,3190.908,3400.000
+phlyparep106.federalmogul.com, 01:00:00,2019-07-13 16:58:06,gc_364999,gc,succeeded,n/a,15:58:06,-,-
+phlyparep106.federalmogul.com, 16:58:06,2019-07-16 04:32:50,sweep_367093,gc,succeeded,n/a,59:34:45,8752.833,9896.000
+phlyparep107.federalmogul.com, 01:00:00,2019-07-20 14:21:38,gc_330792,gc,succeeded,n/a,13:21:38,-,-
+phlyparep107.federalmogul.com, 14:21:38,2019-07-21 05:33:42,sweep_332221,gc,succeeded,n/a,15:12:04,2384.221,2604.000
+phlyparep108.federalmogul.com, 01:00:00,2019-07-27 19:37:24,gc_325849,gc,succeeded,n/a,18:37:25,-,-
+phlyparep108.federalmogul.com, 19:37:24,2019-07-27 20:53:25,sweep_328287,gc,succeeded,n/a,01:16:00,4.000,4.000
+</code>

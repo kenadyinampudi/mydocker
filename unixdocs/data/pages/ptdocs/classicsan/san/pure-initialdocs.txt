@@ -1,0 +1,51 @@
+
+FIXME
+
+** If you got time, please cleanup this document **
+
+<code>This is what I have in mind, please add your thoughts ..
+
+Pre work ...
+
+a. Create the target volumes and map them to pocafasv02
+
+for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+	purevol create --size=1024G ta2orabkp_${vol}
+	purevol connect --host pocafasv02 ta2orabkp_${vol}
+done
+
+for vol in 01 02 03 04 05 06 07 08 09 10 11 12
+do
+	purevol create --size=1024G it0oradata_${vol}
+	purevol connect --host pocafasv03 it0oradata_${vol}
+done
+
+
+
+
+Login to pocafasv02
+
+sudo cfgmgr
+
+lsdev -Ccdisk | grep -i pure # Verify disks are visible.
+
+During the test,
+
+a. DBAs do some magic to put the tablespaces in hot backup mode.
+b. We execute the clone 
+
+purevol snap --suffix ta2clone01 ta2oradata_01 ta2oradata_02 ta2oradata_03 ta2oradata_04 ta2oradata_05 ta2oradata_06 ta2oradata_07 ta2oradata_08 ta2oradata_09 ta2oradata_10 ta2oradata_11 ta2oradata_12
+c. DBAs do the magic to put the table spaces in end backup mode.
+d. Delete the target disks from OS on pocafasv02
+
+lsdev -Ccdisk | grep -i pure | awk '{print $1}' | xargs -n1 sudo rmdev -dl
+
+e. Copy the snaps to target volumes
+
+for target in ta2oradata_01 ta2oradata_02 ta2oradata_03 ta2oradata_04 ta2oradata_05 ta2oradata_06 ta2oradata_07 ta2oradata_08 ta2oradata_09 ta2oradata_10 ta2oradata_11 ta2oradata_12
+do
+	purevol copy ${target}.ta2clone01 ${target} --overwrite
+done
+
+f. Run cfgmgr on pocafasv02</code>

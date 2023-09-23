@@ -1,0 +1,85 @@
+====== PTA Clones ======
+
+<code>Nithin/Sadhna/Kapil,
+
+Please perform zoning for the following system
+
+This is to clone  source system paerdb99,
+
+LPAR name : prendb99
+
+WWNs : 
+
+c0507607f34d004a 	ldcds6510a1	14
+c0507607f34d004b 	ldcds6510a1	14
+c0507607f34d004c 	ldcds6510b1	7
+c0507607f34d004d	ldcds6510b1	7
+
+Please provision 2 * 138G devices for rootvg.
+
+1. Identify which storage we need to zone to.	Pure Storage
+2. Zone	
+3. Provision the boot disks
+4. Take a crash consistent copy and provision to the host.
+
+
+Fabric A
+
+alicreate "prendb99_4d004a","c0:50:76:07:f3:4d:00:4a"
+alicreate "prendb99_4d004b","c0:50:76:07:f3:4d:00:4b"
+
+zonecreate "prendb99_4d004a__ldcpm70v1_0_2_0__1_2_0","prendb99_4d004a;ldcpm70v1_0_2_0;ldcpm70v1_1_2_0"
+zonecreate "prendb99_4d004b__ldcpm70v1_0_2_0__1_2_0","prendb99_4d004b;ldcpm70v1_0_2_0;ldcpm70v1_1_2_0"
+cfgadd "fab_a_act_config","prendb99_4d004a__ldcpm70v1_0_2_0__1_2_0;prendb99_4d004b__ldcpm70v1_0_2_0__1_2_0"
+cfgsave
+cfgenable "fab_a_act_config"
+
+Fabric B
+
+alicreate "prendb99_4d004c","c0:50:76:07:f3:4d:00:4c"
+alicreate "prendb99_4d004d","c0:50:76:07:f3:4d:00:4d"
+
+zonecreate "prendb99_4d004c__ldcpm70v1_0_0_1__1_0_1","prendb99_4d004c;ldcpm70v1_0_0_1;ldcpm70v1_1_0_1"
+zonecreate "prendb99_4d004d__ldcpm70v1_0_0_1__1_0_1","prendb99_4d004d;ldcpm70v1_0_0_1;ldcpm70v1_1_0_1"
+cfgadd "fab_b_act_config","prendb99_4d004c__ldcpm70v1_0_0_1__1_0_1;prendb99_4d004d__ldcpm70v1_0_0_1__1_0_1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+c0507607f34d004a 	ldcds6510a1	14
+c0507607f34d004b 	ldcds6510a1	14
+c0507607f34d004c 	ldcds6510b1	7
+c0507607f34d004d	ldcds6510b1	7
+
+export STGARRAY=ldcpm70v1
+export SSH2PURE="sudo -u sanmontr ssh pureuser@${STGARRAY}"
+
+${SSH2PURE} purehost create --wwnlist c0507607f34d004a,c0507607f34d004b,c0507607f34d004c,c0507607f34d004d prendb99
+
+${SSH2PURE} purevol create --size 138g prendb99_001
+${SSH2PURE} purevol create --size 138g prendb99_002
+
+${SSH2PURE} purevol connect --host prendb99 prendb99_001 prendb99_002
+
+${SSH2PURE} purepgroup create --hostlist paerdb99 imopaerdb99
+
+${SSH2PURE} purepgroup snap --suffix Jan-15-2019 imopaerdb99
+
+${SSH2PURE} purevol list --snap --pgrouplist imopaerdb99.Jan-15-2019
+
+export vol_no=003
+
+export snapshots=$(${SSH2PURE} purevol list --snap --pgrouplist imopaerdb99.Jan-15-2019 --notitle | grep -v 138G | awk '{print $1}' | tr "\n" " ")
+
+target_vols=""
+for snapshot in ${snapshots}
+do
+   ${SSH2PURE} purevol copy ${snapshot} prendb99_${vol_no}
+   target_vols="${target_vols} prendb99_${vol_no}"
+   vol_no=$((vol_no+1))
+done
+
+${SSH2PURE} purevol connect --host prendb99 ${target_vols}
+
+${SSH2PURE} purepgroup destroy imopaerdb99.Jan-15-2019
+
+${SSH2PURE} purepgroup destroy imopaerdb99</code>

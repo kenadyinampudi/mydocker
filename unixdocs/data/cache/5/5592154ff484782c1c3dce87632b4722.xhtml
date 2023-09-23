@@ -1,0 +1,144 @@
+
+<h1 class="sectionedit1" id="fedora_post_install_activities">Fedora post install activities</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Edit sudoers<pre class="code">su -
+echo &#039;x1rzb826        ALL=(ALL)       NOPASSWD: ALL&#039; &gt;&gt; /etc/sudoers</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure proxy for yum<pre class="code">sudo vi /etc/yum.conf</pre>
+
+<p>
+Add
+</p>
+<pre class="code">proxy=http://170.64.0.72:8080
+proxy_username=XX
+proxy_password=XX</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update to the latest patch level.<pre class="code">sudo yum update</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install some basic softwares<pre class="code">sudo yum -y install wget shutter putty geany</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Libre Office<pre class="code">sudo yum groupinstall &quot;Office/Productivity&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure proxy in firefox &#039;edit-preferences&#039;</div>
+</li>
+<li class="level1"><div class="li"> Install nvidia drivers<strong>use the default drivers unless needed</strong><pre class="code">sudo yum localinstall --nogpgcheck http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-stable.noarch.rpm http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-stable.noarch.rpm
+sudo yum install akmod-nvidia xorg-x11-drv-nvidia-libs
+sudo mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r)-nouveau.img
+sudo dracut /boot/initramfs-$(uname -r).img $(uname -r)</pre>
+
+<p>
+Now reboot
+</p>
+<pre class="code">sudo init 6</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install VirtualBox<pre class="code">sudo vi /etc/yum.repos.d/virtualbox.repo</pre>
+
+<p>
+Edit it 
+</p>
+<pre class="code">[virtualbox]
+name=Fedora $releasever - $basearch - VirtualBox
+baseurl=http://download.virtualbox.org/virtualbox/rpm/fedora/$releasever/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://www.virtualbox.org/download/oracle_vbox.asc</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install some more <pre class="code">sudo yum install binutils gcc make patch libgomp glibc-headers glibc-devel kernel-headers kernel-devel dkms</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install VirtualBox<pre class="code">sudo yum install VirtualBox</pre>
+<pre class="code">sudo /etc/init.d/vboxdrv setup</pre>
+<pre class="code">sudo usermod -a -G vboxusers x1kxk630</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Turn off firewall</div>
+<ul>
+<li class="level2"><div class="li"> iptables<pre class="code">sudo chkconfig --level 234 iptables off
+sudo service iptables stop</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> On F20 and F21 it is firewald<pre class="code">sudo systemctl disable firewalld.service</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Install Google Chrome.<pre class="code">sudo vi /etc/yum.repos.d/google-chrome.repo</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">[google-chrome]
+name=google-chrome
+baseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64
+enabled=1
+gpgcheck=1</pre>
+
+<p>
+Install it 
+</p>
+<pre class="code">sudo yum install google-chrome-stable</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT1 SECTION "Fedora post install activities" [1-2199] -->
+<h1 class="sectionedit2" id="fedora_lotus_notes_installation">Fedora Lotus notes installation</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Install pre-requisits<pre class="code">sudo yum install tcsh libart_lgpl_2.so.2 libasound.so.2 libatk-1.0.so.0 libbonobo-2.so.0 \
+libbonobo-activation.so.4 libbonoboui-2.so.0 libcrypt.so.1 libc.so.6 libcups.so.2 libdl.so.2 \
+libfontconfig.so.1 libfreetype.so.6 libgcc_s.so.1 libgconf-2.so.4 libgdk_pixbuf-2.0.so.0 \
+libgdk-x11-2.0.so.0 libglib-2.0.so.0 libgmodule-2.0.so.0 libgnome-2.so.0 libgnomecanvas-2.so.0 \
+libgnomeprint-2-2.so.0 libgnomeprintui-2-2.so.0 libgnomeui-2.so.0 libgnomevfs-2.so.0 libgobject-2.0.so.0 \
+libgthread-2.0.so.0 libgtk-x11-2.0.so.0 libICE.so.6 libjpeg.so.62 libm.so.6 libnsl.so.1 libORBit-2.so.0 \
+libpam_misc.so.0 libpam.so.0 libpango-1.0.so.0 libpangoft2-1.0.so.0 libpangox-1.0.so.0 libpangoxft-1.0.so.0 \
+libpng12.so.0 libpopt.so.0 libpthread.so.0 libresolv.so.2 librt.so.1 libSM.so.6 libstdc++.so.6 libX11.so.6 \
+libXcursor.so.1 libXext.so.6 libXft.so.2 libXi.so.6 libxkbfile.so.1 libxml2.so.2 libXp.so.6 libXrender.so.1 \
+libXss.so.1 libXt.so.6 libXtst.so.6 libz.so.1 gnome-desktop -y</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install wget<pre class="code">sudo yum -y install wget</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Get the lotus notes client<pre class="code">cd /var/tmp
+wget http://pgnmsv01/prod/images/applications/lotus-8.5.3.tar
+tar xvf lotus-8.5.3.tar</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>This will probably break other apps</strong> ( I did not install Java but used the one that came with Fedora)Install Java, Ignore if it says already installed<pre class="code">sudo rpm -Uvh /var/tmp/notes/jre-6u29-linux-amd64.rpm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong>This will probably break other apps</strong> ( I did not install Java but used the one that came with Fedora)Configure Java<pre class="code">sudo alternatives --install /usr/bin/java java /usr/java/jre1.6.0_29/bin/java 20000
+sudo alternatives --install /usr/bin/javaws javaws /usr/java/jre1.6.0_29/bin/javaws 20000
+sudo alternatives --install /usr/lib64/mozilla/plugins/libjavaplugin.so libjavaplugin.so.x86_64 /usr/java/jre1.6.0_29/lib/amd64/libnpjp2.so 20000
+sudo alternatives --config java</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Lotus notes<pre class="code">sudo yum install /var/tmp/notes/ibm_lotus_notes-8.5.3.i586.rpm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install Sametime<pre class="code">sudo yum install /var/tmp/notes/ibm_lotus_sametime-8.5.3.i586.rpm</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install notes libs<pre class="code">cd /opt/ibm/lotus/notes
+sudo tar xf /var/tmp/notes/notes_libs_karmic.tar
+sudo chmod +x *.so.0
+sudo chown root:root *.so.0
+sudo chmod 777 *.so.0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> From applications in the GNOME, add Lotue notes to favorites and fire up Notes.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Fedora Lotus notes installation" [2200-] -->

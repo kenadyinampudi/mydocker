@@ -1,0 +1,41 @@
+====== Redhat Server Post installation work ======
+
+==== Steps from the server that is being built ====
+
+  - Login to the ADMIN server
+    - For DRiV<code>ssh pcdcunxaxap01</code>
+  - Login to the server (as root) you just built<code>sudo ssh <hostname></code>
+  - [[unix:setupresolv.conf|A basic North American resolv.conf is installed, for specific sites in NA and EU, please click the link]]
+  - [[unix:timezone|Setup correct timezone for servers please click the link]]
+  - [[unix:setupntp&#redhat|For NA servers NTP is already configured, for European servers please click the link]]
+  - [[unix:createinformationfile&#linux|Update the information file]]
+
+==== Steps from the Master server ====
+
+  - For DRiV - Login to pcdcunxaxap01<code>ssh pcdcunxaxap01</code>
+  - Only do followng on NEW BUILD  if not sure STOP !!! contact Chris Stachowiak
+  - Copy SSH keys, sudoers, uuma and such<code>sudo /prod/images/scripts/config_tenneco_linux <servername></code>
+  - [[unix:lpar2rrd-os-agent&#installing_lpar2rrd_agent_-_rhel|Setup lpar2rrd agent]]
+  - Send ticket for netbackup
+  - [[unix:post_installation_steps_dell_server|For Dell hardware - additional steps are needed -- Click here]]
+  - Send ticket for Monitoring
+  - Send a ticket to "GIOS Operations - Entitlement" to add the systems.
+  - [[unix:postinstallationsteps-redhat-sap|For SAP servers - additional steps are needed -- Click here]]
+  - [[unix:postinstallationsteps-redhat-OMI|For OMI servers - additional steps are needed -- Click here]]
+  - [[unix:postinstallationsteps-redhat-Network|For Network Monitoring servers - additional steps are needed -- Click here]]
+  - [[unix:postinstallationsteps-redhat-splunk|For Security servers - additional steps are needed -- Click here]]
+  - Shutdown the VM<code>ssh ${server_tenneco}</code>Shutdown<code>sudo init 0</code>
+  - Remove the installation CDROM
+    - On VMWARE based systems<code>Edit settings on the vSphere client and remove the isofile mapping to Virtual CDROM
+Make it client device</code>Once done --> Power on the VM
+    - On standalone NBU home made appliances<code>ssh LAN@${server_tenneco}rmb</code>Eject the CDROM<code>vm cdrom eject
+OR 
+racadm remoteimage -d</code>Exit from iLO<code>exit</code>
+  - [[unix:rhelpatching&#installing_patches_on_clients|Patch the server to the latest version of RHEL6 or RHEL7]]
+  - [[unix:ansibleinstall|Systems that needs ansible - Install ansible]]
+  - [[unix:postinstallationsteps-redhat-NBU|For Netbackup home made appliances - additional steps are needed -- Click here]]
+  - On physical systems directly connected to SAN storage arrays iSCSI or FC, please install multipath
+    - Install<code>sudo yum -y install device-mapper-multipath</code>
+    - Configure basic failover and enable multipath daemon<code>sudo mpathconf --enable --with_multipathd y</code>
+  - After the installation check the kickstart logs to make sure there were no errors<code>sudo more /root/ks-pre.log
+sudo more /root/ks-post.log</code>

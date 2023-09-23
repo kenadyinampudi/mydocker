@@ -1,0 +1,10 @@
+====== TPC ( IBM Spectrum Control ) upgrade from 5.2.7 to 5.2.10 ======
+
+==== Backup the database ====
+
+  - Login to pgtpcsv01 and switch to db2inst1 account<code>sudo su - db2inst1</code>
+  - Execute db2profile<code>./sqllib/db2profile</code>
+  - Stop all applications<code>db2 force application all</code>Stop DB2 instance<code>db2 terminate</code>
+  - Check if there are still applications<code>db2 list applications</code>
+  - Backup the database<code>DB2 BACKUP DATABASE TPCDB USER db2inst1 USING <password></code>**Location** /tmp/DB_Backup COMPRESS
+  - 

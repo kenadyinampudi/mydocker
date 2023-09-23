@@ -1,0 +1,123 @@
+====== Start LPARs at CDC/PTT - RHEL ======
+
+  - Adjust and make sure time is correct<code>sudo ntpdate -u pgntpap01</code>
+  - After all systems are up, make sure NFS filesystems are mounted.
+  - Remove NBU software<code>sudo rpm -e VRTSnbcfg VRTSnetbp VRTSnbjava VRTSnbjre VRTSnbclt VRTSpbx VRTSnbpck</code>
+
+====== Start LPARs at CDC/PTT - AIX ======
+
+** CDC PTT HMC is tgprhmc7.pt.int.tenneco.com **
+
+===== Switch console database from LDC to CDC =====
+
+  - Login to the NIM server ''pgnmsv01''
+  - Update console database **This will be executed by one person**
+    - Make a backup<code>sudo cp /prod/images/etc/unix_sys_console /prod/images/etc/unix_sys_console.$(date +%m%d%Y)</code>
+    - The manual way<code>sudo vi /prod/images/etc/unix_sys_console</code>
+    - Or try with this one
+      - Define this function<code>function fix_unixconsole {
+export hmc=$1
+export lpar=$2
+export consoledb=/prod/images/etc/unix_sys_console
+
+echo "Commenting out the existing entry for ${lpar} from console database" 
+
+grep -q ^${lpar} ${consoledb}
+if [ ${?} -ne 0 ]
+then
+   echo "${lpar} does not exist in console DB "
+   return
+fi
+
+sudo ex -sc "/${lpar}/s/^/\#/|x" ${consoledb}
+
+echo "Creating console definitions for ${hmc} - ${lpar} " 
+
+for frame in $(ssh ${hmc} lssyscfg -r sys -F name )
+do
+   ssh ${hmc} lssyscfg -r lpar -m ${frame} -F name,lpar_id | grep ^${lpar} > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      lpar_id=$(ssh ${hmc} lssyscfg -r lpar -m ${frame} --filter lpar_names=${lpar} -F lpar_id )
+      echo ${lpar}:lpar-ibm:${hmc}:${frame}:${lpar}:${lpar_id}:tauxrpt | sudo tee -a ${consoledb}
+   fi
+done
+echo ""
+echo "Check the entries and make sure they are how they are supposed to be for ${lpar} "
+grep ${lpar} ${consoledb}
+}</code>
+      - Produce the console database entries<code>for host in <list or servers seperated by space>
+do
+   fix_unixconsole tgprhmc7.pt.int.tenneco.com ${host}
+done</code>
+===== Boot lpars at CDC/PTT =====
+
+  - Store variables that points to your systems<code>export hostname=name_of_the_system</code>
+  - Find our the frame and store than in a variable<code>export frame=$(grep -i ^${hostname} /prod/images/etc/unix_sys_console | awk -F: '{print $4}' )</code>
+  - Power on the lpar<code>ssh tgprhmc7.pt.int.tenneco.com "chsysstate -r lpar -o on -b sms -m ${frame} -n ${hostname}"</code>
+
+===== Perform post migration tasks at CDC/PTT =====
+
+  - Open a console session to your host<code>sudo getconsole ${hostname}</code>
+  - Check and see if you have booted from the right disk<code>if [ $(lsvg | grep -wc old_rootvg) -eq 1 ]
+then
+   bootdisk=$(lspv | grep -w old_rootvg | awk '{print $1}')
+   sudo bootlist -m normal ${bootdisk}
+   echo "Reboot the server now to boot from the correct root disk"
+else
+   echo "We have booted from the right disk.  Proceed with the NIC configuration"
+fi</code>
+  - Re-configure NICs at PTT & assign the IP addres.(Validate it with the backup files in your home directory taken prior the migration)
+    - Remove all IP configs if any from kernel<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all device files for NICs<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Re-discover the NICs<code>sudo cfgmgr</code>
+    - Configure IP Addresses<code>cat /root/configure_ips.cmds</code>Check the output and execute the commands.
+  - On clustered CI systems, varyon and mount filesystems and nfs, virtual IPs etc. <code>paerap99
+paerap98
+
+peerap99
+peerap98</code>
+  - NTP update<code>sudo ntpdate -u pgntpap01</code>
+  - Enable NFS and reboot servers at PTT
+    - Enable NFS mounts<code>nfsfilesystems=$(grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | tr "\n" " " )
+
+for nfsfs in ${nfsfilesystems}
+do
+   sudo /usr/local/scripts/manage_auto_mount_nfs enable ${nfsfs}
+done</code>
+    - Enable NFS exports<code>if [ -f /etc/exports.move2cdc ]
+then
+   sudo mv /etc/exports.move2cdc /etc/exports
+   sudo exportfs -ua
+   sudo exportfs -a
+fi</code>   
+  - Cleanup the MPIO<code>lsdev -Cc disk | grep -i defined | awk '{print $1}' | awk '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - Install Actifio client
+    - Expand some filesystems<code>sudo chfs -a size=+1G /usr
+sudo chfs -a size=+1G /opt</code>
+    - Install the package<code>sudo installp -acX -d /tmp/connector-AIX-latestversion.bff udsagent.rte</code>
+    - Remove the installation file<code>sudo rm /tmp/connector-AIX-latestversion.bff</code>
+  - Set bootlist<code>lspv | grep -w rootvg | awk '{print $1}' | xargs -n1 sudo bootlist -m normal </code>
+  - Update the Pure ODM driver to the latest version. 
+    - Check oslevel<code>oslevel</code>
+      - If oslevel is greater than 5.3, then follow the steps
+        - Install Pure ODM<code>sudo mkdir -p /mnt/updates ; sudo mount pgnmsv01:/prod/images/storage /mnt/updates
+sudo installp -u devices.fcp.disk.pure.flasharray.mpio.rte
+sudo installp -acxd /mnt/updates/PureODM/1.0.0.7/devices.fcp.disk.pure.flasharray.mpio.rte all
+lsdev -Ccdisk | grep "PURE MPIO Drive" | awk '{print $1}' | xargs -n1 sudo chdev -a hcheck_interval=30 -Pl</code>Make sure device driver has been installed<code>lslpp -l '*pure*'</code>The output should be<code>  Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  devices.fcp.disk.pure.flasharray.mpio.rte
+                             1.0.0.7  COMMITTED  AIX MPIO Support for PURE
+                                                 Flash Arrays(New Install)</code>
+  - Reboot the server<code>sudo shutdown -Fr</code>
+  - Please reconfigure the IP alias, if any.<code>sudo grep alias /root/configure_ips.cmds</code>
+  - Validate all filesystems are mounted. This code should not produce any output<code>lsvg | grep -v altinst_rootvg | xargs -n1 lsvg -l | grep -i closed</code>Ignore boot volume.
+  - [[https://tenneco.service-now.com/cmdb_ci_server_list.do?sysparm_userpref_module=8233ee770a0a0a64018f2cc165cdf2ed&sysparm_clear_stack=true |In Service now locate the CI and change the location from Lincolnshire IL /US to Cyxtera DFT Data Center]] 
+  - Send an email to ''AR_Tenneco@accenture.com''<code>These server(s) have been migrated from Lincolnshire Datacenter to CDC-TEN(tenneco) datacenter, please update in Accelerate</code>

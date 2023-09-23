@@ -1,0 +1,72 @@
+There could be a need to move and configured IP from one intrface to the other - most likely due to performance issues.
+
+**Disclaimer - below procedure is provided as is and should be used in conjuction with common sense and good IT practice. Any harm made by it shall no blame its author.**
+
+Here is what I did on GLK NBU appliance recently:
+  * Logged-in to NBU app via IPMI interface - so I will not cut my self off it
+  * To stop NBU run<code>glknbu5230ams.Support> Processes
+Entering Process view...
+
+AdminConsole  Show/control Admin Console processes.
+Exit          Log out and exit from the current shell.
+NetBackup     Show/control NetBackup processes.
+Return        Return to the previous menu.
+Shell         Shell operations.
+
+glknbu5230ams.Processes> NetBackup Stop</code>
+  * save current IP/mask/gateway<code>glknbu5230ams.Main_Menu> Network
+Entering Network administration view...
+
+Configure        Configure IP address.
+Date             Manage system time.
+DNS              Manage DNS configuration.
+Exit             Log out and exit from the current shell.
+Gateway          Add or delete gateway or route.
+Hostname         Set or display the hostname.
+Hosts            Manage IP address to hostname mapping.
+IPv4             Configure an IPv4 address for a network interface.
+IPv6             Configure an IPv6 address for a network interface.
+LinkAggregation  Network link aggregation.
+NetStat          Examine network statistical information.
+NTPServer        Manage NTP server list.
+Ping             Reach a host/IP with ICMP ECHO_REQUESTs.
+Return           Return to the previous menu.
+Security         Manage IPsec policies.
+SetProperty      Set Ethernet interface property.
+Shell            Shell operations.
+Show             Display network properties.
+TimeZone         Time zone settings.
+TraceRoute       Display network packet route.
+Unconfigure      Remove IP address and shut down interface.
+VLAN             Tag and delete a protocol based VLAN
+WANOptimization  Manage WAN Optimization
+
+glknbu5230ams.Network> Show Configuration
+glknbu5230ams.Network> Show Status
+glknbu5230ams.Network> Show Properties
+glknbu5230ams.Network></code>
+  * Remove current IP<code>glknbu5230ams.Network> Unconfigure bond0</code>
+  * Delete current bonding<code>glknbu5230ams.Network> LinkAggregation Delete bond0</code>
+  * Create new bond from 10Gbps interface<code>glknbu5230ams.Network> LinkAggregation Create eth4,eth7 balance-alb</code>
+  * Put an IP address <code>configure 10.34.64.41 255.255.254.0 10.34.64.1 bond0</code>
+  * Ping a gateway and something else outside the subnet<code>glknbu5230ams.Network> Ping 10.34.64.1
+PING 10.34.64.1 (10.34.64.1) 56(84) bytes of data.
+64 bytes from 10.34.64.1: icmp_seq=1 ttl=255 time=0.809 ms
+64 bytes from 10.34.64.1: icmp_seq=2 ttl=255 time=0.805 ms
+64 bytes from 10.34.64.1: icmp_seq=3 ttl=255 time=0.795 ms
+^C
+--- 10.34.64.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2167ms
+rtt min/avg/max/mdev = 0.795/0.803/0.809/0.005 ms
+glknbu5230ams.Network> Ping glw3162c.emea.int.tenneco.com
+PING glw3162c.emea.int.tenneco.com (10.57.252.31) 56(84) bytes of data.
+64 bytes from glw3162c.emea.int.tenneco.com (10.57.252.31): icmp_seq=1 ttl=124 time=144 ms
+64 bytes from glw3162c.emea.int.tenneco.com (10.57.252.31): icmp_seq=2 ttl=124 time=143 ms
+^C
+--- glw3162c.emea.int.tenneco.com ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1942ms
+rtt min/avg/max/mdev = 143.026/143.669/144.312/0.643 ms</code>
+  * Start NBU services back again <code>netbackup start</code>
+
+
+	

@@ -1,0 +1,74 @@
+====== Allocate storage GrassLake servers - 1st time ======
+
+  - Requirement<code>taglk055        9 * 102 GB          103566 MB ( refer to the document )  http://storagedocs/doku.php?id=san:allocate-lun-clarions 
+taglk057        2 * 102 GB          103566 MB ( refer to the document )  http://storagedocs/doku.php?id=san:allocate-lun-clarions 
+
+x1kxk630 on pablsv01:/home/x1kxk630 $ ssh taglk055 /usr/local/scripts/listwwns 
+fcs0 10000000C960778D 
+fcs1 10000000C9603DC8 
+
+x1kxk630 on pablsv01:/home/x1kxk630 $ ssh taglk057 /usr/local/scripts/listwwns 
+fcs0 10000000C976224C 
+fcs1 10000000C976224D</code>
+
+** Zoning work **
+
+  - Create Fabric A aliases - VNX & GPDM servers<code>alicreate "vnx5400_spa1_0","50:06:01:60:08:60:0d:cd"
+alicreate "vnx5400_spb1_0","50:06:01:68:08:60:0d:cd"
+alicreate "taglk055_603dc8","10:00:00:00:c9:60:3d:c8"
+alicreate "taglk057_76224d","10:00:00:00:c9:76:22:4d"</code>
+  - Create zoning<code>zonecreate "taglk055_603dc8__vnx5400_spa1_0","taglk055_603dc8;vnx5400_spa1_0"
+zonecreate "taglk055_603dc8__vnx5400_spb1_0","taglk055_603dc8;vnx5400_spb1_0"
+zonecreate "taglk057_76224d__vnx5400_spa1_0","taglk057_76224d;vnx5400_spa1_0"
+zonecreate "taglk057_76224d__vnx5400_spb1_0","taglk057_76224d;vnx5400_spb1_0"
+cfgcreate "fab_a_act_config","taglk055_603dc8__vnx5400_spa1_0;taglk055_603dc8__vnx5400_spb1_0;taglk057_76224d__vnx5400_spa1_0;taglk057_76224d__vnx5400_spb1_0"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+  - Create Fabric B aliases - VNX & GPDM servers<code>alicreate "vnx5400_spa2_1","50:06:01:65:08:60:0d:cd"
+alicreate "vnx5400_spb2_1","50:06:01:6d:08:60:0d:cd"
+alicreate "taglk055_60778d","10:00:00:00:c9:60:77:8d"
+alicreate "taglk057_76224c","10:00:00:00:c9:76:22:4c"</code>
+  - Create zoning<code>zonecreate "taglk055_60778d__vnx5400_spa2_1","taglk055_60778d;vnx5400_spa2_1"
+zonecreate "taglk055_60778d__vnx5400_spb2_1","taglk055_60778d;vnx5400_spb2_1"
+zonecreate "taglk057_76224c__vnx5400_spa2_1","taglk057_76224c;vnx5400_spa2_1"
+zonecreate "taglk057_76224c__vnx5400_spb2_1","taglk057_76224c;vnx5400_spb2_1"
+cfgcreate "fab_b_act_config","taglk055_60778d__vnx5400_spa2_1;taglk055_60778d__vnx5400_spb2_1;taglk057_76224c__vnx5400_spa2_1;taglk057_76224c__vnx5400_spb2_1"
+cfgsave
+cfgenable "fab_b_act_config"</code>
+  - Create storage group and register paths - from pablsv01<code>naviseccli -h glkvnx5400spa storagegroup -create -gname TAGLK055
+
+naviseccli -h glkvnx5400spa storagegroup -setpath -o -gname TAGLK055 -hbauid 20:00:00:00:c9:60:3d:c8:10:00:00:00:c9:60:3d:c8 -sp a -spport 0 -type 3 -ip 10.34.69.20 -host TAGLK055 -failovermode 4 -arraycommpath 1
+naviseccli -h glkvnx5400spa storagegroup -setpath -o -gname TAGLK055 -hbauid 20:00:00:00:c9:60:3d:c8:10:00:00:00:c9:60:3d:c8 -sp b -spport 0 -type 3 -ip 10.34.69.20 -host TAGLK055 -failovermode 4 -arraycommpath 1
+naviseccli -h glkvnx5400spa storagegroup -setpath -o -gname TAGLK055 -hbauid 20:00:00:00:c9:60:77:8d:10:00:00:00:c9:60:77:8d -sp a -spport 5 -type 3 -ip 10.34.69.20 -host TAGLK055 -failovermode 4 -arraycommpath 1
+naviseccli -h glkvnx5400spa storagegroup -setpath -o -gname TAGLK055 -hbauid 20:00:00:00:c9:60:77:8d:10:00:00:00:c9:60:77:8d -sp b -spport 5 -type 3 -ip 10.34.69.20 -host TAGLK055 -failovermode 4 -arraycommpath 1
+
+naviseccli -h glkvnx5400spa storagegroup -create -gname TAGLK057
+
+naviseccli -h glkvnx5400spa storagegroup -setpath -o -gname TAGLK057 -hbauid 20:00:00:00:c9:76:22:4d:10:00:00:00:c9:76:22:4d -sp a -spport 0 -type 3 -ip 10.34.69.23 -host TAGLK057 -failovermode 4 -arraycommpath 1
+naviseccli -h glkvnx5400spa storagegroup -setpath -o -gname TAGLK057 -hbauid 20:00:00:00:c9:76:22:4d:10:00:00:00:c9:76:22:4d -sp b -spport 0 -type 3 -ip 10.34.69.23 -host TAGLK057 -failovermode 4 -arraycommpath 1
+naviseccli -h glkvnx5400spa storagegroup -setpath -o -gname TAGLK057 -hbauid 20:00:00:00:c9:76:22:4c:10:00:00:00:c9:76:22:4c -sp a -spport 5 -type 3 -ip 10.34.69.23 -host TAGLK057 -failovermode 4 -arraycommpath 1
+naviseccli -h glkvnx5400spa storagegroup -setpath -o -gname TAGLK057 -hbauid 20:00:00:00:c9:76:22:4c:10:00:00:00:c9:76:22:4c -sp b -spport 5 -type 3 -ip 10.34.69.23 -host TAGLK057 -failovermode 4 -arraycommpath 1</code>
+  - Create LUNs<code>naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 100 -name TAGLK055_100
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 101 -name TAGLK055_101
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 102 -name TAGLK055_102
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 103 -name TAGLK055_103
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 104 -name TAGLK055_104
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 105 -name TAGLK055_105
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 106 -name TAGLK055_106
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 107 -name TAGLK055_107
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 108 -name TAGLK055_108
+
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 109 -name TAGLK057_109
+naviseccli -h glkvnx5400spa lun -create -type Thin -capacity 103566 -sq mb -poolName BLOCK-POOL -aa 1 -l 110 -name TAGLK057_110</code>
+  - Add the LUNs<code>naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 100 -hlu 0
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 101 -hlu 1
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 102 -hlu 2
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 103 -hlu 3
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 104 -hlu 4
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 105 -hlu 5
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 106 -hlu 6
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 107 -hlu 7
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK055 -alu 108 -hlu 8
+
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK057 -alu 109 -hlu 0
+naviseccli -h glkvnx5400spa storagegroup -addhlu -gname TAGLK057 -alu 110 -hlu 1</code>

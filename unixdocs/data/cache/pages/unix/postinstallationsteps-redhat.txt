@@ -1,0 +1,71 @@
+====== Redhat Server Post installation work ======
+
+==== Steps from the server that is being built ====
+
+  - Login to the server (as root) you just built using the default credentials ''abc123''<code>sudo ssh <hostname></code>
+  - Change the root password to the standard.<code>passwd root</code>
+  - Create /root/.ssh directory<code>sudo ssh localhost</code>CTRL + C --
+  - Correct hostname. Cobbler sometimes reverse lookup the IP and set up the hostname. So a DNS error can change the hostname<code>sudo vi /etc/sysconfig/network</code>Change the FQDN to shortname.Also edit hosts file<code>sudo vi /etc/hosts</code>Remove the ipv6 line<code>::1         localhost localhost.localdomain localhost6 localhost6.localdomain6</code>And add a line for the host itself. Something like<code>80.0.0.43       salnxsv05</code>
+  - [[unix:usersandgroups&#linux|Create basic unix group and users]]
+  - Add Centralized syslog entry<code>echo 'authpriv.info      @pablsv01' | sudo tee -a /etc/rsyslog.conf
+sudo service rsyslog restart</code>
+  - Remove the Redhat repository<code>sudo rm /etc/yum.repos.d/rhel-source.repo</code>
+  - Modify the local.repo file with the latest repository<code>sudo vi /etc/yum.repos.d/local.repo</code>Remove everything except the following depending on the OS and type.
+    - RHEL6 64 bit<code>[local-rhel-6.6-x86_64]
+name=local-rhel-6.6-x86_64
+baseurl=http://pablsv01/sources/rhel-6.6-x86_64/
+enabled=1
+gpgcheck=0
+[local-tenneco-noarch]
+name=local-tenneco-noarch
+baseurl=http://pablsv01/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0</code>
+  - [[unix:setupresolv.conf|Setup resolv.conf]]
+  - [[unix:setupntp&#redhat|Setup NTP]]
+  - [[unix:createinformationfile|Create the information file]]
+  - Schedule standard cron jobs<code>sudo crontab -e</code>Add these<code>03 03 * * 6 /usr/local/scripts/clean_var 1>/dev/null 2>&1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1>/dev/null 2>&1</code>
+  - On VMWare VMs, 
+    - [[unix:vmware:vmwaretools|Install VMWare tools]]
+  - Install and configure SNMPD<code>sudo yum install net-snmp -y</code>Configure it<code>sudo mv /etc/snmp/snmpd.conf /etc/snmp/snmpd.conf.Original
+sudo vi /etc/snmp/snmpd.conf</code>Add this config<code>syslocation Server Room
+syscontact Sysadmin (root@localhost)
+
+rocommunity oicu812 10.32.6.113 
+rocommunity oicu812 10.32.8.188 
+rocommunity oicu812 10.32.8.187 
+rocommunity oicu812 10.32.8.191
+rocommunity oicu812 10.56.1.144
+trapsink   10.32.8.191   oicu812
+trap2sink  10.32.8.191   oicu812</code>Start snmpd<code>sudo chkconfig --level 234 snmpd on
+sudo service snmpd start</code>
+
+
+
+
+==== Steps from the Master server (pgnmsv01) ====
+
+  - Login to pgnmsv01
+  - Set a variable for the server you are building<code>export server_tenneco=<hostname></code>
+  - Setup SSH keys for NIM server<code>sudo rsync -avv /root/.ssh/authorized_keys ${server_tenneco}:/root/.ssh/authorized_keys</code>
+  - On VMWare VMs, 
+    - Install SYMCquiesce, SYMCquiesce is a utility to quiesce the IO during a snapshopt backup.<code>sudo rsync -avv /prod/images/applications/netbackup-vm/SYMCquiesce-1.0.0-001.x86_64.rpm ${server_tenneco}:/var/tmp/
+sudo ssh ${server_tenneco} rpm -Uvh /var/tmp/SYMCquiesce-1.0.0-001.x86_64.rpm</code>
+  - Configure default ssh configs<code>sudo rsync -avv /prod/images/etc/global_ssh_config ${server_tenneco}:/etc/ssh/ssh_config</code>
+  - Install xinetd<code>sudo ssh ${server_tenneco} yum -y install xinetd</code>Enable and start it<code>sudo ssh ${server_tenneco} "/sbin/chkconfig --level 234 xinetd on"</code><code>sudo ssh ${server_tenneco} "/sbin/service xinetd start"</code>
+  - [[unix:installsysinter|Install sysinter ]]
+  - Install cfg2html<code>sudo ssh ${server_tenneco} yum -y install cfg2html-linux-2.66-2.noarch</code>
+  - Install Korn shell<code>sudo ssh ${server_tenneco} yum -y install ksh
+sudo ssh ${server_tenneco} ln -s /bin/ksh /usr/bin/ksh</code>
+  - Install these libraries for openview<code>sudo ssh ${server_tenneco} yum -y install libgcc.i686 libstdc++.i686 compat-libstdc++-33-3.2.3-69.el6.i686</code>
+  - Add the TMOUT variable to /etc/profile<code>sudo ssh ${server_tenneco} 'echo "TMOUT=3600" | tee -a /etc/profile'
+sudo ssh ${server_tenneco} 'echo "readonly TMOUT" | tee -a /etc/profile'</code>
+  - Copy the scripts<code>sudo ssh ${server_tenneco} mkdir -p /usr/local/scripts
+sudo rsync -avv /usr/local/scripts/ ${server_tenneco}:/usr/local/scripts/</code>
+  - Copy the sudoers file from the NIM server pgnmsv01<code>sudo rsync -avv /prod/images/etc/sudoers ${server_tenneco}:/etc/sudoers</code>
+  - Send ticket for netbackup
+  - Send ticket for Monitoring
+  - Send a ticket to "GIOS Operations - Entitlement" to add the systems.
+  - Add the system to UUMA<code>ssh taqa1a03 echo "${server_tenneco}" | sudo tee -a /home/oracle/uuma/hosts.txt</code>
+  - Perform a reboot<code>sudo ssh ${server_tenneco}</code>Reboot<code>sudo init 6</code>

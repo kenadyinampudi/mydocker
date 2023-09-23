@@ -1,0 +1,115 @@
+a:3:{i:0;a:3:{i:0;s:14:"document_start";i:1;a:0:{}i:2;i:0;}i:1;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:3786:"export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"
+
+export suffix=$(date +%b%d%Y%H%M)
+
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} autobahn-ldc-cdc-ptt
+
+export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"
+
+${SSH2PURE} purevol list --snap --pgrouplist LDCPM70V1:autobahn-ldc-cdc-ptt.${suffix} > snapshots.mp
+
+for wintel_lun in wintel_netmon_wave_001 wintel_sap_wave_001 wintel_esx_wave1_004 wintel_esx_wave1_005
+do
+   snapshot=$(grep ${wintel_lun} snapshots.mp | awk '{print $1}')
+   ${SSH2PURE} purevol copy ${snapshot} ${wintel_lun}
+done
+
+${SSH2PURE} purevol connect --hgroup INFRASTRUCTURE wintel_netmon_wave_001
+${SSH2PURE} purevol connect --hgroup PROD-REDHAT1 wintel_sap_wave_001
+${SSH2PURE} purevol connect --hgroup PROD-MS2 wintel_esx_wave1_004 wintel_esx_wave1_005
+
+function copysnapshots {
+for host in ${*}
+do
+   grep "${host}_" snapshots.mp > ${host}.snapshots
+   for snapshot in $(awk '{print $1}' ${host}.snapshots )
+   do
+      volumename=$(echo ${snapshot} | awk -F"." '{print $NF}' )
+      ${SSH2PURE} purevol copy ${snapshot} ${volumename}
+   done
+   volumes=$(awk '{print $1}' ${host}.snapshots | awk -F"." '{print $NF}' | tr "\n" " " )
+   ${SSH2PURE} purevol connect --host ${host} ${volumes}
+done
+}
+
+copysnapshots paap3p01 paarfs01 paerdb98 paerdb99 pagi3p01 pgasdb01 pgbcdb98 pgbcdb99 pgscdb01 pgsodb02 taitc103
+
+${SSH2PURE} purevol connect --host paerap98 paerap98_001 paerap98_002
+${SSH2PURE} purevol connect --host paerap99 paerap99_001 paerap99_002
+
+${SSH2PURE} purehgroup create --hostlist paerap98,paerap99 paerap00
+
+${SSH2PURE} purevol connect --hgroup paerap00 paerap99_003 paerap99_004 paerap99_005 paerap99_006
+
+export dr_hosts="paap3p01 paerap99 paerdb99 pagi3p01 pgasdb01 pgscdb01 taitc103"
+
+for host in ${dr_hosts}
+do
+   ${SSH2PURE} purepgroup setattr --addhostlist ${host} dr-powervm-fdc
+done
+
+## paerdb99 steps
+
+ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach
+for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done
+
+sudo mkdir -p /mnt/updates ; sudo mount pgnmsv01:/prod/images/storage /mnt/updates
+sudo installp -u devices.fcp.disk.pure.flasharray.mpio.rte
+sudo installp -acxd /mnt/updates/PureODM/1.0.0.7/devices.fcp.disk.pure.flasharray.mpio.rte all
+lsdev -Ccdisk | grep "PURE MPIO Drive" | awk '{print $1}' | xargs -n1 sudo chdev -a hcheck_interval=30 -Pl
+
+sudo cfgmgr
+
+sudo /usr/sbin/mktcpip -h paerdb99 -a 10.0.48.213 -m 255.255.255.0 -i en0 -g 10.0.48.1 -A no -s
+sudo chdev -l en1 -a netaddr=10.0.49.213 -a netmask=255.255.255.0 -a state=up
+sudo ifconfig en0 alias 10.0.48.212 netmask 255.255.255.0 up
+
+sudo ntpdate -u pgntpap01
+
+# Import VGs
+
+sudo importvg -y binvg01 00cc49c7421cdbc1
+sudo importvg -y redovg01 00cc49c7421d8c8b
+sudo importvg -y datavg01 00cc49c73c29a6ac
+sudo importvg -y datavg02 00cc49c73d64d9cc
+sudo importvg -y datavg03 00cc49c73eab8b6e
+sudo importvg -y datavg04 00cc49c73f09f0c9
+sudo importvg -y datavg05 00cc49c73fc6e3f7
+sudo importvg -y datavg06 00cc49c73d6762fe
+
+for vg in binvg01 redovg01 datavg01 datavg02 datavg03 datavg04 datavg05 datavg06
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo mkdir -p $fs
+      sudo mount $fs
+   done
+done
+
+# Setup NFS
+
+/sapmnt/PTA:
+        dev             = "/sapmnt/PTA"
+        vfs             = nfs
+        nodename        = paerap00
+        mount           = true
+        options         = rw,bg,soft,intr,sec=sys
+
+sudo chfs -a size=+1G /usr
+sudo chfs -a size=+1G /opt
+
+sudo installp -acX -d /tmp/connector-AIX-latestversion.bff udsagent.rte
+
+sudo rm /tmp/connector-AIX-latestversion.bff
+
+sudo shutdown -Fr
+
+sudo ifconfig en0 alias 10.0.48.212 netmask 255.255.255.0 up
+
+Enable cron";i:1;N;i:2;N;}i:2;i:6;}i:2;a:3:{i:0;s:12:"document_end";i:1;a:0:{}i:2;i:6;}}

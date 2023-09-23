@@ -1,0 +1,38 @@
+
+<h1 class="sectionedit1" id="how_to_add_static_route_to_nim_server">How to add Static Route to NIM server</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> In order to reach the systems we moved to fmmotorparts.com, we had to setup this static route.</div>
+</li>
+<li class="level1"><div class="li"> First check from NIM server whether the destination IP network is available or not<pre class="code">netstat -rn</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> If yes then you are good to go.</div>
+</li>
+<li class="level2"><div class="li"> If no then please do the following.<pre class="code">sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,,static IP,NIMbck gateway</pre>
+
+<p>
+e.g.
+</p>
+<pre class="code">sudo chdev -l inet0 -a route=net,-netmask,255.255.255.0,,10.128.40.0,10.32.60.1</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> After the above step please check once.<pre class="code">lsattr -El inet0</pre>
+
+<p>
+the output will look something like this
+</p>
+<pre class="code">authm         65536                                              Authentication Methods              True
+bootup_option no                                                 Use BSD-style Network Configuration True
+gateway                                                          Gateway                             True
+hostname      pgnmsv01                                           Host Name                           True
+rout6                                                            IPv6 Route                          True
+route         net,-netmask,255.255.255.0,,10.128.40.0,10.32.60.1 Route                               True
+route         net,-hopcount,0,,0,10.0.48.1                       Route                               True</pre>
+</div>
+</li>
+</ol>
+
+</div>

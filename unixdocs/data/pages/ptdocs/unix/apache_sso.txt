@@ -1,0 +1,198 @@
+====== Install and configure Apache for Single Sign On ======
+
+Make sure the system is joined to AD.
+[[:redhatldap | Install and configure SSSD using Realm]]
+\\ 
+Allow some users to access - \\ 
+''realm permit -all''
+===== Install prerequisites =====
+  * Authentication - \\ 
+'' yum install -y krb5-workstation'' \\ 
+  * Apache & Modules - \\ 
+''yum install -y httpd mod_authnz_pam mod_auth_gssapi mod_session''
+  * Apache start and enable - \\ 
+''systemctl enable %%--now%% httpd''
+===== Configure KBR for PT =====
+  * Modify ''/etc/krb5.conf'' with specifics for our domain. \\ <code>
+# To opt out of the system crypto-policies configuration of krb5, remove the
+# symlink at /etc/krb5.conf.d/crypto-policies which will not be recreated.
+includedir /etc/krb5.conf.d/
+
+[logging]
+    default = FILE:/var/log/krb5libs.log
+    kdc = FILE:/var/log/krb5kdc.log
+    admin_server = FILE:/var/log/kadmind.log
+
+[libdefaults]
+    dns_lookup_realm = true
+    dns_lookup_kdc = true
+    ticket_lifetime = 24h
+    renew_lifetime = 7d
+    forwardable = true
+    rdns = false
+    pkinit_anchors = FILE:/etc/pki/tls/certs/ca-bundle.crt
+    spake_preauth_groups = edwards25519
+    default_realm = PT.INT.TENNECO.COM
+    default_ccache_name = KEYRING:persistent:%{uid}
+
+[realms]
+ PT.INT.TENNECO.COM = {
+     kdc = cdcpildc021.pt.int.tenneco.com:88
+     admin_server = cdcpildc021.pt.int.tenneco.com
+ }
+
+[domain_realm]
+ .pt.int.tenneco.com = PT.INT.TENNECO.COM
+ pt.int.tenneco.com = PT.INT.TENNECO.COM
+</code>
+===== Check to make sure Kerberos functions =====
+  * Check that you can get a Kerberos token \\ <cli prompt='#'>
+[root@cdcpillx217 ~]# kinit leedsn16
+Password for leedsn16@PT.INT.TENNECO.COM:
+[root@cdcpillx217 ~]# echo $?
+0
+[root@cdcpillx217 ~]# klist
+Ticket cache: KEYRING:persistent:0:0
+Default principal: leedsn16@PT.INT.TENNECO.COM
+
+Valid starting     Expires            Service principal
+09/29/20 16:28:26  09/30/20 02:28:26  krbtgt/PT.INT.TENNECO.COM@PT.INT.TENNECO.COM
+        renew until 10/06/20 16:28:20
+
+</cli>
+  * Apache tries to use an account of the "HTTP/servername.fqdn.com@<domainwhereregistered>" \\ A valid entry would look like ''http/cdcpillx217.pt.int.tenneco.com@AMER.INT.TENNECO.COM''
+\\ 
+  * If you use aliases, like a CNAME for the website, you need to have a service principle for the actual hostname defined.
+  * To get a valid keytab with the correct entry, MS team needs to generate this from a member server.
+    * First, have a service account created for the http access for each server.  While you can use one service account for everything, best practice is one per service.
+    * Example: ''cdcPlanisware217'' for the above server.
+
+  * Next, from a member server run ktpass. 
+<code>
+======================================================================= 
+ktpass /princ HTTP/cdcpillx217.pt.int.tenneco.com@AMER.INT.TENNECO.COM
+       /mapuser cdcsPlanisware217
+       /pass passw0rd
+       /ptype KRB5_NT_PRINCIPAL
+       /out PT_cdcpillx217.keytab
+======================================================================= 
+</code>
+\\ 
+Depending on the domain controller age and the web server age, you might have an encryption mismatch. \\ 
+  * If you want to modify the web server to accept old encryption methods, modify /etc/krb5.conf.d/crypto_policy
+  * Add "rac4_adm" to the end of the "allowed"
+
+  * Alternatively, try adding more modern encryptions to the ktpass keytab generation line.\\ <code>
+======================================================================= 
+ktpass /princ HTTP/cdcpillx217.pt.int.tenneco.com@AMER.INT.TENNECO.COM
+       /mapuser cdcsPlanisware217
+       /pass passw0rd
+       /ptype KRB5_NT_PRINCIPAL
+	   /crypto AES128-SHA1
+       /out PT_cdcpillx217.keytab
+======================================================================= 
+</code>
+  * Inspect the keytab file to make sure. \\ <cli prompt='#'>
+[root@cdcpillx217 ~]# klist -e -k /etc/krb5.keytab
+Keytab name: FILE:/etc/krb5.keytab
+KVNO Principal
+---- --------------------------------------------------------------------------
+   2 CDCPILLX217$@PT.INT.TENNECO.COM (aes128-cts-hmac-sha1-96)
+   2 CDCPILLX217$@PT.INT.TENNECO.COM (aes256-cts-hmac-sha1-96)
+   2 host/CDCPILLX217@PT.INT.TENNECO.COM (aes128-cts-hmac-sha1-96)
+   2 host/CDCPILLX217@PT.INT.TENNECO.COM (aes256-cts-hmac-sha1-96)
+   2 host/cdcpillx217.pt.int.tenneco.com@PT.INT.TENNECO.COM (aes128-cts-hmac-sha1-96)
+   2 host/cdcpillx217.pt.int.tenneco.com@PT.INT.TENNECO.COM (aes256-cts-hmac-sha1-96)
+   2 RestrictedKrbHost/CDCPILLX217@PT.INT.TENNECO.COM (aes128-cts-hmac-sha1-96)
+   2 RestrictedKrbHost/CDCPILLX217@PT.INT.TENNECO.COM (aes256-cts-hmac-sha1-96)
+   2 RestrictedKrbHost/cdcpillx217.pt.int.tenneco.com@PT.INT.TENNECO.COM (aes128-cts-hmac-sha1-96)
+   2 RestrictedKrbHost/cdcpillx217.pt.int.tenneco.com@PT.INT.TENNECO.COM (aes256-cts-hmac-sha1-96)
+[root@cdcpillx217 ~]#
+</cli>
+  * Clean up \\ <cli prompt='#'>
+[root@cdcpillx217 ~]# kdestroy
+[root@cdcpillx217 ~]#
+</cli>
+===== Configure Apache =====
+  * Make a copy of the keytab and fix \\ <cli prompt='#'>
+[root@cdcpillx217 ~]# cp /etc/krb5.keytab /etc/httpd/conf/apache.keytab
+[root@cdcpillx217 ~]# chmod 400 /etc/httpd/conf/apache.keytab
+[root@cdcpillx217 ~]# chown apache:apache /etc/httpd/conf/apache.keytab
+</cli>
+  * Edit the main conf file (or add it into the site directory).  \\ Main file is /etc/httpd/conf/httpd.conf
+    * Use PAM, force passwords.  (Not safe for http) <code>
+# Kerberos Authentication
+LoadModule authnz_pam_module  modules/mod_authnz_pam.so
+
+# Kerberos test location
+Alias /kerberos "/var/www/kerberos"
+
+<Location "/kerberos">
+  AuthType Basic
+  AuthName "private area"
+  AuthBasicProvider PAM
+  AuthPAMService sshd
+  Require valid-user
+</Location>
+</code>
+    * Use GSSAPI, gets Kerberos ticket from local browser (Module loaded automatically)<code>
+# Kerberos test location
+Alias /gssapi "/var/www/gssapi"
+
+<Location "/gssapi">
+    AuthType GSSAPI
+    AuthName "GSSAPI Single Sign On Login"
+    GssapiCredStore keytab:/etc/httpd/conf/apache.keytab
+    GssapiUseSessions On
+    Session On
+    SessionCookieName gssapi_session path=/gssapi;httponly;
+    Require valid-user
+</Location>
+
+</code>
+  * Add something into the directories referenced in the conf file. \\ <cli prompt="#">
+[root@cdcpillx217 ~]# mkdir /var/www/gssapi /var/www/kerberos
+[root@cdcpillx217 ~]# vi /var/www/gssapi/index.html
+<html>
+<header>
+<title>It works</title>
+</header>
+<body>
+<h1>
+It works!
+</h1>
+Congrats, the authentication works.
+</body>
+</html>
+[root@cdcpillx217 ~]# chown -R apache:apache /var/www
+[root@cdcpillx217 ~]# 
+</cli>
+===== Final Check =====
+  * Check the apache config and restart to load the new configs. <cli prompt='#'>
+[root@cdcpillx217 ~]# apachectl configtest
+Syntax OK
+[root@cdcpillx217 ~]# apachectl restart
+[root@cdcpillx217 ~]#
+</cli>
+
+  * Check with a browser from an AD authenticated session. \\ [[ https://docs.cloudera.com/documentation/enterprise/5-12-x/topics/cdh_sg_browser_access_kerberos_protected_url.html | Helpful tips for configuring browsers ]]
+  * Check the log files to make sure it passed auth correctly. 
+    * Check ''/var/log/httpd/access_log'' \\ Look for a 401 unauthorized ("GET /gssapi/ HTTP/1.1" 401 381) followed by by a 200 success ("GET /gssapi/ HTTP/1.1" 200 130).  Authentications will only have a 401 unauthorized in the access log.  Apache errors will appear in ''/var/log/httpd/error_log'' \\ <cli prompt='#'>
+[root@cdcpillx217 ~]# tail -n 5 /var/log/httpd/access_log
+10.131.12.11 - - [29/Sep/2020:14:19:12 -0400] "GET /gssapi/ HTTP/1.1" 401 381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36"
+10.131.12.11 - leedsn16@PT.INT.TENNECO.COM [29/Sep/2020:14:19:13 -0400] "GET /gssapi/ HTTP/1.1" 200 130 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36"
+[root@cdcpillx217 ~]#
+</cli> \\ <cli prompt='#'>
+[root@cdcpillx217 ~]# tail -n 5 /var/log/httpd/error_log
+
+[Tue Sep 29 10:24:15.758012 2020] [auth_gssapi:error] [pid 9707:tid 139767345829632] [client 10.131.12.11:58236] GSS ERROR gss_acquire_cred[_from]() failed to get server creds: [Unspecified GSS failure.  Minor code may provide more information (Keytab FILE:/etc/httpd/conf/krb5.keytab is nonexistent or empty)]
+[Tue Sep 29 10:25:47.962103 2020] [mpm_event:notice] [pid 9702:tid 139768117655872] AH00492: caught SIGWINCH, shutting down gracefully
+</cli>
+===== Troubleshooting =====
+  * "Connection Reset" - Probably means the firewall is up and running. \\<cli prompt='#'>
+[root@cdcpillx218 ~]# firewall-cmd --permanent --add-port http/tcp
+success
+[root@cdcpillx218 ~]# firewall-cmd --permanent --add-port https/tcp
+success
+[root@cdcpillx218 ~]#
+</cli>

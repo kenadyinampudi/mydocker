@@ -1,0 +1,38 @@
+====== SUDO Documentation for Users ======
+
+  * sudo or "Super User Do" is an Opensource Unix utility that allows regular users to execute some commands as root on a Unix system. 
+  * sudo provides a rich set of features including monitoring, managing and alerting as compared to its competitors like setuid, proprietory RBAC or root equivalent user. 
+
+At DRiV, the following teams use sudo.
+
+  * DBA Team
+  * Data preservation Team
+  * SAP - Basis Team
+  * HP Openview Team.
+  * Middleware Team
+
+===== Usage =====
+
+  * This is the easiest part. This is as simple as "prefix the command that you need to run as root with sudo".
+    * For example if a DBA needs to run '/oracle/SID/11203/root.sh' as root during an Oracle installation or upgrade, Instead of jumping to a 'root shell', they can execute the command as folllows<code>sudo /oracle/SID/11203/root.sh</code>
+  * To list all the commands your user account is entitled to<code>sudo -l</code>
+
+===== Dos & Don't(s) =====
+
+  * There is no perfect security model. So there are ways around to break everything.
+  * Be responsible. sudo gives great power on a Unix system. "With great power comes great responsibility, visibility and publicity". Please think before you hit enter on that command you prefixed with sudo. You are Superman !
+  * Use sudo only when needed. It is not to be used for convenience. For example, please do not fix a problem by "chmod 777" because you have the ability to do so. Trust me, it will bite you back.
+  * When in doubt, use "CTRL + C" **do not hit enter**.
+
+===== Limitations of sudo =====
+
+  * Redirection is one limitation of sudo. For example,
+    * If you need to add something to /etc/motd, a file owned by root. The following code will not work.<code>sudo echo "something" > /etc/motd</code>For security reasons, sudo does not permit re-directions. Instead, this works<code>echo "something" | sudo tee -a /etc/motd</code>
+  * Shell internal commands ..
+    *  As an example, "cd" command if used like this, will not work<code>sudo cd /protected-directory</code>Instead use<code>sudo ls -l /protected-directory</code>i.e. Don't "cd" to the directory. You may wonder, what if I need to "cd" to a directory and create a tar ball with relative paths ? Looking up the man page for tar, I found this<code> -C Directory
+            Causes the tar command to perform a chdir subroutine to the directory specified by the Directory variable. Using the -C flag allows
+            multiple directories that are not related by a close common parent to be archived, using short relative path names.</code>That means, you can execute this command from wherever you are and it will create a tarball with relative path<code>sudo tar cvf mytarfile.tar -C /opt/ibm .</code>
+
+===== sudo audit and logging =====
+
+  * All sudo commands are logged and sent to a central repository. Unix team, from time to time , when required , will audit the file for investigation purpose and/or misuse.

@@ -1,0 +1,99 @@
+====== H1T Migration Plan ======
+
+The plan is to move H1T database server from MMA to the new P740 frame.
+
+==== Unix Steps ====
+
+  * Make sure H1T application ( SAP & Database ) as well as SME is down.
+  * Unmount filesystems from old qehrdb01 server
+    * Unmount filesystems<code>for vg in h1tvg01 datavg01
+do
+   for fs in $(lsvgfs ${vg} | sort -r)
+   do
+      sudo umount ${fs}
+   done
+done</code>
+    * Export the VG<code>sudo cp /etc/filesystems /etc/filesystems.02072013
+sudo varyoffvg datavg01
+sudo varyoffvg h1tvg01
+sudo exportvg datavg01
+sudo exportvg h1tvg01</code>
+    * Delete the disks<code>echo "hdisk2 hdisk9 hdisk10 hdisk11 hdisk12 hdisk13 hdisk14 hdisk3" | xargs -n1 sudo rmdev -dl</code>
+    * Disable cron<code>sudo rmitab cron</code>
+    * Change the IP address of the server<code>/usr/sbin/mktcpip -h qehrdb01old -a 10.56.1.107 -m 255.255.255.0 -i en0 -g 10.56.1.1 -A no -s
+sudo ifconfig en1 down detach
+sudo rmdev -dl en1</code>
+  * Details of devices<code>hdisk22:147456:qehrdb01:5:vhost4:00cbf651ee251d05:CKM00103000222:0302
+hdisk23:147456:qehrdb01:5:vhost4:00cbf651ee2530f2:CKM00103000222:0201
+hdisk24:147456:qehrdb01:5:vhost4:00cbf651ee254bdb:CKM00103000222:0203
+hdisk25:147456:qehrdb01:5:vhost4:00cbf651ee25641b:CKM00103000222:0301
+hdisk26:147456:qehrdb01:5:vhost4:00cbf651ee257dd2:CKM00103000222:0303
+hdisk27:147456:qehrdb01:5:vhost4:00cbf65144d75c57:CKM00103000222:0205
+hdisk30:147456:qehrdb01:5:vhost4:00cbf651740f8844:CKM00103000222:0161
+hdisk31:147456:qehrdb01:5:vhost4:00cbf651740f88b9:CKM00103000222:0151</code>
+  * Unmap the devices from VIOS server teprvio1
+    * Switch to padmin account<code>sudo su - padmin</code>
+    * Unmap them<code>for dev in hdisk22 hdisk23 hdisk24 hdisk25 hdisk26 hdisk27 hdisk30 hdisk31
+do
+   rmvdev -vdev ${dev}
+done</code>
+  * Delete the devices from kernel as your own account (tip switch back from the padmin id)<code>for dev in hdisk22 hdisk23 hdisk24 hdisk25 hdisk26 hdisk27 hdisk30 hdisk31
+do
+   sudo rmdev -dl ${dev}
+done</code>
+
+==== Storage Steps ====
+
+** Execute from penmsv01 **
+
+  * Remove the luns from TEPRVIO1 storage group<code>for HLU in 4 5 6 7 8 9 12 13
+do
+   echo "navicli -h inxns480spa storagegroup -removehlu -gname TEPRVIO1 -hlu ${HLU}"
+done</code>Verify the commands and execute them one at a time. **CAREFULLY**
+  * Add the LUNs to QEHRDB01 storage group<code>i=2
+for ALU in 302 201 203 301 303 205 161 151
+do
+   echo "navicli -h inxns480spa storagegroup -addhlu -gname QEHRDB01 -alu ${ALU} -hlu ${i}"
+   i=$(echo "${i} + 1" | bc)
+done</code>Verify the commands and execute them one at a time. **CAREFULLY**
+
+==== Unix Steps ====
+
+  * Make sure teprvio1 **can not** see the LUNs anymore.<code>lsdev -Ccdisk > /var/tmp/diskbefore
+sudo cfgmgr
+lsdev -Ccdisk > /var/tmp/diskafter</code>Do a diff<code>diff /var/tmp/diskbefore /var/tmp/diskafter</code>
+  * Make sure qehrdb01 **can** see the LUNs<code>lsdev -Ccdisk > /var/tmp/diskbefore
+sudo cfgmgr
+lsdev -Ccdisk > /var/tmp/diskafter</code>Do a diff<code>diff /var/tmp/diskbefore /var/tmp/diskafter</code>
+  * Change the device attributes<code>for disk in $(lsdev -Ccdisk | awk '{print $1}' )
+do
+   sudo chdev -a reserve_policy=no_reserve -a algorithm=round_robin -l ${disk}
+done</code>
+  * Import the VGs<code>sudo importvg -y datavg01 00cbf651ee254bdb
+sudo importvg -y h1tvg01 00cbf651740f8844</code>
+  * Mount the filesystems<code>for vg in datavg01 h1tvg01
+do
+   for fs in $(lsvgfs ${vg})
+   do
+      sudo fsck ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done
+done</code>
+  * Change the IP address<code>/usr/sbin/mktcpip -h qehrdb01 -a 10.56.1.102 -m 255.255.255.0 -i en0 -g 10.56.1.1 -A no -s
+chdev -l en1 -a netaddr=10.56.12.102 -a netmask=255.255.255.0 -a state=up</code>
+  * Copy over the cron jobs from old server<code>sudo rsync -a pehrdb98:/var/spool/cron/crontabs/ /var/spool/cron/crontabs/</code>
+  * Remove the unwanted cronjobs<code>for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v "^root$|^adm$|^sys$|^uucp$|^esaadmin$")
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</code>
+  * Do a final reboot<code>sudo shutdown -Fr</code>
+
+==== Post migration work ====
+
+  * Install NAVIAGENT<code>sudo mkdir -p /mnt/emc ;sudo  mount penmsv01:/prod/images/EMC /mnt/emc
+sudo installp -acX -d /mnt/emc/NaviHostAgent-AIX-32-NA-en_US-6.29.6.0.35-1.lpp NAVIAGENT
+sudo scp penmsv01:/prod/images/EMC/config/agent.config.int.clariion /etc/Navisphere/agent.config</code>
+  * Shutdown the old server
+  * Update console database<code>sudo vi /pro/images/etc/unix_sys_console</code>
+  * Ask Openview team to re-install OV client.

@@ -1,0 +1,47 @@
+====== Creating AIX LPAR on a P Series frame ======
+
+
+==== Generic instructions for creating LPAR on HMC - GUI -- This has changed on the new HMC ====
+
+  - Login to the HMC GUI
+    - tgprhmc2 or taitc051 for Lpars @ Lincolnshire
+    - tgprhmc3 for Lpars @ Belgium
+  - Select the correct frame   
+    - {{:unix:01highlighttheframe.png|}}
+  - Expand the Tasks menu to create an AIX/Linux LPAR
+    - {{:unix:02expandclick.png|}}
+  - Give it a name
+    - {{:unix:03giveitaname.png|}}
+  - Give it a profile name
+    - {{:unix:04giveitaprofilename.png|}}
+  - Select shared CPU or dedicated ( Shared preferred )
+    - {{:unix:05selectshared.png|}}
+  - Enter processor information
+    - {{:unix:06procinfo.png|}}
+  - Enter memory information
+    - {{:unix:07meminfo.png|}}
+  - Enter IO information
+    - {{:unix:08ioinformation.png|}}
+  - Create virtual SCSI adapter
+    - {{:unix:09crvirtualscsi01.png|}}
+  - Check this adapter is required for partition activation and then Click on System VIOS Info
+    - {{:unix:10crvirtualscsi02.png|}}
+  - Select the Server adapter from the first VIO server
+    - {{:unix:12crvirtualscsi03.png|}}
+  - Repeat the same steps for second SCSI adapter from the second VIO server(if in a dual VIOS setup)
+  - Create a virtual ethernet
+    - {{:unix:13crvirtualenet.png|}}
+  - Enter the VLAN id
+    - {{:unix:14crvirtualenet.png|}}
+  - Create the second virtual ethernet and enter the VLAN id 
+    - {{:unix:15crvirtualenet.png|}}
+  - All virtual adapters should look like this
+    - {{:unix:16crframelpar.png|}}
+  - Select LHEA ethernet adapters if required
+    - {{:unix:17crframelpar.png|}}
+  - Select HCA if applicable
+    - {{:unix:18crframelpar.png|}}
+  - Set the optional settings. Select not to autostart if using virtual resources.
+    - {{:unix:19crframelpar.png|}}
+  - Click on Finish
+    - {{:unix:20crframelpar.png|}}

@@ -1,0 +1,121 @@
+====== Updating Multipath and udev Rules for PURE ======
+These steps were executed during a storage migration from Hitachi to PURE.  Multipath configuration file has been customized on the Manhattan RAC cluster servers for unknown reasons and the wwids have been hard coded.  Inorder to detect the new LUNs and have a generic configuration, we have to update the multipath and lvm configuration files.  Finally, we also have to implement the PURE recommended configuration for Linux to make sure that the system runs with optimal performance.
+
+===== Update Multipath configuration =====
+  - Backup the multipath configuration file<code>RED='\033[0;31m' && NC='\033[0m' && \
+[ ! -f /etc/multipath_`date +'%Y-%m-%d'`.conf ] \
+&& sudo cp -pr /etc/multipath.conf /etc/multipath_`date +'%Y-%m-%d'`.conf || \
+echo  -e "${RED}File already exist. Please backup to another file${NC}"</code>
+  - Edit /etc/multipath.conf file & modify the **defaults** and **devices** sections to look like below<code>defaults {
+   polling_interval      10
+   find_multipaths       yes
+   user_friendly_names yes
+}
+devices {
+   device {
+       vendor                "PURE"
+       product               "FlashArray"
+       path_selector         "queue-length 0"
+       path_grouping_policy  group_by_prio
+       path_checker          tur
+       fast_io_fail_tmo      10
+       dev_loss_tmo          600
+       no_path_retry         0
+       hardware_handler      "1 alua"
+       prio                  alua
+       failback              immediate
+   }
+}</code>
+  - Edit /etc/multipath.conf file and make sure the wwids are commented<code>vi /etc/multipath.conf 
+#       wwid "*"</code>
+  - Remove the **blacklist_exceptions** & **multipaths** sections entirely from /etc/multipath.conf.  The following are lines/sections that needs to be removed <code>blacklist_exceptions {
+        wwid "360060e80221283005041128300000006"
+        wwid "360060e8022128300504112830000000e"
+        wwid "360060e80221283005041128300000012"
+        wwid "360060e80221283005041128300000016"
+        wwid "360060e8022128300504112830000001d"
+        wwid "360060e8022128300504112830000001e"
+        wwid "360060e8022128300504112830000001f"
+        wwid "360060e8022128300504112830000003d"
+}
+multipaths {
+        multipath {
+                uid 0
+                gid 0
+                wwid "360060e80221283005041128300000006"
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid "360060e8022128300504112830000000e"
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid "360060e80221283005041128300000012"
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid "360060e80221283005041128300000016"
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid "360060e8022128300504112830000001d"
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid "360060e8022128300504112830000001e"
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid "360060e8022128300504112830000001f"
+                mode 0600
+        }
+        multipath {
+                uid 0
+                gid 0
+                wwid "360060e8022128300504112830000003d"
+                mode 0600
+
+}</code>
+  - Regenerate the initramfs <code>sudo dracut --force --add multipath --include /etc/multipath /etc/multipath</code>
+===== Update lvm.conf =====
+  - Lets take a backup before we do anything <code>RED='\033[0;31m' && NC='\033[0m' && \
+[ ! -f /etc/lvm/lvm_`date +'%Y-%m-%d'`.conf ] \
+&& sudo cp -pr /etc/lvm/lvm.conf /etc/lvm/lvm_`date +'%Y-%m-%d'`.conf || \
+echo  -e "${RED}File already exist. Please backup to another file${NC}"</code>
+  - Update the **filter** line in the /etc/lvm/lvm.conf **from**<code> filter = [ "a/.*/" ]</code>**to**<code> filter = [ "a/.*/", "r/sd.*/" ]</code>
+===== Update udev rules =====
+  - Create a new file /etc/udev/rules.d/99-pure-storage.rules with the following contents <code># Recommended settings for Pure Storage FlashArray.
+
+# Use none scheduler for high-performance solid-state storage
+ACTION=="add|change", KERNEL=="sd*[!0-9]", SUBSYSTEM=="block", ENV{ID_VENDOR}=="PURE", ATTR{queue/scheduler}="noop"
+
+# Reduce CPU overhead due to entropy collection
+ACTION=="add|change", KERNEL=="sd*[!0-9]", SUBSYSTEM=="block", ENV{ID_VENDOR}=="PURE", ATTR{queue/add_random}="0"
+
+# Spread CPU load by redirecting completions to originating CPU
+ACTION=="add|change", KERNEL=="sd*[!0-9]", SUBSYSTEM=="block", ENV{ID_VENDOR}=="PURE", ATTR{queue/rq_affinity}="2"
+
+# Set the HBA timeout to 60 seconds
+ACTION=="add", SUBSYSTEMS=="scsi", ATTRS{model}=="FlashArray      ", RUN+="/bin/sh -c 'echo 60 > /sys/$DEVPATH/device/timeout'"
+
+ACTION=="add|change", KERNEL=="sd*[!0-9]", SUBSYSTEM=="block", ENV{ID_VENDOR}=="PURE", ATTR{queue/max_sectors_kb}="4096"</code>
+
+
+===== Refresh Multipath devices and look for errors =====
+At this stage, no PURE disks have been presented, but we are just refreshing to see that we don't have any stale LUNs because of the filter modification or multipath configuration changes<code>multipath -F
+multipath -r
+multipath -ll</code>Confirm that you can see all the old HITACHI disks.  
+
+

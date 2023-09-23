@@ -1,0 +1,31 @@
+
+<h1 class="sectionedit1" id="ftp1tennecocom_user_removal">FTP1.TENNECO.COM User Removal</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> After Entitlement removes the user id from the server they will send the UNIX Team a ticket to remove the user id from the server. Make the following changes substituting the user name from the ticket where applicable. </div>
+</li>
+<li class="level1"><div class="li"> Remove the users unique group<pre class="code">sudo rmgroup &#039;-p&#039; {user login here}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the users home directory from /prod/ftp<pre class="code">cd /prod/ftp</pre>
+
+<p>
+Then
+</p>
+<pre class="code">sudo rm -r {user login here}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Modify ssh config file to remove the user id from the appropriate stanza in /etc/ssh/sshd_config<pre class="code">sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.$(date +%Y%m%d-%H:%M:%S).yn</pre>
+<pre class="code">sudo vi /etc/ssh/sshd_config</pre>
+
+<p>
+Remove the username to the end of the stanza “Example of overriding settings on a per-user basis”
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Save the file and restart the ssh daemon so the change takes effect <pre class="code">sudo kill -HUP $(lssrc -a |grep sshd | awk &#039;{print $3}&#039;)</pre>
+</div>
+</li>
+</ol>
+
+</div>

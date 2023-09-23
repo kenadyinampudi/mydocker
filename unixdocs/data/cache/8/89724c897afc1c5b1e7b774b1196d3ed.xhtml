@@ -1,0 +1,64 @@
+
+<h1 class="sectionedit1" id="in_house_developed_shell_scripts">In house developed Shell Scripts.</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> mksysb backups on AIX.<pre class="code">Master Copy               pgnmsv01:/prod/images/scripts/mksysb.sh
+On each AIX server        /usr/local/scripts/mksysb.sh</pre>
+
+<p>
+CRON entry will be
+</p>
+<pre class="code">20 23 * * 5 /usr/local/scripts/mksysb.sh 1&gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> Scope :-</div>
+<ul>
+<li class="level3"><div class="li"> It&#039;s sole purpose is to generate it&#039;s own mksysb and ftp/scp/rsync to it&#039;s local repository</div>
+<ul>
+<li class="level4"><div class="li">	Local repository for all systems in Lincolnshire is pgnmsv01 - the NIM server.</div>
+</li>
+<li class="level4"><div class="li">	Local repository for all the systems in Interexion will be the new NIM server “penmsv01”. [ Right now some servers are going to taitc058 - not sure ].</div>
+</li>
+<li class="level4"><div class="li">	Local repository for all production atlas systems(055) will be the backup server (057) and vice versa.</div>
+</li>
+</ul>
+</li>
+<li class="level3"><div class="li"> The master copy of the script will be on pgnmsv01:/prod/images/scripts. <strong>It will copy once a week to all the systems. Hence, any local changes will be overwritten in a weeks time.</strong></div>
+</li>
+<li class="level3"><div class="li"> It does not do tape mksysbs (There has to be seperate cron jobs for this )</div>
+</li>
+<li class="level3"><div class="li"> It does not make DR copies of mksysbs	(There has to be seperate cron jobs for this )</div>
+</li>
+<li class="level3"><div class="li"> It does not backup VIOS at this time. (May be in future)</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> Testing to be done</div>
+<ul>
+<li class="level3"><div class="li"> No room for mksysb</div>
+</li>
+<li class="level3"><div class="li"> mksysb errors out</div>
+</li>
+<li class="level3"><div class="li"> gzip failure</div>
+</li>
+<li class="level3"><div class="li"> scp failure</div>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> List disks in detail on AIX<pre class="code">Master Copy               pgnmsv01:/prod/images/scripts/lsvpcfg.sh
+On each AIX server        /usr/local/scripts/lsvpcfg.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List VIO disks in detail on AIX<pre class="code">Master Copy               pgnmsv01:/prod/images/scripts/lsdiskcfg
+On each AIX server        /usr/local/scripts/lsdiskcfg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup homeless people<pre class="code">Master copy - pgnmsv01:/prod/images/scripts/HOME-CLEANER
+On each server /usr/local/scripts/HOME-CLEANER</pre>
+</div>
+</li>
+</ol>
+
+</div>

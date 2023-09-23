@@ -1,0 +1,11 @@
+Red Hat Enterprise Linux offers two primary MTAs: Postfix and Sendmail. Postfix is configured as the default MTA, although it is easy to switch the default MTA to Sendmail. 
+To switch the default MTA to Sendmail, you can either uninstall Postfix or use the following command to switch to Sendmail: 
+  
+  yum install sendmail
+  yum install sendmail-cf
+  alternatives --config mta
+  kill $(ps -ef | grep master | grep -v grep | awk '{print $2}')
+  
+  /etc/rc.d/rc3.d/S80sendmail start
+  
+The above commands will switch mail from postfix to sendmail.

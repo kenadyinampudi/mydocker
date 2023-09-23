@@ -1,0 +1,23 @@
+====== Applying VIOS 2.2.4.22 updates from a remotely mounted file system ======
+
+==== Apply 2.2.4.20 ====
+
+  - Check if rootvg has atleast 30G of free space<code>lsvg rootvg</code>
+  - Mount the remote directory onto the Virtual I/O Server.<code>oem_setup_env</code>Then<code>mkdir /mnt
+mount 10.0.48.12:/prod/images/vio/vios2/fixpacks /mnt</code>
+  - Login as padmin to commit previous updates, by running the updateios command.<code>su - padmin</code><code>updateios -commit</code>
+  - Apply the update by running the updateios command.<code>updateios -accept -install -dev /mnt/VIOS_SP_2.2.4.20</code>Rerun it if bos.rte fileset has been upgraded.
+  - To load all changes, reboot the VIOS as user padmin .<code> shutdown -force -restart</code>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.4.20.<code>ioslevel</code>
+  - Run the license acept command for all upgrades<code>license -accept</code>
+  - Commit all the updates <code>updateios -commit</code>
+
+==== Apply 2.2.4.22 ====
+
+  - Mount the remote directory onto the Virtual I/O Server.<code>oem_setup_env</code>Then<code>mount 10.0.48.12:/prod/images/vio/vios2/fixpacks /mnt</code>
+  - Login to padmin to commit previous updates, by running the updateios command.<code>su - padmin</code><code>updateios -commit</code>
+  - Apply the update by running the updateios command.<code>updateios -accept -install -dev /mnt/VIOS_MP_2.2.4.22</code>Rerun it if bos.rte fileset has been upgraded.
+  - To load all changes, reboot the VIOS as user padmin .<code> shutdown -force -restart</code>
+  - Verify that the update was successful by checking the results of the updateios command and by running the ioslevel command, which should indicate that the ioslevel is now 2.2.4.22<code>ioslevel</code>
+  - Run the license acept command for all upgrades<code>license -accept</code>
+  - Commit all the updates <code>updateios -commit</code>

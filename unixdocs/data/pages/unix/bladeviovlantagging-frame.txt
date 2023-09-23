@@ -1,0 +1,17 @@
+====== VLAN Tagging on dual VIOS on a standard P Series frame ======
+
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -C | grep ^en | awk '{print $1}' )
+do
+   rmdev -dl ${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>cfgmgr</code>
+  - Create Etherchannels (trunk - LACP)
+    - Front-end network<code>mkvdev -lnagg ent0,ent1,ent4,ent5 -attr mode='8023ad'</code>Creates ent10
+    - Backup network   <code>mkvdev -lnagg ent2,ent3,ent6,ent7 -attr mode='8023ad'</code>Creates ent11
+  - Create Shared Ethernet Adapters
+    - Front end SEA<code>mkvdev -sea ent10 -vadapter ent8 -default ent8 -defaultid 1 -attr ha_mode=auto ctl_chan=ent10</code>Creates ent12
+    - Back  up  SEA<code>mkvdev -sea ent11 -vadapter ent9 -default ent9 -defaultid 2 -attr ha_mode=auto ctl_chan=ent11</code>Creates ent13
+  - Configure IP on front end SEA<code>mktcpip -hostname <vio DNS name> -inetaddr <vio IP> -interface en12 -netmask 255.255.255.0 -gateway <default gateway> -start</code>

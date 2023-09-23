@@ -1,0 +1,56 @@
+
+<h1 class="sectionedit1" id="install_sysinter">Install sysinter</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Install sysinter" [1-32] -->
+<h2 class="sectionedit2" id="aix_vios">AIX &amp; VIOS</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the master server pgnmsv01/pgnmsv01 and set a variable<pre class="code">export server_tenneco=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make this directory<pre class="code">ssh ${server_tenneco} sudo mkdir -p /usr/local/bin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter.aix5 ${server_tenneco}:/usr/local/bin/sysinter.aix5</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">ssh ${server_tenneco} &#039;sudo echo &quot;sysinter                40035/tcp&quot; &gt;&gt; /etc/services&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">ssh ${server_tenneco} &#039;sudo echo &quot;sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5&quot; &gt;&gt; /etc/inetd.conf&#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now restart inetd<pre class="code">ssh ${server_tenneco} sudo refresh -s inetd</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "AIX & VIOS" [33-745] -->
+<h2 class="sectionedit3" id="linux">Linux</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the master server pgnmsv01/pgnmsv01 and set a variable<pre class="code">export server_tenneco=&lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make this directory<pre class="code">ssh ${server_tenneco} sudo mkdir -p /usr/local/bin</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter.redhat ${server_tenneco}:/usr/local/bin/sysinter.redhat</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">ssh ${server_tenneco} &#039;echo &quot;sysinter                40035/tcp&quot; | sudo tee -a /etc/services</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then do this<pre class="code">sudo rsync -avv /prod/images/applications/csi/sysinter-xinetd ${server_tenneco}:/etc/xinetd.d</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now restart inetd<pre class="code">ssh ${server_tenneco} sudo service xinetd reload</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Linux" [746-] -->

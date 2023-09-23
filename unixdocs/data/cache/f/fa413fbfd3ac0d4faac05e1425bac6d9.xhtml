@@ -1,0 +1,32 @@
+
+<p>
+<strong>On a SAN booting system</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Find out the alt_disk<pre class="code">lspv | grep rootvg
+hdisky          00021ffb513afe5a                    rootvg          active
+hdiskx          00021ffb513aff90                    altinst_rootvg</pre>
+
+<p>
+In this case hdisk1 is the alternate boot disk.
+</p>
+</div>
+</li>
+<li class="level4"><div class="li"> Remove the current alt_disk_rootvg<pre class="code">sudo alt_rootvg_op -X altinst_rootvg</pre>
+</div>
+</li>
+<li class="level4"><div class="li"> Create a fresh alt_disk_copy<pre class="code">sudo alt_disk_copy -B -d hdiskX</pre>
+
+<p>
+-B option makes sure that it does not execute a bootlist - FYI.
+</p>
+</div>
+</li>
+<li class="level4"><div class="li"> Check altinsta_rootvg has been created<pre class="code">lspv | grep rootvg</pre>
+
+<p>
+Make sure you see the altinst_rootvg in the output
+</p>
+</div>
+</li>
+</ol>

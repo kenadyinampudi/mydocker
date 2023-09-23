@@ -1,0 +1,241 @@
+
+<h1 class="sectionedit1" id="pggpdb01_migration_home_to_9119-mme">pggpdb01 migration home to 9119-MME</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Checked with Kempe. </div>
+</li>
+<li class="level1"><div class="li"> Backups stat at 26 08 * * * /oracle/PLP/scripts/brbackup.ksh PLP online &gt;/oracle/PLP/logs/brbackup.cron.log 2&gt;&amp;1</div>
+</li>
+<li class="level1"><div class="li"> 08:26 AM Server Time - BST and run for 2 hours </div>
+</li>
+<li class="level1"><div class="li"> Move starts 12 May 7:00 PM DST ⇒ 13 May 2018 01:00 AM BST.  </div>
+</li>
+<li class="level1"><div class="li"> As expected and planned  no issues with backups running. </div>
+</li>
+<li class="level1"><div class="li"> Kempe is <abbr title="Database Administrator">DBA</abbr> on call </div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT1 SECTION "pggpdb01 migration home to 9119-MME" [1-400] -->
+<h2 class="sectionedit2" id="pre-migration_tasks">Pre-migration tasks</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Create the target LPAR (xaerap02) on 119-MME system.</div>
+</li>
+<li class="level1"><div class="li"> Email the wwn number to SAN team(Storage team) and ask for bootdisks.</div>
+</li>
+<li class="level1"><div class="li"> Build Aix using a temporary name,IP and use pggpdb01-mksysb, also use mksysbmigration script for postinstall</div>
+</li>
+<li class="level1"><div class="li"> Login to console and finish the installation</div>
+</li>
+<li class="level1"><div class="li"> Login to the target system(xaerap02)</div>
+</li>
+<li class="level1"><div class="li"> Update to 710TL05-02</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:7100-05-02" class="wikilink1" title="unix:7100-05-02"> AIX V7100 Teechnology Level 05 Service Pack 02</a></div>
+</li>
+<li class="level1"><div class="li"> Configure IOCP for DB system<pre class="code">sudo chdev -l iocp0 -a autoconfig=available
+sudo mkdev -l iocp0
+lsdev -Cc iocp</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check Time Zone in /etc/environment <pre class="code"> grep TZ /etc/environment</pre>
+
+<p>
+ it should be 
+</p>
+<pre class="code">TZ=GMT0BST,M3.5.0,M10.5.0</pre>
+
+<p>
+ IF Time Zone  IS WRONG FIX IT NOW !!!
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Create san paging volume group sanpagevg01 i<pre class="code">sudo mkvg -f -B -s 128 -y sanpagevg01 hdisk2 hdisk3 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create the paging space <pre class="code">sudo  mkps -s&#039;269&#039; -n&#039;&#039; -a&#039;&#039; sanpagevg01</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create New alt_disk_copy<pre class="code">sudo alt_disk_copy -B -d hdisk1</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make sure time is in sync<pre class="code">date ; sudo ntpdate -u pgntpap01.amer.int.tenneco.com ; date</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Pre-migration tasks" [401-1571] -->
+<h2 class="sectionedit3" id="during_the_migration">During the migration</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> On source server pggpdb01 - 8284-22A do lspv and copy to NIM Server Repository Hold Directory<pre class="code">lspv | grep -v san | grep -v root</pre>
+<pre class="code">lspv | grep -v san | grep -v root | wc -l </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount all the file systems - use script </div>
+</li>
+<li class="level1"><div class="li"> Make a copy of the mksysb image on pgnmsv01<pre class="code">sudo cp -p /mksysb-images/bos.obj.pggpdb01.gz /preupgrade/mksysb/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Shutdown application(s) Oracle and SAP  on pggpdb01 - Basis </div>
+</li>
+<li class="level1"><div class="li"> Unmount all file systems</div>
+</li>
+<li class="level1"><div class="li"> Varyoff volume groups</div>
+</li>
+<li class="level1"><div class="li"> Export volume groups</div>
+</li>
+<li class="level1"><div class="li"> Reset the IP address to 10.32.6.202 Gateway 10.32.6.1</div>
+</li>
+<li class="level1"><div class="li"> Reset the backup IP  - No backup IP for xaerap02 -</div>
+</li>
+<li class="level1"><div class="li"> Set the hostname to xaerap02</div>
+</li>
+<li class="level1"><div class="li"> Shutdown pggpdb01 server on 8284-22A</div>
+</li>
+<li class="level1"><div class="li"> Rename the lpar name from pggpdb01 to xaerap02-Do not start</div>
+</li>
+<li class="level1"><div class="li"> wwns from 8284-22A pggpdb01 <pre class="code">HOST NAME ==&gt;&gt; pggpdb01
+fcs0   Available C4-T1 Virtual Fibre Channel Client Adapter
+fcs1   Available C5-T1 Virtual Fibre Channel Client Adapter
+
+Adapter = fcs0         Network Address.............C05076089BC8003C
+Adapter = fcs1         Network Address.............C05076089BC8003E</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Ask storage team to move the following Pure storage devices from source 8284-22A pggpdb01 server to target 9119-MME xaerap02<pre class="code">hdisk2:00cc49c7a951d8e4:IBM-v9000-600507680C80817DF:800000000000378:103578::datavg02
+hdisk3:00cc49c7a951ee24:IBM-v9000-600507680C80817DF:800000000000379:103578::datavg02
+hdisk4:00cc49c70a92319d:IBM-v9000-600507680C80817DF:80000000000037D:103578::datavg01
+hdisk5:00cc49c70a92431c:IBM-v9000-600507680C80817DF:80000000000037E:103578::datavg01
+hdisk6:00cc49c70a92c6ff:IBM-v9000-600507680C80817DF:80000000000037F:103578::datavg01
+hdisk7:00cc49c70a930350:IBM-v9000-600507680C80817DF:800000000000380:103578::datavg01
+hdisk23:00f72d67efbb4544:IBM-v9000-600507680C80817DF:8000000000001C4:103578::datavg02
+hdisk24:00f72d67670b26a2:IBM-v9000-600507680C80817DF:800000000000127:103578::datavg02
+hdisk25:00f72d67670b6073:IBM-v9000-600507680C80817DF:800000000000128:103578::datavg02
+hdisk26:00f72d67670b97b9:IBM-v9000-600507680C80817DF:800000000000129:103578::datavg02
+hdisk27:00f72d67670c1f10:IBM-v9000-600507680C80817DF:80000000000012A:103578::datavg02
+hdisk28:00f72d67670c3a99:IBM-v9000-600507680C80817DF:80000000000012B:103578::datavg02
+hdisk29:00f72d67670c5318:IBM-v9000-600507680C80817DF:80000000000012C:103578::datavg02
+hdisk30:00f72d67670c6e67:IBM-v9000-600507680C80817DF:80000000000012D:103578::datavg02
+hdisk31:00f72d67670c87f3:IBM-v9000-600507680C80817DF:80000000000012E:103578::datavg02
+hdisk32:00f72d67670cc971:IBM-v9000-600507680C80817DF:80000000000012F:103578::datavg02
+hdisk34:00f72d672000f6fa:IBM-v9000-600507680C80817DF:80000000000027E:103578::datavg02
+hdisk35:00f72d67200128a9:IBM-v9000-600507680C80817DF:80000000000027F:103578::datavg02
+hdisk36:00f72d67200143e9:IBM-v9000-600507680C80817DF:800000000000280:103578::datavg02
+hdisk37:00f72d6720015cdb:IBM-v9000-600507680C80817DF:800000000000281:103578::datavg02</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> second check use PVIDS to confirm disks are OK<pre class="code">hdisk23         00f72d67efbb4544                    datavg02        active
+hdisk24         00f72d67670b26a2                    datavg02        active
+hdisk25         00f72d67670b6073                    datavg02        active
+hdisk26         00f72d67670b97b9                    datavg02        active
+hdisk27         00f72d67670c1f10                    datavg02        active
+hdisk28         00f72d67670c3a99                    datavg02        active
+hdisk29         00f72d67670c5318                    datavg02        active
+hdisk30         00f72d67670c6e67                    datavg02        active
+hdisk31         00f72d67670c87f3                    datavg02        active
+hdisk32         00f72d67670cc971                    datavg02        active
+hdisk34         00f72d672000f6fa                    datavg02        active
+hdisk35         00f72d67200128a9                    datavg02        active
+hdisk36         00f72d67200143e9                    datavg02        active
+hdisk37         00f72d6720015cdb                    datavg02        active
+hdisk2          00cc49c7a951d8e4                    datavg02        active
+hdisk3          00cc49c7a951ee24                    datavg02        active
+hdisk4          00cc49c70a92319d                    datavg01        active
+hdisk5          00cc49c70a92431c                    datavg01        active
+hdisk6          00cc49c70a92c6ff                    datavg01        active
+hdisk7          00cc49c70a930350                    datavg01        active </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> wwns from target 9119-MME server xaerap02 <pre class="code">HOST NAME ==&gt;&gt; xaerap02
+fcs0 Available C4-T1 Virtual Fibre Channel Client Adapter
+fcs1 Available C5-T1 Virtual Fibre Channel Client Adapter
+
+Adapter = fcs0         Network Address.............C05076090B8B0004
+Adapter = fcs1         Network Address.............C05076090B8B0006</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> After storage team has moved the LUNs</div>
+</li>
+<li class="level1"><div class="li"> Login to xaerap02</div>
+</li>
+<li class="level1"><div class="li"> Capture the current state<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.before</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Discover new devices on xaerap02<pre class="code">sudo cfgmgr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Capture the current state<pre class="code">sudo lsvpcfg.sh &gt; lsvpcfg.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now check if all the devices are moved<pre class="code">diff lsvpcfg.before lsvpcfg.after</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable round robin and reserve_lock<pre class="code">diff lsvpcfg.before lsvpcfg.after | grep &quot;&gt;&quot; | awk &#039;{print $2}&#039; | awk -F: &#039;{print $1}&#039; | xargs -n1 sudo chdev -a reserve_policy=no_reserve -a algorithm=round_robin -l</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import datavg01<pre class="code">sudo importvg -y datavg01 00cc49c70a92319d</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import datavg02<pre class="code">sudo importvg -y datavg02 00f72d67670b26a2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mount all the fs<pre class="code">lsvgfs datavg01 | sort | xargs -n1 sudo mount</pre>
+<pre class="code">lsvgfs datavg02 | sort | xargs -n1 sudo mount</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check mount optios for oracle log files <pre class="code"> grep -p cio /etc/filesystems </pre>
+
+<p>
+ Fix them - remove CIO per Robert
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the IP and hostname of the target system ( xaerap02 ) from 10.32.6.202 to 10.32.6.67<pre class="code">sudo /usr/sbin/mktcpip -h pggpdb01 -a 10.32.6.67 -m 255.255.255.0 -i en0 -g 10.32.6.1 -A no -s</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the backup IP address<pre class="code">sudo chdev -l en1 -a netaddr=10.32.51.89 -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the secondary IP address <pre class="code">sudo ifconfig en0 alias 10.32.6.26 netmask 255.255.255.0 up </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron and openview ( they were disabled by the mksysbmigration post installation script )<pre class="code">sudo mkitab cron:23456789:respawn:/usr/sbin/cron  
+sudo mkitab &#039;OVCtrl:2:wait:/etc/rc.d/OVCtrl start &gt;/dev/console  # Start Agent&#039;
+sudo mkitab &#039;ovpa:2:wait:/etc/rc.ovpa start &gt;/dev/console  # Start OV Performance Agent &#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable NFS exports<pre class="code">sudo mv /etc/exports.premigration /etc/exports</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Reboot the server.<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure the secondary IP address <pre class="code">sudo ifconfig en0 alias 10.32.6.26 netmask 255.255.255.0 up </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check NFS mounts are good on clients if any. If required, remount them.</div>
+</li>
+<li class="level1"><div class="li"> Ask the Basis Team to start Oracle and SAP applications</div>
+</li>
+<li class="level1"><div class="li"> Update /prod/images/etc/unix_sys_console<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Swap xaerap02 with pggpdb01
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Wait for 7 days  and then remove the bootdisk from 8284-22A  and email the Storage Team to reclaim the disk</div>
+</li>
+<li class="level1"><div class="li"> Remove the old lpar from the frame. 8284-22A  <code>xaerap02-Do not start</code></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "During the migration" [1572-] -->

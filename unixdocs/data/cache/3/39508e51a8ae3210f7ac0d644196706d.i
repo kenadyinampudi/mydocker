@@ -1,0 +1,6 @@
+a:13:{i:0;a:3:{i:0;s:14:"document_start";i:1;a:0:{}i:2;i:0;}i:1;a:3:{i:0;s:6:"header";i:1;a:3:{i:0;s:17:"Setup resolv.conf";i:1;i:1;i:2;i:1;}i:2;i:1;}i:2;a:3:{i:0;s:12:"section_open";i:1;a:1:{i:0;i:1;}i:2;i:1;}i:3;a:3:{i:0;s:10:"listo_open";i:1;a:0:{}i:2;i:32;}i:4;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:32;}i:5;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:32;}i:6;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:36:" For systems built at FM Motor Parts";}i:2;i:36;}i:7;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:277:"
+domain fmmotorparts.com
+search fmmotorparts.com fmmp.fmmotorparts.com federalmogul.com na.fmo.com fedmog.federalmogul.com amer.int.tenneco.com emea.int.tenneco.com aspa.int.tenneco.com
+nameserver      10.128.31.252
+nameserver      10.128.31.253
+nameserver      134.238.107.252";i:1;N;i:2;N;}i:2;i:77;}i:8;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:362;}i:9;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:362;}i:10;a:3:{i:0;s:11:"listo_close";i:1;a:0:{}i:2;i:362;}i:11;a:3:{i:0;s:13:"section_close";i:1;a:0:{}i:2;i:363;}i:12;a:3:{i:0;s:12:"document_end";i:1;a:0:{}i:2;i:363;}}

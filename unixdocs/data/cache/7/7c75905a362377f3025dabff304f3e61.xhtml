@@ -1,0 +1,130 @@
+
+<h1 class="sectionedit1" id="installing_ssh_package_on_hp-ux_11i_v3">Installing SSH package on HP-UX 11i v3</h1>
+<div class="level1">
+
+<p>
+The only HPUX systems we maintain are ..
+</p>
+<div class="table sectionedit2"><table class="inline">
+	<tr class="row0">
+		<th class="col0">Name</th><th class="col1">Function</th><th class="col2">Landscape</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">taitc114</td><td class="col1">HP Openview DB and app</td><td class="col2">Non prod</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">taitc113</td><td class="col1">HP Openview DB and app</td><td class="col2">Non prod</td>
+	</tr>
+</table></div>
+<!-- EDIT2 TABLE [97-208] --><ol>
+<li class="level1"><div class="li"> The depot files for HP-UX are here<pre class="code">x1kxk630 on taitc118:/home/x1kxk630 $ ls -l /prod/images/hpux
+total 4941096
+-rw-r--r--    1 root     system      8581120 Dec 12 13:04 HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot
+-rw-r--r--    1 root     system     20121600 Dec 06 2012  gettext-0.18.1.1-ia64-11.31.depot
+....lines removed....
+....lines removed....
+-rw-r--r--    1 root     system      7915520 Sep 27 2012  sudo-1.8.6p3.tar
+-rw-r--r--    1 root     system       839680 Dec 06 2012  zlib-1.2.7-ia64-11.31.depot</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to taitc118 and copy the depot file to the target server<pre class="code">scp /prod/images/hpux/HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot taitc114:/tmp/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the target system and list the contents of the depot.<pre class="code">sudo swlist -d -s /tmp/HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot</pre>
+
+<p>
+.You should see something like this
+</p>
+<pre class="code">x1kxk630 on taitc114:/home/x1kxk630 $ sudo swlist -d -s /tmp/HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot
+sudo: value `authpriv&#039; is invalid for option `syslog&#039;
+Last successful login:       Fri Dec 12 13:12:37 2014
+Last authentication failure: Wed Mar 12 11:02:59 2014 taitc114
+# Initializing...
+# Contacting target &quot;taitc114&quot;...
+#
+# Target:  taitc114:/tmp/HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot
+#
+
+#
+# Bundle(s):
+#
+
+  SecureShell   A.06.20.012    HP-UX Secure Shell</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Take a look at the current product that is installed<pre class="code">sudo swlist -l product SecureShell</pre>
+
+<p>
+You should see something like this
+</p>
+<pre class="code">x1kxk630 on taitc114:/home/x1kxk630 $ sudo swlist -l product SecureShell
+sudo: value `authpriv&#039; is invalid for option `syslog&#039;
+Last successful login:       Fri Dec 12 13:22:07 2014
+Last authentication failure: Wed Mar 12 11:02:59 2014 taitc114
+# Initializing...
+# Contacting target &quot;taitc114&quot;...
+#
+# Target:  taitc114:/
+#
+
+# SecureShell                   A.05.30.009    HP-UX Secure Shell
+  SecureShell.Secure_Shell      A.05.30.009    HP-UX Secure Shell</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Perform the upgrade/install<pre class="code">sudo swinstall -s /tmp/HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot SecureShell</pre>
+
+<p>
+You sould expect something like this on the terminal
+</p>
+<pre class="code">x1kxk630 on taitc114:/home/x1kxk630 $ sudo swinstall -s /tmp/HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot SecureShell
+sudo: value `authpriv&#039; is invalid for option `syslog&#039;
+Last successful login:       Fri Dec 12 13:09:05 2014
+Last authentication failure: Wed Mar 12 11:02:59 2014 taitc114
+
+=======  12/12/14 13:11:10 CST  BEGIN swinstall SESSION
+         (non-interactive) (jobid=taitc114-1030)
+
+       * Session started for user &quot;root@taitc114&quot;.
+
+       * Beginning Selection
+       * Target connection succeeded for &quot;taitc114:/&quot;.
+       * Source:
+         /tmp/HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot
+
+       * Targets:                taitc114:/
+       * Software selections:
+             SecureShell,r=A.06.20.012,a=HP-UX_B.11.31_IA/PA,v=HP
+             Secure_Shell.SECSH-CMN,l=/opt/ssh,r=A.06.20.012,a=HP-UX_B.11.31_IA/PA,v=HP,fr=A.06.20.012,fa=HP-UX_B.11.31_IA/PA
+             Secure_Shell.SECURE_SHELL,l=/opt/ssh,r=A.06.20.012,a=HP-UX_B.11.31_IA/PA,v=HP,fr=A.06.20.012,fa=HP-UX_B.11.31_IA
+       * Selection succeeded.
+
+
+       * Beginning Analysis and Execution
+       * Session selections have been saved in the file
+         &quot;/home/x1kxk630/.sw/sessions/swinstall.last&quot;.
+       * The analysis phase succeeded for &quot;taitc114:/&quot;.
+       * The execution phase succeeded for &quot;taitc114:/&quot;.
+       * Analysis and Execution succeeded.
+
+
+NOTE:    More information may be found in the agent logfile using the
+         command &quot;swjob -a log taitc114-1030 @ taitc114:/&quot;.
+
+=======  12/12/14 13:11:32 CST  END swinstall SESSION (non-interactive)
+         (jobid=taitc114-1030)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify ssh is working in &amp; out.<pre class="code">ssh taitc118</pre>
+
+<p>
+Login to taitc118
+</p>
+<pre class="code">ssh taitc114</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Cleanup the installation files<pre class="code">sudo rm -i /tmp/HP_UX_11i_v3_SecureShell_A.06.20.012_HP-UX_B.11.31_IA_PA.depot</pre>
+</div>
+</li>
+</ol>
+
+</div>

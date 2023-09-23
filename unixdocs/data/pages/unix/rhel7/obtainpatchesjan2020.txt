@@ -1,0 +1,80 @@
+====== Instructions to obtain patches January - 2020 ======
+
+===== Figured out the patches needed =====
+
+  - Login to the build server<code>ssh pcdcunxlxap01</code>
+  - Take a look at the RHEL inventory and figure out what latest offerings are available.
+  - January 2020, we have the following versions available and the offerings.
+
+^Inventory^Plan / Target version                                       ^
+|RHEL6    |Upgrade to RHEL 6.9                                         |
+|RHEL7    |Upgrade to RHEL 7.7 except HANA database systems            |
+
+
+===== Download patches for latest RHEL7 version ( RHEL 7.7 at this time ) =====
+
+  - Create a base directory under document root<code>sudo mkdir -p /var/www/html/sources/01-09-2020/rhel-7.7</code>
+  - Login to an existing RHEL7 system or execute it from the build server and register it to RHN.
+    - If needed enable proxy<code>sudo vi /etc/rhsm/rhsm.conf</code>Modify this<code>proxy_hostname = 170.64.0.72
+proxy_port = 8080
+proxy_user = <username>
+proxy_password = <password></code>
+    - Register the host<code>sudo subscription-manager register --username tenauto</code>Enter the password
+    - Un-subscribe from all subscriptions<code>sudo subscription-manager unsubscribe --all</code>
+    - Subscribe to one of the valid subscriptions<code>sudo subscription-manager subscribe --pool=8a85f9815828568c01582c299cf061be</code>
+    - The subscription takes a while sometimes, so give it 15 minutes or so.
+    - Set the release level to RHEL 7.7<code>sudo subscription-manager release --set=7Server</code>
+    - Refresh and attach the subscription, this step populates redhat.repo<code>sudo subscription-manager refresh
+sudo subscription-manager attach</code>
+  - Cleanup yum cache<code>sudo yum clean all
+sudo rm -rf /var/cache/yum</code>
+  - Sync repositories<code>sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.7 -r rhel-7-server-rpms –l
+sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.7 -r rhel-7-server-extras-rpms -l
+sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.7 -r rhel-7-server-optional-rpms -l</code>
+  - Run createrepo on each repository<code>sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.7/rhel-7-server-rpms
+sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.7/rhel-7-server-extras-rpms
+sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.7/rhel-7-server-optional-rpms</code>
+  - If these repositories were created on a 3rd host, rsync the contents to build server ''pcdcunxlxap01''
+
+===== Download patches for SAP for RHEL7 =====
+
+  - Create a base directory under document root<code>sudo mkdir -p /var/www/html/sources/01-09-2020/rhel-7.7</code>
+  - Login to an existing RHEL7 system or execute it from the build server and register it to RHN.
+    - If needed enable proxy<code>sudo vi /etc/rhsm/rhsm.conf</code>Modify this<code>proxy_hostname = 170.64.0.72
+proxy_port = 8080
+proxy_user = <username>
+proxy_password = <password></code>
+    - Register the host<code>sudo subscription-manager register --username tenauto</code>Enter the password
+    - Un-subscribe from all subscriptions<code>sudo subscription-manager unsubscribe --all</code>
+    - Subscribe to one of the valid subscriptions<code>sudo subscription-manager subscribe --pool=8a85f9815828568c01582c299cf061be</code>
+    - The subscription takes a while sometimes, so give it 15 minutes or so.
+    - Set the release level to RHEL 7Server<code>sudo subscription-manager release --set=7Server</code>
+    - Refresh and attach the subscription, this step populates redhat.repo<code>sudo subscription-manager refresh
+sudo subscription-manager attach</code>
+  - Cleanup yum cache<code>sudo yum clean all
+sudo rm -rf /var/cache/yum</code>
+  - Sync repositories<code>sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.7 -r rhel-sap-for-rhel-7-server-rpms –l</code>
+  - Run createrepo on each repository<code>sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.7/rhel-sap-for-rhel-7-server-rpms</code>
+  - If these repositories were created on a 3rd host, rsync the contents to build server ''pcdcunxlxap01''
+
+
+===== Download patches for SAP HANA for RHEL7 =====
+
+  - Create a base directory under document root<code>sudo mkdir -p /var/www/html/sources/01-09-2020/rhel-7.2</code>
+  - Login to an existing RHEL7 system or execute it from the build server and register it to RHN.
+    - If needed enable proxy<code>sudo vi /etc/rhsm/rhsm.conf</code>Modify this<code>proxy_hostname = 170.64.0.72
+proxy_port = 8080
+proxy_user = <username>
+proxy_password = <password></code>
+    - Register the host<code>sudo subscription-manager register --username tenauto</code>Enter the password
+    - Un-subscribe from all subscriptions<code>sudo subscription-manager unsubscribe --all</code>
+    - Subscribe to one of the valid RHEL for HANA subscriptions<code>sudo subscription-manager subscribe --pool=8a85f9815bcfd8f3015bd002cc8c3741</code>
+    - The subscription takes a while sometimes, so give it 15 minutes or so.
+    - Set the release level to RHEL 7.2<code>sudo subscription-manager release --set=7.2</code>
+    - Refresh and attach the subscription, this step populates redhat.repo<code>sudo subscription-manager refresh
+sudo subscription-manager attach</code>
+  - Cleanup yum cache<code>sudo yum clean all
+sudo rm -rf /var/cache/yum</code>
+  - Sync repositories<code>sudo reposync -p /var/www/html/sources/01-09-2020/rhel-7.2 -r rhel-sap-hana-for-rhel-7-server-rpms –l</code>
+  - Run createrepo on each repository<code>sudo createrepo /var/www/html/sources/01-09-2020/rhel-7.2/rhel-sap-hana-for-rhel-7-server-rpms</code>
+  - If these repositories were created on a 3rd host, rsync the contents to build server ''pcdcunxlxap01''

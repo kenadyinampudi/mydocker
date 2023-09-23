@@ -1,0 +1,272 @@
+====== tedv2d01 Migration from DMX4 to V9000 ======
+
+  - tedv2d01 current config.System is directly connected to SAN<code>It boots from SAN
+2   *  138G
+14  *  34GB ( binvg, redos )
+103 *  120G ( vmxdatavg01-08 )</code>
+  - Need to zone tedv2d01 to V9000<code>c0507606cf0c0010    ldcds5300a1    14
+c0507606cf0c0016    ldcds5300a1    71
+c0507606cf0c0012    ldcds5300b1    14
+c0507606cf0c0014    ldcds5300b1    71</code>Switch ports, aliases & targets<code>tedv2d01 c0507606cf0c0010    ldcds5300a1    14   tedv2d01_0c0010   ldcv9ac2n1_112fbf   ldcv9ac2n2_112fc0
+tedv2d01 c0507606cf0c0016    ldcds5300a1    71   tedv2d01_0c0016   ldcv9ac2n1_112fbf   ldcv9ac2n2_112fc0
+tedv2d01 c0507606cf0c0012    ldcds5300b1    14   tedv2d01_0c0012   ldcv9ac2n1_122fbf   ldcv9ac2n2_122fc0
+tedv2d01 c0507606cf0c0014    ldcds5300b1    71   tedv2d01_0c0014   ldcv9ac2n1_122fbf   ldcv9ac2n2_122fc0</code>
+  - Fabric A zoning<code>zonecreate "tedv2d01_0c0010__ldcv9ac2n1_112fbf","tedv2d01_0c0010;ldcv9ac2n1_112fbf"
+cfgadd "fab_a_act_config","tedv2d01_0c0010__ldcv9ac2n1_112fbf"
+zonecreate "tedv2d01_0c0010__ldcv9ac2n2_112fc0","tedv2d01_0c0010;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","tedv2d01_0c0010__ldcv9ac2n2_112fc0"
+zonecreate "tedv2d01_0c0016__ldcv9ac2n1_112fbf","tedv2d01_0c0016;ldcv9ac2n1_112fbf"
+cfgadd "fab_a_act_config","tedv2d01_0c0016__ldcv9ac2n1_112fbf"
+zonecreate "tedv2d01_0c0016__ldcv9ac2n2_112fc0","tedv2d01_0c0016;ldcv9ac2n2_112fc0"
+cfgadd "fab_a_act_config","tedv2d01_0c0016__ldcv9ac2n2_112fc0"</code>Add it<code>cfgsave
+cfgenable "fab_a_act_config"</code>
+  - Fabric B zoning<code>zonecreate "tedv2d01_0c0012__ldcv9ac2n1_122fbf","tedv2d01_0c0012;ldcv9ac2n1_122fbf"
+cfgadd "fab_b_act_config","tedv2d01_0c0012__ldcv9ac2n1_122fbf"
+zonecreate "tedv2d01_0c0012__ldcv9ac2n2_122fc0","tedv2d01_0c0012;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","tedv2d01_0c0012__ldcv9ac2n2_122fc0"
+zonecreate "tedv2d01_0c0014__ldcv9ac2n1_122fbf","tedv2d01_0c0014;ldcv9ac2n1_122fbf"
+cfgadd "fab_b_act_config","tedv2d01_0c0014__ldcv9ac2n1_122fbf"
+zonecreate "tedv2d01_0c0014__ldcv9ac2n2_122fc0","tedv2d01_0c0014;ldcv9ac2n2_122fc0"
+cfgadd "fab_b_act_config","tedv2d01_0c0014__ldcv9ac2n2_122fc0"</code>Add it<code>cfgsave
+cfgenable "fab_b_act_config"</code>
+  - Define tedv2d01 to LDCV9000AC2. Login to ldcv9ac2vip1<code>ssh superuser@ldcv9ac2vip1</code>
+    - Add tedv2d01<code>svctask mkhost -fcwwpn c0507606cf0c0010:c0507606cf0c0016:c0507606cf0c0012:c0507606cf0c0014 -iogrp io_grp0:io_grp1:io_grp2:io_grp3 -name tedv2d01 -type generic</code>
+  - Provision storage. 
+    - 138GB Boot volumes<code>svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_000 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_001 -nofmtdisk -rsize 2% -size 138105 -syncrate 50 -unit mb -vtype striped -warning 80%</code>
+    - 34GB Data volumes<code>svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_002 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_003 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_004 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_005 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_006 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_007 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_008 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_009 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_010 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_011 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_012 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_013 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_014 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_015 -nofmtdisk -rsize 2% -size 34526 -syncrate 50 -unit mb -vtype striped -warning 80%</code>
+    - 120GBGB Data volumes<code>svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_016 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_017 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_018 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_019 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_020 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_021 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_022 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_023 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_024 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_025 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_026 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_027 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_028 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_029 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_030 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_031 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_032 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_033 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_034 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_035 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_036 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_037 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_038 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_039 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_040 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_041 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_042 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_043 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_044 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_045 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_046 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_047 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_048 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_049 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_050 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_051 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_052 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_053 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_054 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_055 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_056 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_057 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_058 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_059 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_060 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_061 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_062 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_063 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_064 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_065 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_066 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_067 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_068 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_069 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_070 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_071 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_072 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_073 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_074 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_075 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_076 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_077 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_078 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_079 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_080 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_081 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_082 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_083 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_084 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_085 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_086 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_087 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_088 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_089 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_090 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_091 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_092 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_093 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_094 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_095 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_096 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_097 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_098 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_099 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_100 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_101 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_102 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_103 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_104 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_105 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_106 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_107 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_108 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_109 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_110 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_111 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_112 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_113 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_114 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_115 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_116 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_117 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%
+svctask mkvdisk -autoexpand -cache readwrite -compressed -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name tedv2d01_118 -nofmtdisk -rsize 2% -size 122880 -syncrate 50 -unit mb -vtype striped -warning 80%</code>
+  - Map devices to tedv2d01<code>svctask mkvdiskhostmap -host tedv2d01 tedv2d01_000
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_001
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_002
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_003
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_004
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_005
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_006
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_007
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_008
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_009
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_010
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_011
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_012
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_013
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_014
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_015
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_016
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_017
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_018
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_019
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_020
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_021
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_022
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_023
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_024
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_025
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_026
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_027
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_028
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_029
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_030
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_031
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_032
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_033
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_034
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_035
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_036
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_037
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_038
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_039
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_040
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_041
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_042
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_043
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_044
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_045
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_046
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_047
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_048
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_049
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_050
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_051
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_052
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_053
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_054
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_055
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_056
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_057
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_058
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_059
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_060
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_061
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_062
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_063
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_064
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_065
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_066
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_067
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_068
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_069
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_070
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_071
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_072
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_073
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_074
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_075
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_076
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_077
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_078
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_079
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_080
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_081
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_082
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_083
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_084
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_085
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_086
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_087
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_088
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_089
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_090
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_091
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_092
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_093
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_094
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_095
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_096
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_097
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_098
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_099
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_100
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_101
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_102
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_103
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_104
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_105
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_106
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_107
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_108
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_109
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_110
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_111
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_112
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_113
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_114
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_115
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_116
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_117
+svctask mkvdiskhostmap -host tedv2d01 tedv2d01_118</code>

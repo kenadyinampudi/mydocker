@@ -1,0 +1,114 @@
+
+<h1 class="sectionedit1" id="building_a_sap_hana_database_vm_--_sap_hana_vmware_cluster">Building a SAP HANA database VM --&gt; SAP HANA VMWARE cluster</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Building a SAP HANA database VM --> SAP HANA VMWARE cluster" [1-76] -->
+<h2 class="sectionedit2" id="deploy_the_vm_using_the_template">Deploy the VM using the template</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Login to vSphere using fat client or web client and point to “taitc176”</div>
+</li>
+<li class="level1"><div class="li"> On the address space click and select “VMs and Templates” –&gt; Expand on “Linux Servers”</div>
+</li>
+<li class="level1"><div class="li"> Right click on the template “RHEL7.2-saphana-template” –&gt; Click “Deploy Virtual Machine using this template”</div>
+</li>
+<li class="level1"><div class="li"> Type in the hostname of the VM to be built –&gt; Select Inventory location → Lincolnshire → Linux Servers ( click Next )</div>
+</li>
+<li class="level1"><div class="li"> Select ITC-SAP HANA cluster –&gt; Pick the correct ESXi host</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Deploy the VM using the template" [77-593] -->
+<h2 class="sectionedit3" id="configure_storage_locations_for_vmx_and_vmdk_s">Configure storage locations for &#039;&#039;vmx&#039;&#039; and vmdk(s)</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> At the storage tab - click on advanced and perform the tasks mentioned in this table.</div>
+</li>
+</ul>
+<div class="table sectionedit4"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Item              </th><th class="col1 leftalign">Description                   </th><th class="col2 leftalign">Action                                                         </th><th class="col3 leftalign">Datastore                                                                </th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">Configuration File</td><td class="col1 leftalign">Configuration File            </td><td class="col2 leftalign">Do not change anything                                         </td><td class="col3 leftalign">v9ac2_sap_hana_esx_data03                                                </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign">Hard disk 1       </td><td class="col1 leftalign">Boot disk                     </td><td class="col2 leftalign">Do not change anything                                         </td><td class="col3 leftalign">v9ac2_sap_hana_esx_data03                                                </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0 leftalign">Hard disk 2       </td><td class="col1 leftalign">Data/Binary disk              </td><td class="col2 leftalign">Do not change anything                                         </td><td class="col3 leftalign">v9ac2_sap_hana_esx_data03                                                </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0 leftalign">Hard disk 3       </td><td class="col1 leftalign">Paging device                 </td><td class="col2 leftalign">Do not change anything                                         </td><td class="col3 leftalign">v9ac2_sap_hana_esx_data03                                                </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0 leftalign">Hard disk 4       </td><td class="col1 leftalign">Data disk - equal to memory   </td><td class="col2">Click on the hyperlink on Datastore column to browse and select</td><td class="col3">v9ac2_sap_hana_esx_data03 for nonprod, dedicated datastore for production</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0 leftalign">Hard disk 5       </td><td class="col1 leftalign">Log disk - half of memory     </td><td class="col2">Click on the hyperlink on Datastore column to browse and select</td><td class="col3">v9ac2_sap_hana_esx_data03 for nonprod, dedicated datastore for production</td>
+	</tr>
+</table></div>
+<!-- EDIT4 TABLE [750-2079] -->
+</div>
+<!-- EDIT3 SECTION "Configure storage locations for ''vmx'' and vmdk(s)" [594-2081] -->
+<h2 class="sectionedit5" id="customize_the_hana_virtual_machine">Customize the HANA virtual machine</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> After the storage tasks are complete, click Next –&gt; At the Guest Customization screen Click Next –&gt; At the <code>Ready to Complete</code> screen, Click Finish.</div>
+</li>
+<li class="level1"><div class="li"> At this point, we need to adjust resources and capacity.</div>
+</li>
+<li class="level1"><div class="li"> Select the VM → Edit settings → </div>
+</li>
+<li class="level1"><div class="li"> At the hardware tab – correct memory and CPU</div>
+</li>
+<li class="level1"><div class="li"> Change the size of <code>Hard disk 2</code> to the size needed for these filesystems<pre class="code">/usr/sap                  10GB     Standard unless specified otherwise
+/usr/openv                4GB      Created from tenneco_post install snippet
+/usr/sap/&lt;SID&gt;            ?GB      As per the requirement from Basis
+/usr/sap/hostctrl         1GB      Created from sap_basic snippet
+/usr/sap/DAA              3GB      Standard unless specified otherwise
+/home/daaadm              0.5GB    Standard unless specified otherwise
+/home/&lt;sid&gt;adm            0.5GB    Standard unless specified otherwise
+/home/sapadm              0.5GB    Standard unless specified otherwise
+/hana/shared              ?        As per the requirement from Basis</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the size of <code>Hard disk 3</code> to 16GB – This is for paging space. ( HANA systems should not page )</div>
+</li>
+<li class="level1"><div class="li"> Change the size of <code>Hard disk 4</code> to the size needed for this filesystem. This is normally equal to the memory of the HANA DB server<pre class="code">/hana/data</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change the size of <code>Hard disk 5</code> to the size needed for this filesystem. This is normally half of memory of the HANA DB server<pre class="code">/hana/log</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT5 SECTION "Customize the HANA virtual machine" [2082-3594] -->
+<h2 class="sectionedit6" id="end_state_we_should_have_virtual_disks_as_follows">End state, we should have Virtual disks as follows</h2>
+<div class="level2">
+<div class="table sectionedit7"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Disk Name  </th><th class="col1 leftalign">Purpose               </th><th class="col2 leftalign">Size                </th><th class="col3 leftalign">Type                </th><th class="col4 leftalign">Datastore (if dev/test)  </th><th class="col5 leftalign">Datastore                                     </th><th class="col6">Controller</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">Hard disk 1</td><td class="col1 leftalign">Boot                  </td><td class="col2 leftalign">70G                 </td><td class="col3 leftalign">Thin                </td><td class="col4">v9ac2_sap_hana_esx_data01</td><td class="col5 leftalign">v9ac2_sap_hana_esx_data01                     </td><td class="col6 leftalign">SCSI0:0   </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">Hard disk 2</td><td class="col1">hana/shared and other </td><td class="col2 leftalign">500G                </td><td class="col3 leftalign">Thin                </td><td class="col4">v9ac2_sap_hana_esx_data01</td><td class="col5 leftalign">v9ac2_sap_hana_esx_data01                     </td><td class="col6 leftalign">SCSI0:1   </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">Hard disk 3</td><td class="col1 leftalign">swap                  </td><td class="col2 leftalign">32G                 </td><td class="col3 leftalign">Thin                </td><td class="col4">v9ac2_sap_hana_esx_data01</td><td class="col5 leftalign">v9ac2_sap_hana_esx_data01                     </td><td class="col6 leftalign">SCSI0:2   </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">Hard disk 4</td><td class="col1 leftalign">hana/data             </td><td class="col2 leftalign">256G                </td><td class="col3">Thick - Eager zeroed</td><td class="col4">v9ac2_sap_hana_esx_data01</td><td class="col5">Each HANA prod DB must have it&#039;s own datastore</td><td class="col6 leftalign">SCSI1:0   </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">Hard disk 5</td><td class="col1 leftalign">hana/logs             </td><td class="col2 leftalign">256G                </td><td class="col3">Thick - Eager zeroed</td><td class="col4">v9ac2_sap_hana_esx_data01</td><td class="col5">Each HANA prod DB must have it&#039;s own datastore</td><td class="col6 leftalign">SCSI2:0   </td>
+	</tr>
+</table></div>
+<!-- EDIT7 TABLE [3659-4636] -->
+</div>
+<!-- EDIT6 SECTION "End state, we should have Virtual disks as follows" [3595-] -->

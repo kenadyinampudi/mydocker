@@ -1,0 +1,67 @@
+====== Installing RHEL on Dell Poweredge Server ======
+
+===== iDRAC work =====
+This is wrong.  Need to update with info on booting to BIOS and whatnot.
+
+  * You might need to update the iDRAC first.  Download the iDRAC/Firmware bundle ending with "exe".  The "BIN" file is NOT usable for manual updates.  Make sure to do a "racadm racreset" to reboot the DRAC before attempting the install.  
+  * Use the iDRAC to boot the machine into Lifecycle Manager mode.
+      * [[https://www.dell.com/support/article/en-id/SLN311809]]
+  * Set up raid
+      * The root volume should be a mirrored drive   
+  * Use UEFI boot mode to start up RHEL.
+  * By using the Lifecycle manager, drivers for the PERC controller and other specialized devices will be loaded before the OS installed loads.
+
+===== Installation using Satellite =====
+==== Prerequisites ====
+=== System Prep ===
+  * Make sure all the data from /root is saved, if there is an existing install.
+  * Rename the existing rootvg, if present
+  * Document the disk path of the disk to overwrite.
+    * ''pvs'' to find the disk with the rootvg on it
+    * ''ls -la /dev/disk/by-path'' - look for the matching entry for where you want to install rootvg
+    * For Dell stuff, the local disk will be something like ''/dev/disk/by-path/pci-0000-02:00-scsi-0:2:0:0)''.  \\ (If the disk was partitioned, make sure to grab the base device, not any partition.)
+  * Get any IP information, along with the MAC address of the working ethernet adapter. 
+  * Make sure the system is set to boot off of bios, not UEFI
+=== Satellite Prep ===
+  * Within Satellite, make sure a host group is defined for the server site.
+    * Host group needs domain defined
+      * Domain needs to be defined (Should already be defined)
+    * Needs IPv4 subnet defined (Infrastructure -> Subnets) \\ Fill out the following fields
+      * The Network address (ends with .0 for /24, so ''x.x.x.0'')
+      * Gateway address (usually ''x.x.x.1'')
+      * Primary DNS - Use IP address of domain controller local to server
+      * Secondary DNS - CDC AD VIP, ''10.131.17.100''
+      * Boot mode - ''Static''
+      * Under "Remote Execution", add all
+      * Under "Domains", add all
+      * Under "Capsules", add all
+      * Under "Locations", add whatever is appropriate for this host group
+      * Under "Organizations", add all
+    * 
+=== Create a host === 
+"Host" is the term for a server instance
+  * Under host, fill out the following fields.
+    * Name - Should be short name, like ''cdcpillx205''
+    * Org - Always ''Tenneco''
+    * Location - Pick appropriate location
+    * Host Group - Choose appropriate group
+    * All other entries should fill in automatically now
+  * Under "Operating System", fill out the following:
+    * Partition Table - Should be ''Dell PT LVM 100G'' if physical Dell, else ''PT LVM 100G''
+    * Root password - Use the standard
+  * Under "Interfaces", fill in the following fields:
+    * Edit the default interface
+      * MAC Address - Use entry from above prep section
+      * Device Indentifier - Must be blank
+      * IPv4 Subnet - Filled in by host group (or select if it's wrong)
+      * IPv4 Address - Actual IP address for this server
+  * Under "Parameters", fill out the following:
+    * Add the following parameters:
+      * ''driverdisk'' with a value of ''nfs:172.16.33.51/dell/drivers''
+      * ''diskdest'' with the value of the disk path obtained above, without the "/dev/", so something like ''disk/by-path/pci-0000:1a:00.0-scsi-0:2:0:0''
+
+===== Installation using DVD =====
+  * Boot the installer in Text only mode
+  * [[https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-installation-text-mode-x86]] shows you should append <code>inst.text</code> to the kernel parameters. (Hit tab at the Grub menu to edit) 
+  * The text installer is very sparse.  It will set a default VG name of "rhel".  Do not rename the VG unless you can recover the machine.
+  * Use <code>nmtui</code> to edit the adapter settings.

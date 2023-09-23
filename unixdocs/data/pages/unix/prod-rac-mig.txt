@@ -1,0 +1,105 @@
+====== Production Manhattan baremetal storage migration ======
+
+  * Step 6 - [[unix:update_mpath_and_udev_rules|Updating Multipath and udev Rules for PURE on lddcgblx001]]
+  * Step 9 - Scan for new disks on lddcgblx001
+     * Take a snapshot of existing disks<code>sudo multipath -ll > multipath.before</code>
+     * Rescan for new devices<code>for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk '{print $9}' )
+do
+   echo "- - -" | sudo tee ${dir}/scan
+done</code>
+    * Reload multipath maps<code>sudo multipath -r</code>
+    * Take a snapshot of disks now<code>sudo multipath -ll > multipath.after</code>
+  * Step 10 - Reboot lddcgblx001 & Validate
+    * Reboot<code>shutdown -r now</code>
+    * After lddcgblx001 comes up, login and confirm that all vgs are active and filesystem mounted and both PURE (for non OS disks only) & HITACHI disks are available. <code>vgs
+multipath -ll 
+df -h</code>
+  * Step 11 - [[unix:update_mpath_and_udev_rules|Updating Multipath and udev Rules for PURE on lddcgblx002]]
+  * Step 12 - Scan for new disks on lddcgblx002
+     * Take a snapshot of existing disks<code>sudo multipath -ll > multipath.before</code>
+     * Rescan for new devices<code>for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk '{print $9}' )
+do
+   echo "- - -" | sudo tee ${dir}/scan
+done</code>
+    * Reload multipath maps<code>sudo multipath -r</code>
+    * Take a snapshot of disks now<code>sudo multipath -ll > multipath.after</code>
+  * Step 13 - Reboot lddcgblx002 & Validate
+    * Reboot<code>shutdown -r now</code>
+    * After lddcgblx002 comes up, login and confirm that all vgs are active and filesystem mounted and both PURE (for non OS disks only) & HITACHI disks are available. <code>vgs
+multipath -ll 
+df -h</code>
+  * Step 15 - Create ASM disks & Rescan
+     * Make sure you can see all the new disks from PURE<code>multipath -ll</code>
+     * Reload or rescan if required<code>multipath -r</code>
+     * Get a Summary of all the new disks so you can use them to construct the fdisk commands<code>for mpdsk in `multipath -ll |grep PURE |awk '{print $1}'`
+do
+echo "/dev/mapper/"$mpdsk $(multipath $mpdsk -ll |grep sd |awk '{print $3}') $(multipath $mpdsk -ll |grep size |awk '{print $1}') 
+done</code> Sample output below<code>/dev/mapper/mpathp sdl sdd sdt sdab size=110G
+/dev/mapper/mpatho sda sdi sdq sdy size=50G
+/dev/mapper/mpathn sdb sdj sdr sdz size=40G
+/dev/mapper/mpathm sdc sdk sds sdaa size=260G
+/dev/mapper/mpathl sdh sdp sdx sdaf size=500G
+/dev/mapper/mpathk sdo sdg sdw sdae size=450G
+/dev/mapper/mpathj sdf sdn sdv sdad size=150G
+/dev/mapper/mpathi sde sdm sdu sdac size=20G</code>
+     * If the above output only returns 20, 150 & 500GB disks, then the partitioning can also be done in a loop<code>for mpdsk in `multipath -ll |grep PURE |awk '{print $1}'`
+do
+fdisk "/dev/mapper/"$mpdsk 
+partprobe "/dev/mapper/"$mpdsk || partprobe "/dev/mapper/"$mpdsk || partprobe "/dev/mapper/"$mpdsk
+done</code>
+     * If partprobe returns error, run the previous fdisk command against the sd devices rather than the mpath devices. No need to delete & recreate the partition, just “w”(write) and exit and then run partprobe on the sd device file.
+     * Create ASM disks using below format in correct order DATA disks and followed by OCS voting disk on node1 <code> /usr/sbin/oracleasm createdisk DATA02_PR /dev/mapper/mpathlp1
+/usr/sbin/oracleasm createdisk DATA01_PR /dev/mapper/mpathkp1
+/usr/sbin/oracleasm createdisk OCR_VT_PR /dev/mapper/mpathip1
+/usr/sbin/oracleasm createdisk DATA03_PR /dev/mapper/mpathjp1</code>
+     * scan for new disks on lddcgblx001 <code>/usr/sbin/oracleasm scandisks</code>
+     * confirm new disks<code>/usr/sbin/oracleasm listdisks</code>
+     * Below commands outputs shows new disks along with older ASM disks<code>/etc/init.d/oracleasm listdisks | xargs /etc/init.d/oracleasm querydisk -d
+find /dev -type b -exec '/etc/init.d/oracleasm' 'querydisk' '{}' ';' 2>/dev/null | grep "is marked an ASM disk"</code>
+     * Rescan for new devices on **lddcgblx002**<code>for dir in $(sudo ls -ld1 /sys/class/scsi_host/host* | awk '{print $9}' )
+do
+   echo "- - -" | sudo tee ${dir}/scan
+done</code>
+    * Reload multipath maps<code>sudo multipath -r</code>
+    * scan new PURE ASM disks on **lddcgblx002**  <code>/usr/sbin/oracleasm scandisks
+/usr/sbin/oracleasm listdisks
+/etc/init.d/oracleasm listdisks | xargs /etc/init.d/oracleasm querydisk -d
+find /dev -type b -exec '/etc/init.d/oracleasm' 'querydisk' '{}' ';' 2>/dev/null | grep "is marked an ASM disk"</code>
+  * Start ASM Migration from Hitachi to Pure Storage LUNs and data validation post migration
+  * Step 17 - Reboot Node 1 and Node 2 in rolling fashion
+  * Step 18 - Remove old disks from ASM Lib (shutdown the cluster service, reboot and remove old ASM disks)
+    * Shutdown and disable cluster services on node1. As root execute these steps<code>cd /u01/app/11.2.0.3/grid/bin
+
+./crsctl check cluster -all
+
+./crsctl stop crs
+
+./crsctl disable crs
+
+./crsctl check crs</code>
+    * After reboot, stop ASMLIB on node1<code>service oracleasm stop</code>
+    * Remove the disk using physical name like correct mpath name rather than logical name with correct names. Refer to earlier configuration output to get disk details to remove. Use fdisk -l to confirm mapth name with partion name.<code>fdisk -l /dev/mapper/mpathe
+/usr/sbin/oracleasm deletedisk /dev/mapper/mpathep1
+/usr/sbin/oracleasm deletedisk /dev/mapper/mpathgp1
+/usr/sbin/oracleasm deletedisk /dev/mapper/mpathfp1</code>
+    * Restart ASMLIB on lddcgblx001 <code>service oracleasm start</code>
+    * Enable CRS and reboot:<code>cd /u01/app/11.2.0.3/grid/bin
+./crsctl enable crs
+
+shutdown -r now</code>
+  * Step 19 - Validate everything stays up and re-scan ASM devices on node2
+    * Confirm old ASM disks are not visible - DBA
+    * Confirm old ASM disks are not visible - Unix
+    * Rescan ASM disks on node 2<code>/usr/sbin/oracleasm scandisks
+/usr/sbin/oracleasm listdisks
+/etc/init.d/oracleasm listdisks | xargs /etc/init.d/oracleasm querydisk -d
+find /dev -type b -exec '/etc/init.d/oracleasm' 'querydisk' '{}' ';' 2>/dev/null | grep "is marked an ASM disk"</code>
+  * Step 20 -	Request Boot disk and local storage for Node 1 and Node 2
+  * Step 22 - [[unix:rootmigration|Perform LVM and Boot Disk Migration on Node1]]
+  * Step 23 - Shutdown lddcgblx001<code>[[ `hostname` == lddcgblx001 ]] && shutdown -h now || echo "you are on the wrong node"</code>
+  * Step 24 - Remove all Hitachi Storage from lddcgblx001
+  * Step 26 - Validate lddcgblx001 - Resources, ASM and database connectivity
+  * Step 27 - [[unix:rootmigration|Perform LVM and Boot Disk Migration on lddcgblx002]]
+  * Step 28 - Shutdown lddcgblx002<code>[[ `hostname` == lddcgblx002 ]] && shutdown -h now || echo "you are on the wrong node"</code>
+  * Step 29 - Remove all Hitachi storages from Node 2
+  * Step 31 - Validate Node 2 - Resources, ASM and database connectivity

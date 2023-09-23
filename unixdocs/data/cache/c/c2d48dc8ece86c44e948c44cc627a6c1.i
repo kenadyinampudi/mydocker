@@ -1,0 +1,8 @@
+a:15:{i:0;a:3:{i:0;s:14:"document_start";i:1;a:0:{}i:2;i:0;}i:1;a:3:{i:0;s:10:"listo_open";i:1;a:0:{}i:2;i:0;}i:2;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:0;}i:3;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:0;}i:4;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:22:" Ticket number 1884808";}i:2;i:4;}i:5;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:545:"root on taitc118:/root>ssh peerdb99 ls -ld  /usr/lib/X11/fonts
+drwxr--r--   10 bin      bin            8192 Sep 19 2010  /usr/lib/X11/fonts
+root on taitc118:/root>ssh peerdb98 ls -ld  /usr/lib/X11/fonts
+drwxr-xr-x   10 bin      bin            8192 Sep 19 2010  /usr/lib/X11/fonts
+root on taitc118:/root>ssh qeerdb01 ls -ld  /usr/lib/X11/fonts
+drwxr-xr-x   10 bin      bin           12288 Sep 17 2010  /usr/lib/X11/fonts
+root on taitc118:/root>ls -ld /usr/lib/X11/fonts
+drwxr-xr-x   11 bin      bin           16384 Jul 28 2011  /usr/lib/X11/fonts";i:1;N;i:2;N;}i:2;i:31;}i:6;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:584;}i:7;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:584;}i:8;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:584;}i:9;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:584;}i:10;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:1:" ";}i:2;i:588;}i:11;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:589;}i:12;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:589;}i:13;a:3:{i:0;s:11:"listo_close";i:1;a:0:{}i:2;i:589;}i:14;a:3:{i:0;s:12:"document_end";i:1;a:0:{}i:2;i:589;}}

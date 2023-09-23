@@ -1,0 +1,15 @@
+====== Testing NAS share after major upgrades or changes ======
+
+  - On a laptop run cmd as administrator.
+  - Map t: drive to one of the shares e.g. "Groups" at St Truiden<code>net use T: \\EMEA\DFS\STR\Groups</code>
+  - Create a directory<code>T:
+mkdir testdirectory</code>
+  - Create a testfile<code>cd testdirectory
+copy con testfile.txt
+This is a test file</code>Now hold control key and hit "Z"
+  - Display the content of the file<code>type testfile.txt</code>It should print ''This is a test file''
+  - Cleanup<code>del testfile.txt
+cd \
+rmdir testdirectory</code>
+  - Remove the drive mapping<code>c:
+net use T: /delete</code>

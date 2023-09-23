@@ -1,0 +1,33 @@
+a:6:{s:2:"id";s:16:"shukant:patching";s:6:"prefix";s:0:"";s:4:"text";s:3228:"====== Patching process AIX ======
+
+  - Find out the current TL<code>oslevel -s</code>
+  - Preserve a copy of rootvg
+    - On a SAN booting system, perform an alt_disk_copy to the alt_rootvg<code>sudo alt_disk_copy -B -d hdiskX</code>
+    - On a mirrored rootvg system do this,
+      - Unmirror the VG<code>sudo unmirrorvg rootvg hdiskX</code>
+      - Remove the disk from rootvg<code>sudo reducevg rootvg hdiskX</code>
+      - Clear the VGDA<code>sudo chpv -c hdiskX</code>
+      - Set the bootlist to boot from the remaining disk<code>sudo bootlist -m normal hdiskY</code>
+      - Perform an alt_disk_copy to the alt_rootvg<code>sudo alt_disk_copy-d hdiskX</code>
+  - Disable the alt_disk_copy script<code>sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</code>
+  - Make sure that NIM server has a latest copy of mksysb<code>sudo ls -l /mksysb-images</code>Outside of Lincolnshire systems, check the script to find the target.
+  - Login to NIM server (taitc118) export the TL filesystem<code>sudo exportfs -i /prod/images/lppsrc/710TL03-02</code>
+  - NFS mount the lppsrc location<code>sudo mkdir -p /mnt/aixupdates
+sudo mount taitc118:/prod/images/lppsrc/710TL03-02 /mnt/aixupdates</code>
+  - Perform a preview upgrade<code>cd /mnt/aixupdates
+sudo install_all_updates -d . -c -p -r -V -Y</code>
+  - If no errors found, perform the upgrade<code>cd /mnt/aixupdates
+sudo install_all_updates -d . -c -r -V -Y</code>More details on the arguments
+    * d  ---> Location
+    * c  ---> Commit the updates
+    * p  ---> Preview
+    * r  ---> Update rpms as well
+    * V  ---> Verbose output
+    * Y  ---> Accept license agreements
+  - For the smitty lovers,
+      - Invoke smitty<code>sudo smitty update_all</code>
+  - After the upgrade has successfully completed, reboot the server to complete the upgrade<code>sudo shutdown -Fr</code>
+  - Once the server has successfully rebooted login and check to see that the upgrade oompleted successfully <code>oslevel -s </code> Verify against the expected results. 
+  - Check the /etc/sendmail/mail/sedndmsil.cf configuraton file for to see if the Smart mailer Relay "DS" has changed.<code>sudo grep DS /etc/mail/sendmail.cf</code>If the DS entry is blank then check the copy created when you performed the Configuation Backup in Step 2 above. Update the DS entry in the current /etc/sendmail/mail/sendmail.cf file. Do NOT Overlay the current sendmail.cf file as it is compiled for the new version of sendmail.
+  - Confirm that the SSH host keys are not overwritten. Login to taitc118 switch user to root. <code> sudo su - root</code>now ssh to the server you just upgraded.  <code> sudo ssh {server name here}</code> If you are logged on to the server then the SSH Key files are intact. If the ssh fails to connect then you need to reset the ssh hey files. In the /tmp/Pre_Upgrade/aix_upgrade directory you set up in Step 2 above a script to copy the ssh keys was created when you ran the save_env.sh script The script is copy-etcssh-keys.sh.  To copy the ssh key files <code>cd /tmp/Pre_upgrade/aix_upgrade</code><code>sudo ./copy-etcssh-keys.sh</code> Retry the ssh from taitc118.
+  - Make sure the TL has been  upgraded<code>oslevel -s</code>";s:6:"suffix";s:0:"";s:4:"date";i:1416201202;s:6:"client";s:4:"root";}

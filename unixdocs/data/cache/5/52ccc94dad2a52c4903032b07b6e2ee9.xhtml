@@ -1,0 +1,118 @@
+
+<h1 class="sectionedit1" id="hpux_root_disk_mirroring">HPUX Root Disk Mirroring</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "HPUX Root Disk Mirroring" [1-40] -->
+<h2 class="sectionedit2" id="preparation_work">Preparation work</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Check that there are unused/spare hard disk. Use a combination of the following commands to identify <pre class="code">ioscan -fnC disk
+vgdisplay -v vg00
+pvdisplay /dev/dsk/c2t6d0 |egrep -iE &quot;Total|Free&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check that Mirror-UX is installed. Sample o/p below<pre class="code">uskux12:/root # pvdisplay /dev/dsk/c2t6d0 |egrep -iE &quot;Total|Free&quot;
+Total PE                    4340
+Free PE                     4340
+uskux12:/root # </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create change controls, get approval.  Sample Change is CHG0046954</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Preparation work" [41-562] -->
+<h2 class="sectionedit3" id="installation_plan">Installation Plan</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Store the disk device files in a variable.<pre class="code">DISK=&quot;/dev/dsk/c2t6d0&quot; &amp;&amp; RDISK=&quot;/dev/rdsk/c2t6d0&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a physical volume with a boot reserved area.  Make sure to specify the right disk <pre class="code">pvcreate -B ${RDISK}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the physical volume to the root VG if not already added <pre class="code">vgextend /dev/vg00 ${DISK}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Use mkboot to place the boot utilities in the boot area and add the AUTO file <pre class="code">mkboot ${RDISK}
+mkboot -a &quot;hpux -lq&quot; ${RDISK}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> This step is for the existing Primary Disk and not on the secondary disk.  Use mkboot to update the AUTO file on the primary boot disk <pre class="code">mkboot -a &quot;hpux -lq&quot; ${RDISK}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Mirror the stand, root and swap logical volumes in order. It has to be run one by one.  <pre class="code">lvextend -m 1 /dev/vg00/lvol1 ${DISK}
+lvextend -m 1 /dev/vg00/lvol2 ${DISK}
+lvextend -m 1 /dev/vg00/lvol3 ${DISK}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then mirror the rest of your root logical volumes.  It has to be run one by one. <pre class="code">lvextend -m 1 /dev/vg00/lvol4 ${DISK}
+lvextend -m 1 /dev/vg00/lvol5 ${DISK}
+lvextend -m 1 /dev/vg00/lvol6 ${DISK}
+lvextend -m 1 /dev/vg00/lvol7 ${DISK}
+lvextend -m 1 /dev/vg00/andy ${DISK}
+lvextend -m 1 /dev/vg00/lvol9 ${DISK} </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify that the total number of used PEs on both disks are same. Use <pre class="code">vgdisplay -v vg00 |grep Free\ PE</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Modify your alternate boot path <pre class="code"> setboot -a 2/1.6.0 # use the path of your new boot disk </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Backup /stand/bootconf &amp; Edit /stand/bootconf and add the new mirrored boot disk.</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Installation Plan" [563-2115] -->
+<h2 class="sectionedit4" id="post_implementation_testing">Post Implementation Testing</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Verify there are no stale PEs <pre class="code">for LVs in `vgdisplay -v vg00 |grep &quot;LV Name&quot; |awk &#039;{print $3}&#039;`
+do
+echo &quot;Total Stale PE in $LVs is&quot; $(lvdisplay -v $LVs |grep -ci stale)
+done </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify there is extra 1 copy for all LVs (including swap/dump) <pre class="code">for LVs in `vgdisplay -v vg00 |grep &quot;LV Name&quot; |awk &#039;{print $3}&#039;`
+do
+echo &quot;$LVs has&quot; $(lvdisplay -v $LVs |grep ^Mirror |awk &#039;{print $3}&#039;) &quot;mirror copies&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Verify that alternate boot disk is set using setboot command</div>
+</li>
+<li class="level1"><div class="li"> Verify there are no errors in dmesg or in /var/adm/messages</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Post Implementation Testing" [2116-2716] -->
+<h2 class="sectionedit5" id="backout_plan">Backout Plan</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Restore the /stand/bootconf from the backup</div>
+</li>
+<li class="level1"><div class="li"> Remove the mirror copies one after the other <pre class="code">lvreduce -m 0 /dev/vg00/lvol9 ${DISK}
+lvreduce -m 0 /dev/vg00/andy ${DISK}
+lvreduce -m 0 /dev/vg00/lvol7 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol6 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol5 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol4 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol3 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol2 ${DISK}
+lvreduce -m 0 /dev/vg00/lvol1 ${DISK}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the disk from the VG <pre class="code">vgreduce vg00 ${DISK}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that the lvlnboot is updated</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "Backout Plan" [2717-] -->

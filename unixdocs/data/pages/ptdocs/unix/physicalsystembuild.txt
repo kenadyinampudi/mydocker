@@ -1,0 +1,58 @@
+====== System build specifications for Other teams ======
+
+===== Standard Wintel VM build =====
+
+  * Please make a request to the Wintel resource to create a VM for Redhat Linux.<code>Hello Wintel Team,
+Please configure a Virtual Machine with the following characteristics,
+
+Type         : Linux
+OS           : ( Mention Redhat Enterprise Linux 6 or 7 64 bit )
+Processors   : ( enter the number of procs needed )
+Memory       : ( enter the RAM in Gigabytes )
+Boot Disk    : 1 * 70G, thin provisioned
+Data disk(s) : ( details here )
+Virtual NIC  : ( Mention the VLAN or subnet here )
+Options      : ( Set Boot options to 10,000 ms)</code>
+
+===== SAP HANA ESXi Build =====
+
+==== BIOS Settings ====
+
+  * These settings must be performed by Wintel team.
+
+^Task^Description^
+|Enable Intel VT Technology|Enable all BIOS virtualization technologies|
+|Enable CPU Intel Turbo Boost|Allows automatic CPU overclocking (P-States)|
+|Disable QPU Power Management|Static high power for QPI links|
+|Enable Hyperthreading|Double logical CPU cores|
+|Enable execute disable feature|Enable the NX-bit, required for vMotion|
+|Disable node interleaving| |	
+|Disable CIE Halt state|Disable Enhance C-States in BIOS|
+|Set Power Management to High Performance|No power saving modes (C-Statues|
+|Disable unused BIOS features|On-board audio, modem, serial ports, etc.|
+
+==== ESXi Host configuration ====
+
+  - The following host configuration allows the transfer of host data to the virtual machine.<code>Using VMware vSphere Client:
+Select the host in the vSphere client window. 
+Choose the tab "Configuration".
+In the list of software options, choose "Advanced Settings".
+In "Advanced Settings", choose "Misc".
+Scroll down to Misc.GuestLibAllowHostInfo and set the value to 1.</code>
+  - Networking
+    - Use: Virtual Distributed Switches (vDS) to connect all hosts that work together Define port groups that are dedicated to SAP HANA, management and vMotion traffic
+  - Storage
+    - Use dedicated HBAs/SCSI controller for DATA, LOG and ESXi Swap/Scratch partition.
+    - Separate log from data!
+  - Memory
+    - Configure RAM hemisphere mode
+    - Distribute DIMM modules in a way to achieve best performance (hemisphere mode), use fastest DIMM modules available for the selected RAM size
+  - CPU	
+    - Populate all available CPU sockets, use glueless NUMA architecture
+    - To avoid Timer Synchronization Issues, use a multi-socket server that ensures NUMA node timer synchronization.
+    - NUMA systems that do not run synchronized will need to synchronize the timers on the hypervisor area, which is very costly"
+    - SAP Monitoring
+      - Enable SAP monitoring on the host -> Misc. GuestLibAllowHostInfo and set the value to 1. 
+      - Details: ''http://service.sap.com/sap/support/notes/1409604''
+    - Virtual Machine Monitor :- Allow vSphere to choose the best virtual machine monitor based on the CPU and guest operating system combination.
+    - CPU/MMU Virtualization Option = Automatic

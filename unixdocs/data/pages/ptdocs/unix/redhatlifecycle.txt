@@ -1,0 +1,22 @@
+====== Move a Red Hat Client into the patching process ======
+In order to control the patching process, Red Hat implements a life-cycle policy in which a bundle of packages are promoted from dev to QA to prod.\\
+
+This allows the administrator to update servers in a more controlled fashion.\\ 
+Currently, registering a server directly to Red Hat will present packages which will update the server up to the latest and greatest for that major version.  This means that servers getting patched will be moved to the latest point release and will be at different versions depending on when servers were patched.\\ 
+
+A 7.5 server patched today will end up 7.7 with the latest patches, where as one patched a month ago will have 7.7 but be missing patches from the last month in comparison.\\
+
+===== Process =====
+  - Log into [[https://cdcpillx205.pt.int.tenneco.com | Red Hat Satellite Server]]
+  - Click on Hosts/All Hosts on the left tree
+  - Find the host you care about and click on it.
+  - Click on the "Content" button under the "Details" section
+  - Under the "Details" tab, look at the "Content Host Content" section.  (Brought to you by the Department of Redundancy Department.)
+  - Click the Pencil icon next to "Default Content View" in the "Content View" entry.
+    - Change this to your desired Content View
+    - Click "Save" to save this change.
+  - Under the "Lifecycle Environment" entry, check the box next to this server's environment.
+    - Click "Save" to save this change as well.
+  - This box should now see the correct packages and errata.
+  - You might need to run ''subscription-manager refresh'' followed by ''yum clean all'' to clear out old data first.
+  - Run ''yum update'' on the host to patch up to the relevant level

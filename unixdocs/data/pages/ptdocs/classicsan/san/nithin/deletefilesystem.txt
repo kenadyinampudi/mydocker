@@ -1,0 +1,33 @@
+====== To delete the NAS filesystem ======
+
+  -Find out if the filesystem has any check points.<code>fs_ckpt fs_tastr050_groups -list</code><code>server_df server_2| grep -v "server_2:" |awk '{if(NF==1) {printf $0;getline;print $0}else print $0}'| grep groups</code><code>ckpt_Daily_CKPT_groups_004                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_004
+ckpt_Daily_CKPT_groups_003                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_003_1
+ckpt_Daily_CKPT_groups_002                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_002
+ckpt_Daily_CKPT_groups_010                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_010
+ckpt_Daily_CKPT_groups_009                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_009
+ckpt_Daily_CKPT_groups_006                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_006
+ckpt_Daily_CKPT_groups_005                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_005
+ckpt_Daily_CKPT_groups_008                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_008
+ckpt_Daily_CKPT_groups_007                5561798528   5557668920      4129608  100%    /root_vdm_6/ckpt_Daily_CKPT_groups_007</code>
+  -Delete the checkpoints<code>nas_fs -delete ckpt_Daily_CKPT_groups_004 -o umount=yes
+
+nas_fs -delete ckpt_Daily_CKPT_groups_003 -o umount=yes
+
+nas_fs -delete ckpt_Daily_CKPT_groups_002 -o umount=yes
+
+nas_fs -delete ckpt_Daily_CKPT_groups_010 -o umount=yes
+
+nas_fs -delete ckpt_Daily_CKPT_groups_009 -o umount=yes
+
+nas_fs -delete ckpt_Daily_CKPT_groups_006 -o umount=yes
+
+nas_fs -delete ckpt_Daily_CKPT_groups_005 -o umount=yes
+
+nas_fs -delete ckpt_Daily_CKPT_groups_008 -o umount=yes
+
+nas_fs -delete ckpt_Daily_CKPT_groups_007 -o umount=yes</code>
+  - Unmount the filesystem from VDM<code>server_umount vdm_tastr050 -perm fs_tastr050_groups</code>
+
+===== Wait for 2 weeks =====
+
+  - Delete the filesystem<code>nas_fs -delete fs_tastr050_groups</code>

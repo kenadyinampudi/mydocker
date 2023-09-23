@@ -1,0 +1,41 @@
+
+<h1 class="sectionedit1" id="setting_up_vios_nim_resources_from_a_dvd">Setting up VIOS NIM resources from a DVD</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Mount the DVD - Volume 1 on the NIM server<pre class="code">sudo loopmount -i /prod/images/vio/cd/Virtual_IO_Server_V2.2.2.2_DVD_1_of_2_32013.iso -l loop0 -o &quot;-V cdrfs -o ro&quot; -m /cdrom</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the mksysb files from DVD to NIM server<pre class="code">sudo mkdir /tmp/tmpfs-not-mirrored/vios2.2.2.2</pre>
+<pre class="code">sudo cp /cdrom/usr/sys/inst.images/mksysb_image* /tmp/tmpfs-not-mirrored/vios2.2.2.2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the bosinst.data file from DVD<pre class="code">sudo cp /cdrom/bosinst.data /tmp/tmpfs-not-mirrored/vios2.2.2.2</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount first and mount the DVD - Volume 2 on the NIM server<pre class="code">sudo loopumount -l loop0 -m /cdrom</pre>
+<pre class="code">sudo loopmount -i /prod/images/vio/cd/Virtual_IO_Server_V2.2.2.2_DVD_2_of_2_32013.iso -l loop0 -o &quot;-V cdrfs -o ro&quot; -m /cdrom</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the 3rd mksysb file from DVD to NIM server<pre class="code">sudo cp /cdrom/usr/sys/inst.images/mksysb_image /tmp/tmpfs-not-mirrored/vios2.2.2.2/mksysb_image3</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Combine the mksysb files into one<pre class="code">cd /tmp/tmpfs-not-mirrored/vios2.2.2.2</pre>
+<pre class="code">sudo su</pre>
+<pre class="code">cat mksysb_image mksysb_image2 mksysb_image3 &gt; /prod/images/vios/vios-2-2-2-2.mksysb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define a mksysb resource pointing to the newly created mksysb file<pre class="code">sudo nim -o define -t mksysb -a server=master -a location=/prod/images/vios/vios-2-2-2-2.mksysb vios-2-2-2-2-mksysb</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a Spot NIM resource using the mksysb<pre class="code">sudo nim -o define -t spot -a server=master -a location=/prod/images/vios/spot -a source=vios-2-2-2-2-mksysb vios-2-2-2-2-spot</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Define the bosinst.data NIM resource<pre class="code">sudo cp /tmp/tmpfs-not-mirrored/vios2.2.2.2/bosinst.data /prod/images/vios/2.2.2.2-bosinst.data</pre>
+<pre class="code">sudo nim -o define -t bosinst_data -a server=master -a location=/prod/images/vios/2.2.2.2-bosinst.data vios-2-2-2-2-bosinst_data</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:buildvioserver" class="wikilink1" title="unix:buildvioserver">Build the VIO server</a></div>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,12 @@
+====== NFS Notes ======
+
+  * Forcefully unmount a filesystem<code>umount -f <fsname> </code>
+  * When an NFS server has rebooted, do this
+    * Unmount all of them<code>grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | sort -r | xargs -n1 umount -f</code>
+    * Mount all of them <code>grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | sort | xargs -n1 mount</code>
+    * Check read check on all of them <code> for fs in $(grep -p nfs /etc/filesystems | grep : | sed "s;:;;g")
+ do
+ ls -l $fs
+ echo "Press a key..."
+ read
+ done</code>

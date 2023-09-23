@@ -1,0 +1,72 @@
+====== Fabric zoning servers - Interxion ( Pure storage M20 ) ======
+
+===== Physical cabling of Pure M20 storage array =====
+
+
+^Storage array^Port Name^Switch Name^Port No^Fabric^Alias name^WWN^Zoning target^
+|inxpm20v1|ct0-fc0|inxds5300a|22|Fabric A|inxpm20v1_ct0_fc0|52:4A:93:7C:14:DE:A5:00|AIX/PowerVM|
+|inxpm20v1|ct0-fc1|inxds5300b|24|Fabric B|inxpm20v1_ct0_fc1|52:4A:93:7C:14:DE:A5:01|Wintel/VMWARE|
+|inxpm20v1|ct0-fc2|inxds5300a|24|Fabric A|inxpm20v1_ct0_fc2|52:4A:93:7C:14:DE:A5:02|Wintel/VMWARE|
+|inxpm20v1|ct0-fc3|inxds5300b|22|Fabric B|inxpm20v1_ct0_fc3|52:4A:93:7C:14:DE:A5:03|AIX/PowerVM|
+|inxpm20v1|ct1-fc0|inxds5300a|23|Fabric A|inxpm20v1_ct1_fc0|52:4A:93:7C:14:DE:A5:10|AIX/PowerVM|
+|inxpm20v1|ct1-fc1|inxds5300b|25|Fabric B|inxpm20v1_ct1_fc1|52:4A:93:7C:14:DE:A5:11|Wintel/VMWARE|
+|inxpm20v1|ct1-fc2|inxds5300a|25|Fabric A|inxpm20v1_ct1_fc2|52:4A:93:7C:14:DE:A5:12|Wintel/VMWARE|
+|inxpm20v1|ct1-fc3|inxds5300b|23|Fabric B|inxpm20v1_ct1_fc3|52:4A:93:7C:14:DE:A5:13|AIX/PowerVM|
+
+
+** Fabric A **
+
+^Storage array^Port Name^Switch Name^Port No^Fabric^Alias name^WWN^Zoning target^
+|inxpm20v1|ct0-fc0|inxds5300a|22|Fabric A|inxpm20v1_ct0_fc0|52:4A:93:7C:14:DE:A5:00|AIX/PowerVM|
+|inxpm20v1|ct0-fc2|inxds5300a|24|Fabric A|inxpm20v1_ct0_fc2|52:4A:93:7C:14:DE:A5:02|Wintel/VMWARE|
+|inxpm20v1|ct1-fc0|inxds5300a|23|Fabric A|inxpm20v1_ct1_fc0|52:4A:93:7C:14:DE:A5:10|AIX/PowerVM|
+|inxpm20v1|ct1-fc2|inxds5300a|25|Fabric A|inxpm20v1_ct1_fc2|52:4A:93:7C:14:DE:A5:12|Wintel/VMWARE|
+
+** Fabric B **
+
+^Storage array^Port Name^Switch Name^Port No^Fabric^Alias name^WWN^Zoning target^
+|inxpm20v1|ct0-fc1|inxds5300b|24|Fabric B|inxpm20v1_ct0_fc1|52:4A:93:7C:14:DE:A5:01|Wintel/VMWARE|
+|inxpm20v1|ct0-fc3|inxds5300b|22|Fabric B|inxpm20v1_ct0_fc3|52:4A:93:7C:14:DE:A5:03|AIX/PowerVM|
+|inxpm20v1|ct1-fc1|inxds5300b|25|Fabric B|inxpm20v1_ct1_fc1|52:4A:93:7C:14:DE:A5:11|Wintel/VMWARE|
+|inxpm20v1|ct1-fc3|inxds5300b|23|Fabric B|inxpm20v1_ct1_fc3|52:4A:93:7C:14:DE:A5:13|AIX/PowerVM|
+
+
+[[#fabric_a_zoning_-_aix_powervm_servers|AIX and PowerVM Zoning procedures]]
+
+[[#fabric_a_zoning_-_wintel_vmware_servers|Wintel and VMWARE Zoning procedures]]
+
+[[#xls|Supporting Excel file - will generate commands, if used properly]]
+
+
+===== Fabric A Zoning - AIX/PowerVM servers =====
+
+  - Define AIX host alias<code>alicreate "pocpuresv01_4e00d0","c0:50:76:06:10:4e:00:d0"</code>If there are multiple WWNs from the AIX host, repeat this step for the second WWN.
+  - Create zoning<code>zonecreate "pocpuresv01_4e00d0__inxpm20v1_ct0_ct1_fc0","pocpuresv01_4e00d0;inxpm20v1_ct0_fc0;inxpm20v1_ct1_fc0"</code>
+  - Add to config<code>cfgadd "Production_1","pocpuresv01_4e00d0__inxpm20v1_ct0_ct1_fc0"</code>
+  - Save and enable config<code>cfgsave</code>Enable<code>cfgenable "Production_1"</code>
+
+===== Fabric B Zoning - AIX/PowerVM servers =====
+
+  - Define AIX host alias<code>alicreate "pocpuresv01_4e00d2","c0:50:76:06:10:4e:00:d2"</code>If there are multiple WWNs from the AIX host, repeat this step for the second WWN.
+  - Create zoning<code>zonecreate "pocpuresv01_4e00d2__inxpm20v1_ct0_ct1_fc3","pocpuresv01_4e00d2;inxpm20v1_ct0_fc3;inxpm20v1_ct1_fc3"</code>
+  - Add to config<code>cfgadd "Production_1b","pocpuresv01_4e00d2__inxpm20v1_ct0_ct1_fc3"</code>
+  - Save and enable config<code>cfgsave</code>Enable<code>cfgenable "Production_1b"</code>
+
+===== Fabric A Zoning - Wintel/VMWARE servers =====
+
+  - Define VMWARE host alias<code>alicreate "taitc360_6cccb0","c0:50:76:06:10:6c:cc:b0"</code>
+  - Create zoning<code>zonecreate "taitc360_6cccb0__inxpm20v1_ct0_ct1_fc2","taitc360_6cccb0;inxpm20v1_ct0_fc2;inxpm20v1_ct1_fc2"</code>
+  - Add to config<code>cfgadd "Production_1","taitc360_6cccb0__inxpm20v1_ct0_ct1_fc2"</code>
+  - Save and enable config<code>cfgsave</code>Enable<code>cfgenable "Production_1"</code>
+
+===== Fabric B Zoning - Wintel/VMWARE servers =====
+
+  - Define VMWARE host alias<code>alicreate "taitc360_6cccb2","c0:50:76:06:10:6c:cc:b2"</code>
+  - Create zoning<code>zonecreate "taitc360_6cccb2__inxpm20v1_ct0_ct1_fc1","taitc360_6cccb2;inxpm20v1_ct0_fc1;inxpm20v1_ct1_fc1"</code>
+  - Add to config<code>cfgadd "Production_1b","taitc360_6cccb2__inxpm20v1_ct0_ct1_fc1"</code>
+  - Save and enable config<code>cfgsave</code>Enable<code>cfgenable "Production_1b"</code>
+
+
+===== xls =====
+This xlsx file if properly used will generate all commands needed in fabric A and B. It's now filled so you can see its 'syntax'.
+{{:san:inx_zonning.xlsx|}}

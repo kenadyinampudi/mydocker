@@ -1,0 +1,36 @@
+====== North America - Lincolnshire Disaster Recovery test - 2018 -- Destroy AIX server's data ======
+
+  - Login to the server you wish to destroy{{:dr:areyousure.png?100|Are you sure ??}}
+  - Shutdown/kill applications{{:dr:areyousure.png?100|Are you sure ??}}<code>ps -ef | egrep "sap|ora|unispool|edi" | grep -v grep | awk '{print $2}' | xargs -n5 kill -9</code>
+  - Unmount all fileystems{{:dr:areyousure.png?100|Are you sure ??}}<code>for fs in $(lsvg | grep -v rootvg | xargs -n1 lsvg -l | grep -w jfs2 | grep open | awk '{print $NF}' | sort -r )
+do
+   echo "Working on ${fs} "
+   umount ${fs}
+   if [ ${?} -ne 0 ]
+   then
+      fuser -kuc ${fs}
+      umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         echo "Check Whats wrong with ${fs} "
+         return 1
+      fi
+   fi
+done</code>
+  - Export the VGs{{:dr:areyousure.png?100|Are you sure ??}}<code>lsvg | grep -v rootvg | xargs -n1 varyoffvg
+lsvg | grep -v rootvg | xargs -n1 exportvg</code>
+  - Create the destruction script{{:dr:areyousure.png?100|Are you sure ??}}<code>echo "" > /root/destroy.sh
+for disk in $(lspv | sort -k3 | awk '{print $1}' | tr "\n" " ")
+do
+   echo date >> /root/destroy.sh
+   echo "Destroying ${disk} ..." >> /root/destroy.sh
+   echo "dd if=/dev/zero of=/dev/r${disk} bs=4k count=50000" >> /root/destroy.sh
+done
+for lv in $(lsvg -l rootvg | grep jfs2 | awk '{print $1}' | tr "\n" " ")
+do
+   echo date >> /root/destroy.sh
+   echo "dd if=/dev/zero of=/dev/r${lv} bs=4k count=50000" >> /root/destroy.sh
+   echo "Destroying ${lv} ..." >> /root/destroy.sh
+done</code>
+  - Execute destruction{{:dr:areyousure.png?100|Are you sure ??}}{{:dr:areyousure.png?100|Are you sure ??}}{{:dr:areyousure.png?100|Are you sure ??}}{{:dr:areyousure.png?100|Are you sure ??}}<code>chmod 755  /root/destroy.sh
+nohup /root/destroy.sh & </code>

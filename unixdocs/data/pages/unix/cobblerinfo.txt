@@ -1,0 +1,58 @@
+====== Cobbler / Kickstart ======
+
+**Cobbler is used to build Redhat systems. It runs on pablsv01**
+
+===== Process - Concepts =====
+
+** Distros **
+
+  * A distro is a copy of the RHEL installation DVD for a given version.<code>sudo cobbler distro list
+   rhel-5.8-i386
+   rhel-5.8-x86_64
+   rhel-5.8-xen-i386
+   rhel-5.8-xen-x86_64
+   rhel-6.3-i386
+   rhel-6.3-x86_64
+   rhel-6.4-x86_64</code>
+
+** Kickstart file **
+
+  * Kickstart profile is used to define how the system needs to be built. It defines, the partition sizes, types, root password etc. 
+  * On pablsv01 The kickstart files are stored under<code>sudo ls -l /var/lib/cobbler/kickstarts/tenneco.*
+-rw-r--r-- 1 root root 1574 Nov  3  2012 /var/lib/cobbler/kickstarts/tenneco.rhel-5.8-HP.ks
+-rw-r--r-- 1 root root 1550 Nov  4  2012 /var/lib/cobbler/kickstarts/tenneco.rhel-5.8.ks
+-rw-r--r-- 1 root root 1586 Nov  3  2012 /var/lib/cobbler/kickstarts/tenneco.rhel-6.3-HP.ks
+-rw-r--r-- 1 root root 1562 Nov  2  2012 /var/lib/cobbler/kickstarts/tenneco.rhel-6.3.ks
+-rw-r--r-- 1 root root 1562 Aug 13 15:48 /var/lib/cobbler/kickstarts/tenneco.rhel-6.4.ks</code>
+
+** Profiles **
+
+  * A profile associates a distro with kickstart<code>sudo cobbler profile list
+   rhel-5.8-i386
+   rhel-5.8-x86_64
+   rhel-5.8-xen-i386
+   rhel-5.8-xen-x86_64
+   rhel-6.3-i386
+   rhel-6.3-x86_64
+   rhel-6.4-x86_64</code>
+
+** Build Process **
+
+  - We define a system to cobbler this way<code>sudo cobbler system add \
+--name=taqa1a03new \
+--profile=rhel-6.4-x86_64 \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=amer.int.tenneco.com \
+--gateway=10.32.6.1 \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=00:0c:29:7d:37:90 \
+--ip-address=10.32.6.22 \
+--netmask=255.255.255.0 \
+--server=pablsv01.amer.int.tenneco.com</code>This way we associated a system with a profile.
+  - We then create a iso file using cobbler<code> sudo cobbler buildiso --systems="taqa1a03new" --iso=/var/www/html/servers/taqa1a03new.iso</code>
+  - The iso file is then copied over to a filesystem on taitc118. This filesystem is presented to VMWARE as a datastore.
+  - On the VM, we select this datastore, browse for the iso file and boot from it.
+  - Once booted, the VM downloads packages and the kickstart file from pablsv01 and builds the system.

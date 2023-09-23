@@ -1,0 +1,123 @@
+
+<h1 class="sectionedit1" id="aix_7100-04-02_technology_level_upgrade">AIX 7100-04-02 Technology Level Upgrade</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create proper change controls and paper work, get approvals from business, get apps contacts to manage applications etc. As Chris say, <strong>the whole nine yards</strong></div>
+</li>
+<li class="level1"><div class="li"> <a href="http://itchome/cgi-bin/active_bo.cgi" class="urlextern" title="http://itchome/cgi-bin/active_bo.cgi"  rel="nofollow">Verify blackouts are in place for all the servers we plan to work on</a> </div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:backupconfig" class="wikilink1" title="unix:backupconfig">Perform the configuration backup</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=changeeventplans:cleanupusrsap" class="wikilink1" title="changeeventplans:cleanupusrsap">Cleanup /usr/sap/ filesytem</a></div>
+</li>
+<li class="level1"><div class="li"> Check ALl VIOS Client PVIDS. </div>
+</li>
+</ol>
+<pre class="code">#!/usr/bin/perl
+#&lt;&gt;# Set up input variables
+if ( $ARGV[0] ) {$tosearch = $ARGV[0] } ;
+if ( $ARGV[1] ) {$toput = $ARGV[1] } ;
+
+#&lt;&gt;# Set up Output directory
+
+$lsdis=&quot;/home/x1cxs952/Pre_Upgrade/vios_upgrade/VIO50/50-lsdsk&quot;;
+ 
+#&lt;&gt;# Open input fiel for reading
+
+open (IN, &quot;$tosearch&quot;) || die &quot;Couldn&#039;t open $tosearch $!\n&quot;;
+
+
+# copy STDOUT to another filehandle
+open (my $STDOLD, &#039;&gt;&amp;&#039;, STDOUT);
+# redirect STDOUT to log.txt
+#open (STDOUT, &#039;&gt;&gt;&#039;,&quot;$toput&quot;);
+open (STDOUT, &#039;&gt;&#039;,&quot;$toput&quot;);
+
+#&lt;&gt;#
+#&lt;&gt;# Get lsdiskcfg listing to compair against
+#&lt;&gt;#
+        open (STDOUT, &#039;&gt;&#039;,&quot;$lsdis&quot;);
+        $cmdtodo = sprintf(&quot;ssh taprvio50 /usr/local/scripts/lsdiskcfg&quot;);
+        printf(&quot;Executing [$cmdtodo]\n&quot;);
+        system ($cmdtodo);
+
+        open (STDOUT, &#039;&gt;&#039;,&quot;$toput&quot;);
+while (&lt;IN&gt;) {
+($wclient, $vioserver, $state) = split(/ /,$_);
+($client) = split(/-/,$wclient);
+
+if ($state == 1)
+        {
+        $cmdtodo = sprintf(&quot;ssh $client lspv&quot;);
+        printf(&quot;Executing [$cmdtodo]\n&quot;);
+        system ($cmdtodo);
+        print &quot;\n&quot;;
+#&lt;&gt;#
+        @CLIENTS[$arraycnt] = $client;
+#&lt;&gt;#
+        }
+elsif ($state == 0)
+        {
+        print &quot;\n&quot;;
+        print &quot;The VIOS CLient $client Is Not Activated\n&quot;;
+        print &quot;\n&quot;;
+        };
+};
+
+# restore STDOUT
+open (STDOUT, &#039;&gt;&amp;&#039;, $STDOLD);</pre>
+<ol>
+<li class="level1"><div class="li"> Map-VSCSI-Running-VIO Clients</div>
+</li>
+</ol>
+<pre class="code"> #!/usr/bin/perl
+
+
+if ( $ARGV[0] ) {$tosearch = $ARGV[0] } ;
+if ( $ARGV[1] ) {$toput = $ARGV[1] } ;
+
+$arraycnt = 0;
+
+
+open (IN, &quot;$tosearch&quot;) || die &quot;Couldn&#039;t open $tosearch $!\n&quot;;
+
+#&lt;&gt;#
+# copy STDOUT to another filehandle
+open (my $STDOLD, &#039;&gt;&amp;&#039;, STDOUT);
+# redirect STDOUT to log.txt
+#open (STDOUT, &#039;&gt;&gt;&#039;,&quot;$toput&quot;);
+open (STDOUT, &#039;&gt;&#039;,&quot;$toput&quot;);
+#&lt;&gt;#
+
+while (&lt;IN&gt;) {
+($wclient, $vioserver, $state) = split(/ /,$_);
+($client) = split(/-/,$wclient);
+
+if ($state == 1)
+        {
+##&lt;&gt;#&gt;&gt; $cmdtodo = sprintf(&quot;ssh $client echo \&quot;cvai\&quot; | kdb | grep vscsi&quot;);
+        $cmdtodo = sprintf(&quot;ssh $client \&quot;echo \&quot;cvai\&quot; | kdb | grep vscsi\&quot;&quot;);
+        printf(&quot;Executing [$cmdtodo]\n&quot;);
+        system ($cmdtodo);
+        print &quot;\n&quot;;
+#&lt;&gt;#    print &quot;Now Getting LSPV for $client &quot;
+        $cmdtodo = sprintf(&quot;ssh $client lspv&quot;);
+        printf(&quot;Executing [$cmdtodo]\n&quot;);
+        system ($cmdtodo);
+        print &quot;\n&quot;;
+#&lt;&gt;#
+        @CLIENTS[$arraycnt] = $client;
+#&lt;&gt;#
+        }
+elsif ($state == 0)
+        {
+        print &quot;\n&quot;;
+        print &quot;The VIOS CLient $client Is Not Activated\n&quot;;
+        print &quot;\n&quot;;
+        };
+};
+
+# restore STDOUT
+open (STDOUT, &#039;&gt;&amp;&#039;, $STDOLD);</pre>
+
+</div>

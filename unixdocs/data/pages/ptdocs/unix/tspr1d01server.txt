@@ -1,0 +1,107 @@
+====== Migrate tspr1d01 server to Power 8 Frame ======
+
+  * 1. Build a server on power 8 frame xspr1d01 using tspr1d01 mksysb + mksysbmigration script.
+  * 2. Configure the round_robin and reserve_policy to the boot disks.<code>sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl hdiskx</code>
+  * 3. Perform NTP sync on the build server (xspr1d01)<code>date
+sudo ntpdate -q pgntpap01.amer.int.tenneco.com
+date</code>
+    * If it is synced then leave it as it is and if it is not synced then do this.<code>
+sudo ntpdate -u pgntpap01.amer.int.tenneco.com</code>
+  * 4. **Steps to be performed during the migration/outage on tspr1d01 server**
+    * Login to the tspr1d01 server and stop the SAP first and then Database<code>a. Stop the SAP App
+b. Stop the DB</code>
+  * 5. Check the number of disks present other then rootvg.<code> sudo lsvpcfg.sh | grep -i srmvg01
+
+hdisk12:00ce6b85913f5b20: : :104448::srmvg01
+hdisk13:00ce6b85913f8be7: : :104448::srmvg01
+hdisk14:00ce6b85913560f4: : :104448::srmvg01
+hdisk27:00ce6b85913563d7: : :104448::srmvg01
+hdisk28:00ce6b85913566ae: : :104448::srmvg01
+hdisk29:00ce6b859135697f: : :104448::srmvg01
+hdisk30:00ce6b8591356c57: : :104448::srmvg01
+hdisk31:00ce6b8591356f38: : :104448::srmvg01
+hdisk32:00ce6b8591357207: : :104448::srmvg01
+hdisk33:00ce6b85913574d2: : :104448::srmvg01
+hdisk34:00ce6b85913577a6: : :104448::srmvg01
+hdisk35:00ce6b8591357a99: : :104448::srmvg01
+hdisk36:00ce6b8591357d89: : :104448::srmvg01
+hdisk37:00ce6b8591358065: : :104448::srmvg01
+hdisk38:00ce6b859135833e: : :104448::srmvg01
+hdisk39:00ce6b8591358616: : :104448::srmvg01
+hdisk40:00ce6b8591358904: : :104448::srmvg01
+hdisk41:00ce6b8591358c21: : :104448::srmvg01
+hdisk42:00ce6b8591358f01: : :104448::srmvg01
+hdisk43:00ce6b85913591d5: : :104448::srmvg01
+hdisk44:00ce6b85913594ca: : :104448::srmvg01
+hdisk45:00ce6b8591359a6d: : :104448::srmvg01</code>
+  * 6. Unmount the filesystems that belongs to srmvg01<code>lsvgfs srmvg01 | sort -r | xargs -n1 sudo umount</code>
+  * 7. If any of the FS doesn't unmount then check which user is using that FS using the below command.<code>sudo fuser -u /mount point</code>
+  * 8. Varyoff and export the VG<code>sudo varyoffvg srmvg01
+sudo exportvg srmvg01</code>
+  * Delete the disks which belongs to srmvg01<code>sudo lsvpcfg.sh | grep -i srmvg01 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  * Shutdown tspr1d01 server<code> sudo shutdown -F</code>
+  * 9. **Steps to be performed on taprvio50 server**
+    * a. Take the snapshot of the disks.<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.before
+sudo cfgmgr
+sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.after</code>
+    * b. Count the number of disks which belongs to srmvg01 using a file which contains the PVID of srmvg disks.<code>grep -f srmvg.pvid lsdiskcfg.out.after | wc -l</code>
+    * c. Cross verify the disk info and then copy the hdisk name into a file<code>grep -f srmvg.pvid lsdiskcfg.out.after | awk -F: '{print $1}' > tspr1d01.disks</code>
+    * d. Switch to padmin<code>sudo su - padmin</code>
+    * e. Unmap the disks from the vhost using a for loop<code>for disk in `cat /home/x1shukla/tspr1d01.disks`;
+do 
+rmvdev -vdev $disk
+done</code>
+    * f. Delete the disks<code>for disk in `cat /home/x1shukla/tspr1d01.disks`;
+do 
+sudo rmdev -dl $disk
+done</code>
+  * 10. **Steps to be performed on taprvio51 server**
+    * a. Take the snapshot of the disks.<code>sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.before
+sudo cfgmgr
+sudo /usr/local/scripts/lsdiskcfg > lsdiskcfg.out.after</code>
+    * b. Count the number of disks which belongs to srmvg01 using a file which contains the PVID of srmvg disks.<code>grep -f srmvg.pvid lsdiskcfg.out.after | wc -l</code>
+    * c. Cross verify the disk info and then copy the hdisk name into a file<code>grep -f srmvg.pvid lsdiskcfg.out.after | awk -F: '{print $1}' > tspr1d01.disks</code>
+    * d. Switch to padmin<code>sudo su - padmin</code>
+    * e. Unmap the disks from the vhost using a for loop<code>for disk in `cat /home/x1shukla/tspr1d01.disks`;
+do 
+rmvdev -vdev $disk
+done</code>
+    * f. Delete the disks<code>for disk in `cat /home/x1shukla/tspr1d01.disks`;
+do 
+sudo rmdev -dl $disk
+done</code>
+  * 11. **Ask storage team to swing the srmvg01 disks from vio50/51 to xspr1d01 server.** Send the disks details to storage team well in advance.
+  * 12. Once disks are available login to xspr1d01 server, scan and verify the disks<code>sudo lsvpcfg.sh > lsvpcfg.out.before
+sudo cfgmgr
+sudo lsvpcfg.sh > lsvpcfg.out.after
+diff lsvpcfg.out.before lsvpcfg.out.after</code>
+  * 13. Configure the roundrobin and  reserve_policy to the newly added disks and verify them<code>sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -l hdiskx
+lsdev -Ccdisk | awk '{print $1}' | xargs -n1 lsattr -El | grep -e reserve_policy -e algorithm</code>
+  * 14. Import the srmvg01<code>sudo importvg -y srmvg01 00ce6b85913f5b20</code>
+  * 15. Mount the Filesystems of srmvg01<code>lsvgfs srmvg01 | sort | xargs -n1 sudo mount</code>
+  * 16. Create a entry for NFS and add the below entry in /etc/filesystem<code>sudo cp -p /etc/filesystems /etc/filesystems.$(date +%Y%m%d)
+sudo vi /etc/filessytems</code><code>/usr/sap/trans:
+        dev             = "/usr/sap/trans"
+        vfs             = nfs
+        nodename        = tsdv1d01
+        mount           = true
+        options         = bg,soft,intr,sec=sys
+        account         = false</code>
+  * 17. As this is a database server, Configure the iocp<code>lsdev -Cc iocp
+sudo chdev -l iocp0 -a autoconfig=available
+sudo mkdev -l iocp0
+lsdev -Cc iocp</code>
+  * 18. **Change the IP address and hostname from the console for xspr1d01 server**
+    * a. Login to xspr1d01 through console<code>sudo getconsole xspr1d01 </code>
+    * b. Change the hostname and IP<code>/usr/sbin/mktcpip -h'tspr1d01' -a'10.32.6.128' -m'255.255.255.0' -i'en0' -n'10.32.8.53' -d'amer.int.tenneco.com' -g'10.32.6.1' -A'no' -t'N/A' -s''</code>
+    * c. Configure the bck IP<code>chdev -l en1 -a netaddr=10.32.51.128 -a netmask=255.255.255.0 -a state=up</code>
+    * d. Do a ping test<code>for ip in 10.32.6.1 10.32.51.1
+do
+   ping -c1 ${ip}
+done</code>
+  * 19. If any NFS exports, reconfigure them.
+  * 20. Shutdown the server<code>sudo shutdown -F</code>
+  * 21. Make sure to do the changes in unix_sysconsole and change the profile name of the lapr (xspr1d01 to tspr1d01 ) on HMC
+  * 22. Activate the lpar
+  * 23. Start the Database first and then SAP.
+  * 24. Unmap the old bootdisks from taprvio50/51 and make note of pvid's.

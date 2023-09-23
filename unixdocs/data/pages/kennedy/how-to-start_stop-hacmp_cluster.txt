@@ -1,0 +1,30 @@
+====== Start/Stop HACMP procedure ======
+==== Stop the Cluster ====
+  * Enter **sudo smit cl_admin**
+  * Select **PowerHA® SystemMirror® Services** > **Stop Cluster Services** and press Enter.
+  * Enter field values in the SMIT panel as follows:<code>* Stop now, on system restart or both -- > now
+  Stop Cluster Services on these nodes -- > "Select both nodes"
+  BROADCAST cluster shutdown?         -- > true
+* Select an Action on resource groups -- > Bring resource groups Offline</code>
+  * <html><span style="color:red"><b><i>Note:</i></b></span> Press <b>Esc+4</b> or <b>F4</b> for list and <b>F7</b> to select and use <b>Tab</b> button to move through options</html>
+{{ :kennedy:pasted:20221103-135230.png?800 }}
+==== Start the Cluster ====
+  * Enter **sudo smit cl_admin**
+  * Select **PowerHA® SystemMirror® Services** > **Start Cluster Services** and press Enter.
+  * Enter field values in the SMIT panel as follows:
+{{ :kennedy:pasted:20221103-135205.png?800 }}
+==== Validate the Cluster ====
+  * To check the RG online status<code>clRGinfo -p</code>
+  * To check the cluster manager status on both nodes<code>lssrc -ls clstrmgrES</code>
+  * <code>clshowsrv -v run this and check the state
+         ST_STABLE: cluster services running with resources online
+         NOT_CONFIGURED: cluster is not configured or node is not synced
+         ST_INIT: cluster is configured but not active on this node
+         ST_JOINING: cluster node is joining the cluster
+         ST_VOTING: cluster nodes are voting to decide event execution
+         ST_RP_RUNNING: cluster is running a recovery program
+         RP_FAILED: recovery program event script is failed
+         ST_BARRIER: clstrmgr is in between events waiting at the barrier
+         ST_CBARRIER: clstrmgr is exiting a recovery program
+         ST_UNSTABLE: cluster is unstable usually due to an event</code>
+  * Validate by logging in all three nodes

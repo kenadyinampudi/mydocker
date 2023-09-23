@@ -1,0 +1,56 @@
+===== To create the SSL Certificate and Key =====
+
+Please follow the following steps:-
+  - Check if openssl package is installed.<code>
+sudo lslpp -l openssl.base
+  Fileset                      Level  State      Description
+  ----------------------------------------------------------------------------
+Path: /usr/lib/objrepos
+  openssl.base             1.0.1.515  COMMITTED  Open Secure Socket Layer
+                                      EFIXLOCKED
+Path: /etc/objrepos
+  openssl.base             1.0.1.515  COMMITTED  Open Secure Socket Layer
+                                      EFIXLOCKED</code>
+  - Run command to generate the SSL KEY & CERT together.<code>openssl req -x509 -nodes -days 999 -newkey rsa:2048 -keyout path.key -out path.crt </code>eg:-<code>openssl req -x509 -nodes -days 999 -newkey rsa:2048 -keyout /opt/freeware/etc/httpd/conf/extra/unixdocsssl.key -out /opt/freeware/etc/httpd/conf/extra/unixdocsssl.crt</code>
+  - After generating the SSL KEYS & CERT which needs to be inserted in the *.conf file (eg:- /opt/freeware/etc/httpd/conf/extra/unixdocs.conf)<code><VirtualHost *:80>
+DocumentRoot /apps/dokuwiki
+ServerName unixdocs
+ServerAlias unixdocs.amer.int.tenneco.com unixdocs.emea.int.tenneco.com
+Redirect "/" "https://unixdocs/"
+</virtualHost>
+<VirtualHost *:443>
+DocumentRoot /apps/dokuwiki
+ServerName unixdocs
+ServerAlias unixdocs.amer.int.tenneco.com unixdocs.emea.int.tenneco.com
+SSLEngine on
+SSLCertificateFile	/opt/freeware/etc/httpd/conf/extra/unixdocsssl.crt
+SSLCertificateKeyFile	/opt/freeware/etc/httpd/conf/extra/unixdocsssl.key
+<Directory "/apps/dokuwiki">
+    Options Indexes FollowSymLinks MultiViews
+    Order allow,deny
+    Allow from all
+    AllowOverride None
+    Require all granted
+    AuthType Basic
+</Directory>
+ErrorLog logs/unixdocs.amer.int.tenneco.com-error_log
+CustomLog logs/unixdocs.amer.int.tenneco.com-access_log common
+</VirtualHost></code> 
+  - After that create a ssl.conf file
+<code>LoadModule ssl_module modules/mod_ssl.so
+Listen 443
+SSLPassPhraseDialog  builtin
+#SSLSessionCache         shmcb:/var/cache/mod_ssl/scache(512000)
+SSLSessionCacheTimeout  300
+SSLMutex default
+SSLRandomSeed startup file:/dev/urandom  256
+SSLRandomSeed connect builtin
+SSLCryptoDevice builtin
+</code>
+  - Once SSL.conf is created Check in the httpd.conf file and uncomment the "Include conf/extra/httpd-ssl.conf" which normaly in line number 502.
+<code>
+Before
+# Include conf/extra/httpd-ssl.conf</code>
+<code>
+After
+  Include conf/extra/httpd-ssl.conf</code>

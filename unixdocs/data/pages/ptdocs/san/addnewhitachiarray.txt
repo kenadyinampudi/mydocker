@@ -1,0 +1,25 @@
+====== Adding a new Hitachi Array ======
+
+General Steps
+  * [[san:addnewhitachiarray#Add Users|Add users to the array directly]]
+  * [[san:addnewhitachiarray#Add to HDvM|Add to Hitachi Device Manager]]
+
+=== Add Users ===
+Go to the IP address of the SVP.\\
+%%http://10.131.10.27/%%\\
+It will move to something like ... \\
+%%https://10.131.10.27/dev/storage/836000441548/index.do%%\\
+Modify the URL to go to "emergency.do"%%\\
+%%https://10.131.10.27/dev/storage/836000441548/emergency.do%%\\
+\\
+Now, add the htnmuser ID using the password in the secret server.\\
+
+=== Add to HDvM ===
+  * Log into [[http://cdcpilla023.federalmogul.com:22015/DeviceManager/|Device Manager]]
+  * Go to Administration Tab
+  * Click "Add Storage System" and put in the appropriate information.
+  * After the system is added, change the name to match the other storage systems.  "LOCATION_SYSTEMTYPE_SERIAL"
+
+=== Post Steps ===
+  * Make sure to add the array into the SAN switches.
+  * Modify the port properties of the array to enable security.  This limits the LUNs a server sees to the LUNs you've allocated to it.

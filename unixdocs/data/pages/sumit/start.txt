@@ -1,0 +1,27 @@
+====== This is my playground - don't take it seriously ======
+
+===== Change IP address on AIX =====
+
+  - Backup of the current configuration<code>sudo /usr/local/scripts/mksysb.sh adhoc</code>
+  - Capture the current interfaces and corresponding IP addresses,<code>lscfg | grep ent
+ifconfig -a
+netstat -rn</code>
+  - Change the IP address
+  - Check and update /etc/hosts.
+  - Shutdown the LPAR.
+  - Login to HMC and change the VLAN on the NIC.
+  - Ask the Wintel guy to change DNS
+  - Startup the LPAR
+  - Functional tests
+    - ping the gateway
+    - check ssh etc ......
+    - nslookup both "A" record and "PTR" record.
+  - Handover to apps guys to go ahead and test 
+
+===== Backout plan =====
+
+  - Change the bootlist to boot from alt disk.
+  - Reboot.
+  - Re-configure the old_rootvg ( Ask Vasu for steps ) 
+
+

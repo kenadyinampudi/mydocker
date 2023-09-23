@@ -1,0 +1,23 @@
+====== VLAN Tagging on dual VIOS (taprvio90 and taprvio91) in the DMZ ======
+
+**The procedure assumes that the cabling is done as follows**
+
+|Patch Panels|Switch|Port|Host|Details|Host's ethernet|
+|U3.1-13 to 2.6-31|ITCSWDMZ01|port 29|taprvio90|Port Channel 10|ent0|
+|U3.1-14 to 2.6-01|ITCSWDMZ01|port 30|taprvio90|Port Channel 10|ent4|
+|U3.1-16 to 2.6-04|ITCSWDMZ02|port 29|taprvio91|Port Channel 10|ent0|
+|U3.1-17 to 2.6-48|ITCSWDMZ02|port 30|taprvio91|Port Channel 10|ent4|
+
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -C | grep ^en | awk '{print $1}' )
+do
+   rmdev -dl ${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>cfgmgr</code>
+  - Create Etherchannel (trunk - LACP) with a backup adapter.
+    - Front-end network<code>mkvdev -lnagg ent0 ent4 -attr mode=8023ad</code>Creates ent10
+  - Create Shared Ethernet Adapter
+    - Front end SEA<code>mkvdev -sea ent10 -vadapter ent8 -default ent8 -defaultid 1 -attr ha_mode=auto ctl_chan=ent9</code>Creates ent11
+  - Due to lack of dedicated native VLAN in DMZ, the IP is NOT assigned to SEA, we created a virtual NIC and assigned IP to it 170.64.0.80/255.255.255.192/GW 170.64.0.65

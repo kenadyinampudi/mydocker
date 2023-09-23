@@ -1,0 +1,42 @@
+====== Add Pure Volume to a Host ======
+The [[purenamingscheme | Pure naming scheme]] is "hostgroup-lun".  Use the most general applicable hostgroup name.  For example, if a host "VM001" is also in a cluster "CLUSTER001" and this will be mapped to the third LUN for that host group, then the name of the volume would be "CLUSTER001-3"\\
+\\
+Always manually specify the LUN to make sure Pure doesn't randomly number things.\\ 
+<code>
+ssh taprpur001.pt.int.tenneco.com
+leedsn16@taprpur001> purevol create --size 4T PROD-MS2-3
+Name        Size  Source  Created                  Serial
+PROD-MS2-3  4T    -       2019-04-05 11:29:15 CDT  A6EBA101800B4893000EB8A8
+leedsn16@taprpur001> purevol create --size 4T PROD-MS2-4
+Name        Size  Source  Created                  Serial
+PROD-MS2-4  4T    -       2019-04-05 11:29:18 CDT  A6EBA101800B4893000EB8AA
+</code>\\
+Map the LDEV to the host group as their defined LUNs.\\
+== Single Host ==
+  purehost connect --vol CDCPILVM204_1 --lun 1 CDCPILVM204
+or
+  purevol connect --host CDCPILVM204 --lun 1 CDCPILVM204_1
+
+== Host group (or Cluster) ==
+<code>
+leedsn16@taprpur001> purevol connect --hgroup PROD-MS2 --lun 3 PROD-MS2-3
+Name        Host Group  Host         LUN
+PROD-MS2-3  PROD-MS2    CDCPILVM157  3
+PROD-MS2-3  PROD-MS2    CDCPILVM195  3
+PROD-MS2-3  PROD-MS2    CDCPILVM196  3
+PROD-MS2-3  PROD-MS2    CDCPILVM169  3
+PROD-MS2-3  PROD-MS2    CDCPILVM197  3
+PROD-MS2-3  PROD-MS2    CDCPILVM164  3
+PROD-MS2-3  PROD-MS2    CDCPILVM174  3
+leedsn16@taprpur001> purevol connect --hgroup PROD-MS2 --lun 4 PROD-MS2-4
+Name        Host Group  Host         LUN
+PROD-MS2-4  PROD-MS2    CDCPILVM157  4
+PROD-MS2-4  PROD-MS2    CDCPILVM195  4
+PROD-MS2-4  PROD-MS2    CDCPILVM196  4
+PROD-MS2-4  PROD-MS2    CDCPILVM169  4
+PROD-MS2-4  PROD-MS2    CDCPILVM197  4
+PROD-MS2-4  PROD-MS2    CDCPILVM164  4
+PROD-MS2-4  PROD-MS2    CDCPILVM174  4
+</code>
+\\
+Done!

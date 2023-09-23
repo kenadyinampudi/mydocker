@@ -1,0 +1,134 @@
+
+<h1 class="sectionedit1" id="logical_volume_manager_aix">Logical Volume Manager ( AIX )</h1>
+<div class="level1">
+
+<p>
+Volume Manager is a software / kernel extension to manage disk drives. LVM, aka &#039;Logical Volume Manager&#039; is a generic name used by many operating system vendors such as IBM AIX, HPUX and Linux.
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Logical Volume Manager ( AIX )" [1-241] -->
+<h2 class="sectionedit2" id="logical_volume_manager_basics">Logical Volume Manager Basics</h2>
+<div class="level2">
+
+<p>
+Logical volume manager has the following components.
+</p>
+
+<p>
+<strong>Physical Volume (PV)</strong>
+</p>
+
+<p>
+A physical volume is a disk or a LUN (Logical Unit from a storage arrray ). It represents physical media where data can be written to.
+</p>
+
+<p>
+<strong>Volume Group(VG)</strong>
+</p>
+
+<p>
+A VG is a group of PVs.
+</p>
+
+<p>
+<strong>Physical Partitions(PP)</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> As we add a PV to a VG, LVM slices the PV in to equally sized partitions called PP.</div>
+</li>
+</ul>
+
+<p>
+<strong>Logical Volume(LV)</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> A group of PPs make a Logical volume. PPs may not be from the same PV but they have to be from the same VG. </div>
+</li>
+<li class="level1"><div class="li"> LV can be used to create filesystems, paging spaces or system dump destinations. In some implementations, applications may use them raw.</div>
+</li>
+</ul>
+
+<p>
+<strong>Logical Partition(LP)</strong>
+</p>
+<ul>
+<li class="level1"><div class="li"> A logical volume is made of PPs. LP is a virtual pointer to one or more(mirroring) PPs.</div>
+</li>
+<li class="level1"><div class="li"> On a regular LV, one LP is mapped to one PP.</div>
+</li>
+<li class="level1"><div class="li"> On a mirrored LV, one LP is mapped to two or three PPs.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Logical Volume Manager Basics" [242-1173] -->
+<h2 class="sectionedit3" id="logical_volume_manager_commands">Logical Volume Manager Commands</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> List disks visible to AIX operating system<pre class="code">lsdev -Ccdisk</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List Physical volumes<pre class="code">lspv</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List volume groups<pre class="code">lsvg</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List logical volumes in a VG<pre class="code">lsvg -l &lt;vgname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Prepare a disk for LVM<pre class="code">sudo chdev -a pv=yes -l &lt;hdiskXX&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a normal VG<pre class="code">sudo mkvg -y &lt;vgname&gt; -s &lt;ppsize in MB&gt; &lt;hdiskXX, hdiskYY&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a Big VG(can accomodate 1024 PVs<pre class="code">sudo mkvg -B -y &lt;vgname&gt; -s &lt;ppsize in MB&gt; &lt;hdiskXX, hdiskYY&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a LV</div>
+<ol>
+<li class="level2"><div class="li"> Unmirrored<pre class="code">sudo mklv -t &lt;type&gt; -y &lt;lvname&gt; &lt;vg name&gt; &lt;number of LPs&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Mirrored<pre class="code">sudo mklv -c 2 -t &lt;type&gt; -y &lt;lvname&gt; &lt;vg name&gt; &lt;number of LPs&gt;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Create a filesystem</div>
+<ol>
+<li class="level2"><div class="li"> On a predefined Logical Volume<pre class="code">sudo crfs -vjfs2 -d &lt;lv name&gt; -A yes -t no -m &lt;mountpoint&gt;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> AIX gives you a short cut to create the logical volume and filesystem in one step.<pre class="code">sudo crfs -vjfs2 -g &lt;vg name&gt; -A yes -t no -m &lt;mountpoint&gt; -a size=2048G</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Mount a filesystem<pre class="code">sudo mount &lt;mount point&gt;</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong> Mirroring </strong>
+</p>
+
+<p>
+Mirroring in simple words maps one LP to multiple PPs. 
+Each PP contains a copy of data that is stored on the LP to which it is mapped to.
+By now, you would have figured out we mirror logical volumes i.e. the LPs that makes the specific logical volume(LV).
+</p>
+
+<p>
+<strong> LVM Basics - block diagram </strong>
+</p>
+
+<p>
+<a href="/lib/exe/detail.php?id=shukant%3Alvm%3Astart&amp;media=shukant:lvm:lvm.jpg" class="media" title="shukant:lvm:lvm.jpg"><img src="/lib/exe/fetch.php?media=shukant:lvm:lvm.jpg" class="media" alt="" /></a>
+</p>
+
+</div>
+<!-- EDIT3 SECTION "Logical Volume Manager Commands" [1174-] -->

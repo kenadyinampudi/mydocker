@@ -1,0 +1,177 @@
+====== Pure migration notes ======
+
+======= VMAX cleanup ======
+
+** From the host **
+
+  - Login to the host<code>ssh ${host}</code>
+  - Document the disks<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Delete the devs<code>grep 000198700301 lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - Get a list of the devices to reclaim<code>grep 000198700301 lsvpcfg.out.1 | grep -v :2: | awk -F: '{print $4}' | tr "\n" " " </code>
+
+** From pgunap01 **
+
+  - Define this function<code>function remove_vmax_alloc {
+export host=$1
+shift
+export devices=${*}
+sudo symaccess -sid 0301 show view ${host}_MV > ${host}_MV.out
+echo "WWNs from the host ... "
+ssh ${host} /usr/local/scripts/listwwns
+echo ""
+echo "WWNs from masking view ... ${host}_MV"
+grep WWN ${host}_MV.out
+echo "Press a key to continue ... "
+read
+echo "Removing masking view ... ${host}_MV "
+sudo symaccess -sid 0301 delete view -name ${host}_MV -unmap
+echo "Deleting Initiator group ${host}_IG ... "
+sudo symaccess -sid 0301 delete -name ${host}_IG -type initiator -force
+policy=$(sudo symfast -sid 0301 list -association  | grep ${host}_SG | awk '{print $2}')
+echo "Removing ${host}_SG from FAST policy ${policy} .. Press a key"
+read
+sudo symfast -sid 0301 -fp_name ${policy} disassociate -sg ${host}_SG
+devlist=$(echo ${devices} | sed "s; ;,;g" )
+echo "Removing ${devlist} from ${host}_SG ... Press a key "
+read
+sudo symaccess -sid 0301 -name ${host}_SG -type storage remove dev ${devlist}
+echo "Deleting storage group ${host}_SG ... "
+sudo symaccess -sid 0301 delete -name ${host}_SG -type storage
+echo "Unbinding ${devlist} ... Press a key "
+read
+sudo symdev -sid 0301 -dev ${devlist} unbind
+echo ""
+echo "Remove the following zone from Fabric A ( ldcds5300a1 ) "
+sudo -u sanmontr ssh admin@ldcds5300a1 "zoneshow ${host}\*vmax\*"
+
+echo ""
+echo "Remove the following zone from Fabric B ( ldcds5300b1 ) "
+sudo -u sanmontr ssh admin@ldcds5300b1 "zoneshow ${host}\*vmax\*"
+
+}</code>
+  - Execute the reclamation process<code>remove_vmax_alloc <hostname> <list of devices></code>
+  - Find out the Fabric A zone to be removed<code></code>
+
+
+
+
+
+<code>function find_viomap {
+export host=${1}
+ssh ${host} "sudo /usr/local/scripts/lsdiskcfg" > lsdiskcfg.out.${host}
+for guest in $(awk -F: '{print $3}' lsdiskcfg.out.${host} | sort -u )
+   do
+   for lun in $(grep ":${guest}:" lsdiskcfg.out.${host} | awk -F: '{print $2}' | sort -u )
+   do
+      count=$(grep ":${lun}:" lsdiskcfg.out.${host} | wc -l )
+      echo "${guest}   :   ${lun}   :   ${count}"
+   done
+done
+}
+</code>
+
+
+======= VMWARE Allocation ======
+
+<code>
+
+Fabric A
+
+zonecreate "ldcnbu5230amd_0fc1c5__ldcpm70v1_0_0_0__1_0_0","ldcnbu5230amd_0fc1c5;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "ldcnbu5230bmd_0facab__ldcpm70v1_0_0_0__1_0_0","ldcnbu5230bmd_0facab;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc301_ee67fc__ldcpm70v1_0_0_0__1_0_0","taitc301_ee67fc;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc302_6bc790__ldcpm70v1_0_0_0__1_0_0","taitc302_6bc790;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc303_bfdb48__ldcpm70v1_0_0_0__1_0_0","taitc303_bfdb48;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc304_d7fff0__ldcpm70v1_0_0_0__1_0_0","taitc304_d7fff0;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc305_d7ec4a__ldcpm70v1_0_0_0__1_0_0","taitc305_d7ec4a;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc306_cb28fa__ldcpm70v1_0_0_0__1_0_0","taitc306_cb28fa;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc307_884ba0__ldcpm70v1_0_0_0__1_0_0","taitc307_884ba0;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc308_eed14c__ldcpm70v1_0_0_0__1_0_0","taitc308_eed14c;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc309_ee680c__ldcpm70v1_0_0_0__1_0_0","taitc309_ee680c;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc310_eebe7c__ldcpm70v1_0_0_0__1_0_0","taitc310_eebe7c;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc311_d7ef52__ldcpm70v1_0_0_0__1_0_0","taitc311_d7ef52;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc312_ecc0a2__ldcpm70v1_0_0_0__1_0_0","taitc312_ecc0a2;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc313_c43bf8__ldcpm70v1_0_0_0__1_0_0","taitc313_c43bf8;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+zonecreate "taitc316_8258c8__ldcpm70v1_0_0_0__1_0_0","taitc316_8258c8;ldcpm70v1_0_0_0;ldcpm70v1_1_0_0"
+
+cfgadd "fab_a_act_config","ldcnbu5230amd_0fc1c5__ldcpm70v1_0_0_0__1_0_0;ldcnbu5230bmd_0facab__ldcpm70v1_0_0_0__1_0_0;taitc301_ee67fc__ldcpm70v1_0_0_0__1_0_0"
+cfgadd "fab_a_act_config","taitc302_6bc790__ldcpm70v1_0_0_0__1_0_0;taitc303_bfdb48__ldcpm70v1_0_0_0__1_0_0;taitc304_d7fff0__ldcpm70v1_0_0_0__1_0_0;taitc305_d7ec4a__ldcpm70v1_0_0_0__1_0_0"
+cfgadd "fab_a_act_config","taitc306_cb28fa__ldcpm70v1_0_0_0__1_0_0;taitc307_884ba0__ldcpm70v1_0_0_0__1_0_0;taitc308_eed14c__ldcpm70v1_0_0_0__1_0_0;taitc309_ee680c__ldcpm70v1_0_0_0__1_0_0"
+cfgadd "fab_a_act_config","taitc310_eebe7c__ldcpm70v1_0_0_0__1_0_0;taitc311_d7ef52__ldcpm70v1_0_0_0__1_0_0;taitc312_ecc0a2__ldcpm70v1_0_0_0__1_0_0;taitc313_c43bf8__ldcpm70v1_0_0_0__1_0_0;taitc316_8258c8__ldcpm70v1_0_0_0__1_0_0"
+
+cfgsave
+
+cfgenable "fab_a_act_config"
+
+Fabric B
+
+zonecreate "ldcnbu5230amd_0fC3db__ldcpm70v1_0_2_1__1_2_1","ldcnbu5230amd_0fC3db;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "ldcnbu5230bmd_8a2d85__ldcpm70v1_0_2_1__1_2_1","ldcnbu5230bmd_8a2d85;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc301_ee67fe__ldcpm70v1_0_2_1__1_2_1","taitc301_ee67fe;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc302_6bc792__ldcpm70v1_0_2_1__1_2_1","taitc302_6bc792;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc303_bfdb49__ldcpm70v1_0_2_1__1_2_1","taitc303_bfdb49;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc304_d7fff1__ldcpm70v1_0_2_1__1_2_1","taitc304_d7fff1;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc305_d7ec4b__ldcpm70v1_0_2_1__1_2_1","taitc305_d7ec4b;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc306_cb28fb__ldcpm70v1_0_2_1__1_2_1","taitc306_cb28fb;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc307_884ba1__ldcpm70v1_0_2_1__1_2_1","taitc307_884ba1;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc308_eed14e__ldcpm70v1_0_2_1__1_2_1","taitc308_eed14e;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc309_ee680e__ldcpm70v1_0_2_1__1_2_1","taitc309_ee680e;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc310_eebe7e__ldcpm70v1_0_2_1__1_2_1","taitc310_eebe7e;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc311_d7ef53__ldcpm70v1_0_2_1__1_2_1","taitc311_d7ef53;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc312_ecc0a3__ldcpm70v1_0_2_1__1_2_1","taitc312_ecc0a3;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc313_c43bf9__ldcpm70v1_0_2_1__1_2_1","taitc313_c43bf9;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+zonecreate "taitc316_8258ca__ldcpm70v1_0_2_1__1_2_1","taitc316_8258ca;ldcpm70v1_0_2_1;ldcpm70v1_1_2_1"
+
+
+cfgadd "fab_b_act_config","ldcnbu5230amd_0fC3db__ldcpm70v1_0_2_1__1_2_1;ldcnbu5230bmd_8a2d85__ldcpm70v1_0_2_1__1_2_1;taitc301_ee67fe__ldcpm70v1_0_2_1__1_2_1"
+cfgadd "fab_b_act_config","taitc302_6bc792__ldcpm70v1_0_2_1__1_2_1;taitc303_bfdb49__ldcpm70v1_0_2_1__1_2_1;taitc304_d7fff1__ldcpm70v1_0_2_1__1_2_1;taitc305_d7ec4b__ldcpm70v1_0_2_1__1_2_1"
+cfgadd "fab_b_act_config","taitc306_cb28fb__ldcpm70v1_0_2_1__1_2_1;taitc307_884ba1__ldcpm70v1_0_2_1__1_2_1;taitc308_eed14e__ldcpm70v1_0_2_1__1_2_1;taitc309_ee680e__ldcpm70v1_0_2_1__1_2_1"
+cfgadd "fab_b_act_config","taitc310_eebe7e__ldcpm70v1_0_2_1__1_2_1;taitc311_d7ef53__ldcpm70v1_0_2_1__1_2_1;taitc312_ecc0a3__ldcpm70v1_0_2_1__1_2_1;taitc313_c43bf9__ldcpm70v1_0_2_1__1_2_1;taitc316_8258ca__ldcpm70v1_0_2_1__1_2_1"
+
+cfgsave
+
+cfgenable "fab_b_act_config"
+
+
+Defining hosts in Pure :- 
+--------------------------
+${SSH2PURE} purehost create --wwnlist 21000024ff0fc3db,21000024ff0fc1c5 ldcnbu5230amd
+${SSH2PURE} purehost create --wwnlist 21000024ff8a2d85,21000024ff0facab ldcnbu5230bmd
+${SSH2PURE} purehost create --wwnlist 5001438026ee67fc,5001438026ee67fe taitc301
+${SSH2PURE} purehost create --wwnlist 50014380296bc792,50014380296bc790 taitc302
+${SSH2PURE} purehost create --wwnlist 10000090fabfdb49,10000090fabfdb48 taitc303
+${SSH2PURE} purehost create --wwnlist 10000090fad7fff1,10000090fad7fff0 taitc304
+${SSH2PURE} purehost create --wwnlist 10000090fad7ec4b,10000090fad7ec4a taitc305
+${SSH2PURE} purehost create --wwnlist 10000090facb28fb,10000090facb28fa taitc306
+${SSH2PURE} purehost create --wwnlist 10000090fa884ba1,10000090fa884ba0 taitc307
+${SSH2PURE} purehost create --wwnlist 5001438026eed14c,5001438026eed14e taitc308
+${SSH2PURE} purehost create --wwnlist 5001438026ee680e,5001438026ee680c taitc309
+${SSH2PURE} purehost create --wwnlist 5001438026eebe7e,5001438026eebe7c taitc310
+${SSH2PURE} purehost create --wwnlist 10000090fad7ef53,10000090fad7ef52 taitc311
+${SSH2PURE} purehost create --wwnlist 1000941882ecc0a2,1000941882ecc0a3 taitc312
+${SSH2PURE} purehost create --wwnlist 10000090fac43bf9,10000090fac43bf8 taitc313
+${SSH2PURE} purehost create --wwnlist 50014380318258ca,50014380318258c8 taitc316
+
+
+${SSH2PURE} purehgroup create --hostlist taitc301,taitc302,taitc303,taitc304,taitc305,taitc306,taitc307,taitc308,taitc309,taitc310,taitc311,taitc312,taitc313,taitc316,ldcnbu5230amd,ldcnbu5230bmd wintel-esx
+
+${SSH2PURE} purevol create --size 4T wintel_esx_001
+${SSH2PURE} purevol create --size 4T wintel_esx_002
+
+${SSH2PURE} purehgroup connect --vol wintel_esx_001 wintel-esx
+${SSH2PURE} purehgroup connect --vol wintel_esx_002 wintel-esx</code>
+
+  - To unmap devices which are mapped<code>export unmapfile=unmap.today.txt
+export devs=<list of devs with space></code>
+  - <code>cat /dev/null > ${unmapfile}
+
+for dev in ${devs}
+do
+   sudo symdev -sid 0301 show ${dev} | grep "FA " > /dev/null 2>&1
+   if [ ${?} -eq 0 ]
+   then
+      echo "unmap dev ${dev} from dir ALL:ALL;" >> ${unmapfile}
+   fi
+   echo $dev done
+done</code>Then<code>sudo symconfigure -sid 0301 -f ./${unmapfile} preview -nop
+sudo symconfigure -sid 0301 -f ./${unmapfile} commit -nop</code>

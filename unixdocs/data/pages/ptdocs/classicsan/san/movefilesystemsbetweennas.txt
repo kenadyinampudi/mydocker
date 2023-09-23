@@ -1,0 +1,56 @@
+====== VNX NAS move filesystem from one pool to another ======
+
+  - The system has these NAS pools<code>[nasadmin@strvnx5300cs ~]$ nas_pool -list
+id      inuse   acl     name                      storage system
+18      y       0       clarata_r6                CKM00115100018
+32      y       0       clarsas_archive           CKM00115100018
+46      y       0       FILE-POOL                 CKM00115100018</code>
+  - The free space on them are as follows
+    - clarata_r6 -- 0MB <code>nas_pool -size clarata_r6</code><code>id           = 18
+name         = clarata_r6
+used_mb      = 3750314
+avail_mb     = 0
+total_mb     = 3750314
+potential_mb = 0</code>
+    - clarsas_archive -- 110GB <code>nas_pool -size clarsas_archive</code><code>id           = 32
+name         = clarsas_archive
+used_mb      = 8159091
+avail_mb     = 110066
+total_mb     = 8269157
+potential_mb = 0</code>
+    - FILE-POOL -- 1.9TB <code>nas_pool -size FILE-POOL</code><code>id           = 46
+name         = FILE-POOL
+used_mb      = 3298687
+avail_mb     = 1944190
+total_mb     = 5242877
+potential_mb = 0</code>
+  - Create 2 * 2TB LUNs from the FILE-POOL and add to Celerra.
+  - Discover the LUN
+  - At this time, the FILE-POOL ( mapped NAS pool ) should have 5.9TB of space
+  - Check if there is needed license in place<code>nas_license -list</code>
+  - If in output there is no replicatorV2 add it<code>nas_license -create replicatorV2</code>
+  - Create a replication session<code>nas_replicate -create groups_new -source -fs fs_tastr050_groups -destination -pool FILE-POOL -interconnect id=20001 -max_time_out_of_sync 10 -background</code>
+  - Wait until the copy finished, to check <code>nas_replicate -l</code>take a downtime (in what means downtime? how we will make sure no writes are on going? maybe by removing shares on CIFS end??), then rename the filesystems<code>nas_fs -rename fs_tastr050_groups old_fs_tastr050_groups</code>
+  - Rename the replicated one<code>nas_fs -rename fs_tastr050_groups_replica1 fs_tastr050_groups</code>
+  - Delete the replication<code>nas_replicate -delete groups_new -mode both</code>
+  - Unmount both the filesystems<code>server_umount vdm_tastr050 -p fs_tastr050_groups_replica1
+server_umount vdm_tastr050 -p old_fs_tastr050_groups</code>
+  -  Check the mount points and if old do exist remove * to be tested<code>server_mountpoint vdm_tastr050 -list
+server_mountpoint vdm_tastr050 -delete <moint point></code>
+  - Mount the new groups volume<code>server_mount vdm_tastr050 fs_tastr050_groups /root_vdm_6/fs_tastr050_groups</code>
+  - Delete the original filesystem - few days later on<code>nas_fs -d old_fs_tastr050_groups</code>
+  - At this time, clarsas_archive pool should have a lot of free space.
+  - We need to perform similar things for these filesystems as well. Some of them I have no clue what it is for.<code>fs_tastr050_groups,fs_tastr050_users,vpfs61,vpfs70,vpfs95,root_fs_vdm_vdm_tastr051</code>
+  - Once the pool clarsas_archive is empty, we could probably delete that.
+  - Execute the same for clarata_r6 and then delete that as well.
+  - Commands summary I ran on dryrun<code>nas_replicate -create groups_new -source -fs testing_replication -destination -pool FILE-POOL -interconnect id=20001 -max_time_out_of_sync 10 -background
+watch -n 30 nas_task -i <task_no.>
+nas_replicate -l
+nas_fs -rename testing_replication old_testing_replication
+nas_fs -rename testing_replication_replica1 testing_replication
+nas_replicate -delete groups_new -mode both
+server_umount server_2 -p testing_replication
+server_umount vdm_tastr050 -p old_testing_replication
+server_mountpoint vdm_tastr050 -list
+echo server_mountpoint vdm_tastr050 -delete 
+server_mount vdm_tastr050 testing_replication /root_vdm_6/testing_replication</code> 

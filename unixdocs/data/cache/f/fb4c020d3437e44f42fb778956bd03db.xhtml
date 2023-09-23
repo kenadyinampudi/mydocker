@@ -1,0 +1,160 @@
+
+<h1 class="sectionedit1" id="securing_dns_names_ip_addresses_and_firewall_rules">Securing DNS names, IP addresses and Firewall Rules</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Securing DNS names, IP addresses and Firewall Rules" [1-67] -->
+<h3 class="sectionedit2" id="dns_names">DNS Names</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Unix systems GIOS manage follow a naming standard. (There are many exceptions - This note is to ensure we wont have new exceptions)</div>
+</li>
+</ul>
+
+<p>
+Example <code>pagi3p01</code>
+</p>
+
+<p>
+p –&gt; Production (Landscape )
+</p>
+<pre class="code">p - Production
+d - Development
+q - QA
+t - Test
+x - Sandbox</pre>
+
+<p>
+a –&gt; America (Geographycal location the application support)
+</p>
+<pre class="code">a - America
+e - Europe
+g - Global</pre>
+
+<p>
+gi –&gt; GIS ( Application )
+3p –&gt; Type
+</p>
+<pre class="code">3p - 3rd party
+ap - App
+db - Database
+sv - Service etc</pre>
+
+<p>
+01 –&gt; Serialnumber ( the second 3rd party server would be pagi3p02 )
+</p>
+
+</div>
+<!-- EDIT2 SECTION "DNS Names" [68-621] -->
+<h3 class="sectionedit3" id="ip_address">IP Address</h3>
+<div class="level3">
+<pre class="code">10.0.48.0/24   --&gt; America/Global public subnet
+10.0.49.0/24   --&gt; America/Global backup subnet
+10.32.50.0/24  --&gt; Europe public subnet
+10.32.51.0/24  --&gt; Europe backup subnet
+10.32.60.0/24  --&gt; Heavy backups - another backup subnet</pre>
+
+<p>
+There are some more - I think they are carried over from the past
+</p>
+<pre class="code">10.32.6.0/24
+10.0.0.5.0/24</pre>
+
+</div>
+<!-- EDIT3 SECTION "IP Address" [622-986] -->
+<h3 class="sectionedit4" id="firewall_rules">Firewall Rules</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> These are the firewall rules a Tenneco Unix system needs when it is being installed in the DMZ</div>
+</li>
+</ul>
+<div class="table sectionedit5"><table class="inline">
+	<tr class="row0">
+		<th class="col0"><abbr title="Operating System">OS</abbr></th><th class="col1">Purpose</th><th class="col2">Source</th><th class="col3">Target</th><th class="col4">Port</th><th class="col5">Protocol</th><th class="col6">Direction</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">ALL</td><td class="col1"><abbr title="Secure Shell">SSH</abbr></td><td class="col2">10.32.51.118</td><td class="col3">Server</td><td class="col4">22</td><td class="col5">TCP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">ALL</td><td class="col1"><abbr title="Secure Shell">SSH</abbr></td><td class="col2">Server</td><td class="col3">10.32.51.118</td><td class="col4">22</td><td class="col5">TCP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">ALL</td><td class="col1"><abbr title="Secure Shell">SSH</abbr></td><td class="col2">User Subnet</td><td class="col3">Server</td><td class="col4">22</td><td class="col5">TCP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">ALL</td><td class="col1">SYSLOG</td><td class="col2">Server</td><td class="col3">10.32.50.59</td><td class="col4">514</td><td class="col5">UDP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">ALL</td><td class="col1">SYSLOG-ERRPT</td><td class="col2">Server</td><td class="col3">10.0.48.5</td><td class="col4">514</td><td class="col5">UDP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">Linux</td><td class="col1">Kickstart</td><td class="col2">Server</td><td class="col3">10.0.48.5</td><td class="col4">80,443</td><td class="col5">TCP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">ALL</td><td class="col1">UUMA</td><td class="col2">10.0.48.122</td><td class="col3">Server</td><td class="col4">40035</td><td class="col5">UDP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">ALL</td><td class="col1">NTP</td><td class="col2">Server</td><td class="col3">10.1.1.1</td><td class="col4">123</td><td class="col5">UDP</td><td class="col6">←→</td>
+	</tr>
+	<tr class="row9">
+		<td class="col0">ALL</td><td class="col1">NTP</td><td class="col2">Server</td><td class="col3">10.1.1.2</td><td class="col4">123</td><td class="col5">UDP</td><td class="col6">←→</td>
+	</tr>
+	<tr class="row10">
+		<td class="col0">ALL</td><td class="col1"><abbr title="Domain Name System">DNS</abbr></td><td class="col2">Server</td><td class="col3">10.32.8.53</td><td class="col4">53</td><td class="col5">UDP/TCP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row11">
+		<td class="col0">ALL</td><td class="col1"><abbr title="Domain Name System">DNS</abbr></td><td class="col2">Server</td><td class="col3">10.0.4.50</td><td class="col4">53</td><td class="col5">UDP/TCP</td><td class="col6">–&gt;</td>
+	</tr>
+	<tr class="row12">
+		<td class="col0">IBM Power</td><td class="col1">DLPAR</td><td class="col2">Server</td><td class="col3">10.32.10.55</td><td class="col4">657</td><td class="col5">UDP/TCP</td><td class="col6">←→</td>
+	</tr>
+	<tr class="row13">
+		<td class="col0">IBM Power</td><td class="col1">DLPAR</td><td class="col2">Server</td><td class="col3">10.32.10.56</td><td class="col4">657</td><td class="col5">UDP/TCP</td><td class="col6">←→</td>
+	</tr>
+</table></div>
+<!-- EDIT5 TABLE [1113-1742] -->
+</div>
+<!-- EDIT4 SECTION "Firewall Rules" [987-1744] -->
+<h3 class="sectionedit6" id="nim_firewall_rules">NIM Firewall Rules</h3>
+<div class="level3">
+<div class="table sectionedit7"><table class="inline">
+	<tr class="row0">
+		<th class="col0"><abbr title="Operating System">OS</abbr></th><th class="col1">Purpose</th><th class="col2">Source</th><th class="col3">Target</th><th class="col4">Port</th><th class="col5">Protocol</th><th class="col6">Direction</th><th class="col7">Comments</th>
+	</tr>
+	<tr class="row1">
+		<td class="col0">AIX</td><td class="col1">BOOTP</td><td class="col2">Client</td><td class="col3">10.32.51.118</td><td class="col4">68</td><td class="col5">UDP</td><td class="col6">←-</td><td class="col7"> </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0">AIX</td><td class="col1">BOOTP</td><td class="col2">10.32.51.118</td><td class="col3">Client</td><td class="col4">67</td><td class="col5">UDP</td><td class="col6">–&gt;</td><td class="col7"> </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0">AIX</td><td class="col1">TFTP</td><td class="col2">Client</td><td class="col3">10.32.51.118</td><td class="col4">69</td><td class="col5">UDP</td><td class="col6">←→ </td><td class="col7"> </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0">AIX</td><td class="col1">TFTP</td><td class="col2">Client</td><td class="col3">10.32.51.118</td><td class="col4">Random port between 2768 and 65535</td><td class="col5">UDP</td><td class="col6">←→</td><td class="col7"> </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0">AIX</td><td class="col1">NFS</td><td class="col2">Client</td><td class="col3">10.32.51.118</td><td class="col4">111</td><td class="col5">UDP</td><td class="col6">←→</td><td class="col7"> </td>
+	</tr>
+	<tr class="row6">
+		<td class="col0">AIX</td><td class="col1">NFS</td><td class="col2">Client</td><td class="col3">10.32.51.118</td><td class="col4">NNN</td><td class="col5">TCP</td><td class="col6">←→</td><td class="col7">random port between 32768 and 65535, or the port specified in /etc/services for &#039;mountd&#039; and &#039;lockd&#039;, as &#039;statd&#039; must use the port range between 32768 and 65535)</td>
+	</tr>
+	<tr class="row7">
+		<td class="col0">AIX</td><td class="col1">NFS</td><td class="col2">Cloent</td><td class="col3">10.32.51.118</td><td class="col4">249</td><td class="col5" colspan="2">TCP</td><td class="col7">random port between 32768 and 65535, or the port specified in /etc/services for &#039;mountd&#039; and &#039;lockd&#039;, as &#039;statd&#039; must use the port range between 32768 and 65535)</td>
+	</tr>
+	<tr class="row8">
+		<td class="col0">AIX</td><td class="col1">ICMP</td><td class="col2">Client</td><td class="col3">10.32.51.118</td><td class="col4">5813</td><td class="col5">UDP</td><td class="col6">←→</td><td class="col7"> </td>
+	</tr>
+	<tr class="row9">
+		<td class="col0">AIX</td><td class="col1">ICMP</td><td class="col2">Client</td><td class="col3">10.32.51.118</td><td class="col4">5813</td><td class="col5">TCP</td><td class="col6">←→</td><td class="col7"> </td>
+	</tr>
+	<tr class="row10">
+		<td class="col0">AIX</td><td class="col1">NIM</td><td class="col2">Client</td><td class="col3">10.32.51.118</td><td class="col4">1058/1059+512-1023</td><td class="col5">TCP</td><td class="col6">←→</td><td class="col7"> </td>
+	</tr>
+	<tr class="row11">
+		<td class="col0">AIX</td><td class="col1">RSH</td><td class="col2">MASTER</td><td class="col3">Client</td><td class="col4">513,514 + 513-1023</td><td class="col5">TCP</td><td class="col6">←→</td><td class="col7"> </td>
+	</tr>
+</table></div>
+<!-- EDIT7 TABLE [1776-2707] -->
+</div>
+<!-- EDIT6 SECTION "NIM Firewall Rules" [1745-] -->

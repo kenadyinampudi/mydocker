@@ -1,0 +1,78 @@
+
+
+
+====STOP====
+
+Step 1 - Deactivate all active policies
+
+         Take a snap shot of the inactive policies status on the specific day
+
+         Select the all active policies Ctrl-A, right click and deactivate
+
+
+
+Step 2 - Suspend all active SLPs
+
+         Take snap shot of the suspended SLPs on the specific day
+
+         Go to SLP Window select all excluding LDC_TA2_SPEC, right click and click Suspend
+
+
+
+Step 3 - Check and Select all active and queued jobs and cancel them
+
+
+         Exit from Java GUI
+         
+         
+         
+Step 4 - Enable logging and log in to TAQA1D01 using putty software
+
+
+
+Step 5 - Go to root <code>taqa1d01:/usr/openv>sudo su -</code>
+
+
+
+Step 6 - Stop the services <code>bp.kill_all</code>
+
+
+Step  7 - Check if services are completely stopped<code>bpps -a</code>
+
+       If some processes are not down, repeat the bpkill command - if it does not work, use the following command to kill processes individually
+       Try to open Java GUI, it wont get launched, this also confirms all services are down <code>kill -9 22282542</code>
+
+
+====START====
+
+Step 1 - Enable logging and log in to TAQA1D01 using putty software
+
+
+Step 2 - Go to root <code>taqa1d01:/usr/openv>sudo su -</code>
+
+
+Step 3 - Check if NBU services are already up and running after the reboot<code>bpps -a</code>
+
+
+
+Step 4  - Start the services <code>bp.start_all</code>
+
+
+Step 5  - Launch JAVA GUI, if it works we are good, all services are running.
+
+
+Step 6  - Activate ALL the suspended SLPs. Cross check the screen shot taken in the morning
+
+
+Step 7  - Activate all the de-activated policies. Cross check with the screen shot taken in the morning
+
+         Once start up is done, monitor for an hour and then done.
+
+
+Step 8 - Check  the status of ALL media servers.
+
+         Media and Device Management -> Devices ->  Media Servers ...
+
+Step 9  - Check  the status of ALL Disk Pools ...
+
+          Media and Device Management -> select tab "Disk Pools"

@@ -1,0 +1,7249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>
+SFLDMILX407 - Machinery System Description
+</title>
+<meta charset='utf-8'>
+<link href='assets/machinery-base.css' rel='stylesheet' type='text/css'>
+<link href='assets/machinery.css' rel='stylesheet' type='text/css'>
+<script src='assets/jquery-2.1.1.min.js'></script>
+<script src='assets/transition.js'></script>
+<script src='assets/collapse.js'></script>
+<script src='assets/jquery.searcher.min.js'></script>
+<script src='assets/machinery-base.js'></script>
+<script src='assets/show/machinery.js'></script>
+<script src='assets/bootstrap-tooltip.js'></script>
+<script src='assets/bootstrap-popover.js'></script>
+<script src='assets/bootstrap-modal.js'></script>
+</head>
+<body data-description='SFLDMILX407'>
+<div class='modal fade' id='file-modal' tabindex='-1'>
+<div class='modal-dialog modal-lg'>
+<div class='modal-content'>
+<div class='modal-header'>
+<button class='close' data-dismiss='modal' type='button'>
+&times;
+</button>
+<h4 id='file-modal-title'></h4>
+</div>
+<div class='modal-body'>
+<div class='spinner'></div>
+<textarea id='file-modal-file-content' readonly='true'></textarea>
+<div id='file-modal-error' style='display: none'></div>
+</div>
+</div>
+</div>
+</div>
+<div id='file_popover' style='display: none'>
+<div class='header'>
+<h3 class='name'></h3>
+</div>
+<div class='body'>
+<textarea class='content'></textarea>
+</div>
+</div>
+
+<div class='container-fluid'>
+<div id='nav-bar'>
+
+<div class='row toolbar'>
+<small class='col-xs-1'>
+<a href='#' id='expand-all' style='display: none'>
+Expand all
+</a>
+<a href='#' id='collapse-all'>
+Collapse all
+</a>
+</small>
+<div class='col-xs-11 nav-buttons'>
+<div class='col-xs-3'>
+<div class='filter-input'>
+<div class='input-group'>
+<input class='form-control col-md-8' id='filter' placeholder='Type To Filter'>
+<div class='input-group-btn'>
+<a class='btn btn-default reset-filter' href='#' title='Reset Filter'>
+<span>Reset</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class='col-xs-5'>
+<span class='scope-navigation'>
+<span class='nav-bar-title'>
+Scopes:
+</span>
+<a class='btn btn-default btn-sm' data-content='&lt;p&gt;Contains information about the operating system, name, version, and
+architecture of the inspected system.&lt;/p&gt;
+' data-toggle='popover' href='#os' title='Operating System'>
+<span>OS</span>
+</a>
+<a class='btn btn-default btn-sm' data-content='&lt;p&gt;Contains information on all installed packages installed on the
+inspected system.&lt;/p&gt;
+' data-toggle='popover' href='#packages' title='Packages'>
+<span>PK</span>
+</a>
+<a class='btn btn-default btn-sm disabled' data-content='&lt;p&gt;Contains all patterns or tasks installed on the inspected system. A pattern is a
+collection of software packages, similar to the idea of tasks on Debian/Ubuntu-
+like systems. The meaning of software patterns depends on the package manager of the
+distribution.&lt;/p&gt;
+' data-toggle='popover' href='#patterns' title='Patterns'>
+<span>PT</span>
+</a>
+<a class='btn btn-default btn-sm disabled' data-content='&lt;p&gt;Contains all information about software repositories configured on the
+inspected system. The information about repositories depends on the package
+manager of the distribution. Machinery collects the following information
+from each configured repository:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;The alias name of the repository.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;The repository type, rpm-md and YaST types that are used on SUSE systems.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;The path to the repository. This could be a local path, a remote location,
+a device, or a file.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;A boolean flag that indicates if this repository is in use or not.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;A boolean flag that indicates if this repository should update the locally
+stored metadata files with metadata files from the origin automatically or
+not.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;A boolean flag that indicates if packages which would be installed from
+this repository should be checked by their gpg key or not.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;A numeric value for a priority. The priority of a repository is compared
+to the priorities of all other activated repositories. Values can
+range from 1 (highest) to 99 (lowest, default).&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+' data-toggle='popover' href='#repositories' title='Repositories'>
+<span>R</span>
+</a>
+<a class='btn btn-default btn-sm disabled' data-content='&lt;p&gt;Contains information about the system users including user and group ids,
+login information, such as password hashes and - if available - additional
+password properties.&lt;/p&gt;
+' data-toggle='popover' href='#users' title='Users'>
+<span>U</span>
+</a>
+<a class='btn btn-default btn-sm disabled' data-content='&lt;p&gt;Contains information about the system groups such as group attributes and the
+list of group members.&lt;/p&gt;
+' data-toggle='popover' href='#groups' title='Groups'>
+<span>G</span>
+</a>
+<a class='btn btn-default btn-sm disabled' data-content='&lt;p&gt;Services are applications running in the background doing continuous work
+or waiting for requests to do work.
+The scope determines which services are configured to be started in which
+runlevel. It uses the &lt;code&gt;chkconfig&lt;/code&gt; command to obtain that information.
+The xinetd services that are also displayed by &lt;code&gt;chkconfig&lt;/code&gt; are switched
+on/off by editing configuration files and are ignored in this context.&lt;/p&gt;
+' data-toggle='popover' href='#services' title='Services'>
+<span>S</span>
+</a>
+<a class='btn btn-default btn-sm disabled' data-content='&lt;p&gt;Contains all configuration files which have been changed since they were
+installed.
+Changed configuration files are all those files which are marked as such in the
+package which has installed them. A configuration file change is reported
+if its content or its attributes like Linux permission bits or ownership
+have changed.&lt;/p&gt;
+' data-toggle='popover' href='#changed_config_files' title='Changed Configuration Files'>
+<span>CCF</span>
+</a>
+<a class='btn btn-default btn-sm disabled' data-content='&lt;p&gt;Contains the names and contents of all non-configuration files which have
+been changed compared to the files in the package. A file change is reported
+if its content or its attributes like Linux permission bits or ownership
+have changed.&lt;/p&gt;
+' data-toggle='popover' href='#changed_managed_files' title='Changed Managed Files'>
+<span>CMF</span>
+</a>
+<a class='btn btn-default btn-sm disabled' data-content='&lt;p&gt;Contains the names and contents of all files which are not part of any package.
+The list of unmanaged files contains only plain files and
+directories. Special files like device nodes, named pipes and Unix domain
+sockets are ignored. The directories &lt;code&gt;/tmp&lt;/code&gt;,  &lt;code&gt;/var/tmp&lt;/code&gt;, &lt;code&gt;/.snapshots/&lt;/code&gt;,
+&lt;code&gt;/var/run&lt;/code&gt; and special mounts like procfs and sysfs are ignored, too.
+If a directory is in this list, no file or directory below it belongs to a
+package.&lt;/p&gt;
+
+&lt;p&gt;Meta data information of unmanaged files is only available if the files were
+extracted during inspection.&lt;/p&gt;
+
+&lt;p&gt;Using the &lt;code&gt;--extract-unmanaged-files&lt;/code&gt; option, the files are transferred from
+the system and stored in the system description. Depending on the content of
+the inspected system, the amount of data stored may be huge.&lt;/p&gt;
+' data-toggle='popover' href='#unmanaged_files' title='Unmanaged Files'>
+<span>UF</span>
+</a>
+</span>
+</div>
+<div class='col-xs-2'>
+<a class='btn btn-default inspection_details' data-toggle='popover'>
+inspection details
+</a>
+</div>
+<div class='col-xs-2'>
+<small class='pull-right'>
+created by
+<a href='http://machinery-project.org' target='_blank'>
+Machinery
+</a>
+<br>
+<a href='/site/docs/' target='_blank'>
+Machinery documentation
+</a>
+</small>
+</div>
+</div>
+</div>
+</div>
+<div id='content_container'>
+<div>
+<a class='scope_anchor' id='os'></a>
+<div class='scope' id='os_container'>
+<div class='row'>
+<div class='col-xs-1'>
+<a class='btn btn-default btn-lg scope_logo_big' data-content='&lt;p&gt;Contains information about the operating system, name, version, and
+architecture of the inspected system.&lt;/p&gt;
+' data-toggle='popover' href='#os' title='Operating System'>
+<span>OS</span>
+</a>
+<span class='toggle' title='Collapse/Expand'></span>
+</div>
+<div class='col-xs-11'>
+<h2>
+Operating System
+<div class='scope-summary'>
+ (inspected host: 'SFLDMILX407', at: 2021-05-09 01:20:41)
+</div>
+</h2>
+</div>
+<div class='col-xs-1'></div>
+<div class='col-xs-11 scope_content collapse in'>
+<table class='table table-striped table-condensed'>
+<tr>
+<th>Name</th>
+<td>SUSE Linux Enterprise Server 10</td>
+</tr>
+<tr>
+<th>Version</th>
+<td>10 SP3</td>
+</tr>
+<tr>
+<th>Architecture</th>
+<td>x86_64</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<div>
+<a class='scope_anchor' id='packages'></a>
+<div class='scope' id='packages_container'>
+<div class='row'>
+<div class='col-xs-1'>
+<a class='btn btn-default btn-lg over scope_logo_big' data-content='&lt;p&gt;Contains information on all installed packages installed on the
+inspected system.&lt;/p&gt;
+' data-toggle='popover' href='#packages' title='Packages'>
+<span>PK</span>
+</a>
+<span class='toggle' title='Collapse/Expand'></span>
+</div>
+<div class='col-xs-11'>
+<h2>
+Packages
+&nbsp;
+<div class='scope-summary'>
+866 packages
+(inspected host: 'SFLDMILX407', at: 2021-05-09 01:20:41)
+</div>
+</h2>
+</div>
+</div>
+
+<div class='row scope_content collapse in'>
+<div class='col-xs-1'></div>
+<div class='col-xs-11'>
+<table class='table table-striped table-hover table-condensed filterable'>
+<thead>
+<tr>
+<th>Name</th>
+<th class='medium'>Version</th>
+<th class='medium'>Release</th>
+<th class='medium'>Arch</th>
+<th class='medium'>Vendor</th>
+<th>Checksum</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3ddiag</td>
+<td>0.735</td>
+<td>1.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>249f4861c69bdacc4d7c8e7c7308a250</td>
+</tr>
+<tr>
+<td>915resolution</td>
+<td>0.5.2.2</td>
+<td>0.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>020a3e3bd8c0b3354854776ef5b07733</td>
+</tr>
+<tr>
+<td>CheckHardware</td>
+<td>0.1</td>
+<td>988.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>57883fcfc61c499941876e3ecb617f97</td>
+</tr>
+<tr>
+<td>Mesa</td>
+<td>6.4.2</td>
+<td>19.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4b2e32e3de4c0686497030831dc03da5</td>
+</tr>
+<tr>
+<td>Mesa-32bit</td>
+<td>6.4.2</td>
+<td>19.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3e5dde2d92a57d849f79caba48be7498</td>
+</tr>
+<tr>
+<td>MozillaFirefox</td>
+<td>3.5.2</td>
+<td>3.4.8</td>
+<td>i586</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9a671d0b842dee4ecbf8a4cb6e56c92f</td>
+</tr>
+<tr>
+<td>MozillaFirefox-branding-SLED</td>
+<td>3.5</td>
+<td>1.5.8</td>
+<td>i586</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f21dcb04ea8b2cdf36c666c3fde8b551</td>
+</tr>
+<tr>
+<td>MozillaFirefox-translations</td>
+<td>3.5.2</td>
+<td>3.4.8</td>
+<td>i586</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0281d980fabba8f35fee6100e6881089</td>
+</tr>
+<tr>
+<td>OpenEXR</td>
+<td>1.2.2</td>
+<td>16.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cfe158a2d9b69c70b388a1534db1bca6</td>
+</tr>
+<tr>
+<td>OpenEXR-32bit</td>
+<td>1.2.2</td>
+<td>16.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1269bebd41e0f194cd54aea0d8b6e291</td>
+</tr>
+<tr>
+<td>OpenIPMI</td>
+<td>2.0.14</td>
+<td>2.4.32</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5ff0d90158895386962cc090533f26b7</td>
+</tr>
+<tr>
+<td>SDL</td>
+<td>1.2.9</td>
+<td>19.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8d355cec183660718b132bbf8ddf7149</td>
+</tr>
+<tr>
+<td>SDL-32bit</td>
+<td>1.2.9</td>
+<td>19.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b198b07e5a9a0ea4d1c1c8dbb43a040a</td>
+</tr>
+<tr>
+<td>SPident</td>
+<td>0.9</td>
+<td>74.27.8</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2eff464c1a4e34586b4bac1565be86d0</td>
+</tr>
+<tr>
+<td>SuSEfirewall2</td>
+<td>3.4_SVNr142</td>
+<td>7.12.21</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7924fc40f70426d663bdc456f62ba816</td>
+</tr>
+<tr>
+<td>a2ps</td>
+<td>4.13</td>
+<td>1077.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>23d6b1fa6c3b82b00563cc05a9914194</td>
+</tr>
+<tr>
+<td>aaa_base</td>
+<td>10</td>
+<td>12.57.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>eb24e299b2a30e23c456285a084afa28</td>
+</tr>
+<tr>
+<td>aaa_skel</td>
+<td>2006.5.19</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1ec895a58df63cb8e902b0c8099ecf7e</td>
+</tr>
+<tr>
+<td>aalib</td>
+<td>1.4.0</td>
+<td>305.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4bdc00156ad48e097c38249250b3ac76</td>
+</tr>
+<tr>
+<td>aalib-32bit</td>
+<td>1.4.0</td>
+<td>305.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>becab494561ec04a44db01c92564078d</td>
+</tr>
+<tr>
+<td>acl</td>
+<td>2.2.41</td>
+<td>0.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>360549ad28f2aa8d04e5b9f8c902a68f</td>
+</tr>
+<tr>
+<td>acpid</td>
+<td>1.0.4</td>
+<td>29.31.31</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6218092631667cde15242d2f712e17f3</td>
+</tr>
+<tr>
+<td>agfa-fonts</td>
+<td>2003.03.19</td>
+<td>32.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5e124f015862ac691afe96788122b56c</td>
+</tr>
+<tr>
+<td>alsa</td>
+<td>1.0.11</td>
+<td>32.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e80e3590610ffca5409f6953cf0760e1</td>
+</tr>
+<tr>
+<td>alsa-32bit</td>
+<td>1.0.11</td>
+<td>32.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>908235004731be17b55af04711188c59</td>
+</tr>
+<tr>
+<td>apparmor-admin_en</td>
+<td>10.1</td>
+<td>0.20</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a1431da98d00d38e5ed83d26d4edae2b</td>
+</tr>
+<tr>
+<td>apparmor-docs</td>
+<td>2.1.1</td>
+<td>0.7.19</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6a01c8c31d3a65f58c9d0f748b9d388a</td>
+</tr>
+<tr>
+<td>apparmor-parser</td>
+<td>2.1.1</td>
+<td>0.7.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8892a4769ed20d7e78f86825b90973cc</td>
+</tr>
+<tr>
+<td>apparmor-profiles</td>
+<td>2.0.1</td>
+<td>20.20.16</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b51bae25831c468d5e2a7597b89a9531</td>
+</tr>
+<tr>
+<td>apparmor-utils</td>
+<td>2.1.1</td>
+<td>0.9</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0c31ba71fd33896c778757045ca07b34</td>
+</tr>
+<tr>
+<td>ash</td>
+<td>1.6.1</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>85a04a08a52e431580fc8484927a4e5b</td>
+</tr>
+<tr>
+<td>aspell</td>
+<td>0.60.3</td>
+<td>20.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9ca3ff0ebf6a685e419f9f795362213c</td>
+</tr>
+<tr>
+<td>aspell-32bit</td>
+<td>0.60.3</td>
+<td>20.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>89a9948895d1f8078700fc00b61e1c95</td>
+</tr>
+<tr>
+<td>aspell-en</td>
+<td>6.0</td>
+<td>21.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5cfa2d31f3e72ef79c88caf5167f6844</td>
+</tr>
+<tr>
+<td>at</td>
+<td>3.1.8</td>
+<td>921.23.41</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>064d3a4d1f881bad0951c65f74987a5d</td>
+</tr>
+<tr>
+<td>at-spi</td>
+<td>1.6.6</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0f9338ae5272c64c80a93580986dda17</td>
+</tr>
+<tr>
+<td>atk</td>
+<td>1.10.3</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fdf193634852955a85cf8b4a27321902</td>
+</tr>
+<tr>
+<td>atk-32bit</td>
+<td>1.10.3</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4b18d4c805c3bf42d72d94b9e4780c0e</td>
+</tr>
+<tr>
+<td>attr</td>
+<td>2.4.34</td>
+<td>0.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>994e019edf08eabe648015f9c18fbf7e</td>
+</tr>
+<tr>
+<td>audiofile</td>
+<td>0.2.6</td>
+<td>17.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7c1f0ab87bb4d8cf65a07a63fdee77a2</td>
+</tr>
+<tr>
+<td>audiofile-32bit</td>
+<td>0.2.6</td>
+<td>17.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>69146237aeb9b580e9007de0c2615bc1</td>
+</tr>
+<tr>
+<td>audit</td>
+<td>1.2.9</td>
+<td>6.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4abbbe94dd9e0873e050cb1bcdcbd17f</td>
+</tr>
+<tr>
+<td>audit-libs</td>
+<td>1.2.9</td>
+<td>6.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c6333c5396294f77cacbc6fbb5139e94</td>
+</tr>
+<tr>
+<td>audit-libs-32bit</td>
+<td>1.2.9</td>
+<td>6.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f12a4344d5e1055eb8133798de03ffd2</td>
+</tr>
+<tr>
+<td>autofs</td>
+<td>4.1.4</td>
+<td>23.27.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>74c0083b159ed6079afd2f38ef7212d8</td>
+</tr>
+<tr>
+<td>autoyast2</td>
+<td>2.13.103</td>
+<td>0.4.47</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f9d6051479a0b29d64d7f08770f84c4a</td>
+</tr>
+<tr>
+<td>autoyast2-installation</td>
+<td>2.13.103</td>
+<td>0.4.47</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>638d87cfab104dd28d84b127d0904c19</td>
+</tr>
+<tr>
+<td>awesfx</td>
+<td>0.5.0d</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>750ddcaee16083ef8651105a449242d6</td>
+</tr>
+<tr>
+<td>bash</td>
+<td>3.1</td>
+<td>24.26.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2ff69b9f44039a4b057db5cf6f3b898e</td>
+</tr>
+<tr>
+<td>bc</td>
+<td>1.06</td>
+<td>764.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5d5e45d894c278531b03c541fcf0aa7e</td>
+</tr>
+<tr>
+<td>bind-libs</td>
+<td>9.3.4</td>
+<td>1.29</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>00ee40f92fa45f4496a84c5371e06586</td>
+</tr>
+<tr>
+<td>bind-libs-32bit</td>
+<td>9.3.4</td>
+<td>1.29</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>354feea7ea151065f07c098f53c2bb13</td>
+</tr>
+<tr>
+<td>bind-utils</td>
+<td>9.3.4</td>
+<td>1.29</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7088c02d1642dc505e98afa7305328a4</td>
+</tr>
+<tr>
+<td>binutils</td>
+<td>2.16.91.0.5</td>
+<td>23.34.33</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ac6391b5ed0bc2c4787534426d0614d2</td>
+</tr>
+<tr>
+<td>binutils-32bit</td>
+<td>2.16.91.0.5</td>
+<td>23.34.33</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>71e26393267d070d1ece551156036190</td>
+</tr>
+<tr>
+<td>bitstream-vera</td>
+<td>1.10</td>
+<td>180.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6e0178aebccc5f508a14159309f408da</td>
+</tr>
+<tr>
+<td>blocxx</td>
+<td>1.0.0</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f75f520877b922d6878aaa163fc0eca8</td>
+</tr>
+<tr>
+<td>boost</td>
+<td>1.33.1</td>
+<td>17.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b2f0ddffad2783079261a21ee935c406</td>
+</tr>
+<tr>
+<td>bootcycle</td>
+<td>0.3</td>
+<td>111.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7928dfb14762cbc7a30fe53ff09be47e</td>
+</tr>
+<tr>
+<td>bootsplash</td>
+<td>3.3</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9f65bb0a91d6dd6881b1b26e088e3376</td>
+</tr>
+<tr>
+<td>bootsplash-theme-SuSE-SLES</td>
+<td>3.1</td>
+<td>69.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8d80774c7af398f25b9f4693c6f2727b</td>
+</tr>
+<tr>
+<td>bzip2</td>
+<td>1.0.3</td>
+<td>17.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d1666278e515a3d77e29f13c69f63a21</td>
+</tr>
+<tr>
+<td>bzip2-32bit</td>
+<td>1.0.3</td>
+<td>17.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>81f51da10e168802609546fd4ccef216</td>
+</tr>
+<tr>
+<td>cabextract</td>
+<td>1.1</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2ba812bc1e2d721e8dd0c45963aadde6</td>
+</tr>
+<tr>
+<td>cairo</td>
+<td>1.0.2</td>
+<td>27.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>63180ef5c021c38118a4026f3148b965</td>
+</tr>
+<tr>
+<td>cairo-32bit</td>
+<td>1.0.2</td>
+<td>27.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1cedca0e7be41b9913094ab84500c9b4</td>
+</tr>
+<tr>
+<td>cdparanoia</td>
+<td>IIIalpha9.8</td>
+<td>562.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ed8266302e7e41d230c86e57f1e497f2</td>
+</tr>
+<tr>
+<td>cdparanoia-32bit</td>
+<td>IIIalpha9.8</td>
+<td>562.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0d96640f5e91ed8df661519874989cf2</td>
+</tr>
+<tr>
+<td>cdrdao</td>
+<td>1.2.0</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>182ff81a6ee88ecf962972b302bf1b8d</td>
+</tr>
+<tr>
+<td>cdrecord</td>
+<td>2.01</td>
+<td>25.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>96321265ae4109f9a8e2e72b7117eea8</td>
+</tr>
+<tr>
+<td>checkmedia</td>
+<td>2.1</td>
+<td>16.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1e044f5c4b265ad4c610b390ca5b5a26</td>
+</tr>
+<tr>
+<td>cifs-mount</td>
+<td>3.0.36</td>
+<td>0.5.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>113984ce8ded694209b41e49c011a0a4</td>
+</tr>
+<tr>
+<td>compat</td>
+<td>2006.1.25</td>
+<td>11.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e63e417d1e677d2bd19bb0baa7523b81</td>
+</tr>
+<tr>
+<td>compat-32bit</td>
+<td>2006.1.25</td>
+<td>11.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d08b9a712d24b686acea424df97eb163</td>
+</tr>
+<tr>
+<td>compat-openssl097g</td>
+<td>0.9.7g</td>
+<td>13.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2082e5667a134723a82aaa9cfc186d35</td>
+</tr>
+<tr>
+<td>compat-openssl097g-32bit</td>
+<td>0.9.7g</td>
+<td>13.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d44d0b5957a12fc49d09a3e490868440</td>
+</tr>
+<tr>
+<td>control-center2</td>
+<td>2.12.3</td>
+<td>0.36</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6cb12f2f2b652271627c4034e43a3792</td>
+</tr>
+<tr>
+<td>convmv</td>
+<td>1.09</td>
+<td>12.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>efb2c8c67e50ed7bc096027dbaded1e0</td>
+</tr>
+<tr>
+<td>coreutils</td>
+<td>5.93</td>
+<td>22.16.36</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c9a8e0c63eae921d95ba93457b7325b6</td>
+</tr>
+<tr>
+<td>cpio</td>
+<td>2.6</td>
+<td>19.24.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e91d7ef14623a9383de46d7ba92018d3</td>
+</tr>
+<tr>
+<td>cpp</td>
+<td>4.1.2_20070115</td>
+<td>0.29.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fa5490cf1fd4e80e3bdd4881fb6fd4df</td>
+</tr>
+<tr>
+<td>cpufrequtils</td>
+<td>0.4</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4496080f19e6092e7bf96e7d443846e1</td>
+</tr>
+<tr>
+<td>cpufrequtils-32bit</td>
+<td>0.4</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>464bcfcb9270e8e82e07cc724339b5b7</td>
+</tr>
+<tr>
+<td>cracklib</td>
+<td>2.8.6</td>
+<td>14.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>38e354913b8734fdee14305b452792cc</td>
+</tr>
+<tr>
+<td>cracklib-32bit</td>
+<td>2.8.6</td>
+<td>14.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c0dcd8b244b4e15d8ab4f8eb5afa590d</td>
+</tr>
+<tr>
+<td>cron</td>
+<td>4.1</td>
+<td>45.30.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b05a838954101597e9c2f9af38689a23</td>
+</tr>
+<tr>
+<td>cups</td>
+<td>1.1.23</td>
+<td>40.58.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e1717c523fadc45a84e2e7d9ec70409e</td>
+</tr>
+<tr>
+<td>cups-SUSE-ppds-dat</td>
+<td>1.1.20</td>
+<td>119.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4aca8cf2ea5b6fae99a1edeaa8e59183</td>
+</tr>
+<tr>
+<td>cups-backends</td>
+<td>1.0</td>
+<td>18.4.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7b9a4515f40ce3c37e4ca0c74d50d915</td>
+</tr>
+<tr>
+<td>cups-client</td>
+<td>1.1.23</td>
+<td>40.58.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8bf9651226f9da888efe9c5e7a150803</td>
+</tr>
+<tr>
+<td>cups-drivers</td>
+<td>1.1.23</td>
+<td>28.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c4de84cd3d5c3522b95dedc653b22b64</td>
+</tr>
+<tr>
+<td>cups-drivers-stp</td>
+<td>1.1.23</td>
+<td>28.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>03a30e9e7d70faa5e5a9865a4886dce2</td>
+</tr>
+<tr>
+<td>cups-libs</td>
+<td>1.1.23</td>
+<td>40.58.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e60c5f83a170fe0c22ff51e9e0ace8bc</td>
+</tr>
+<tr>
+<td>cups-libs-32bit</td>
+<td>1.1.23</td>
+<td>40.58.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>191b7c8dec24bd3ff045f1ede3cc0375</td>
+</tr>
+<tr>
+<td>curl</td>
+<td>7.15.1</td>
+<td>19.16.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5b73a653ba6cb33f5342c2183fcd8c93</td>
+</tr>
+<tr>
+<td>curl-32bit</td>
+<td>7.15.1</td>
+<td>19.16.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d56d9a92eb2715d6a05ff0983a4eaefb</td>
+</tr>
+<tr>
+<td>cyrus-sasl</td>
+<td>2.1.21</td>
+<td>18.11.41</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>32ec5a75c69ef7f871031964f8d8d784</td>
+</tr>
+<tr>
+<td>cyrus-sasl-32bit</td>
+<td>2.1.21</td>
+<td>18.11.41</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c76a7f773ccf8c95a5eae689336a76d9</td>
+</tr>
+<tr>
+<td>cyrus-sasl-saslauthd</td>
+<td>2.1.21</td>
+<td>18.11.51</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>013e73be56936d9f1fc70372daa2a092</td>
+</tr>
+<tr>
+<td>db</td>
+<td>4.3.29</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5af12dba70982ebd9c9b885593dd4d62</td>
+</tr>
+<tr>
+<td>db-32bit</td>
+<td>4.3.29</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dc1319dfea3fb4eea76a55e7df191b05</td>
+</tr>
+<tr>
+<td>db-utils</td>
+<td>4.3.29</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cfea4d4e18e0e4a1fd22471f58e7be45</td>
+</tr>
+<tr>
+<td>dbus-1</td>
+<td>0.60</td>
+<td>33.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>75da48617f5e84f20e3eb8f74d323ce1</td>
+</tr>
+<tr>
+<td>dbus-1-32bit</td>
+<td>0.60</td>
+<td>33.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>03417727562dd9f9b2ae6ab2d22d3799</td>
+</tr>
+<tr>
+<td>dbus-1-glib</td>
+<td>0.60</td>
+<td>33.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f548e83f8b2d4a51f9f8d72ac430c0f4</td>
+</tr>
+<tr>
+<td>dbus-1-glib-32bit</td>
+<td>0.60</td>
+<td>33.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>249f8f42d53dad0dd88dc5a336ec1ce2</td>
+</tr>
+<tr>
+<td>dbus-1-mono</td>
+<td>0.60</td>
+<td>33.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dcdab1f21845525b29076cf3cfbb6fa5</td>
+</tr>
+<tr>
+<td>dbus-1-python</td>
+<td>0.60</td>
+<td>33.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ad3968ff6c96a03e3d547239665e44e4</td>
+</tr>
+<tr>
+<td>dbus-1-qt</td>
+<td>4.3.4</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6c16b2c5b148e35a0dd550fa76796a93</td>
+</tr>
+<tr>
+<td>dbus-1-x11</td>
+<td>0.60</td>
+<td>33.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>aeaaccd96b63892ad615a388f1d9dc90</td>
+</tr>
+<tr>
+<td>dejavu</td>
+<td>2.9</td>
+<td>0.10</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1172798d39242fbcf36d32b521c0b31b</td>
+</tr>
+<tr>
+<td>delayacct-utils</td>
+<td>0.2</td>
+<td>0.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>355dcfea743ca88c7d9bec52a2ace4c5</td>
+</tr>
+<tr>
+<td>deltarpm</td>
+<td>3.3</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>870548c7154f436a16ce4e39ad6c14b2</td>
+</tr>
+<tr>
+<td>desktop-data-NLD</td>
+<td>10.1</td>
+<td>31.24</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4b39683ff76942e39e2e51bab28e14a0</td>
+</tr>
+<tr>
+<td>desktop-file-utils</td>
+<td>0.10</td>
+<td>22.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1fe00aaf6f9d8f521dd2c8b2b25aa81c</td>
+</tr>
+<tr>
+<td>device-mapper</td>
+<td>1.02.13</td>
+<td>6.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6940aa12e7d5ed03fbd942540c94a704</td>
+</tr>
+<tr>
+<td>device-mapper-32bit</td>
+<td>1.02.13</td>
+<td>6.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7d391760d7753ea94fe895f8327af190</td>
+</tr>
+<tr>
+<td>dhcpcd</td>
+<td>1.3.22pl4</td>
+<td>223.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>10871e2d7de7ccc2567193a7147708cf</td>
+</tr>
+<tr>
+<td>dialog</td>
+<td>0.9b</td>
+<td>204.2.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>54d201819ed1f8fb19e99870b1961bc3</td>
+</tr>
+<tr>
+<td>diffutils</td>
+<td>2.8.7</td>
+<td>17.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4fec3f995389ffcb0235a597046df633</td>
+</tr>
+<tr>
+<td>dirmngr</td>
+<td>0.9.2</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e981ee6748ff8158b0cec4bd048d0f89</td>
+</tr>
+<tr>
+<td>dmapi</td>
+<td>2.2.8</td>
+<td>27.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cc3bc199469c6be73518b0b95caa3975</td>
+</tr>
+<tr>
+<td>dmraid</td>
+<td>0.99_1.0.0rc13</td>
+<td>0.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4ccdc53348b9f4ece3f61354e645a7b9</td>
+</tr>
+<tr>
+<td>dos2unix</td>
+<td>3.1</td>
+<td>317.4.38</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ae3a654d69f05595a34c1b5a162da90b</td>
+</tr>
+<tr>
+<td>dosbootdisk</td>
+<td>1.1</td>
+<td>53.2</td>
+<td>i586</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d73458bdd09335a54b7ab19471fff3e2</td>
+</tr>
+<tr>
+<td>dosfstools</td>
+<td>2.11</td>
+<td>15.16.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c02cda75a14e034366cec98f18ceb0b1</td>
+</tr>
+<tr>
+<td>dvd+rw-tools</td>
+<td>6.1</td>
+<td>18.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>715fb02065159ce24bc39ef112d93ac2</td>
+</tr>
+<tr>
+<td>e2fsprogs</td>
+<td>1.38</td>
+<td>25.35.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>da24388714e1327753f418825592cc2b</td>
+</tr>
+<tr>
+<td>e2fsprogs-32bit</td>
+<td>1.38</td>
+<td>25.35.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>77fc37320f1d75c89cf736dbeb9f55dc</td>
+</tr>
+<tr>
+<td>ed</td>
+<td>0.2</td>
+<td>881.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a7f78ee925c35168eb4b5fa5027513c3</td>
+</tr>
+<tr>
+<td>eel</td>
+<td>2.12.2</td>
+<td>18.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4a69e990376be23fda9cc4643b125658</td>
+</tr>
+<tr>
+<td>eel-32bit</td>
+<td>2.12.2</td>
+<td>18.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ff7285c30439a68a07c302df3af19356</td>
+</tr>
+<tr>
+<td>efont-unicode</td>
+<td>0.4.2</td>
+<td>19.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c56d153033caebee4ccdec3f4f896dfb</td>
+</tr>
+<tr>
+<td>eject</td>
+<td>2.1.0</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>73eb256682d91e652322126384b85bd4</td>
+</tr>
+<tr>
+<td>eog</td>
+<td>2.12.2</td>
+<td>22.23.66</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f7e0300ca86ee948f6467fd54978bba3</td>
+</tr>
+<tr>
+<td>esound</td>
+<td>0.2.36</td>
+<td>19.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>69b5b98645c342b9e7c7810156e01251</td>
+</tr>
+<tr>
+<td>esound-32bit</td>
+<td>0.2.36</td>
+<td>19.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a17bb869fa72c550b12ff552c851346d</td>
+</tr>
+<tr>
+<td>ethtool</td>
+<td>3</td>
+<td>15.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c129ea4b3de87cd91910520e002a8af5</td>
+</tr>
+<tr>
+<td>evince</td>
+<td>0.4.0</td>
+<td>25.11.43</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4f63f25ab444ac31bdf4c85507e92aa2</td>
+</tr>
+<tr>
+<td>evms</td>
+<td>2.5.5</td>
+<td>24.70.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>07a596426cb8892c9957b8c55894afca</td>
+</tr>
+<tr>
+<td>evms-gui</td>
+<td>2.5.5</td>
+<td>24.70.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f9ed48d356a1177c307f39fd0397c8e7</td>
+</tr>
+<tr>
+<td>evolution-data-server</td>
+<td>1.6.0</td>
+<td>43.90.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>00c9c339f969d9d562e84d78e82ba194</td>
+</tr>
+<tr>
+<td>evolution-data-server-32bit</td>
+<td>1.6.0</td>
+<td>43.90.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d9c33f1434f8cd9b795af60468f495ad</td>
+</tr>
+<tr>
+<td>expat</td>
+<td>2.0.0</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>83d7e6f9ff88edddb8671fde4742f820</td>
+</tr>
+<tr>
+<td>expat-32bit</td>
+<td>2.0.0</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e0b639f789de9a91c0a74911f461a2b8</td>
+</tr>
+<tr>
+<td>fam</td>
+<td>2.7.0</td>
+<td>9.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8e7282d797dd5f8bcbe6ef85f8154e1e</td>
+</tr>
+<tr>
+<td>fam-32bit</td>
+<td>2.7.0</td>
+<td>9.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5213ff890778cdc973af34a3a24533f9</td>
+</tr>
+<tr>
+<td>fam-server</td>
+<td>2.7.0</td>
+<td>9.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>87b0cc01ec920b683ccae2ff39be1765</td>
+</tr>
+<tr>
+<td>fbset</td>
+<td>2.1</td>
+<td>797.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dabac3c806602924b8765236fe51f3c5</td>
+</tr>
+<tr>
+<td>file</td>
+<td>4.21</td>
+<td>47.5.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a46b6d5cb75e434811663af63c8eb384</td>
+</tr>
+<tr>
+<td>file-32bit</td>
+<td>4.21</td>
+<td>47.5.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8f859f088cd077f19015de0ab8ec54cb</td>
+</tr>
+<tr>
+<td>file-roller</td>
+<td>2.12.3</td>
+<td>0.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d7525db0ff1040a308a972da0cfcc94c</td>
+</tr>
+<tr>
+<td>filesystem</td>
+<td>10</td>
+<td>1.18.38</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c08d2e5628b67b96666e74a0c4257b75</td>
+</tr>
+<tr>
+<td>fillup</td>
+<td>1.42</td>
+<td>118.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>09b6c6e27ffeb90b12bf668f2d91219e</td>
+</tr>
+<tr>
+<td>filters</td>
+<td>2006.8.25</td>
+<td>0.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4c0ee54138fe95693057d657e0ec297e</td>
+</tr>
+<tr>
+<td>findutils</td>
+<td>4.2.27</td>
+<td>14.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b5f69e9e987eceffb31618e85c608056</td>
+</tr>
+<tr>
+<td>finger</td>
+<td>1.3</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>856e4bf87404851e978cc5dd4e44d966</td>
+</tr>
+<tr>
+<td>firefox3-atk</td>
+<td>1.12.3</td>
+<td>0.6.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>941a45ce4ad18eb32f306122b97020de</td>
+</tr>
+<tr>
+<td>firefox3-atk-32bit</td>
+<td>1.12.3</td>
+<td>0.6.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f31b0e7af44a93d61afd0f087b55cf43</td>
+</tr>
+<tr>
+<td>firefox3-cairo</td>
+<td>1.2.4</td>
+<td>0.6.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4a1aed460c30d3843ef7d595d6925853</td>
+</tr>
+<tr>
+<td>firefox3-cairo-32bit</td>
+<td>1.2.4</td>
+<td>0.6.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5cb9059a744ea1e8ebefbe61a8036a16</td>
+</tr>
+<tr>
+<td>firefox3-glib2</td>
+<td>2.12.4</td>
+<td>0.7.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>171abd74b97284d1326cf16bb48aac1d</td>
+</tr>
+<tr>
+<td>firefox3-glib2-32bit</td>
+<td>2.12.4</td>
+<td>0.7.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2baee20691f80e37508c768c4afdcebc</td>
+</tr>
+<tr>
+<td>firefox3-gtk2</td>
+<td>2.10.6</td>
+<td>0.8.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>756a13493b1380611db67424565d2c21</td>
+</tr>
+<tr>
+<td>firefox3-gtk2-32bit</td>
+<td>2.10.6</td>
+<td>0.8.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>75fd09fee3739f0c5b7908208df82970</td>
+</tr>
+<tr>
+<td>firefox3-pango</td>
+<td>1.14.5</td>
+<td>0.9.26</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cd64786c05205d474e9f016bd5d2e9cd</td>
+</tr>
+<tr>
+<td>firefox3-pango-32bit</td>
+<td>1.14.5</td>
+<td>0.9.26</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d0fffd3ec1d9a29c1b163c2d535bf44f</td>
+</tr>
+<tr>
+<td>flac</td>
+<td>1.1.2</td>
+<td>15.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7f28efadefd44ab1dde959634cd6a4d5</td>
+</tr>
+<tr>
+<td>flac-32bit</td>
+<td>1.1.2</td>
+<td>15.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7ccce30be534ac2497974296c96c3fca</td>
+</tr>
+<tr>
+<td>fontconfig</td>
+<td>2.3.94</td>
+<td>18.23.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ca342b7ad0a5bfe772f7ba0ae938154c</td>
+</tr>
+<tr>
+<td>fontconfig-32bit</td>
+<td>2.3.94</td>
+<td>18.23.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a1ec7f5ad229bb7a95d25e5dd50030e3</td>
+</tr>
+<tr>
+<td>fonts-config</td>
+<td>20060210</td>
+<td>18.6</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ffc832e61ede7085c3d26cb047b318a8</td>
+</tr>
+<tr>
+<td>foomatic-filters</td>
+<td>3.0.2</td>
+<td>20.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c3992a0a8f3aa5751453c37c42d22edf</td>
+</tr>
+<tr>
+<td>freeglut</td>
+<td>051110</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cc36091e0c3811a9c6a23f6cbd7dfbe4</td>
+</tr>
+<tr>
+<td>freeglut-32bit</td>
+<td>051110</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a937bcd3a2f4c33aa7e8ef6de2ed4ddf</td>
+</tr>
+<tr>
+<td>freetype</td>
+<td>1.3.1</td>
+<td>1173.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>45fb6ce5f915c9604585540402cd8fc6</td>
+</tr>
+<tr>
+<td>freetype-32bit</td>
+<td>1.3.1</td>
+<td>1173.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1953be369aaea7af60bf42f8512a69f6</td>
+</tr>
+<tr>
+<td>freetype2</td>
+<td>2.1.10</td>
+<td>18.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4d1fddec26f3db75217ea63beae81787</td>
+</tr>
+<tr>
+<td>freetype2-32bit</td>
+<td>2.1.10</td>
+<td>18.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>474d100c3317386276a36b937e143544</td>
+</tr>
+<tr>
+<td>fribidi</td>
+<td>0.10.4</td>
+<td>500.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>194bf5d8e9f417e5bd585dc5a46322ca</td>
+</tr>
+<tr>
+<td>fribidi-32bit</td>
+<td>0.10.4</td>
+<td>500.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4ca287254a5e7fa70097da311dc5f3cb</td>
+</tr>
+<tr>
+<td>fvwm2</td>
+<td>2.5.12</td>
+<td>18.13.49</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9e78d9fd213abfa2583e4d4fdf9a1e54</td>
+</tr>
+<tr>
+<td>gail</td>
+<td>1.8.8</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b85d0d6a6ba72191708ed973ab6a8413</td>
+</tr>
+<tr>
+<td>gail-32bit</td>
+<td>1.8.8</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b479b4dd8528058f2f32a8921511692f</td>
+</tr>
+<tr>
+<td>gal2</td>
+<td>2.5.3</td>
+<td>21.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ac6cfbffb6e9466192cb79de4c0c8e24</td>
+</tr>
+<tr>
+<td>gawk</td>
+<td>3.1.5</td>
+<td>18.8.39</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8789c1b0913b1459a1d0b1af8885a9d7</td>
+</tr>
+<tr>
+<td>gcalctool</td>
+<td>5.6.31</td>
+<td>26.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f4ad09011ccfbaa73288f3b76196b31f</td>
+</tr>
+<tr>
+<td>gconf-editor</td>
+<td>2.12.1</td>
+<td>20.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>540614916e0478f353d1361b9c72faf2</td>
+</tr>
+<tr>
+<td>gconf2</td>
+<td>2.12.1</td>
+<td>27.4.29</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ffb70404566739c0dfc45fc6c105e439</td>
+</tr>
+<tr>
+<td>gconf2-32bit</td>
+<td>2.12.1</td>
+<td>27.4.29</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>56c2b3482fee112f5eb3103743fb2f5e</td>
+</tr>
+<tr>
+<td>gdb</td>
+<td>6.8.50.20090302</td>
+<td>1.5.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a6ca052476f11c58146bb91a26fc139c</td>
+</tr>
+<tr>
+<td>gdbm</td>
+<td>1.8.3</td>
+<td>243.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2fd37189ff8cd32abb0d118dd9ff156d</td>
+</tr>
+<tr>
+<td>gdbm-32bit</td>
+<td>1.8.3</td>
+<td>243.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7601dc0c43e44337138372d9e89a6661</td>
+</tr>
+<tr>
+<td>gdk-pixbuf</td>
+<td>0.22.0</td>
+<td>93.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7b15dd58a06fb8572e83c2e9f665340f</td>
+</tr>
+<tr>
+<td>gdk-pixbuf-32bit</td>
+<td>0.22.0</td>
+<td>93.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f80a666c7322c5b174fdaf19b441adb3</td>
+</tr>
+<tr>
+<td>gdm</td>
+<td>2.8.0.7</td>
+<td>57.41.65</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>02227fa9e435c3e85bbd47e7a852fbcf</td>
+</tr>
+<tr>
+<td>gedit</td>
+<td>2.12.1</td>
+<td>28.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8a1ea629d7dec8adac891ba24baaef62</td>
+</tr>
+<tr>
+<td>gettext</td>
+<td>0.14.5</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>baaf0d874c0b5c3e90250449fafb6c90</td>
+</tr>
+<tr>
+<td>gettext-32bit</td>
+<td>0.14.5</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2b8894815bd2cb8780ed6bac88c8b235</td>
+</tr>
+<tr>
+<td>ghostscript-fonts-other</td>
+<td>8.15.4</td>
+<td>16.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ba8007e2690a1b4656ad2d64da3d8b44</td>
+</tr>
+<tr>
+<td>ghostscript-fonts-std</td>
+<td>8.15.4</td>
+<td>16.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1fc5888753be49c53543e9d74719090c</td>
+</tr>
+<tr>
+<td>ghostscript-library</td>
+<td>8.15.4</td>
+<td>16.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>54073a14d74d194c5d44bca0ac0b9947</td>
+</tr>
+<tr>
+<td>ghostscript-x11</td>
+<td>8.15.4</td>
+<td>16.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>57beeef3aba9e077d2cf1e9bb0587c05</td>
+</tr>
+<tr>
+<td>giflib</td>
+<td>4.1.4</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>227740ce99e173cb03d7ef7fddfa6f18</td>
+</tr>
+<tr>
+<td>giflib-32bit</td>
+<td>4.1.4</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7b7599fde960667317a73db54acec733</td>
+</tr>
+<tr>
+<td>gle</td>
+<td>3.0.6</td>
+<td>661.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2761ba3eb64b4a2dbc784c20363d315d</td>
+</tr>
+<tr>
+<td>glib</td>
+<td>1.2.10</td>
+<td>609.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ffb7b2fc401f68df2870e1adf0e18853</td>
+</tr>
+<tr>
+<td>glib-32bit</td>
+<td>1.2.10</td>
+<td>609.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>aead3652aa1977bdde6cb75c076017e0</td>
+</tr>
+<tr>
+<td>glib-sharp2</td>
+<td>2.8.3</td>
+<td>43.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1dea97c50cd71aced510f8ff53f69df5</td>
+</tr>
+<tr>
+<td>glib2</td>
+<td>2.8.6</td>
+<td>0.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>db6fa114bf5de874124626056a990144</td>
+</tr>
+<tr>
+<td>glib2-32bit</td>
+<td>2.8.6</td>
+<td>0.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9dfb87f4ffd98f69e5a5bc05bd623aa4</td>
+</tr>
+<tr>
+<td>glibc</td>
+<td>2.4</td>
+<td>31.74.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>196c81f0a88008901f3d717cfb39e20f</td>
+</tr>
+<tr>
+<td>glibc-32bit</td>
+<td>2.4</td>
+<td>31.74.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8a6e7192d14f33de0588d8a3b2c806b4</td>
+</tr>
+<tr>
+<td>glibc-i18ndata</td>
+<td>2.4</td>
+<td>31.74.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1cdd3cce1f1ac90b12af61760858b738</td>
+</tr>
+<tr>
+<td>glibc-locale</td>
+<td>2.4</td>
+<td>31.74.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9719b3fc4dbbd89f1bffc6af69c5a80e</td>
+</tr>
+<tr>
+<td>glibc-locale-32bit</td>
+<td>2.4</td>
+<td>31.74.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>024acafcffc6fcce5d65c5e1706c32e4</td>
+</tr>
+<tr>
+<td>glitz</td>
+<td>0.4.4</td>
+<td>21.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a9662f83c91be904e56b3ae8f499c712</td>
+</tr>
+<tr>
+<td>glitz-32bit</td>
+<td>0.4.4</td>
+<td>21.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>97f1a42a92f6ca3b5a812f4fb6fa3102</td>
+</tr>
+<tr>
+<td>gmime</td>
+<td>2.2.1</td>
+<td>10.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>839b0f9e8c63c2928bad530b7f78d529</td>
+</tr>
+<tr>
+<td>gnome-applets</td>
+<td>2.12.2</td>
+<td>51.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4533f4e0d34393a3e5b1331a9d468974</td>
+</tr>
+<tr>
+<td>gnome-audio</td>
+<td>2.0.0</td>
+<td>134.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ec333f978ead36e98309ee5ff0d64977</td>
+</tr>
+<tr>
+<td>gnome-cups-manager</td>
+<td>0.32cvs20060120</td>
+<td>33.35.64</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f28c802d69c48aea0fedfca2ad22631a</td>
+</tr>
+<tr>
+<td>gnome-desktop</td>
+<td>2.12.2</td>
+<td>25.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b92dbce9d2d436cafe4b564f9d16f7b9</td>
+</tr>
+<tr>
+<td>gnome-desktop-32bit</td>
+<td>2.12.2</td>
+<td>25.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>36734fd27bedb9ae1d7bac5d631ca3f4</td>
+</tr>
+<tr>
+<td>gnome-doc-utils</td>
+<td>0.5.3</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fce01f97e5b2251d6d0fa383ef67aea8</td>
+</tr>
+<tr>
+<td>gnome-filesystem</td>
+<td>0.1</td>
+<td>261.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4a9d22eb6a19f961dddd717361de43ec</td>
+</tr>
+<tr>
+<td>gnome-icon-theme</td>
+<td>2.12.1</td>
+<td>27.10</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e217e70ade95f7a9ddb7bcd963b7222d</td>
+</tr>
+<tr>
+<td>gnome-keyring</td>
+<td>0.4.6</td>
+<td>18.21</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2503d029738440883d369f4e6efcce00</td>
+</tr>
+<tr>
+<td>gnome-keyring-32bit</td>
+<td>0.4.6</td>
+<td>18.21</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2c02c7b4d1d129ddcd38c88df688ec2f</td>
+</tr>
+<tr>
+<td>gnome-keyring-manager</td>
+<td>2.12.0</td>
+<td>20.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0e80fa86043114d9c9910af878b9701e</td>
+</tr>
+<tr>
+<td>gnome-main-menu</td>
+<td>0.9.8</td>
+<td>0.32.31</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2bfa1421dc680e631f95cb2281edf0e1</td>
+</tr>
+<tr>
+<td>gnome-media</td>
+<td>2.14.0</td>
+<td>19.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1528ee9205bbc50cbb282eb761b03be0</td>
+</tr>
+<tr>
+<td>gnome-menus</td>
+<td>2.16.1</td>
+<td>38.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b435ea7aafd0fd18808937d6b5a7ef5b</td>
+</tr>
+<tr>
+<td>gnome-menus-32bit</td>
+<td>2.16.1</td>
+<td>38.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d548a74479e7e3cdf63b68a7ebf29a1e</td>
+</tr>
+<tr>
+<td>gnome-mime-data</td>
+<td>2.4.2</td>
+<td>22.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7b2822eee64d996e8bcf97cf417aae19</td>
+</tr>
+<tr>
+<td>gnome-nettool</td>
+<td>1.4.1</td>
+<td>18.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>66ddcf049bff28ad1889f91a77c26e60</td>
+</tr>
+<tr>
+<td>gnome-panel-nld</td>
+<td>2.12.3</td>
+<td>0.54.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a364c1689f5e0addcbcde254fffcf8b6</td>
+</tr>
+<tr>
+<td>gnome-panel-nld-32bit</td>
+<td>2.12.3</td>
+<td>0.54.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cec557328939776dfb6ec1a48fd9294a</td>
+</tr>
+<tr>
+<td>gnome-power-manager</td>
+<td>2.14.0</td>
+<td>25.43.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9e7c2fd67524da969f51f3604ca712db</td>
+</tr>
+<tr>
+<td>gnome-printer-add</td>
+<td>1.0.1</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1382b7174a9ba6a1c80c0fced8236710</td>
+</tr>
+<tr>
+<td>gnome-screensaver</td>
+<td>2.14.0</td>
+<td>19.56.32</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6c188187b0e092c26b3cc4b437b270e3</td>
+</tr>
+<tr>
+<td>gnome-session</td>
+<td>2.12.0</td>
+<td>106.49.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>83c6d0c4b64af5d21f23a6c3ce194c33</td>
+</tr>
+<tr>
+<td>gnome-spell2</td>
+<td>1.0.6</td>
+<td>22.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d476a2c11a7d29f1495997390d926f97</td>
+</tr>
+<tr>
+<td>gnome-system-monitor</td>
+<td>2.12.2</td>
+<td>30.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6ee9a7d7c409a6b36684c4f0ddc201e8</td>
+</tr>
+<tr>
+<td>gnome-terminal</td>
+<td>2.12.0</td>
+<td>23.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ee163a40ee6cdd53f33c4d8fa329c2c2</td>
+</tr>
+<tr>
+<td>gnome-themes</td>
+<td>2.12.1</td>
+<td>33.21</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3651b39b2bbcff9279f4261fac49775f</td>
+</tr>
+<tr>
+<td>gnome-utils</td>
+<td>2.12.2</td>
+<td>33.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ddc4b3a68a5b312332ba4118bd606abb</td>
+</tr>
+<tr>
+<td>gnome-vfs2</td>
+<td>2.12.2</td>
+<td>58.51.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f2db5797e51b8fb46fe336c0212d33d8</td>
+</tr>
+<tr>
+<td>gnome-vfs2-32bit</td>
+<td>2.12.2</td>
+<td>58.51.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9943cf328b01468ecc239b3282f249b1</td>
+</tr>
+<tr>
+<td>gnome-volume-manager</td>
+<td>1.5.15</td>
+<td>26.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>49cad7ecc6ffce91aa185e101a713cd6</td>
+</tr>
+<tr>
+<td>gnome2-NLD</td>
+<td>10.0</td>
+<td>32.24</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ff4924ceed6c5d7ab8bb89944afd5529</td>
+</tr>
+<tr>
+<td>gnome2-user-docs</td>
+<td>2.8.1</td>
+<td>21.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>910a6624246a8fc89c460b9009ec2992</td>
+</tr>
+<tr>
+<td>gnutls</td>
+<td>1.2.10</td>
+<td>13.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>783128bfc57c5bb1cfd8d01c8ace209d</td>
+</tr>
+<tr>
+<td>gnutls-32bit</td>
+<td>1.2.10</td>
+<td>13.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b72f2e3b76cb123f5720e141bb07a226</td>
+</tr>
+<tr>
+<td>gpart</td>
+<td>0.1h</td>
+<td>493.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5f847cc99810eaef028a4a66b9b4a398</td>
+</tr>
+<tr>
+<td>gpg</td>
+<td>1.4.2</td>
+<td>23.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a7b7a89e6f32fd5d3a356d4a104b3b00</td>
+</tr>
+<tr>
+<td>gpg2</td>
+<td>1.9.18</td>
+<td>17.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e4f7ef9eda32551883c4e9a2ae6eb559</td>
+</tr>
+<tr>
+<td>gpgme</td>
+<td>1.0.3</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d37f0d99809782e503057029b6887fde</td>
+</tr>
+<tr>
+<td>gpm</td>
+<td>1.20.1</td>
+<td>322.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7651a4435d21c1469f71c4cd73af0fc8</td>
+</tr>
+<tr>
+<td>gpm-32bit</td>
+<td>1.20.1</td>
+<td>322.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4184e98d4e03ac58521a6b504fc447d2</td>
+</tr>
+<tr>
+<td>grep</td>
+<td>2.5.1a</td>
+<td>20.20.41</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7edb8420fc94dd71502e882898679628</td>
+</tr>
+<tr>
+<td>groff</td>
+<td>1.18.1.1</td>
+<td>29.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>79b88f50ac0fb29e96b3c337c83bc75a</td>
+</tr>
+<tr>
+<td>grub</td>
+<td>0.97</td>
+<td>16.25.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8f6b40a6f0f39baec0f5200f99ef2946</td>
+</tr>
+<tr>
+<td>gstreamer010</td>
+<td>0.10.4</td>
+<td>11.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7bc907405a7a8edf92bbf7af738f29ee</td>
+</tr>
+<tr>
+<td>gstreamer010-32bit</td>
+<td>0.10.4</td>
+<td>11.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8f4e37cf985549d284c8b8691fd3d4a8</td>
+</tr>
+<tr>
+<td>gstreamer010-plugins-base</td>
+<td>0.10.5</td>
+<td>11.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9bb5c0c6cf160bc21f588f251e8b8732</td>
+</tr>
+<tr>
+<td>gstreamer010-plugins-base-32bit</td>
+<td>0.10.5</td>
+<td>11.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b2ba8553cf565bc1d27f881eaa286d14</td>
+</tr>
+<tr>
+<td>gstreamer010-plugins-good</td>
+<td>0.10.2</td>
+<td>16.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dc97d68f08665f1f2e384cf5671d1a8f</td>
+</tr>
+<tr>
+<td>gtk</td>
+<td>1.2.10</td>
+<td>907.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>603576c1ef34f42339a433b6eafd765d</td>
+</tr>
+<tr>
+<td>gtk-32bit</td>
+<td>1.2.10</td>
+<td>907.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>177f63de9172b83f6e9fb80434a26bd3</td>
+</tr>
+<tr>
+<td>gtk-engines</td>
+<td>0.12</td>
+<td>982.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>744f4e35f9627d47c3523bad10384d17</td>
+</tr>
+<tr>
+<td>gtk-engines-32bit</td>
+<td>0.12</td>
+<td>982.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0175e6185a1cbe3190f1d6c5109c0d6c</td>
+</tr>
+<tr>
+<td>gtk-sharp2</td>
+<td>2.8.3</td>
+<td>43.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>23ba45c085077b61cbd3ef9a46812277</td>
+</tr>
+<tr>
+<td>gtk-sharp2-32bit</td>
+<td>2.8.3</td>
+<td>43.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c625c8bac5d087e64c3ec01b8ed5844e</td>
+</tr>
+<tr>
+<td>gtk2</td>
+<td>2.8.11</td>
+<td>0.27.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>727cd2fab24ba2f75e36f1d0223affb8</td>
+</tr>
+<tr>
+<td>gtk2-32bit</td>
+<td>2.8.11</td>
+<td>0.27.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6f7f5d1905973c6fbe0ac389bcfd3f7a</td>
+</tr>
+<tr>
+<td>gtk2-engines</td>
+<td>2.6.7</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e716f1094fa7f1bd47ab3f8e1d0b9be0</td>
+</tr>
+<tr>
+<td>gtk2-engines-32bit</td>
+<td>2.6.7</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>01d7fc60434f4ff17a1ba129851604ad</td>
+</tr>
+<tr>
+<td>gtk2-themes</td>
+<td>0.1</td>
+<td>653.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4b8120efd80212694d3fdb74f5730738</td>
+</tr>
+<tr>
+<td>gtkhtml2</td>
+<td>3.10.0</td>
+<td>15.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0febbe801848eeabcd68abd55e9bbb75</td>
+</tr>
+<tr>
+<td>gtksourceview</td>
+<td>1.5.6</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d7dc0acb5676a85dbbc43b78d57f3055</td>
+</tr>
+<tr>
+<td>gtkspell</td>
+<td>2.0.11</td>
+<td>20.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>66a5657824b226d00c4697b79c893e9d</td>
+</tr>
+<tr>
+<td>gucharmap</td>
+<td>1.4.4</td>
+<td>24.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9a96ddfdc4facdbae691e8aee7282d98</td>
+</tr>
+<tr>
+<td>guile</td>
+<td>1.6.7</td>
+<td>21.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5fdd84702f65f7d2181f2f5564015435</td>
+</tr>
+<tr>
+<td>gzip</td>
+<td>1.3.5</td>
+<td>159.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1c1e8fc6ade1b7ffcbb69c2908687d1f</td>
+</tr>
+<tr>
+<td>hal</td>
+<td>0.5.6</td>
+<td>33.45.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>90ad1956a7d820a5143b9dc7122eb6f3</td>
+</tr>
+<tr>
+<td>hal-32bit</td>
+<td>0.5.6</td>
+<td>33.45.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4bf91a1ad33ea021d288b349319031b5</td>
+</tr>
+<tr>
+<td>hal-gnome</td>
+<td>0.5.6</td>
+<td>33.45.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b96ea09e4512f2b59c7ae97e159e8897</td>
+</tr>
+<tr>
+<td>hdparm</td>
+<td>6.3</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c0a69a0a268cae84044cdfd1e85e8745</td>
+</tr>
+<tr>
+<td>hfsutils</td>
+<td>3.2.6</td>
+<td>1052.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7976daf3d3411c59ca4f4e7c9f884058</td>
+</tr>
+<tr>
+<td>hplip-hpijs</td>
+<td>0.9.7</td>
+<td>19.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e8689daec94e91c9421ce20c8a019338</td>
+</tr>
+<tr>
+<td>htdig</td>
+<td>3.2.0b6</td>
+<td>21.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>add78453eae22972329162012394d59a</td>
+</tr>
+<tr>
+<td>hwinfo</td>
+<td>12.60</td>
+<td>0.4.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7e02dc6525ccd68254dfa2b987f26a21</td>
+</tr>
+<tr>
+<td>ifnteuro</td>
+<td>1.2.1</td>
+<td>209.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3901dd6a1fe03fe96f9fd0bc8ac21c2a</td>
+</tr>
+<tr>
+<td>ifplugd</td>
+<td>0.28</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>29cc30e7d460edf95c924d98b3038f93</td>
+</tr>
+<tr>
+<td>imlib</td>
+<td>1.9.14</td>
+<td>215.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>18d0d46b9020fc77f15c762b623654d7</td>
+</tr>
+<tr>
+<td>imlib-32bit</td>
+<td>1.9.14</td>
+<td>215.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>28a7acbe9919604896382c9b9998dcee</td>
+</tr>
+<tr>
+<td>info</td>
+<td>4.8</td>
+<td>22.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>aeec9ae4a8e67bca9e23981ae4fa9502</td>
+</tr>
+<tr>
+<td>info2html</td>
+<td>1.4</td>
+<td>16.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9b86a0f9233b17c7ec00667081b2a029</td>
+</tr>
+<tr>
+<td>initviocons</td>
+<td>0.4</td>
+<td>316.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e85d4c9a92bea81962a6647d81ef3198</td>
+</tr>
+<tr>
+<td>input-utils</td>
+<td>2005.08.02</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>42256e5c1173c8cc23f4208f6fad4f36</td>
+</tr>
+<tr>
+<td>insserv</td>
+<td>1.10.0</td>
+<td>15.8.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b71c3d852495599a906322e312ee4af0</td>
+</tr>
+<tr>
+<td>intlfnts</td>
+<td>1.2.1</td>
+<td>209.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8266d18d05451219373efd8b7740f109</td>
+</tr>
+<tr>
+<td>ipmitool</td>
+<td>1.8.10</td>
+<td>3.4.29</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6da260231eb01243d8059b187487107a</td>
+</tr>
+<tr>
+<td>iproute2</td>
+<td>2.6.15</td>
+<td>14.6.35</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2a7e2f66695d4479a7b5624e5ab33530</td>
+</tr>
+<tr>
+<td>iptables</td>
+<td>1.3.5</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>efda51fe93e38eb9aac2a528479dc1ec</td>
+</tr>
+<tr>
+<td>iputils</td>
+<td>ss021109</td>
+<td>167.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2adcbdf1fe8e87cce5afd5935678ad24</td>
+</tr>
+<tr>
+<td>iso-codes</td>
+<td>0.49</td>
+<td>17.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d65414a9b9f303d788fac261e285f547</td>
+</tr>
+<tr>
+<td>ivman</td>
+<td>0.6.9</td>
+<td>16.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>34e13241b1ae4e14c7b4209e38758e0c</td>
+</tr>
+<tr>
+<td>jack</td>
+<td>0.100.0</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5aa0cf999cdba528ed061df4476f3ebe</td>
+</tr>
+<tr>
+<td>jack-32bit</td>
+<td>0.100.0</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c9c1085fbf1d8db154cb889bc339db6b</td>
+</tr>
+<tr>
+<td>jfsutils</td>
+<td>1.1.10</td>
+<td>13.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>82a6ef5b8aea49232c6d40f2e832d284</td>
+</tr>
+<tr>
+<td>joe</td>
+<td>3.3</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>044e3bce686e4725d8a64120cd2ade91</td>
+</tr>
+<tr>
+<td>kbd</td>
+<td>1.12</td>
+<td>64.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3e35c08c010c0fb50e04988b81de91ed</td>
+</tr>
+<tr>
+<td>kdelibs3</td>
+<td>3.5.1</td>
+<td>49.52.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e662af61b5e266ab93b751f0e76e59a5</td>
+</tr>
+<tr>
+<td>kdelibs3-32bit</td>
+<td>3.5.1</td>
+<td>49.52.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>92eb48d20d806abdbe01fc249a741e2e</td>
+</tr>
+<tr>
+<td>kernel-default</td>
+<td>2.6.16.60</td>
+<td>0.54.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>63c4478ffc73264a24655ef696ee5c8a</td>
+</tr>
+<tr>
+<td>keyutils</td>
+<td>1.2</td>
+<td>107.4.34</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1ee75076050aa871df7f1d8d918e36c8</td>
+</tr>
+<tr>
+<td>keyutils-libs</td>
+<td>1.2</td>
+<td>107.4.34</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>86f72fdc764fbb7ac8752d38c8e6632f</td>
+</tr>
+<tr>
+<td>klogd</td>
+<td>1.4.1</td>
+<td>559.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ddfbd63143b67cb029d76eb607505226</td>
+</tr>
+<tr>
+<td>krb5</td>
+<td>1.4.3</td>
+<td>19.43.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fadd1e4f4057babb5ac63dd370e22d6d</td>
+</tr>
+<tr>
+<td>krb5-32bit</td>
+<td>1.4.3</td>
+<td>19.43.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4f4ebe7d6523017b906ea4475e12257e</td>
+</tr>
+<tr>
+<td>ksh</td>
+<td>93s</td>
+<td>59.11.35</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>18b2b298a90cf722a37dcca94bbfe9af</td>
+</tr>
+<tr>
+<td>ksymoops</td>
+<td>2.4.11</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c08136ebc993339758d7c73c673c46f5</td>
+</tr>
+<tr>
+<td>latex2html-pngicons</td>
+<td>2002.2.1</td>
+<td>379.5</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>825ad0160062b6345db34d618fb0c03d</td>
+</tr>
+<tr>
+<td>ldapcpplib</td>
+<td>0.0.4</td>
+<td>14.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>67de8dac7f64551e1332b806f2695b8e</td>
+</tr>
+<tr>
+<td>less</td>
+<td>394</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>93d671852136167f4fdb4187f9b27c19</td>
+</tr>
+<tr>
+<td>libacl</td>
+<td>2.2.41</td>
+<td>0.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e8b73c7b2a70befb8a51b3be2afcb9f5</td>
+</tr>
+<tr>
+<td>libacl-32bit</td>
+<td>2.2.41</td>
+<td>0.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c40bdd541d81ed9e038dfccfccc362b6</td>
+</tr>
+<tr>
+<td>libaio</td>
+<td>0.3.104</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c0b79856d303a77b9a0ff958a835e55b</td>
+</tr>
+<tr>
+<td>libaio-32bit</td>
+<td>0.3.104</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b0ffacebaf791abd1beaf4819953d15c</td>
+</tr>
+<tr>
+<td>libao</td>
+<td>0.8.6</td>
+<td>19.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7b4936ac9c06cdcbf5cb9fb5df9f0147</td>
+</tr>
+<tr>
+<td>libapparmor</td>
+<td>2.2</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4221e39b048cd592d15efb56b011ed7c</td>
+</tr>
+<tr>
+<td>libapparmor-32bit</td>
+<td>2.2</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>df4fbc2589da74780161dcd73d563e78</td>
+</tr>
+<tr>
+<td>libart_lgpl</td>
+<td>2.3.17</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3dd6156ad2c705060d74d1052e072ff1</td>
+</tr>
+<tr>
+<td>libart_lgpl-32bit</td>
+<td>2.3.17</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>afdc3858d8a230e98819dbc929950be6</td>
+</tr>
+<tr>
+<td>libattr</td>
+<td>2.4.34</td>
+<td>0.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a335df0c78c05fd71a619f078bfc497a</td>
+</tr>
+<tr>
+<td>libattr-32bit</td>
+<td>2.4.34</td>
+<td>0.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>29ae5b95f0765195f7e5a167ffffa411</td>
+</tr>
+<tr>
+<td>libbeagle</td>
+<td>0.2.18</td>
+<td>55.11.36</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d5b6ac4606974d8ff6dc6944757b87f8</td>
+</tr>
+<tr>
+<td>libbeagle-32bit</td>
+<td>0.2.18</td>
+<td>55.11.36</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>52c89370ce7d4be0c9d19f853c04259f</td>
+</tr>
+<tr>
+<td>libbonobo</td>
+<td>2.10.1</td>
+<td>24.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>74eb8f9531c8b8de4173fb9e6629959e</td>
+</tr>
+<tr>
+<td>libbonobo-32bit</td>
+<td>2.10.1</td>
+<td>24.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5ebe391b8f4ce5ede454a3534db50ff7</td>
+</tr>
+<tr>
+<td>libbonoboui</td>
+<td>2.10.1</td>
+<td>23.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ec6f507366f27a2bab65586d68f14b85</td>
+</tr>
+<tr>
+<td>libbonoboui-32bit</td>
+<td>2.10.1</td>
+<td>23.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8ae91e55dd0d339b7bc979960d2b8459</td>
+</tr>
+<tr>
+<td>libcap</td>
+<td>1.92</td>
+<td>499.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>83b39cb36038cea3cec2025033c62655</td>
+</tr>
+<tr>
+<td>libcap-32bit</td>
+<td>1.92</td>
+<td>499.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>452dc5bf0c7031128345c08a9ef553c6</td>
+</tr>
+<tr>
+<td>libcddb</td>
+<td>1.2.1</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>eb8da81af1df37ea2d6281ea50d0ab30</td>
+</tr>
+<tr>
+<td>libcddb-32bit</td>
+<td>1.2.1</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>73c3ed89e810dcbc4d48ef5eaf428d5a</td>
+</tr>
+<tr>
+<td>libcdio</td>
+<td>0.76</td>
+<td>16.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f6b754e55c429d07cbe8f9e9791ff846</td>
+</tr>
+<tr>
+<td>libcdio-32bit</td>
+<td>0.76</td>
+<td>16.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>062d7c39b6661494d638ad2b28737fbb</td>
+</tr>
+<tr>
+<td>libcom_err</td>
+<td>1.38</td>
+<td>25.35.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>446f7f6e46fc5cc3fadcdcc996fb4704</td>
+</tr>
+<tr>
+<td>libcom_err-32bit</td>
+<td>1.38</td>
+<td>25.35.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dcf71a6e307d4a941eedc553e26f6849</td>
+</tr>
+<tr>
+<td>libcroco</td>
+<td>0.6.0</td>
+<td>23.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f176a03f637f79019d2ebb11e5964663</td>
+</tr>
+<tr>
+<td>libcroco-32bit</td>
+<td>0.6.0</td>
+<td>23.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e78c4a61941bb800baacb992a1f04343</td>
+</tr>
+<tr>
+<td>libdaemon</td>
+<td>0.10</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a3ee44afb0c4e02129f111017e218d5b</td>
+</tr>
+<tr>
+<td>libdrm</td>
+<td>2.0</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>68ebfe70d0521bf8db6a83a026cefff5</td>
+</tr>
+<tr>
+<td>libdrm-32bit</td>
+<td>2.0</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>104ac7ebdf760974f23d1b743b0b66cb</td>
+</tr>
+<tr>
+<td>libevent</td>
+<td>1.1</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>801911fc9c90198071ebe9ed69957142</td>
+</tr>
+<tr>
+<td>libexif</td>
+<td>0.6.13</td>
+<td>20.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dadaf2f1d1ca1c7b33a66504e01e7e18</td>
+</tr>
+<tr>
+<td>libexif-32bit</td>
+<td>0.6.13</td>
+<td>20.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>19d120098164123a0cf504a51a166b7e</td>
+</tr>
+<tr>
+<td>libgcc</td>
+<td>4.1.2_20070115</td>
+<td>0.29.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>19db34695eb3e5750f4d9955c07d85dc</td>
+</tr>
+<tr>
+<td>libgcrypt</td>
+<td>1.2.2</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6aa35a471b3032425eb639bea65273e7</td>
+</tr>
+<tr>
+<td>libgcrypt-32bit</td>
+<td>1.2.2</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2fbbbe8f51568740f8fab5ebaad57cbc</td>
+</tr>
+<tr>
+<td>libgda</td>
+<td>1.3.91</td>
+<td>32.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>17dd490281f57ea854f139a0843126ea</td>
+</tr>
+<tr>
+<td>libgdiplus</td>
+<td>1.2.2</td>
+<td>13.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c28721f74d31ea0b9f9cb4daa12a0a2e</td>
+</tr>
+<tr>
+<td>libgimpprint</td>
+<td>4.2.7</td>
+<td>62.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6ec977e72768e6a6a6244b925a519fe3</td>
+</tr>
+<tr>
+<td>libglade2</td>
+<td>2.5.1</td>
+<td>24.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3f96e067fefbd1cef9ca7cdbfdfd7864</td>
+</tr>
+<tr>
+<td>libglade2-32bit</td>
+<td>2.5.1</td>
+<td>24.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d8266729ec95621886e60f40502c0acf</td>
+</tr>
+<tr>
+<td>libgnome</td>
+<td>2.12.0.1</td>
+<td>26.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1a9f28644a18805e8dc27d17516eab01</td>
+</tr>
+<tr>
+<td>libgnome-32bit</td>
+<td>2.12.0.1</td>
+<td>26.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f916d0e7c8e91179f07f3adabf7aa3fb</td>
+</tr>
+<tr>
+<td>libgnomecanvas</td>
+<td>2.12.0</td>
+<td>19.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>bb18c84d6ed206b3ca9ba2843714d178</td>
+</tr>
+<tr>
+<td>libgnomecanvas-32bit</td>
+<td>2.12.0</td>
+<td>19.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7e8815daff82b39b1e1e4d13be5b8d6f</td>
+</tr>
+<tr>
+<td>libgnomecups</td>
+<td>0.2.2</td>
+<td>21.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>322160bdc26e75a20c3ca6fcc857a85a</td>
+</tr>
+<tr>
+<td>libgnomecups-32bit</td>
+<td>0.2.2</td>
+<td>21.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1972cf7fb7222feae53a3d0fc723f9f5</td>
+</tr>
+<tr>
+<td>libgnomedb</td>
+<td>1.3.91</td>
+<td>23.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d0668c5fd3e1de6a723ae0b4a0b98556</td>
+</tr>
+<tr>
+<td>libgnomeprint</td>
+<td>2.12.1</td>
+<td>20.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8452efb5666ce1bd9aa2c13e83dd7bd1</td>
+</tr>
+<tr>
+<td>libgnomeprint-32bit</td>
+<td>2.12.1</td>
+<td>20.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c687fa7fa57e6d9b900e892f7de0c1a3</td>
+</tr>
+<tr>
+<td>libgnomeprintui</td>
+<td>2.12.1</td>
+<td>20.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6a2ef05d2f65695392b5ef33d1428de7</td>
+</tr>
+<tr>
+<td>libgnomeprintui-32bit</td>
+<td>2.12.1</td>
+<td>20.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c2ed6df23d19012e04e6973530570590</td>
+</tr>
+<tr>
+<td>libgnomesu</td>
+<td>1.0.0</td>
+<td>32.37.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dfc7550a505b82e5b8001a85b06f0cd9</td>
+</tr>
+<tr>
+<td>libgnomeui</td>
+<td>2.12.1</td>
+<td>0.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8f71f55e91d2fd1d6c4f3de0c5745507</td>
+</tr>
+<tr>
+<td>libgnomeui-32bit</td>
+<td>2.12.1</td>
+<td>0.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>89e7db89b699a53e10cac88770cf3ed4</td>
+</tr>
+<tr>
+<td>libgpg-error</td>
+<td>1.0</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fd179e514d23e62b75c70e5633285b10</td>
+</tr>
+<tr>
+<td>libgpg-error-32bit</td>
+<td>1.0</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5eb2de42c7f032e1ec137c37c78c1f7c</td>
+</tr>
+<tr>
+<td>libgsf</td>
+<td>1.13.99</td>
+<td>13.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0dbb4a13f8c9e56fcf295253d82217e2</td>
+</tr>
+<tr>
+<td>libgsf-32bit</td>
+<td>1.13.99</td>
+<td>13.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7fb269fedd8a4525a637e9796428417b</td>
+</tr>
+<tr>
+<td>libgsf-gnome</td>
+<td>1.13.99</td>
+<td>13.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>27346019b319966229a4ca6c9381a291</td>
+</tr>
+<tr>
+<td>libgsm</td>
+<td>1.0.10</td>
+<td>12.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a88ba86d62b50b31ad1ce71f5fedbf2c</td>
+</tr>
+<tr>
+<td>libgssapi</td>
+<td>0.6</td>
+<td>13.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f8c7dcc4f1decef216043ea950535461</td>
+</tr>
+<tr>
+<td>libgssapi-32bit</td>
+<td>0.6</td>
+<td>13.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>286522b6ff3311ad63474f8e2841ac28</td>
+</tr>
+<tr>
+<td>libgtop</td>
+<td>2.12.2</td>
+<td>20.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>97ef5e774fd4ac9be2109fe55f2c946b</td>
+</tr>
+<tr>
+<td>libgtop-32bit</td>
+<td>2.12.2</td>
+<td>20.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>260565a141810a48b4a0dc90260167c7</td>
+</tr>
+<tr>
+<td>libicu</td>
+<td>3.4</td>
+<td>16.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6d7e41b40bb7c33d082aa16c225aecb7</td>
+</tr>
+<tr>
+<td>libidl</td>
+<td>0.8.6</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9eb8075e7769ad2637d6f117e6de7b72</td>
+</tr>
+<tr>
+<td>libidl-32bit</td>
+<td>0.8.6</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b337f1c2f893ab1796c23a817961e924</td>
+</tr>
+<tr>
+<td>libidn</td>
+<td>0.6.0</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4d944ab0ed91ecfeb62ed4b92bae38c8</td>
+</tr>
+<tr>
+<td>libidn-32bit</td>
+<td>0.6.0</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>878b719bd7c9d805109cc396135ecfb0</td>
+</tr>
+<tr>
+<td>libiniparser</td>
+<td>2.14</td>
+<td>6.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1c78aa4f58353ed6ec51819a110e82e2</td>
+</tr>
+<tr>
+<td>libjasper</td>
+<td>1.701.0</td>
+<td>16.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a7e09cf26a2a2176d53bd4218d10bb79</td>
+</tr>
+<tr>
+<td>libjasper-32bit</td>
+<td>1.701.0</td>
+<td>16.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3e04144020802a2943b3407e8ae01c25</td>
+</tr>
+<tr>
+<td>libjpeg</td>
+<td>6.2.0</td>
+<td>752.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>09d489bb3b95b5c9a22e4123c8dac862</td>
+</tr>
+<tr>
+<td>libjpeg-32bit</td>
+<td>6.2.0</td>
+<td>752.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e30fc85fbae24351886ca81ae5faa739</td>
+</tr>
+<tr>
+<td>libksba</td>
+<td>0.9.12</td>
+<td>14.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>82624c63fd0058bd7eade24e51757f08</td>
+</tr>
+<tr>
+<td>liblcms</td>
+<td>1.15</td>
+<td>12.12.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1afa5d88360e1a339c41b4344d7a9bcc</td>
+</tr>
+<tr>
+<td>liblcms-32bit</td>
+<td>1.15</td>
+<td>12.12.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9bdd372d372f213e04442e30a0cafa12</td>
+</tr>
+<tr>
+<td>libmng</td>
+<td>1.0.9</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>56ad8f650048382f3821b7a7481d66d1</td>
+</tr>
+<tr>
+<td>libmng-32bit</td>
+<td>1.0.9</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>08130fa83fb780fe3e7ad61b36566489</td>
+</tr>
+<tr>
+<td>libmusicbrainz</td>
+<td>2.1.2</td>
+<td>12.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>afed5eb11f8b3710377623e76de1c61e</td>
+</tr>
+<tr>
+<td>libnetpbm</td>
+<td>1.0.0</td>
+<td>657.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>63a112b3e4504ca5b67fa7a5aaff0748</td>
+</tr>
+<tr>
+<td>libnetpbm-32bit</td>
+<td>1.0.0</td>
+<td>657.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1a323e1c719083830eba1a75d3dec7e8</td>
+</tr>
+<tr>
+<td>libnl</td>
+<td>1.0</td>
+<td>18.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>39de701e69ff7b386d56b819a5d3f73f</td>
+</tr>
+<tr>
+<td>libnotify</td>
+<td>0.3.2</td>
+<td>15.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1c4e122ea8b5ebf2ae1638ef4411db8f</td>
+</tr>
+<tr>
+<td>libnscd</td>
+<td>1.1</td>
+<td>16.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ed1d8327a2969aae6b6d5f50a37b5509</td>
+</tr>
+<tr>
+<td>libnscd-32bit</td>
+<td>1.1</td>
+<td>16.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c978de2b44319f06c98b5f9b415c6c88</td>
+</tr>
+<tr>
+<td>libogg</td>
+<td>1.1.3</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d3ca9eabac0853f912eb0528dc38ed84</td>
+</tr>
+<tr>
+<td>libogg-32bit</td>
+<td>1.1.3</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c2f072a745def4929103dae0d2ebf69f</td>
+</tr>
+<tr>
+<td>libopencdk</td>
+<td>0.5.5</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6d2ca794928e38c4275b7b3d72e3e31d</td>
+</tr>
+<tr>
+<td>libopencdk-32bit</td>
+<td>0.5.5</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e9a89797a848dfdc289b56edaebea7b9</td>
+</tr>
+<tr>
+<td>libpcap</td>
+<td>0.9.4</td>
+<td>12.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3d4f7009073872ab097c4ef211c9f248</td>
+</tr>
+<tr>
+<td>libpcap-32bit</td>
+<td>0.9.4</td>
+<td>12.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f212331f3a0499c18db124194dee81ae</td>
+</tr>
+<tr>
+<td>libpng</td>
+<td>1.2.8</td>
+<td>19.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>57789d73cabfb36c0a83aab3170ace6c</td>
+</tr>
+<tr>
+<td>libpng-32bit</td>
+<td>1.2.8</td>
+<td>19.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>de89c965952fc8d7b5516c35aaeb24f8</td>
+</tr>
+<tr>
+<td>libraw1394</td>
+<td>1.2.0</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>669f43b6c4e7673288c1f677bcca057d</td>
+</tr>
+<tr>
+<td>libraw1394-32bit</td>
+<td>1.2.0</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>326165f29dd045161c24482bdc1379fa</td>
+</tr>
+<tr>
+<td>libreiserfs</td>
+<td>0.3.0.5</td>
+<td>16.8.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b828abebde0912f8df79978a2885a464</td>
+</tr>
+<tr>
+<td>libreiserfs-32bit</td>
+<td>0.3.0.5</td>
+<td>16.8.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d0234c34845aa8b672d40a61129ebf7b</td>
+</tr>
+<tr>
+<td>librpcsecgss</td>
+<td>0.7</td>
+<td>13.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>425d5c20a2f6a52f3115376a4824ffef</td>
+</tr>
+<tr>
+<td>librsvg</td>
+<td>2.12.7</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>662107248fa96af6b958c9812ed4958d</td>
+</tr>
+<tr>
+<td>librsvg-32bit</td>
+<td>2.12.7</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>736117deca6c7569afb4312f3a24aed9</td>
+</tr>
+<tr>
+<td>libsamplerate</td>
+<td>0.1.2</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ebe6d09bdc31e8daa3f051f2a79ed883</td>
+</tr>
+<tr>
+<td>libsexy</td>
+<td>0.1.5</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dbff3f304560c17f144e3310f7ea2ba1</td>
+</tr>
+<tr>
+<td>libsmbclient</td>
+<td>3.0.36</td>
+<td>0.5.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>657a19b13f1d3dce82e0281b21846a27</td>
+</tr>
+<tr>
+<td>libsmbclient-32bit</td>
+<td>3.0.36</td>
+<td>0.5.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>53b6629fc9cf0dad48d6f6e88bb2343c</td>
+</tr>
+<tr>
+<td>libsndfile</td>
+<td>1.0.12</td>
+<td>13.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>08ebc6601b4300ffe42c2d6778b43cb4</td>
+</tr>
+<tr>
+<td>libsndfile-32bit</td>
+<td>1.0.12</td>
+<td>13.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7a0aafeacca5db99ee7273d3a4be27c3</td>
+</tr>
+<tr>
+<td>libsoup</td>
+<td>2.2.90</td>
+<td>18.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b72cfef3cd9507cb05fe026d8c3e1459</td>
+</tr>
+<tr>
+<td>libsoup-32bit</td>
+<td>2.2.90</td>
+<td>18.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3af3cc39f70ab2270afec8bba818adde</td>
+</tr>
+<tr>
+<td>libssui</td>
+<td>0.5.6</td>
+<td>0.21</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9835ab93dd369ce8ea1313355f1c2f90</td>
+</tr>
+<tr>
+<td>libstdc++</td>
+<td>4.1.2_20070115</td>
+<td>0.29.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fadba3253cf3cf625f32833c5f798c98</td>
+</tr>
+<tr>
+<td>libstdc++33</td>
+<td>3.3.3</td>
+<td>7.8.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>02b47f7f768063afa2b69e971ecb80de</td>
+</tr>
+<tr>
+<td>libstroke</td>
+<td>0.5.1</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b75ebf9f094e0dbcd2ce74ed0be0a636</td>
+</tr>
+<tr>
+<td>libsvg</td>
+<td>0.1.4</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d4252faf382d7b68e71e293082d0592c</td>
+</tr>
+<tr>
+<td>libsvg-cairo</td>
+<td>0.1.6</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5fea19e7d86db636e9c1f38c4905d2ad</td>
+</tr>
+<tr>
+<td>libtheora</td>
+<td>1.0alpha5</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2387df74c3064c297e74a6a2963c1670</td>
+</tr>
+<tr>
+<td>libtheora-32bit</td>
+<td>1.0alpha5</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>79f179dc5a004d71439b047823a1c092</td>
+</tr>
+<tr>
+<td>libtiff</td>
+<td>3.8.2</td>
+<td>5.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>00e5b01b96f9c375cf81d85c41a59764</td>
+</tr>
+<tr>
+<td>libtiff-32bit</td>
+<td>3.8.2</td>
+<td>5.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a32ff1e024748d4c2369dba91d6b7d90</td>
+</tr>
+<tr>
+<td>libtool</td>
+<td>1.5.22</td>
+<td>13.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ed6f7a636179159436a6b87c4f952f78</td>
+</tr>
+<tr>
+<td>libtool-32bit</td>
+<td>1.5.22</td>
+<td>13.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2e12b6b89e7e27539d33ba012d72b2c3</td>
+</tr>
+<tr>
+<td>libusb</td>
+<td>0.1.12</td>
+<td>9.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f5115c9060df2264e536610f0d8ff88b</td>
+</tr>
+<tr>
+<td>libusb-32bit</td>
+<td>0.1.12</td>
+<td>9.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>88bd7be697533bb1278070394e68f932</td>
+</tr>
+<tr>
+<td>libvorbis</td>
+<td>1.1.2</td>
+<td>13.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6f924807808667e64c1c09fc648eab53</td>
+</tr>
+<tr>
+<td>libvorbis-32bit</td>
+<td>1.1.2</td>
+<td>13.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3f92d4dc979e6a39e9abe72d4a508730</td>
+</tr>
+<tr>
+<td>libwnck</td>
+<td>2.12.3</td>
+<td>0.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8aab3f6c1221d35a16469b056cb1be66</td>
+</tr>
+<tr>
+<td>libwnck-32bit</td>
+<td>2.12.3</td>
+<td>0.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cbc065f1b53b86de1652cbbda6ef29ff</td>
+</tr>
+<tr>
+<td>libxcrypt</td>
+<td>2.4</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3cb8d5c4cc1ed447cd06c249cfda0b2c</td>
+</tr>
+<tr>
+<td>libxcrypt-32bit</td>
+<td>2.4</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8c00a5db8c2fdf4b8f2cb6cc5d57aa32</td>
+</tr>
+<tr>
+<td>libxklavier</td>
+<td>2.1</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5d86247e5b491d1ac5bddb08a58bc628</td>
+</tr>
+<tr>
+<td>libxml2</td>
+<td>2.6.23</td>
+<td>15.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e163b900e1c51edd988256e12474e7c6</td>
+</tr>
+<tr>
+<td>libxml2-32bit</td>
+<td>2.6.23</td>
+<td>15.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>46114c96c838e10a080d964bc112d1a3</td>
+</tr>
+<tr>
+<td>libxml2-python</td>
+<td>2.6.23</td>
+<td>15.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f3a26a9b59601b995bc3e8570b20a311</td>
+</tr>
+<tr>
+<td>libxslt</td>
+<td>1.1.15</td>
+<td>15.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3e3121cbd08a7c56b84f073506b9e50a</td>
+</tr>
+<tr>
+<td>libxslt-32bit</td>
+<td>1.1.15</td>
+<td>15.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>93f3068c15a608643c8ad5bf95ff9713</td>
+</tr>
+<tr>
+<td>liby2util</td>
+<td>2.13.8</td>
+<td>0.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7131bff2b09e9c3466550e0446e20d8b</td>
+</tr>
+<tr>
+<td>libzio</td>
+<td>0.1</td>
+<td>17.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e5e45cbd8f526bd0e7fd6a8a37baff29</td>
+</tr>
+<tr>
+<td>libzypp</td>
+<td>2.100.3</td>
+<td>0.4.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5121d7311842028cae24a493a66a704d</td>
+</tr>
+<tr>
+<td>libzypp-zmd-backend</td>
+<td>7.1.1.0_2.16</td>
+<td>0.4.46</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>eafec2565cd2f1c0ebe09d61280aee3d</td>
+</tr>
+<tr>
+<td>lilo</td>
+<td>22.7</td>
+<td>19.22.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b77044bf8fb39b489afc94b0f006ce3b</td>
+</tr>
+<tr>
+<td>limal</td>
+<td>1.1.72</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4600e008c19888e14905435b3fc36745</td>
+</tr>
+<tr>
+<td>limal-bootloader</td>
+<td>1.1.50</td>
+<td>0.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b9bf9e4ceb0b37ae9ff9ffbcb7040fce</td>
+</tr>
+<tr>
+<td>limal-ca-mgm</td>
+<td>1.1.75</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>792a692981d916759c45d89d1427caf3</td>
+</tr>
+<tr>
+<td>limal-ca-mgm-perl</td>
+<td>1.1.75</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b4cc58ba8c738620f7095c7ed9a0e9f8</td>
+</tr>
+<tr>
+<td>limal-nfs-server</td>
+<td>1.1.72</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d0d2bae7b6160adf26aebb0f905d71a5</td>
+</tr>
+<tr>
+<td>limal-nfs-server-perl</td>
+<td>1.1.72</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9dd9cdc4bdc21114fe08f4d6767b5491</td>
+</tr>
+<tr>
+<td>limal-perl</td>
+<td>1.1.72</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2ac4320622e96dcb2ec74539b97e07b3</td>
+</tr>
+<tr>
+<td>linux32</td>
+<td>1.0</td>
+<td>349.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4df5a33c016881992c0fdcdc0ddab74e</td>
+</tr>
+<tr>
+<td>log4net</td>
+<td>1.2.9</td>
+<td>17.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d11e8b3d280578115f049d2875fa5d60</td>
+</tr>
+<tr>
+<td>logrotate</td>
+<td>3.7.3</td>
+<td>13.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>995b1435b29ca018f285097ed31a2c67</td>
+</tr>
+<tr>
+<td>lsb</td>
+<td>3.1</td>
+<td>1.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4edd1af6a176e475b78f404a95ab19bf</td>
+</tr>
+<tr>
+<td>lsof</td>
+<td>4.76</td>
+<td>13.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>70ffc70344f57ab9d2ad821b293b9a6b</td>
+</tr>
+<tr>
+<td>lukemftp</td>
+<td>1.5</td>
+<td>598.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e0d610af989df7bf106e6c7dbec0f5bd</td>
+</tr>
+<tr>
+<td>lvm2</td>
+<td>2.02.17</td>
+<td>7.27.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2b795311d5e958cccf5afc8276e9ae34</td>
+</tr>
+<tr>
+<td>lzo</td>
+<td>2.02</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f27310739028c996cd1953ed453915e1</td>
+</tr>
+<tr>
+<td>lzo-32bit</td>
+<td>2.02</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c8fa1e9e1c86c5178e9051a307ec3089</td>
+</tr>
+<tr>
+<td>m4</td>
+<td>1.4.4</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>bb7f80b13c8d657c8036dc2c718af7f6</td>
+</tr>
+<tr>
+<td>mDNSResponder-lib</td>
+<td>107.5</td>
+<td>9.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a36231c509f435327a5871641d5fb99f</td>
+</tr>
+<tr>
+<td>mDNSResponder-lib-32bit</td>
+<td>107.5</td>
+<td>9.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c342352e5740781539afa05a7d8b7c0e</td>
+</tr>
+<tr>
+<td>mailx</td>
+<td>11.25</td>
+<td>14.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>613d308a9c6f93ab5db0874758d4f0ab</td>
+</tr>
+<tr>
+<td>make</td>
+<td>3.80</td>
+<td>202.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>17353317f92b982b02c32da454052564</td>
+</tr>
+<tr>
+<td>makedumpfile</td>
+<td>1.0.8</td>
+<td>2.19.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6a2e9b36b535b420381e802aca13c587</td>
+</tr>
+<tr>
+<td>man</td>
+<td>2.4.1</td>
+<td>237.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8a5eff8c441cb7caa1d90ee066102da5</td>
+</tr>
+<tr>
+<td>man-pages</td>
+<td>2.68</td>
+<td>20.6.16</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>410e82dd14b6056e90e67ba6d69d6d17</td>
+</tr>
+<tr>
+<td>manufacturer-PPDs</td>
+<td>0.5</td>
+<td>19.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5b00753c46d25a0e0c2cc57d7f2fd1b1</td>
+</tr>
+<tr>
+<td>master-boot-code</td>
+<td>1.6</td>
+<td>18.1</td>
+<td>i586</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>027a3e2a174de44183074dd0351710e1</td>
+</tr>
+<tr>
+<td>mcelog</td>
+<td>0.7</td>
+<td>2.18.21</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1253f8f23007087857facadd90d2f283</td>
+</tr>
+<tr>
+<td>mdadm</td>
+<td>2.6</td>
+<td>0.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9a1547574038eac63bad596334f49128</td>
+</tr>
+<tr>
+<td>metacity</td>
+<td>2.12.3</td>
+<td>0.17.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7330b3652dc5bcd6cd43fefbbd42f9b0</td>
+</tr>
+<tr>
+<td>microcode_ctl</td>
+<td>1.17</td>
+<td>14.13.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>129abf00b7466816610197d3a0526412</td>
+</tr>
+<tr>
+<td>mingetty</td>
+<td>0.9.6s</td>
+<td>88.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>df7836b52c124dd0b38d3d8a3a8a5fb7</td>
+</tr>
+<tr>
+<td>mkinitrd</td>
+<td>1.2</td>
+<td>106.93.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1f76d81781ff1973abdd1c3c5d5d4d5b</td>
+</tr>
+<tr>
+<td>mkisofs</td>
+<td>2.01</td>
+<td>25.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e0512cf389599c862a93d4522a5666bf</td>
+</tr>
+<tr>
+<td>mktemp</td>
+<td>1.5</td>
+<td>744.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7597ea08718e83694977f38d0f7474dc</td>
+</tr>
+<tr>
+<td>module-init-tools</td>
+<td>3.2.2</td>
+<td>32.37.40</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2b350f268128933077ff59f6047d1d4e</td>
+</tr>
+<tr>
+<td>mono-core</td>
+<td>1.2.2</td>
+<td>12.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c6f1824d613a896eb0637d99f71c9a5e</td>
+</tr>
+<tr>
+<td>mono-core-32bit</td>
+<td>1.2.2</td>
+<td>12.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>330dda7b668f0558e5c703431a3d7345</td>
+</tr>
+<tr>
+<td>mono-data</td>
+<td>1.2.2</td>
+<td>12.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c8888b22d7752ca3a14985812257a894</td>
+</tr>
+<tr>
+<td>mono-web</td>
+<td>1.2.2</td>
+<td>12.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e213fedd5570c791b5b5d6c78c5fc147</td>
+</tr>
+<tr>
+<td>mono-winforms</td>
+<td>1.2.2</td>
+<td>12.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e29101ad91c1b9de8c1fc9297e20f942</td>
+</tr>
+<tr>
+<td>mozilla-nspr</td>
+<td>4.8</td>
+<td>1.4.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ceb905143c9fcad94c50e2136fc9d374</td>
+</tr>
+<tr>
+<td>mozilla-nspr-32bit</td>
+<td>4.8</td>
+<td>1.4.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>56d7f048ca881c6b850b30d3ad12ef75</td>
+</tr>
+<tr>
+<td>mozilla-nss</td>
+<td>3.12.3.1</td>
+<td>1.4.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b60506a615d4c3c9ee3b3f40baeff6e5</td>
+</tr>
+<tr>
+<td>mozilla-nss-32bit</td>
+<td>3.12.3.1</td>
+<td>1.4.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e584f63f17fa34f69f6d2221f8850909</td>
+</tr>
+<tr>
+<td>mozilla-xulrunner</td>
+<td>1.8.1.21</td>
+<td>0.8.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3ee2eb7132b407fc780b354ec15143b1</td>
+</tr>
+<tr>
+<td>mozilla-xulrunner-32bit</td>
+<td>1.8.1.21</td>
+<td>0.8.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>29d71c971e7ce7b6a8f0925bd908f0f4</td>
+</tr>
+<tr>
+<td>mozilla-xulrunner191</td>
+<td>1.9.1.2</td>
+<td>3.5.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>70c3bc599eeff38f8295a195ef11f09f</td>
+</tr>
+<tr>
+<td>mozilla-xulrunner191-32bit</td>
+<td>1.9.1.2</td>
+<td>3.5.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>464e488259cd490d4691be682a58aebd</td>
+</tr>
+<tr>
+<td>mozilla-xulrunner191-gnomevfs</td>
+<td>1.9.1.2</td>
+<td>3.5.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>028f4d84134a3d14aa3392836abf5b42</td>
+</tr>
+<tr>
+<td>mozilla-xulrunner191-gnomevfs-32bit</td>
+<td>1.9.1.2</td>
+<td>3.5.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3c5a2ec3c8d066419ca3ea2d7711eb82</td>
+</tr>
+<tr>
+<td>mozilla-xulrunner191-translations</td>
+<td>1.9.1.2</td>
+<td>3.5.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>50e5b89026ef59fedcaffdef354baeff</td>
+</tr>
+<tr>
+<td>mozilla-xulrunner191-translations-32bit</td>
+<td>1.9.1.2</td>
+<td>3.5.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ca395b03678c9e5729e8d0d5a33bc058</td>
+</tr>
+<tr>
+<td>mpt-firmware</td>
+<td>1.0</td>
+<td>1.7</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dc170d2c1b35f66eaf55644369701ebe</td>
+</tr>
+<tr>
+<td>mpt-status</td>
+<td>1.2.0</td>
+<td>12.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ff69d2e578cbe5817637a87ff2b934b9</td>
+</tr>
+<tr>
+<td>multipath-tools</td>
+<td>0.4.7</td>
+<td>34.50.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>97d6a8bbc057b2cb0b91f2126604e5d8</td>
+</tr>
+<tr>
+<td>mutt</td>
+<td>1.5.9i</td>
+<td>27.12.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>835ddd6f28582a1b11f7fa195a6f02b0</td>
+</tr>
+<tr>
+<td>nautilus</td>
+<td>2.12.2</td>
+<td>64.55</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ebbb9868361503ec5e13392a1a61604a</td>
+</tr>
+<tr>
+<td>nautilus-32bit</td>
+<td>2.12.2</td>
+<td>64.55</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6546275877437d0c26e1e93e7a91d9c2</td>
+</tr>
+<tr>
+<td>nautilus-cd-burner</td>
+<td>2.12.3</td>
+<td>20.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>dfe6b211bc107dcdf9c4bc19316de5c8</td>
+</tr>
+<tr>
+<td>nautilus-cd-burner-32bit</td>
+<td>2.12.3</td>
+<td>20.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>aefe2042b091a9dc4f0f52e4d6f3b0e1</td>
+</tr>
+<tr>
+<td>nautilus-open-terminal</td>
+<td>0.6</td>
+<td>16.14.26</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9651df3d78db81c8b3d562d0d3ec1897</td>
+</tr>
+<tr>
+<td>nautilus-share</td>
+<td>0.6.4</td>
+<td>31.18.26</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cfe82dbbdca0fac5570a93fa76d770e8</td>
+</tr>
+<tr>
+<td>ncompress</td>
+<td>4.2.4</td>
+<td>15.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ab8ad832b1109517b92715bbf3d2f1fc</td>
+</tr>
+<tr>
+<td>ncpfs</td>
+<td>2.2.6</td>
+<td>24.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>823f0e316cb1fa5993a0401b5e6005d6</td>
+</tr>
+<tr>
+<td>ncurses</td>
+<td>5.5</td>
+<td>18.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2b399b32536025bca54135568145d1b7</td>
+</tr>
+<tr>
+<td>ncurses-32bit</td>
+<td>5.5</td>
+<td>18.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e2c5c5dd80bcf9a26cae1844d1710ce6</td>
+</tr>
+<tr>
+<td>net-snmp</td>
+<td>5.3.0.1</td>
+<td>25.32.32</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a62638c0e3548d794ecd95ab46bbeaab</td>
+</tr>
+<tr>
+<td>net-tools</td>
+<td>1.60</td>
+<td>583.13.33</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fcb10145c7334c0bf555dbddba70c98e</td>
+</tr>
+<tr>
+<td>netcat</td>
+<td>1.10</td>
+<td>883.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f9c46cc5aea0543ac251a2fde72f8f37</td>
+</tr>
+<tr>
+<td>netcfg</td>
+<td>10</td>
+<td>1.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f05e85506cc07cb5a0c025b1339b4383</td>
+</tr>
+<tr>
+<td>netdate</td>
+<td>1.2</td>
+<td>591.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7ec2c3563abd1ef4ee318819ce29a37f</td>
+</tr>
+<tr>
+<td>netpbm</td>
+<td>10.26.22</td>
+<td>14.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>aa24284c5b18bb14eda87af81d5c0dde</td>
+</tr>
+<tr>
+<td>nfs-utils</td>
+<td>1.0.7</td>
+<td>36.36.47</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>964ea7748b608280a1de27b8c531d691</td>
+</tr>
+<tr>
+<td>nfsidmap</td>
+<td>0.12</td>
+<td>16.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ec46a9e358365b3e4159a10968c777c8</td>
+</tr>
+<tr>
+<td>notification-daemon</td>
+<td>0.3.4</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c5d1d151624fb8f46609d1158e8881c8</td>
+</tr>
+<tr>
+<td>nscd</td>
+<td>2.4</td>
+<td>31.74.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3e3d01673b03e55fe12a98cd48116125</td>
+</tr>
+<tr>
+<td>ntfsprogs</td>
+<td>1.11.2</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e3e01b0f8976d37754b44a0004fa6095</td>
+</tr>
+<tr>
+<td>numactl</td>
+<td>0.9.6</td>
+<td>3.25.28</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1413f5da1082c368cac967d8c93fb7fd</td>
+</tr>
+<tr>
+<td>openct</td>
+<td>0.6.6</td>
+<td>16.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>52dcc423a9c0deafb6c5a7d192f992be</td>
+</tr>
+<tr>
+<td>openct-32bit</td>
+<td>0.6.6</td>
+<td>16.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e458813594fd2b9f226fc4f0da7f9b17</td>
+</tr>
+<tr>
+<td>openldap2-client</td>
+<td>2.3.32</td>
+<td>0.35.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>addee167999585b53282b3cc9740b371</td>
+</tr>
+<tr>
+<td>openldap2-client-32bit</td>
+<td>2.3.32</td>
+<td>0.35.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a733e3bf8a5e652ffbca7336db782fe9</td>
+</tr>
+<tr>
+<td>openmotif-libs</td>
+<td>2.2.4</td>
+<td>21.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>16dced981a06fa4d570d0f01a9c97606</td>
+</tr>
+<tr>
+<td>openmotif-libs-32bit</td>
+<td>2.2.4</td>
+<td>21.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>359569bbea806ff1f9204689fd90c3b9</td>
+</tr>
+<tr>
+<td>opensc</td>
+<td>0.9.6</td>
+<td>17.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4eac5b58acc45549fe43e31a82db9924</td>
+</tr>
+<tr>
+<td>opensc-32bit</td>
+<td>0.9.6</td>
+<td>17.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>33c385a9501be248546225ab97c87b24</td>
+</tr>
+<tr>
+<td>openslp</td>
+<td>1.2.0</td>
+<td>22.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2105f30c1d58c51956b30c5f5192a3c8</td>
+</tr>
+<tr>
+<td>openslp-32bit</td>
+<td>1.2.0</td>
+<td>22.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b819cf5ced57fb0bda85da7aff015bcb</td>
+</tr>
+<tr>
+<td>openslp-server</td>
+<td>1.2.0</td>
+<td>22.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>427beb807908eeb4bcdc7f082a639d0e</td>
+</tr>
+<tr>
+<td>openssh</td>
+<td>4.2p1</td>
+<td>18.40.35</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e22c62d90653043962f879920462dade</td>
+</tr>
+<tr>
+<td>openssh-askpass</td>
+<td>4.2p1</td>
+<td>18.40.35</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>df12aeaf9e060fceb52ee3274c9c1120</td>
+</tr>
+<tr>
+<td>openssl</td>
+<td>0.9.8a</td>
+<td>18.36</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>16d39aa8373243851bb220456b7e14cf</td>
+</tr>
+<tr>
+<td>openssl-32bit</td>
+<td>0.9.8a</td>
+<td>18.36</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f15b4fde9f656134e0b2150e817d0a1d</td>
+</tr>
+<tr>
+<td>opie</td>
+<td>2.4</td>
+<td>567.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>066bed74f2cd5537184c0685b5f8acd6</td>
+</tr>
+<tr>
+<td>orbit2</td>
+<td>2.12.4</td>
+<td>17.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>53ae741af3027310752b181a8b26afa2</td>
+</tr>
+<tr>
+<td>orbit2-32bit</td>
+<td>2.12.4</td>
+<td>17.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>22b84153ee6c9fbf5d51e23bf2233415</td>
+</tr>
+<tr>
+<td>pam</td>
+<td>0.99.6.3</td>
+<td>28.18.39</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>81e273eb1e988c8fadb5b34748990764</td>
+</tr>
+<tr>
+<td>pam-32bit</td>
+<td>0.99.6.3</td>
+<td>28.18.39</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d1162659e139e9d32916f01dd44fddcd</td>
+</tr>
+<tr>
+<td>pam-modules</td>
+<td>10</td>
+<td>2.15.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e73e70d5db7cc43e373570e49b336c5c</td>
+</tr>
+<tr>
+<td>pam-modules-32bit</td>
+<td>10</td>
+<td>2.15.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9e89b101f7f0bed2bcb16a6dbc300786</td>
+</tr>
+<tr>
+<td>pango</td>
+<td>1.10.2</td>
+<td>23.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>db1733ccc0f1971c5f2995bfddbfbbc7</td>
+</tr>
+<tr>
+<td>pango-32bit</td>
+<td>1.10.2</td>
+<td>23.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>197f1f350b7624023cfc85d2d9cf573b</td>
+</tr>
+<tr>
+<td>parted</td>
+<td>1.6.25.1</td>
+<td>15.26.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>549aae9ae85e8d7bfb3cdf1bc53c7f2c</td>
+</tr>
+<tr>
+<td>parted-32bit</td>
+<td>1.6.25.1</td>
+<td>15.26.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3e2e25eb63feb4ed3b713be95003db64</td>
+</tr>
+<tr>
+<td>patch</td>
+<td>2.5.9</td>
+<td>160.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a09b2faf2feb7a388969d31063ba3bd3</td>
+</tr>
+<tr>
+<td>pax</td>
+<td>3.4</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>44dfcb27d0b0cbee28990879cc1f2651</td>
+</tr>
+<tr>
+<td>pciutils</td>
+<td>3.1.2</td>
+<td>1.5.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>011643276461be1888081258c1f0d54c</td>
+</tr>
+<tr>
+<td>pciutils-ids</td>
+<td>2009.7.27</td>
+<td>0.4.12</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ccb45271aad511ddcff6edc6066af4e1</td>
+</tr>
+<tr>
+<td>pcre</td>
+<td>6.4</td>
+<td>14.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b04869718fdf502b82d42a1367796ee0</td>
+</tr>
+<tr>
+<td>pcre-32bit</td>
+<td>6.4</td>
+<td>14.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>57cdd0e5e3a1eab4cf2c170b9125c322</td>
+</tr>
+<tr>
+<td>pcsc-lite</td>
+<td>1.2.9_beta9</td>
+<td>17.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>02570af0fb83058aa0ba423103d51278</td>
+</tr>
+<tr>
+<td>perl</td>
+<td>5.8.8</td>
+<td>14.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d8df4fd88334a41aad78c71449fbb893</td>
+</tr>
+<tr>
+<td>perl-32bit</td>
+<td>5.8.8</td>
+<td>14.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cbe868892eb51003bff8b4c7df5457ec</td>
+</tr>
+<tr>
+<td>perl-Bit-Vector</td>
+<td>6.4</td>
+<td>13.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0356244dffd23bf34752613b44de05d8</td>
+</tr>
+<tr>
+<td>perl-Bootloader</td>
+<td>0.4.19.21</td>
+<td>0.4.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>440cf5d316225a8968bc1ee3740b0ed2</td>
+</tr>
+<tr>
+<td>perl-Carp-Clan</td>
+<td>5.3</td>
+<td>13.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>882587faecc8b3b935984e3fd04cd672</td>
+</tr>
+<tr>
+<td>perl-Compress-Zlib</td>
+<td>1.35</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1c67c6be3685d9a34048f509cb656a86</td>
+</tr>
+<tr>
+<td>perl-Config-Crontab</td>
+<td>1.11</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0bb99652eeb51764d69aa5205e840368</td>
+</tr>
+<tr>
+<td>perl-Config-IniFiles</td>
+<td>2.39</td>
+<td>13.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6f14f380f31d0e1c45af219654a27c54</td>
+</tr>
+<tr>
+<td>perl-Crypt-SmbHash</td>
+<td>0.12</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3694ca5733537bdf182f40858f57ff85</td>
+</tr>
+<tr>
+<td>perl-DBD-SQLite</td>
+<td>1.11</td>
+<td>14.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0f681e798426158a8f48bf89b9905f76</td>
+</tr>
+<tr>
+<td>perl-DBI</td>
+<td>1.50</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f53e55d516c9b0a8f8d4ae6e0542d1d7</td>
+</tr>
+<tr>
+<td>perl-Date-Calc</td>
+<td>5.4</td>
+<td>14.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>38ce4e9db07e68edcf9b91d50ae5ed22</td>
+</tr>
+<tr>
+<td>perl-Digest-MD4</td>
+<td>1.5</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c18230d495c67ba672350561aa38db9b</td>
+</tr>
+<tr>
+<td>perl-Digest-SHA1</td>
+<td>2.10</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>13797a7c3e51dc0e7078290117fc6473</td>
+</tr>
+<tr>
+<td>perl-File-Tail</td>
+<td>0.99.3</td>
+<td>12.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6bd7d0a78ae837292cb38632bd6871b0</td>
+</tr>
+<tr>
+<td>perl-Net-Daemon</td>
+<td>0.38</td>
+<td>61.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a1ea8e0cea0a0bf2967c5e626371a21b</td>
+</tr>
+<tr>
+<td>perl-Parse-RecDescent</td>
+<td>1.80</td>
+<td>259.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3f00b14c553d7fee85000133ad4e872b</td>
+</tr>
+<tr>
+<td>perl-PlRPC</td>
+<td>0.2018</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5e4b16f35a73f44618f7e82052fc6feb</td>
+</tr>
+<tr>
+<td>perl-TermReadKey</td>
+<td>2.30</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>11215734b6a0f0ae4b6debc4f6a1fbab</td>
+</tr>
+<tr>
+<td>perl-TimeDate</td>
+<td>1.16</td>
+<td>136.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f6bb0dd204ad41759323efe4891d68f7</td>
+</tr>
+<tr>
+<td>perl-URI</td>
+<td>1.35</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7b452ada6978a83a6c0626cba1cc879d</td>
+</tr>
+<tr>
+<td>perl-X500-DN</td>
+<td>0.28</td>
+<td>133.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d10cc929d409c9d67660e2365c5729e3</td>
+</tr>
+<tr>
+<td>perl-XML-Parser</td>
+<td>2.34</td>
+<td>43.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4f04a06699af693d806ce97539bf93e0</td>
+</tr>
+<tr>
+<td>perl-XML-Writer</td>
+<td>0.600</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0f06612011fb0a86d180b2a90cbcee94</td>
+</tr>
+<tr>
+<td>perl-gettext</td>
+<td>1.05</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b12eb24038c2d6239c9f9469f27eda11</td>
+</tr>
+<tr>
+<td>perl-libapparmor</td>
+<td>2.2</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>897060f7744da7ba8825240930a0f80e</td>
+</tr>
+<tr>
+<td>permissions</td>
+<td>2007.2.15</td>
+<td>0.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4573e3817c89b71b4787af613a5d4f52</td>
+</tr>
+<tr>
+<td>pinentry</td>
+<td>0.7.2</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5eb578c35a9ef0b0e30611ec8ad11410</td>
+</tr>
+<tr>
+<td>pmtools</td>
+<td>20050823</td>
+<td>23.9.35</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>eb4f975ba541af9e3a5b4559997f25fa</td>
+</tr>
+<tr>
+<td>poppler</td>
+<td>0.4.4</td>
+<td>19.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>46460f44d209d995e81e8f4d89e2ef5e</td>
+</tr>
+<tr>
+<td>poppler-glib</td>
+<td>0.4.4</td>
+<td>19.23</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>88b8b17c42874bd708bc5ae7c6d0205b</td>
+</tr>
+<tr>
+<td>popt</td>
+<td>1.7</td>
+<td>271.34.45</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2b36c4ab3e0b2a3b41ea60aacff323c6</td>
+</tr>
+<tr>
+<td>popt-32bit</td>
+<td>1.7</td>
+<td>271.34.45</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>79de1a509f2a242ac0a16a2ec1b2c6ff</td>
+</tr>
+<tr>
+<td>portmap</td>
+<td>5beta</td>
+<td>749.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1c088bb0a3c8f1fce42b369c74ef5194</td>
+</tr>
+<tr>
+<td>postfix</td>
+<td>2.5.6</td>
+<td>4.7.44</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>eee5edcdae0376f92b543289fae47a3c</td>
+</tr>
+<tr>
+<td>powersave</td>
+<td>0.12.26</td>
+<td>0.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0c5178844cde6cb8b82ab31d50ac928c</td>
+</tr>
+<tr>
+<td>powersave-libs</td>
+<td>0.12.26</td>
+<td>0.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a99333f0fd7a0eea0039e4899c0ad1f5</td>
+</tr>
+<tr>
+<td>powersave-libs-32bit</td>
+<td>0.12.26</td>
+<td>0.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>185f071ef58a9ced728ba0e4c8671449</td>
+</tr>
+<tr>
+<td>ppp</td>
+<td>2.4.3</td>
+<td>33.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>733ed8f154f3895d66c688c750c8daa8</td>
+</tr>
+<tr>
+<td>pptp</td>
+<td>1.7.0</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>136400a857f3801d5753b17e21b81326</td>
+</tr>
+<tr>
+<td>prctl</td>
+<td>1.3</td>
+<td>368.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>067bb452a4daddfada80364679383ac9</td>
+</tr>
+<tr>
+<td>procinfo</td>
+<td>18</td>
+<td>55.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>89f349ef3617050c160f0b7a589307ad</td>
+</tr>
+<tr>
+<td>procmail</td>
+<td>3.22</td>
+<td>56.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f2897014502d939f43c3a22520f46246</td>
+</tr>
+<tr>
+<td>procps</td>
+<td>3.2.6</td>
+<td>18.17.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cbda239004ee8bec7867d8907cc9751d</td>
+</tr>
+<tr>
+<td>providers</td>
+<td>2006.1.25</td>
+<td>11.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b83a6bd5f50585a3b901f04b11749539</td>
+</tr>
+<tr>
+<td>psmisc</td>
+<td>22.1</td>
+<td>14.8.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3d87da397f021924bc24014c81f5940b</td>
+</tr>
+<tr>
+<td>pwdutils</td>
+<td>3.0.7.1</td>
+<td>17.31.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e734e7f5c5b9a6549e736afe5e2a629b</td>
+</tr>
+<tr>
+<td>python</td>
+<td>2.4.2</td>
+<td>18.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>900908ccacb50c0527ce400ed95d86e8</td>
+</tr>
+<tr>
+<td>python-32bit</td>
+<td>2.4.2</td>
+<td>18.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0d060e252bab250e68d6faf5d171881f</td>
+</tr>
+<tr>
+<td>python-cairo</td>
+<td>1.0.2</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>37cdeafab8985e34ebdfbf63a5042493</td>
+</tr>
+<tr>
+<td>python-gnome</td>
+<td>2.12.3</td>
+<td>18.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>83a37bacf4086333d29a7eef34b0abe7</td>
+</tr>
+<tr>
+<td>python-gtk</td>
+<td>2.8.2</td>
+<td>21.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d1ed061c895968d352589e22879fde2e</td>
+</tr>
+<tr>
+<td>python-numeric</td>
+<td>24.2</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>87eb8bbe3a787569dc6796ffc07b19cb</td>
+</tr>
+<tr>
+<td>python-orbit</td>
+<td>2.0.1</td>
+<td>19.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7fb3e1e525a0315911f5360a8840ec9f</td>
+</tr>
+<tr>
+<td>qlogic-firmware</td>
+<td>1.0</td>
+<td>13.22.16</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b33ff741fb7fb31744c4dc2d45069045</td>
+</tr>
+<tr>
+<td>qt</td>
+<td>4.3.4</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>bbeecd8c7ab3a15218755e394ea67ef2</td>
+</tr>
+<tr>
+<td>qt-32bit</td>
+<td>4.3.4</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3c41f6ec3e715d937446c28e75ebc8bb</td>
+</tr>
+<tr>
+<td>qt-qt3support</td>
+<td>4.3.4</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ec812dd1b2cfdb6d49175cfe9879abb5</td>
+</tr>
+<tr>
+<td>qt-sql</td>
+<td>4.3.4</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>bc2d94e89d9264b9cf9059c7dfa94e56</td>
+</tr>
+<tr>
+<td>qt-sql-32bit</td>
+<td>4.3.4</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b9fc562ef11b5d8888771e70595499ad</td>
+</tr>
+<tr>
+<td>qt-x11</td>
+<td>4.3.4</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4e8ded6dbb7902b1fcd5eb0b636ecf07</td>
+</tr>
+<tr>
+<td>qt-x11-32bit</td>
+<td>4.3.4</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d313dd6889de47fc49b40566ce33f6fb</td>
+</tr>
+<tr>
+<td>qt3</td>
+<td>3.3.5</td>
+<td>58.37</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>81f48105036f3f2c4bd548ce1c1d9309</td>
+</tr>
+<tr>
+<td>qt3-32bit</td>
+<td>3.3.5</td>
+<td>58.37</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>39d9b7448db661392bf25bd0f12736cf</td>
+</tr>
+<tr>
+<td>readline</td>
+<td>5.1</td>
+<td>24.26.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>77ad66633a1b5440aec47dd80ac5bba0</td>
+</tr>
+<tr>
+<td>readline-32bit</td>
+<td>5.1</td>
+<td>24.26.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c960d901923388dfe2a17150b69a9463</td>
+</tr>
+<tr>
+<td>recode</td>
+<td>3.6</td>
+<td>504.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8d94952e1d08761a2f4018e4236e6d6e</td>
+</tr>
+<tr>
+<td>reiserfs</td>
+<td>3.6.19</td>
+<td>19.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8f553e00398643ea0cde06bde802f659</td>
+</tr>
+<tr>
+<td>release-notes-sles</td>
+<td>10.3.11</td>
+<td>0.6.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a5e1b8b5ffd61e70cdf86d0235c55c53</td>
+</tr>
+<tr>
+<td>resmgr</td>
+<td>0.9.8_SVNr75</td>
+<td>18.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d69d5889f0733a26110613417f75afd6</td>
+</tr>
+<tr>
+<td>resmgr-32bit</td>
+<td>0.9.8_SVNr75</td>
+<td>18.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>28e93daf6beae039f2c84a70a576a4fd</td>
+</tr>
+<tr>
+<td>rpm</td>
+<td>4.4.2</td>
+<td>43.34.45</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6bda1e19c19ce1e70f00b0c44b00c4f3</td>
+</tr>
+<tr>
+<td>rrdtool</td>
+<td>1.2.12</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a7e8b5d251230c4828bb638fbd3ac31e</td>
+</tr>
+<tr>
+<td>rsh</td>
+<td>0.17</td>
+<td>573.8.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3b87b670c4ee970839186badb82e2f6f</td>
+</tr>
+<tr>
+<td>rsync</td>
+<td>2.6.8</td>
+<td>36.26.28</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3febdc7ee5e161427c3efeeb0dacf163</td>
+</tr>
+<tr>
+<td>rug</td>
+<td>7.3.0.0</td>
+<td>0.4.26</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4ff2bde8ba58e51699e4378e3f869cec</td>
+</tr>
+<tr>
+<td>samba</td>
+<td>3.0.36</td>
+<td>0.5.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6ac8e738c8bac4fd2a768c5199428147</td>
+</tr>
+<tr>
+<td>samba-32bit</td>
+<td>3.0.36</td>
+<td>0.5.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a470aefcec7050760315f5de42f3fd5c</td>
+</tr>
+<tr>
+<td>samba-client</td>
+<td>3.0.36</td>
+<td>0.5.5</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b622e28a2e8a25f8ddb9381788d2d4b2</td>
+</tr>
+<tr>
+<td>sash</td>
+<td>3.7</td>
+<td>46.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9bd870962c20bb9c926789622546eb31</td>
+</tr>
+<tr>
+<td>sax2</td>
+<td>7.1</td>
+<td>125.62.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cbb1fe51d79e9e7147f8c2f8212b3750</td>
+</tr>
+<tr>
+<td>sax2-gui</td>
+<td>1.7</td>
+<td>125.62.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c0795878e9fcee255bc4a6b1772b4bd2</td>
+</tr>
+<tr>
+<td>sax2-ident</td>
+<td>1.7</td>
+<td>125.62.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f5a8fb3fa0953e368f50f948d29cecd2</td>
+</tr>
+<tr>
+<td>sax2-libsax</td>
+<td>7.1</td>
+<td>125.62.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4b418e785d3ddaef7502f548444843ed</td>
+</tr>
+<tr>
+<td>sax2-libsax-perl</td>
+<td>7.1</td>
+<td>125.62.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1086c86302baa2ea7c1ab1aafdb2addb</td>
+</tr>
+<tr>
+<td>sax2-tools</td>
+<td>2.7</td>
+<td>125.62.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>faeca432c6a38b1246d8bb3ea7f9c2e1</td>
+</tr>
+<tr>
+<td>scpm</td>
+<td>1.1.3</td>
+<td>18.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8783ce3f80d1a71cf460a2ad0f4c6313</td>
+</tr>
+<tr>
+<td>screen</td>
+<td>4.0.2</td>
+<td>62.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>067d000ed602316ae24e965682ac077e</td>
+</tr>
+<tr>
+<td>scsi</td>
+<td>1.7_2.36_1.19_0.17_0.97</td>
+<td>12.27.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>02937defc4bd5da49361b69143cbdd94</td>
+</tr>
+<tr>
+<td>sed</td>
+<td>4.1.4</td>
+<td>17.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>20d9b8ef5ab3340612b99b6fcdd58bcc</td>
+</tr>
+<tr>
+<td>sensors</td>
+<td>2.10.0</td>
+<td>10.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c390c53e24ae1ca39c338906a75c02a4</td>
+</tr>
+<tr>
+<td>shared-mime-info</td>
+<td>0.17</td>
+<td>9.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>91bcd7fd01677c0208d565ee8810eb89</td>
+</tr>
+<tr>
+<td>sharutils</td>
+<td>4.6</td>
+<td>13.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4caaefd08aee9aaef309382cdf06a6d4</td>
+</tr>
+<tr>
+<td>siga</td>
+<td>10.101</td>
+<td>12.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9480c5b6e1336a0c6a8a75a04f23b41c</td>
+</tr>
+<tr>
+<td>sitar</td>
+<td>1.0.6</td>
+<td>7.10</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ac2f822e6b1c1e431a61e98ef22fd924</td>
+</tr>
+<tr>
+<td>slang</td>
+<td>2.0.5</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7872d6dca55d1a86bfe1e10a6937fc42</td>
+</tr>
+<tr>
+<td>slang-32bit</td>
+<td>2.0.5</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7cfe1b63bbb48a5b80a48808a4a60acf</td>
+</tr>
+<tr>
+<td>sles-admin_en</td>
+<td>10.1</td>
+<td>0.31.15</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9d0f6ae1e156f6d67911f56f17439b8d</td>
+</tr>
+<tr>
+<td>sles-heartbeat_en</td>
+<td>10.1</td>
+<td>0.20</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9644d5b44f7f97d726f4e8dd6caffb93</td>
+</tr>
+<tr>
+<td>sles-preparation-power_en</td>
+<td>10.1</td>
+<td>0.22.15</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0b4b8467474a27987657467542fa649f</td>
+</tr>
+<tr>
+<td>sles-preparation-x86+x86-64_en</td>
+<td>10.1</td>
+<td>0.22.15</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3811430cddb0c83740c94cda0d2c7db8</td>
+</tr>
+<tr>
+<td>sles-preparation-zseries_en</td>
+<td>10.1</td>
+<td>0.22.11</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>db19a338056ac81d1ef423d78cd55efd</td>
+</tr>
+<tr>
+<td>sles-release</td>
+<td>10</td>
+<td>15.45.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>373f483a2c60bfe80e87731c16019a77</td>
+</tr>
+<tr>
+<td>sles-startup_en</td>
+<td>10.1</td>
+<td>0.17</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7136f107c4ee0aa681b28a70356cced0</td>
+</tr>
+<tr>
+<td>sles-stor_evms_en</td>
+<td>10.1</td>
+<td>0.25.1</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2d37746c62a2cf378f154a396bc4b57e</td>
+</tr>
+<tr>
+<td>smartmontools</td>
+<td>5.37.0.20070914</td>
+<td>5.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2fee1c72b9403fcc2edbc3f666f70d8d</td>
+</tr>
+<tr>
+<td>smpppd</td>
+<td>1.59</td>
+<td>19.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a533377cd90bd980e860a1b8061d3ce8</td>
+</tr>
+<tr>
+<td>sox</td>
+<td>12.17.9</td>
+<td>14.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e03e230431bfc1c8ef47d11edf43c588</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>3.2.8</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>25b741c58cefeb8c3f0fb30851141bfb</td>
+</tr>
+<tr>
+<td>sqlite-32bit</td>
+<td>3.2.8</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d260c5aff78fd3040028f814b90b1375</td>
+</tr>
+<tr>
+<td>star</td>
+<td>1.5a70</td>
+<td>12.10.41</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0bcd137f41cf9f87e1db69b9ba5fd2b0</td>
+</tr>
+<tr>
+<td>startup-notification</td>
+<td>0.8</td>
+<td>20.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>30a8dfeda1f7e4176e54241e77895b6e</td>
+</tr>
+<tr>
+<td>startup-notification-32bit</td>
+<td>0.8</td>
+<td>20.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2c87e6c0183a5cec8dad7278054ebc7f</td>
+</tr>
+<tr>
+<td>strace</td>
+<td>4.5.14</td>
+<td>15.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d752a7963a46e71270d9f0c2a0dbf882</td>
+</tr>
+<tr>
+<td>strace-32bit</td>
+<td>4.5.14</td>
+<td>15.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2eeac38b64eb9e62a17b1ea14bd82dcb</td>
+</tr>
+<tr>
+<td>sudo</td>
+<td>1.6.8p12</td>
+<td>18.16.41</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>46e31f1944cc218f69a28d0ff0eb876a</td>
+</tr>
+<tr>
+<td>supportutils</td>
+<td>1.01</td>
+<td>45.13.12</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d9447752188ef177339571c88091c1eb</td>
+</tr>
+<tr>
+<td>suse-build-key</td>
+<td>1.0</td>
+<td>685.13</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>09229c9d6c4a7015f80e022ee9dd6313</td>
+</tr>
+<tr>
+<td>suseRegister</td>
+<td>1.2</td>
+<td>9.45.34</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c56ffb989544906248c6a37306421f4d</td>
+</tr>
+<tr>
+<td>susehelp</td>
+<td>2006.06.20</td>
+<td>1.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>996169aa4da79e07aa549d8e83d9fa7a</td>
+</tr>
+<tr>
+<td>susehelp_en</td>
+<td>2006.06.20</td>
+<td>1.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c177f8df1b3dbe079d28ab3135bac0ae</td>
+</tr>
+<tr>
+<td>suspend</td>
+<td>20071205</td>
+<td>0.11.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c24168ea82d1d806f9b8443577df6f25</td>
+</tr>
+<tr>
+<td>sysconfig</td>
+<td>0.50.9</td>
+<td>13.56.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>95b0ca1cfaddd3968aa23235d3d53a75</td>
+</tr>
+<tr>
+<td>sysfsutils</td>
+<td>1.3.0</td>
+<td>16.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7cfdc77c26b5d11551a175ee884f5701</td>
+</tr>
+<tr>
+<td>sysfsutils-32bit</td>
+<td>1.3.0</td>
+<td>16.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5d9a595565d18121a32d03a1e2156e17</td>
+</tr>
+<tr>
+<td>syslinux</td>
+<td>3.11</td>
+<td>20.14.26</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f320a43e389f47ed3ca5128ee5c50d37</td>
+</tr>
+<tr>
+<td>syslog-ng</td>
+<td>1.6.8</td>
+<td>20.18</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>02abad54886466b19a77fffdf832e0c0</td>
+</tr>
+<tr>
+<td>system-tools-backends</td>
+<td>1.4.1</td>
+<td>16.2</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>63d136fdbd619b14f3f62ccd5f56a1d2</td>
+</tr>
+<tr>
+<td>sysvinit</td>
+<td>2.86</td>
+<td>21.25.35</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>47fbeb9a93d81085e427ddfead39d2eb</td>
+</tr>
+<tr>
+<td>taglib</td>
+<td>1.4</td>
+<td>20.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>03c2bc52619a906cd11834ee2b1221e8</td>
+</tr>
+<tr>
+<td>tango-icon-theme</td>
+<td>0.7.2</td>
+<td>6.15</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>045c4b14ccfe065881b5b9728dd77b3b</td>
+</tr>
+<tr>
+<td>tar</td>
+<td>1.15.1</td>
+<td>23.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>aea80af31aecbc6cd35c6b182f7c71aa</td>
+</tr>
+<tr>
+<td>tcl</td>
+<td>8.4.12</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b223c8581e5d0f3671b51ba8db6dcbf3</td>
+</tr>
+<tr>
+<td>tcl-32bit</td>
+<td>8.4.12</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5f563789365b67831a0c6e5f7c917802</td>
+</tr>
+<tr>
+<td>tcpd</td>
+<td>7.6</td>
+<td>731.4.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>43a6965e148c4544d8e3c52c2e3f4a52</td>
+</tr>
+<tr>
+<td>tcpd-32bit</td>
+<td>7.6</td>
+<td>731.4.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cc07d54d912cd28a6d7f587fcb3f340b</td>
+</tr>
+<tr>
+<td>tcpdump</td>
+<td>3.9.4</td>
+<td>14.8.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>050dcda66513d6614cc746bda053c2c2</td>
+</tr>
+<tr>
+<td>tcsh</td>
+<td>6.14.00</td>
+<td>23.16.29</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a5dc00f6414ac0fb19d0faa6a46397f9</td>
+</tr>
+<tr>
+<td>telnet</td>
+<td>1.2</td>
+<td>14.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8a456de392d2d4c6d1d5bbbf3fa9465c</td>
+</tr>
+<tr>
+<td>terminfo</td>
+<td>5.5</td>
+<td>18.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>38eec3488d57e57a1a57131a0e491cdd</td>
+</tr>
+<tr>
+<td>thinkeramik-style</td>
+<td>3.2.1</td>
+<td>22.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>02c458ed5c2167f8b28babd092e68088</td>
+</tr>
+<tr>
+<td>thinkeramik-style-32bit</td>
+<td>3.2.1</td>
+<td>22.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e588e0273d4922016e67d072dd0450fb</td>
+</tr>
+<tr>
+<td>tightvnc</td>
+<td>1.2.9</td>
+<td>201.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>91a5fddb7bd2a902843413be660da7bf</td>
+</tr>
+<tr>
+<td>timezone</td>
+<td>2009m</td>
+<td>0.4.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>35331a54f03ee63f2f781b2fd14e48c8</td>
+</tr>
+<tr>
+<td>tk</td>
+<td>8.4.12</td>
+<td>14.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>39e76f6fd7ee3b889d7b2d471ec07f5b</td>
+</tr>
+<tr>
+<td>tk-32bit</td>
+<td>8.4.12</td>
+<td>14.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7c8aeeaadc4014e5c5e92775f43e1336</td>
+</tr>
+<tr>
+<td>udev</td>
+<td>085</td>
+<td>30.56.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>15779d8e5bac55ae7f6beecb84095209</td>
+</tr>
+<tr>
+<td>unclutter</td>
+<td>8</td>
+<td>850.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>96c1f43c69184db9741c5f9c910e1d0e</td>
+</tr>
+<tr>
+<td>unrar</td>
+<td>3.5.4</td>
+<td>15.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b5455d0c41e752de4bf823dd7bf289ac</td>
+</tr>
+<tr>
+<td>unzip</td>
+<td>5.52</td>
+<td>16.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e3bf3ac167c712a6ec4572aceacd9734</td>
+</tr>
+<tr>
+<td>update-alternatives</td>
+<td>1.8.3</td>
+<td>16.6</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c25a27af92148d52ae08d8cfb5bf8c12</td>
+</tr>
+<tr>
+<td>usbutils</td>
+<td>0.71</td>
+<td>21.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1e1bdf3a9ff526cf0b00f10791ce0290</td>
+</tr>
+<tr>
+<td>utempter</td>
+<td>0.5.5</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3c620e1cb8b3acbd3f0257ab7aba2504</td>
+</tr>
+<tr>
+<td>utempter-32bit</td>
+<td>0.5.5</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4bac73b8e2f7a39d83dd8663240254a4</td>
+</tr>
+<tr>
+<td>util-linux</td>
+<td>2.12r</td>
+<td>35.37.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>563457c5795d555d8c82f875b76e0f0d</td>
+</tr>
+<tr>
+<td>util-linux-crypto</td>
+<td>2.12a</td>
+<td>14.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4760497e291f9e6d26a0186554fdb81c</td>
+</tr>
+<tr>
+<td>vcdimager</td>
+<td>0.7.23</td>
+<td>19.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1129477f6569cfb60d636e5b1fd8a6a1</td>
+</tr>
+<tr>
+<td>vcdimager-32bit</td>
+<td>0.7.23</td>
+<td>19.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9d761a8da9378f5d0e5d7bf5b7748369</td>
+</tr>
+<tr>
+<td>vim</td>
+<td>6.4.6</td>
+<td>19.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>74e4437aadc9145168769c27685b1016</td>
+</tr>
+<tr>
+<td>vino</td>
+<td>2.12.0</td>
+<td>25.23.43</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a7e2224d6c9445b231bcbe7fdcaede65</td>
+</tr>
+<tr>
+<td>vlan</td>
+<td>1.8</td>
+<td>40.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5fb479597efb9460827940d2634ab391</td>
+</tr>
+<tr>
+<td>vlock</td>
+<td>1.3</td>
+<td>544.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ec1e859f8fbf7f4dae70361549ec82fe</td>
+</tr>
+<tr>
+<td>vte</td>
+<td>0.11.17</td>
+<td>0.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3c16e5c84fb65fa88623de6baa8e1c0a</td>
+</tr>
+<tr>
+<td>w3m</td>
+<td>0.5.1</td>
+<td>19.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d0d89eb2917f7001a42362cddf334c7f</td>
+</tr>
+<tr>
+<td>wdiff</td>
+<td>0.5.2</td>
+<td>674.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>acdd1a5c8200d6f4d2eea9fa135c729a</td>
+</tr>
+<tr>
+<td>wget</td>
+<td>1.10.2</td>
+<td>15.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e7746ddd329d49c7c5889b7363e83a91</td>
+</tr>
+<tr>
+<td>wireless-tools</td>
+<td>28pre13</td>
+<td>22.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>912f54cf84b6d56ef2641d639470cd56</td>
+</tr>
+<tr>
+<td>wol</td>
+<td>0.7.1</td>
+<td>15.1</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2938fc772fce510baa4192cad5a4c873</td>
+</tr>
+<tr>
+<td>wvdial</td>
+<td>1.54</td>
+<td>82.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>28b0d62395c0070a192b7e3d60dd1261</td>
+</tr>
+<tr>
+<td>wvstreams</td>
+<td>4.2.1</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5238ec18458a3f02c1b141b3a2852070</td>
+</tr>
+<tr>
+<td>x11-input-synaptics</td>
+<td>0.14.4</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cf6a980d5049de50525f0edadab712cb</td>
+</tr>
+<tr>
+<td>x11-tools</td>
+<td>0.1</td>
+<td>36.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>90cc84a2d43975cfd2d5b5dde13ebb79</td>
+</tr>
+<tr>
+<td>xaw3d</td>
+<td>1.5E</td>
+<td>240.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ed0a68bb56eaa15c1501b4a127b031fe</td>
+</tr>
+<tr>
+<td>xaw3d-32bit</td>
+<td>1.5E</td>
+<td>240.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2e9fd8b28a3dce7355d29dee98e7b16a</td>
+</tr>
+<tr>
+<td>xdg-menu</td>
+<td>0.2</td>
+<td>66.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>48945a06d9ba5f33cf92a8b414ef1922</td>
+</tr>
+<tr>
+<td>xdmbgrd</td>
+<td>0.5</td>
+<td>44.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3827bb507b658c0b5e6ba0c7143f9733</td>
+</tr>
+<tr>
+<td>xfsprogs</td>
+<td>2.9.4</td>
+<td>3.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0b00a27adc9632553c0b18811cbf8daa</td>
+</tr>
+<tr>
+<td>xinetd</td>
+<td>2.3.14</td>
+<td>14.7.15</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>bb6e992c86f2aabf066ab2672945c243</td>
+</tr>
+<tr>
+<td>xkeyboard-config</td>
+<td>0.7</td>
+<td>19.24.7</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7d513b7560f79f009a130f2fd884b58f</td>
+</tr>
+<tr>
+<td>xli</td>
+<td>20050904</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e473a7cda0cc962419675a792957735f</td>
+</tr>
+<tr>
+<td>xlockmore</td>
+<td>5.21</td>
+<td>13.7.13</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f72fd2b139c685a30228ecb4230cbfc9</td>
+</tr>
+<tr>
+<td>xntp</td>
+<td>4.2.4p3</td>
+<td>48.14.16</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>efb9fdedf9f4124106c35935248b1d62</td>
+</tr>
+<tr>
+<td>xorg-x11</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>589b21f90dbf175f7f8942ec7524ab28</td>
+</tr>
+<tr>
+<td>xorg-x11-Xnest</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d7d19e1a5b4a933de207f1e48c7d65dc</td>
+</tr>
+<tr>
+<td>xorg-x11-Xvnc</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ac7351e5af13b675280a557dd7a17d79</td>
+</tr>
+<tr>
+<td>xorg-x11-driver-video</td>
+<td>6.9.0</td>
+<td>46.56.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8781fa4072a93adc534d87abd7fd7c81</td>
+</tr>
+<tr>
+<td>xorg-x11-driver-video-nvidia</td>
+<td>6.9.0</td>
+<td>46.56.9</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>172290a8e96a378dce7cf62009e400e3</td>
+</tr>
+<tr>
+<td>xorg-x11-driver-video-radeon</td>
+<td>6.6.3</td>
+<td>0.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1f84f71c2c3ac2aebf8dd5694a62562c</td>
+</tr>
+<tr>
+<td>xorg-x11-fonts-100dpi</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>aef0f1374fff2263b6b5b7e4d9bf8d53</td>
+</tr>
+<tr>
+<td>xorg-x11-fonts-75dpi</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a0032ab6f1e8ac16a81d1ca04192ca41</td>
+</tr>
+<tr>
+<td>xorg-x11-fonts-scalable</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cac34277fb8234bd3a767805d54ba22f</td>
+</tr>
+<tr>
+<td>xorg-x11-libs</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>075fb095c94c47e0f931dd525323d835</td>
+</tr>
+<tr>
+<td>xorg-x11-libs-32bit</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f7b2da14a6afd8957502f7b54aa65e45</td>
+</tr>
+<tr>
+<td>xorg-x11-server</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>03e53f8bf92d64e10a94a9b7397f88ab</td>
+</tr>
+<tr>
+<td>xorg-x11-server-glx</td>
+<td>6.9.0</td>
+<td>50.65.7</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d7b128fdd3838c7f7919ee56b762daf2</td>
+</tr>
+<tr>
+<td>xscreensaver</td>
+<td>4.23</td>
+<td>20.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>efc32d98da72b88453aec94709be557c</td>
+</tr>
+<tr>
+<td>xterm</td>
+<td>208</td>
+<td>14.6</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>99820b5ae311dd8642d56c4520e3d664</td>
+</tr>
+<tr>
+<td>xtermset</td>
+<td>0.5.2</td>
+<td>134.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>12d9155eb521e15574b3e3ee2ae4136d</td>
+</tr>
+<tr>
+<td>yast2</td>
+<td>2.13.115</td>
+<td>0.4.41</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a5e882ea98be1e41dfe93b8c9f0041f5</td>
+</tr>
+<tr>
+<td>yast2-apparmor</td>
+<td>2.1</td>
+<td>2.8</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c1053acc81e33d534fa984de116229e1</td>
+</tr>
+<tr>
+<td>yast2-autofs</td>
+<td>2.13.1</td>
+<td>0.6</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6871a903e0618098b9e5e5e6e4fd67c6</td>
+</tr>
+<tr>
+<td>yast2-backup</td>
+<td>2.13.6</td>
+<td>0.1</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>966fa95059ae0e48b36287ef04cb002a</td>
+</tr>
+<tr>
+<td>yast2-boot-server</td>
+<td>2.13.3.1</td>
+<td>1.14</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3e74fab7932af21e3a32ee1f8ac4c801</td>
+</tr>
+<tr>
+<td>yast2-bootloader</td>
+<td>2.13.164</td>
+<td>0.4.19</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>977927c599c42a27d7fc56ee48094f45</td>
+</tr>
+<tr>
+<td>yast2-ca-management</td>
+<td>2.13.36</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>40e23e52f5531cbeeb8be77d77c38b44</td>
+</tr>
+<tr>
+<td>yast2-cd-creator</td>
+<td>2.13.16</td>
+<td>0.4.79</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6fc9b2d2290bbc0693bca35d01e97944</td>
+</tr>
+<tr>
+<td>yast2-control-center</td>
+<td>2.13.12</td>
+<td>0.4.31</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5f6931da663b70d7ee7678c796ea2ac8</td>
+</tr>
+<tr>
+<td>yast2-control-center-gnome</td>
+<td>2.13.2</td>
+<td>0.14</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ae937be97276a67ea305743abd157e61</td>
+</tr>
+<tr>
+<td>yast2-core</td>
+<td>2.13.44</td>
+<td>0.4.37</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>adac5ca483a1cc0fb7c20b057b4cb0d2</td>
+</tr>
+<tr>
+<td>yast2-country</td>
+<td>2.13.57</td>
+<td>0.4.57</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c83fec61dd079cd206c7036bca42ddc5</td>
+</tr>
+<tr>
+<td>yast2-dhcp-server</td>
+<td>2.13.14</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0ed7c6de00926668b7738a1290484ab5</td>
+</tr>
+<tr>
+<td>yast2-dns-server</td>
+<td>2.13.23</td>
+<td>0.10</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c0421ec0500979b0d725aad3a1176129</td>
+</tr>
+<tr>
+<td>yast2-firewall</td>
+<td>2.13.15</td>
+<td>0.10</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>64405f789d01a708c6f74ed002ac2c80</td>
+</tr>
+<tr>
+<td>yast2-hardware-detection</td>
+<td>2.13.8</td>
+<td>1.2.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6fcc46dfcbb89637536d41ceff9f8036</td>
+</tr>
+<tr>
+<td>yast2-heartbeat</td>
+<td>2.13.13</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b7a04db2c40e078eddb1f73a3d80444b</td>
+</tr>
+<tr>
+<td>yast2-http-server</td>
+<td>2.13.35</td>
+<td>0.4.36</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d5347f07c22dc6ce0573df8df3e885cc</td>
+</tr>
+<tr>
+<td>yast2-inetd</td>
+<td>2.13.8</td>
+<td>0.6</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7a4763583f2403c56bfa93b3d487817a</td>
+</tr>
+<tr>
+<td>yast2-installation</td>
+<td>2.13.218</td>
+<td>0.4.124</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>025101cf25fe01ae65e100601f5901a4</td>
+</tr>
+<tr>
+<td>yast2-instserver</td>
+<td>2.13.19</td>
+<td>0.4.14</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fcbd36a71844410984ffaf7af866bc8f</td>
+</tr>
+<tr>
+<td>yast2-irda</td>
+<td>2.13.3</td>
+<td>0.11</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>94508a855ae7c60ca8b9eed207f0c377</td>
+</tr>
+<tr>
+<td>yast2-iscsi-client</td>
+<td>2.14.47</td>
+<td>0.4.9</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>e5a8a4ff42135839a9c00afe0c25d2ac</td>
+</tr>
+<tr>
+<td>yast2-iscsi-server</td>
+<td>2.13.26</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fea7dd50b034e9d91f9de397eb595d1e</td>
+</tr>
+<tr>
+<td>yast2-kdump</td>
+<td>2.13.12</td>
+<td>0.4.75</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5954e3f741753328afefd6383ec74ecf</td>
+</tr>
+<tr>
+<td>yast2-kerberos-client</td>
+<td>2.13.11</td>
+<td>0.10</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1a7a0f1ed64c6cb91fe0f2816f22044e</td>
+</tr>
+<tr>
+<td>yast2-ldap</td>
+<td>2.13.6</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c48436fa9c4a8384ee60813aec907646</td>
+</tr>
+<tr>
+<td>yast2-ldap-client</td>
+<td>2.13.33</td>
+<td>0.4.349</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ececa63b98d2ba805733aa15141ff627</td>
+</tr>
+<tr>
+<td>yast2-ldap-server</td>
+<td>2.13.24</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>9eb791e8f11cbeefc4deb010749f4caa</td>
+</tr>
+<tr>
+<td>yast2-mail</td>
+<td>2.13.8</td>
+<td>0.13.46</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>8110652408a453a41ab96ed215455243</td>
+</tr>
+<tr>
+<td>yast2-mail-aliases</td>
+<td>2.13.8</td>
+<td>0.13.46</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>bed75f6976ee4f65dd1c4854daedce01</td>
+</tr>
+<tr>
+<td>yast2-mouse</td>
+<td>2.13.7</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a5d80637f6ef9feb1f618ede20ca8606</td>
+</tr>
+<tr>
+<td>yast2-ncurses</td>
+<td>2.13.69</td>
+<td>0.4.10</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>69a8a22921027a407662b7bec36e7f43</td>
+</tr>
+<tr>
+<td>yast2-network</td>
+<td>2.13.134</td>
+<td>0.4.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cbb5e4c3db8d611a853a1f1b8bf9ea05</td>
+</tr>
+<tr>
+<td>yast2-nfs-client</td>
+<td>2.13.4</td>
+<td>0.11</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2609da27e6eb781c96260b25f0076fdf</td>
+</tr>
+<tr>
+<td>yast2-nfs-server</td>
+<td>2.13.10</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>652de635081f591f88610e01701e29d3</td>
+</tr>
+<tr>
+<td>yast2-nis-client</td>
+<td>2.13.8</td>
+<td>0.11</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3c9542034234f4fffb4a55cf885b3637</td>
+</tr>
+<tr>
+<td>yast2-nis-server</td>
+<td>2.13.8</td>
+<td>0.4.79</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>35f2f0c52f138bb5c928f4629dd7fc2d</td>
+</tr>
+<tr>
+<td>yast2-ntp-client</td>
+<td>2.13.17</td>
+<td>0.10</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3a0dbba48c2266fb1ed45fb670141f10</td>
+</tr>
+<tr>
+<td>yast2-online-update</td>
+<td>2.13.70</td>
+<td>0.4.28</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f43b6c9902fb156741c1a57e7b182ee1</td>
+</tr>
+<tr>
+<td>yast2-online-update-frontend</td>
+<td>2.13.70</td>
+<td>0.4.28</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3c45d8c3db5e50b79192c1c2ddd697df</td>
+</tr>
+<tr>
+<td>yast2-packager</td>
+<td>2.13.185</td>
+<td>0.4.72</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>29644c86fdecf6cd90670b7d698f6e8a</td>
+</tr>
+<tr>
+<td>yast2-pam</td>
+<td>2.13.5</td>
+<td>0.11</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2ed94379e019c32b33c913620d04c7d0</td>
+</tr>
+<tr>
+<td>yast2-perl-bindings</td>
+<td>2.13.11</td>
+<td>0.22</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0ae1185b8321257d4423b5439319e0e7</td>
+</tr>
+<tr>
+<td>yast2-pkg-bindings</td>
+<td>2.13.125</td>
+<td>0.4.47</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f1789cbf9292d2d6db3142442c5dfb19</td>
+</tr>
+<tr>
+<td>yast2-power-management</td>
+<td>2.13.10</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>35dfacbacd8ae7ca105318d231bb74ff</td>
+</tr>
+<tr>
+<td>yast2-powertweak</td>
+<td>2.13.9</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1e2010b37b870a867d9f66c8f11b298b</td>
+</tr>
+<tr>
+<td>yast2-printer</td>
+<td>2.13.34</td>
+<td>0.4.20</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>13969344eaa22abe30f0c7834631befd</td>
+</tr>
+<tr>
+<td>yast2-profile-manager</td>
+<td>2.13.6</td>
+<td>0.12</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>fe5ceb45d982500d4b6b6a5bfe140f80</td>
+</tr>
+<tr>
+<td>yast2-qt</td>
+<td>2.13.85</td>
+<td>0.4.55</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>86d4448d0801c810252fbb7971cb5b8c</td>
+</tr>
+<tr>
+<td>yast2-registration</td>
+<td>2.13.24</td>
+<td>0.4.36</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ff7093b6541e98a6c8f6b3b0fe1e4dbf</td>
+</tr>
+<tr>
+<td>yast2-repair</td>
+<td>2.13.14</td>
+<td>0.4.54</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>1530c22a66f22f2ed6903b375d73a94d</td>
+</tr>
+<tr>
+<td>yast2-restore</td>
+<td>2.13.3</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c73ede68147bab499b6f63056dbd054f</td>
+</tr>
+<tr>
+<td>yast2-runlevel</td>
+<td>2.13.12</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>84913dcb9df1199d144dcaf02d232a20</td>
+</tr>
+<tr>
+<td>yast2-samba-client</td>
+<td>2.13.42</td>
+<td>0.4.9</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>4199224f24dd4bdc7c785d9746e78f57</td>
+</tr>
+<tr>
+<td>yast2-samba-server</td>
+<td>2.13.24</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>bc46623fb3d73ac4ff14ee155e75c08a</td>
+</tr>
+<tr>
+<td>yast2-schema</td>
+<td>2.13.5</td>
+<td>0.13</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>36024d229975b7f796ffd0414a12afdf</td>
+</tr>
+<tr>
+<td>yast2-security</td>
+<td>2.13.7</td>
+<td>0.11</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>31754567855922effb221da6b1824ed7</td>
+</tr>
+<tr>
+<td>yast2-slp</td>
+<td>2.13.4</td>
+<td>0.17</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>6be41a031afb0366aace67a2192ebab5</td>
+</tr>
+<tr>
+<td>yast2-slp-server</td>
+<td>2.13.14</td>
+<td>0.4.37</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>f2f6e8a1239e12dc86a460bc2e531cee</td>
+</tr>
+<tr>
+<td>yast2-sound</td>
+<td>2.13.25</td>
+<td>0.4.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cc67fb2b8d4089795700ac843e719296</td>
+</tr>
+<tr>
+<td>yast2-storage</td>
+<td>2.13.108</td>
+<td>0.4.226</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>bf58f0f913a186fe69878ce86fe19dd5</td>
+</tr>
+<tr>
+<td>yast2-storage-lib</td>
+<td>2.13.108</td>
+<td>0.4.226</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>72d5d4a4e0b9d9ba1f5f09602dd8b53d</td>
+</tr>
+<tr>
+<td>yast2-support</td>
+<td>2.13.10</td>
+<td>0.5.37</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>d0a4305f997c0a7769b78f40f190cead</td>
+</tr>
+<tr>
+<td>yast2-sysconfig</td>
+<td>2.13.9</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>94d6e10dd0ddc63680045d39f83bba78</td>
+</tr>
+<tr>
+<td>yast2-tftp-server</td>
+<td>2.13.4</td>
+<td>0.11</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>422611b7695d272f66b0814d9eb9fdcf</td>
+</tr>
+<tr>
+<td>yast2-theme-NLD</td>
+<td>0.4.5</td>
+<td>3.26</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>524f79d2f14b5f0c68430d2b3f3c204f</td>
+</tr>
+<tr>
+<td>yast2-trans-en_US</td>
+<td>2.14.3</td>
+<td>0.4.12</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cced00f3ce1cb7dcdc324a74d3401993</td>
+</tr>
+<tr>
+<td>yast2-trans-stats</td>
+<td>2.11.0</td>
+<td>21.18</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>aaacfcc16fd00c107b814935e6af892f</td>
+</tr>
+<tr>
+<td>yast2-transfer</td>
+<td>2.13.5</td>
+<td>0.4.36</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>5f6a7c53664cb1295e5da961f7d38b6e</td>
+</tr>
+<tr>
+<td>yast2-tune</td>
+<td>2.13.12</td>
+<td>0.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>2ec9fd07b774c128736f38c452aad1b7</td>
+</tr>
+<tr>
+<td>yast2-update</td>
+<td>2.13.55</td>
+<td>0.4.66</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>7a7113daf90efa8eb822510b86777160</td>
+</tr>
+<tr>
+<td>yast2-users</td>
+<td>2.13.61</td>
+<td>0.4.336</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cb9e11b1efc613f6ba1eef1244ef291d</td>
+</tr>
+<tr>
+<td>yast2-vm</td>
+<td>2.13.79</td>
+<td>0.3</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>cfd6063c95118d887fe7629c48b4a1db</td>
+</tr>
+<tr>
+<td>yast2-x11</td>
+<td>2.13.14</td>
+<td>0.3</td>
+<td>noarch</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>077cfab2d07131a310f7cbcdf0a875ea</td>
+</tr>
+<tr>
+<td>yast2-xml</td>
+<td>2.13.4</td>
+<td>0.8</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>df361af8095615a093f145f9c730f3af</td>
+</tr>
+<tr>
+<td>yelp</td>
+<td>2.14.0</td>
+<td>20.24</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>471b2bd84b91b5a7064ed45d7abb4a5d</td>
+</tr>
+<tr>
+<td>yp-tools</td>
+<td>2.9</td>
+<td>16.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3bb5f5198039c2912574e4642923d243</td>
+</tr>
+<tr>
+<td>ypbind</td>
+<td>1.19.1</td>
+<td>14.4</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c7b8bb98565f8193a78aa443ad6a9432</td>
+</tr>
+<tr>
+<td>zen-updater</td>
+<td>7.3.0</td>
+<td>0.4.28</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>ae51cd711123ec282130368ed4aae5fd</td>
+</tr>
+<tr>
+<td>zenity</td>
+<td>2.12.1</td>
+<td>21.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>47e3cddcec902b4e21a8422d12a2801e</td>
+</tr>
+<tr>
+<td>zip</td>
+<td>2.31</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b315856b8f4233fd23943086e5a3c7d9</td>
+</tr>
+<tr>
+<td>zisofs-tools</td>
+<td>1.0.6</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>24ac416e3ecdcdf7d113883a6f7c6366</td>
+</tr>
+<tr>
+<td>zlib</td>
+<td>1.2.3</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>3aa69e688d6860d7d8874197e56ef39f</td>
+</tr>
+<tr>
+<td>zlib-32bit</td>
+<td>1.2.3</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>0356ebb3f8c37eb7a3330dc8bca17f16</td>
+</tr>
+<tr>
+<td>zmd</td>
+<td>7.3.0.0</td>
+<td>0.4.25</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>b2ea0d3e70e356b7273585b6a376bd17</td>
+</tr>
+<tr>
+<td>zmd-inventory</td>
+<td>7.3.0</td>
+<td>0.4.27</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c8793c7ea85bf5ddfbe627d8ee8b29d1</td>
+</tr>
+<tr>
+<td>zsh</td>
+<td>4.2.6</td>
+<td>15.2</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>c278baf8107bb4a442a982a355840b34</td>
+</tr>
+<tr>
+<td>zypper</td>
+<td>0.6.200</td>
+<td>0.4.49</td>
+<td>x86_64</td>
+<td>SUSE LINUX Products GmbH, Nuernberg, Germany</td>
+<td>a55a6a8c4aae503b82cb295c070a0f02</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+<div class='hidden' id='inspection_details'>
+<div id='filters'>
+<div class='row'>
+<div class='col-xs-1'></div>
+<div class='col-xs-11'>
+<h3>Filters used during Inspection</h3>
+</div>
+</div>
+<div class='row'>
+<div class='col-xs-1'></div>
+<div class='col-xs-11'>
+<p>No filters were used.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

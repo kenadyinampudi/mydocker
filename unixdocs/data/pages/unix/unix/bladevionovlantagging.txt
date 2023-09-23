@@ -1,0 +1,29 @@
+====== Configure VIO non-vlan tagged networking ======
+
+**IVM on a blade**
+
+      - Create an aggregate of the HEA adapters<code> mkvdev -lnagg ent0 -attr backup_adapter=ent1
+ent8 Available
+en8
+et8</code>
+      - Create an aggregate on the Other two ethernet interfaces<code>mkvdev -lnagg ent2 -attr backup_adapter=ent3
+ent9 Available
+en9
+et9</code>
+      - Configure an IP on the aggregate<code>mktcpip -hostname taprvio18 -inetaddr 10.32.50.93 -interface en8  -netmask 255.255.255.0 -gateway 10.32.50.1 -start</code>
+      - Create a SEA adapter on the aggregate that we just made<code>mkvdev -sea ent9 -vadapter ent4 -default ent4 -defaultid 1
+            main:  86 Recived SEA events bytes 164
+ent10 Available
+en10
+et10</code>
+      - Configure the backup IP on the SEA<code>oem_setup_env</code>And<code>chdev -l enX -a netaddr=A.B.C.D -a netmask=255.255.255.0 -a state=up</code>
+      - Increase the memory of the VIO lpar to atleast 6G<code>Command to be added until then do it via the WebUI</code>
+
+**Regular Power frame**
+
+      - Create an aggregate for the public network<code>mkvdev -lnagg entK -attr backup_adapter=entL</code>
+      - Create an aggregate for the backup network<code>mkvdev -lnagg entM -attr backup_adapter=entN</code>
+      - Create SEA for public network<code>mkvdev -sea entX -vadapter entY -default entY -defaultid 1 -attr ha_mode=auto ctl_chan=entZ netaddr=10.56.1.1</code>netaddr is the default gateway SEA will ping periodically. defaultid must match the VLAN id of the default Virtual NIC
+      - Create SEA for backup network<code>mkvdev -sea entA -vadapter entB -default entB -defaultid 2 -attr ha_mode=auto ctl_chan=entC netaddr=10.56.12.1</code>netaddr is the default gateway SEA will ping periodically. defaultid must match the VLAN id of the default Virtual NIC
+      - Assign IP address on the public SEA<code>mktcpip -hostname <hostname> -inetaddr A.B.C.D -interface enX  -netmask xxx.xxx.xxx.y -gateway aa.bb.cc.e -start</code>
+      - Assign IP address on the backup SEA<code>oem_setup_env</code><code>chdev -l en10 -a netaddr=E.F.G.H -a netmask=255.255.255.0 -a state=up</code>

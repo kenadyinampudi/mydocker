@@ -1,0 +1,30 @@
+
+<h1 class="sectionedit1" id="aix_commands_for_dealing_with_full_file_systems">AIX Commands for dealing with Full File Systems</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> When you get the notification on a file system approaching the upper limits do the following steps.  Be sure to open a log document, Notepad, Wordpad or Word to keep track of your steps and results. </div>
+</li>
+<li class="level1"><div class="li"> Do a df -g on the suspect file system. This will capture teh initial state.  <pre class="code"> df -g {file system}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Change direcory to the offending file system <pre class="code"> cd [file system}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> List the files in most recient order of access <pre class="code"> ls -liat | more </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check for the user writing to the file  displayed above <pre class="code"> fuser -fu {file name}</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Use the find command to locate large files in the file system/directory to see if they canbe cleaned up. <pre class="code"> find . -depth -size 10000c -exec ls -l {} \;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Another tool is the List Open Files tool lsof. There are several excellent options to assist in determining the process id (pid) and user that is writing to the file.<pre class="code"> lsof +d {file system}</pre>
+<pre class="code">lsof +D {file system}</pre>
+<pre class="code"> lsof +d {file system}</pre>
+<pre class="code">lsof +d {file system} +r</pre>
+</div>
+</li>
+</ol>
+
+</div>

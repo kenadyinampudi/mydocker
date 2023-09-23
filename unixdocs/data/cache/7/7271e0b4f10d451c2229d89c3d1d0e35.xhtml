@@ -1,0 +1,147 @@
+
+<h1 class="sectionedit1" id="configuring_sudo">Configuring sudo</h1>
+<div class="level1">
+
+<p>
+<a href="/lib/exe/detail.php?id=unix%3Amanagingsudo&amp;media=unix:sudomakemeasandwich.jpg" class="media" title="unix:sudomakemeasandwich.jpg"><img src="/lib/exe/fetch.php?w=500&amp;media=unix:sudomakemeasandwich.jpg" class="media" alt="" width="500" /></a>
+</p>
+
+</div>
+<!-- EDIT1 SECTION "Configuring sudo" [1-75] -->
+<h2 class="sectionedit2" id="instructions_to_modify_sudoers">Instructions to modify sudoers</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Discuss and make sure what users ask for is legit.</div>
+</li>
+<li class="level1"><div class="li"> Login to NIM server pgnmsv01</div>
+</li>
+<li class="level1"><div class="li"> Backup the master file.</div>
+<ol>
+<li class="level2"><div class="li"> Check if anybody else is working on sudoers<pre class="code">[[ -f /var/tmp/I_am_working_on_sudoers ]] &amp;&amp; banner DONT</pre>
+
+<p>
+<strong>If you see any output here, someone else is working on sudoers – Do not proceed</strong>
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Tell others that I am working on sudoers<pre class="code">touch /var/tmp/I_am_working_on_sudoers</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Automating the backup file<pre class="code">export backupfile=&quot;/apps/logs/pgnmsv01-sudoers-files/pgnmsv01-sudoers-files.$(date +%m%d%y%H%M)&quot;</pre>
+
+<p>
+Make a backup copy
+</p>
+<pre class="code">sudo cp -p /prod/images/etc/sudoers ${backupfile}</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Edit the master file on pgnmsv01 Here is the link to the visido manual for reference <a href="https://www.sudo.ws/man/1.8.16/visudo.man.html" class="urlextern" title="https://www.sudo.ws/man/1.8.16/visudo.man.html"  rel="nofollow"> visudo manual</a><pre class="code">sudo visudo -f/prod/images/etc/sudoers</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make the changes, Check the file <pre class="code">sudo visudo -f/prod/images/etc/sudoers -c </pre>
+
+<p>
+ Look for line in output 
+</p>
+<pre class="code">/prod/images/etc/sudoers file parsed OK</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Diff the files to make sure there are no additional changes or typos we accidentally might have made<pre class="code">sudo diff /prod/images/etc/sudoers ${backupfile}</pre>
+</div>
+<ol>
+<li class="level2"><div class="li"> copy the sudoers to a test system i.e. atlasdr, panmsv02 etc and test if the file is ok. If there is a typo, it will fail on syntax.</div>
+</li>
+<li class="level2"><div class="li"> Push the file<pre class="code">sudo scp /prod/images/etc/sudoers saerdb01:/etc/sudoers</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Test it on panmsv02<pre class="code">ssh saerdb01</pre>
+
+<p>
+Test it
+</p>
+<pre class="code">sudo ls -ld /tmp</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Tell others that I am done<pre class="code">rm /var/tmp/I_am_working_on_sudoers</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Once tested, copy the file to all the systems. As root,<pre class="code">for host in $(cat /prod/images/etc/allhosts.tenneco)
+do
+   echo &quot;Copying to ${host} ..&quot;
+   sudo scp -o Batchmode=yes /prod/images/etc/sudoers ${host}:/etc/sudoers
+done</pre>
+
+<p>
+Ignore the errors unless it is the server you want it to go.
+</p>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Instructions to modify sudoers" [76-1994] -->
+<h2 class="sectionedit3" id="copy_to_driv_systems">Copy to DRiV systems</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Until split, also copy the sudoers to DRiV NIM server and DRiV hosts</div>
+<ol>
+<li class="level2"><div class="li"> Copy to DRiV NIM<pre class="code">sudo scp /prod/images/etc/sudoers pcdcunxaxap01:/prod/images/etc/sudoers</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Login to DRiV NIM<pre class="code">ssh pcdcunxaxap01</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Copy to all DRiV servers<pre class="code">for host in $(cat /prod/images/etc/allhosts.driv | grep .cdc | grep -v vilp)
+do
+   echo &quot;Copying to ${host} ..&quot;
+   sudo scp -o Batchmode=yes /prod/images/etc/sudoers ${host}:/etc/sudoers
+done</pre>
+
+<p>
+Ignore the errors unless it is the server you want it to go.
+</p>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Copy to DRiV systems" [1995-2559] -->
+<h2 class="sectionedit4" id="standing_instructions_for_sudo">Standing instructions for sudo</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Please push back on technical teams requesting “sudo su -”. Instead,</div>
+<ol>
+<li class="level2"><div class="li"> Ask them what commands they want to run as root.</div>
+</li>
+<li class="level2"><div class="li"> Add those commands to the respective sudoers section.</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Never create or modify “itocroot” accounts</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT4 SECTION "Standing instructions for sudo" [2560-2841] -->
+<h2 class="sectionedit5" id="if_all_of_the_above_fails_and_you_have_an_approval_from_unix_team_manager">If all of the above fails, and you have an approval from Unix Team Manager</h2>
+<div class="level2">
+
+<p>
+<strong> Enabling a user for sudo su - access </strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Login to pgnmsv01 </div>
+</li>
+<li class="level1"><div class="li"> Enable xxx user for yyy host<pre class="code">sudo /prod/images/scripts/manage_sudo enable xxx yyy</pre>
+</div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT5 SECTION "If all of the above fails, and you have an approval from Unix Team Manager" [2842-] -->

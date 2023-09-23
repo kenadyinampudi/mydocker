@@ -1,0 +1,28 @@
+====== NA - LDC - Disaster Recovery Test LINUX instructions (2018) ======
+
+===== Connectivity to DR ESXi farm =====
+
+  - VMWARE vSphere hostname and credentials<code>vSphere server  :  phlvpams005   IP - 134.238.206.43
+User account    :  <AD Credentials>
+Password        :  <AD Credentials>
+WebAccess       :  https://phlvpams005.driv.com/ui</code>
+
+===== Recovery of  Virtual Machines =====
+
+  - Wintel Team will recover all the VMware Servers and start them. 
+  - You should not have to make any changes to the Server IP address or network configuration. 
+
+===== Unix Team's activities =====
+
+  - Choose the Linux server, update the DR database for the server.
+  - Login to vSphere using fat client or web client. --> On the address space click and select “Hosts and Clusters”.
+  - Login to the DR-NIM server to continue with system re-configurations.
+    - Set variable specific to the system. First the servername<code>export hostname=<hostname></code>
+    - Configure NTP in DR. Stop daemon<code>sudo ssh ${hostname} systemctl stop ntpd</code>Backup the config<code>sudo ssh ${hostname} cp /etc/ntp.conf /etc/ntp.conf.DRtest</code>Now push the NTP file<code>sudo scp //prod/images/FILES-FOR-DR/ntp.client.conf ${hostname}:/etc/ntp.conf</code>Start the daemons<code>sudo ssh ${hostname} systemctl restart ntpd</code>Set the correct time from NIM server<code>sudo ssh ${hostname} "date ; ntpdate -u nim ; date"</code>
+    - Login to the server<code>sudo ssh ${hostname}</code>Change PS1 variable by login to the client. Make a backup copy<code>sudo cp /etc/profile /etc/profile.copyforDR</code>Then<code>sudo vi /etc/profile</code>Add this towards the end ( last line )<code>HOST=$(uname -n)
+PS1='DR test -- $HOST:$PWD>'</code>
+    - Perform a reboot<code>sudo systemctl reboot</code>
+    - **!!! Check that all file systems including all NFS file systems are mounted correctly on the server. !!!** <code> cat /etc/fstab | awk '{print $2}'</code>
+  - ** !!! Only after making sure that ALL  Server File Systems are correctly mounted including all NFS Mounts then and only
+ then turn over the server to the next group. !!!**
+

@@ -1,0 +1,12 @@
+====== Install NBU client on Linux ======
+
+
+  - Create /usr/openv filesystem<code>sudo lvcreate -n openv -L 4G datavg01
+sudo mkfs -t ext4 /dev/datavg01/openv
+echo "/dev/mapper/datavg01-openv   /usr/openv                    ext4    defaults        1 2" | sudo tee -a /etc/fstab
+sudo mkdir -p /usr/openv
+sudo mount /usr/openv</code>
+  - Download answer file<code>cd /tmp
+wget http://pablsv02/config/NBInstallAnswer.conf
+echo "CLIENT_NAME=`uname -n`.amer.int.tenneco.com" >> NBInstallAnswer.conf</code>
+  - Install NBU client<code>sudo yum -y install VRTSnbcfg VRTSnbclt VRTSnbjava VRTSnbjre VRTSnbpck VRTSpbx VRTSpddea</code>

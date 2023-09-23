@@ -1,0 +1,56 @@
+====== Upgrade to RHEL 7 12th April 2017  ======
+
+  - Create change controls, business approvals and all the things of that sort.
+  - Shutdown applications.
+  - Plan with VMWARE team and perform a VMWARE snapshot
+    - Shutdown the OS
+    - Take a cold snapshot -- Wintel
+    - Power the system back on
+  - Login to the client
+  - Modify the local.repo file with the latest repository. First make a copy<code>sudo cp /etc/yum.repos.d/local.repo local.repo</code>Add this<code>cat << EOF | sudo tee /etc/yum.repos.d/local.repo
+[04-12-2017-rhel-7-server-rpms]
+name=04-12-2017-rhel-7-server-rpms
+baseurl=http://pablsv02/sources/04-12-2017/rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[04-12-2017-rhel-7-server-extras-rpms]
+name=04-12-2017-rhel-7-server-extras-rpms
+baseurl=http://pablsv02/sources/04-12-2017/rhel-7-server-extras-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[04-12-2017-rhel-7-server-optional-rpms]
+name=04-12-2017-rhel-7-server-optional-rpms
+baseurl=http://pablsv02/sources/04-12-2017/rhel-7-server-optional-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-tenneco-noarch]
+name=local-tenneco-noarch
+baseurl=http://pablsv02/sources/tenneco-noarch/
+enabled=1
+gpgcheck=0
+proxy=_none_
+
+[local-tenneco-nbu]
+name=local-tenneco-nbu
+baseurl=http://pablsv02/sources/nbuclient/
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</code>
+  - On SAP App servers modify the sap.repo with the latest repository.First make a copy<code>sudo cp /etc/yum.repos.d/sap.repo sap.repo</code>Add this<code>cat << EOF | sudo tee /etc/yum.repos.d/sap.repo
+[04-12-2017-rhel-sap-for-rhel-7-server-rpms]
+name=04-12-2017-rhel-sap-for-rhel-7-server-rpms
+baseurl=http://pablsv02/sources/04-12-2017/rhel-sap-for-rhel-7-server-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_
+EOF</code>
+  - Install the updates / patches.<code>sudo yum clean all
+sudo yum update</code>
+  - Reboot the server<code>sudo init 6</code>

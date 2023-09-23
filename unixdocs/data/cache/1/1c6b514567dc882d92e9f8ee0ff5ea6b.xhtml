@@ -1,0 +1,76 @@
+
+<h1 class="sectionedit1" id="ubuntu_has_been_discarded__it_is_redhat">Ubuntu has been discarded .. ! it is redhat</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Ubuntu has been discarded .. ! it is redhat" [1-59] -->
+<h1 class="sectionedit2" id="network_installation_-_ubuntu">Network installation - Ubuntu</h1>
+<div class="level1">
+
+<p>
+<a href="https://help.ubuntu.com/11.04/installation-guide/i386/install-tftp.html" class="urlextern" title="https://help.ubuntu.com/11.04/installation-guide/i386/install-tftp.html"  rel="nofollow">More info here</a>
+</p>
+<ul>
+<li class="level1"><div class="li"> Install bootp on the Server<pre class="code">sudo apt-get install bootpd</pre>
+</div>
+<ul>
+<li class="level2"><div class="li"> Adding a client<pre class="code">sudo vi /etc/bootptab</pre>
+
+<p>
+Add this
+</p>
+<pre class="code">client:\
+ha=&quot;00:00:39:2B:54:B5&quot;:\
+ip=192.168.1.42:\
+gw=192.168.1.1:\
+sm=255.255.255.0:\
+td=/: hd=/: bf=pxelinux.0</pre>
+</div>
+<ul>
+<li class="level3"><div class="li"> ha = the mac address of the client machine (set this to its value)</div>
+</li>
+<li class="level3"><div class="li"> ip = the ip address assigned in the router to the client machine</div>
+</li>
+<li class="level3"><div class="li"> gw = the address of the router</div>
+</li>
+<li class="level3"><div class="li"> sm = the subnet mask for your lan</div>
+</li>
+<li class="level3"><div class="li"> td = the directory on the tfptboot server where the pxe files reside, relative to the tftpboot server&#039;s root.</div>
+</li>
+<li class="level3"><div class="li"> hd = a further path which ends at either the pxe boot file or a link to it. (this is probably ok as is)</div>
+</li>
+<li class="level3"><div class="li"> bf = the pxe boot file (this is probably ok as is) </div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="level1"><div class="li"> Start bootp on the server<pre class="code">sudo service bootpd start</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Install tftp server<pre class="code">sudo apt-get install tftpd-ha</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure using the sample<pre class="code">/etc/default/tftpd-hpa</pre>
+
+<p>
+here
+</p>
+<pre class="code">RUN_DAEMON=&quot;yes&quot;
+OPTIONS=&quot;-l -s /var/lib/tftpboot&quot;</pre>
+
+<p>
+-s
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Download the netboot installer tarfile from the Ubuntu archives and extract its contents into the tftpboot server file root</div>
+</li>
+<li class="level1"><div class="li"> </div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Network installation - Ubuntu" [60-] -->

@@ -1,0 +1,88 @@
+====== Restore instructions for FTA and IT0 backups from Pure Storage snapshots ======
+
+===== Offline SAP, database and the old devices =====
+
+  - Login to pgunap01<code>ssh pgunap01</code>
+  - Choose the correct protection group
+    - For IT0 / tedv2d01 snapshots<code>export PGRP=IT0DAILYBKP
+export TESTHOST=tedv2d01</code>
+    - For FTA / qaerdb01 snapshots<code>export PGRP=FTADAILYBKP
+export TESTHOST=qaerdb01</code>
+  - Have the Basis team / DBA team to shutdown SAP and database on the target host.
+  - Remove old devices<code>ssh ${TESTHOST}</code>Then<code>sudo lsvpcfg.sh > lsvpcfg.out.10</code>Delete the disks<code>grep -v rootvg lsvpcfg.out.10 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+
+===== Figure out the snapshot =====
+
+  - Login to pgunap01<code>ssh pgunap01</code>
+  - Choose the correct protection group
+    - For IT0 / tedv2d01 snapshots<code>export PGRP=IT0DAILYBKP
+export TESTHOST=tedv2d01</code>
+    - For FTA / qaerdb01 snapshots<code>export PGRP=FTADAILYBKP
+export TESTHOST=qaerdb01</code>
+  - Set the correct array variable<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"</code>
+  - Disconnect the volumes except root disks from target system<code>volumes=$(${SSH2PURE} purehost listobj --type vol ${TESTHOST} | grep -v "_00[1-2]" | tr "\n" " " )
+${SSH2PURE} purevol disconnect --host ${TESTHOST} ${volumes}</code>
+  - List the available snapshots<code>${SSH2PURE} purepgroup list --snap ${PGRP}</code>The output should be<code>Name            Source       Created                
+IT0DAILYBKP.23  IT0DAILYBKP  2017-12-12 22:00:00 CST
+IT0DAILYBKP.22  IT0DAILYBKP  2017-12-11 22:00:00 CST
+IT0DAILYBKP.21  IT0DAILYBKP  2017-12-10 22:00:00 CST
+IT0DAILYBKP.20  IT0DAILYBKP  2017-12-09 22:00:00 CST
+IT0DAILYBKP.19  IT0DAILYBKP  2017-12-08 22:00:00 CST
+IT0DAILYBKP.18  IT0DAILYBKP  2017-12-07 22:00:00 CST
+IT0DAILYBKP.17  IT0DAILYBKP  2017-12-06 22:00:00 CST
+IT0DAILYBKP.16  IT0DAILYBKP  2017-12-05 22:00:00 CST
+IT0DAILYBKP.15  IT0DAILYBKP  2017-12-04 22:00:00 CST
+IT0DAILYBKP.14  IT0DAILYBKP  2017-12-03 22:00:00 CST</code>
+  - Select a snapshot to restore<code>export SNAP="IT0DAILYBKP.20"</code>
+  - List the snapshot volumes<code>${SSH2PURE} purevol list --snap --pgrouplist ${SNAP}</code>The output should be like<code>IT0DAILYBKP.22.it0dbdata_001  512G  it0dbdata_001  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADA
+IT0DAILYBKP.22.it0dbdata_002  512G  it0dbdata_002  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADB
+IT0DAILYBKP.22.it0dbdata_003  512G  it0dbdata_003  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADC
+IT0DAILYBKP.22.it0dbdata_004  512G  it0dbdata_004  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8ADD
+....
+lines deleted
+....
+IT0DAILYBKP.22.it0dbdata_037  512G  it0dbdata_037  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AFE
+IT0DAILYBKP.22.it0dbdata_038  512G  it0dbdata_038  2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AFF
+IT0DAILYBKP.22.tedv2d01_001   138G  tedv2d01_001   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD1
+IT0DAILYBKP.22.tedv2d01_002   138G  tedv2d01_002   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD2
+IT0DAILYBKP.22.tedv2d01_003   102G  tedv2d01_003   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD7
+....
+lines deleted
+....
+IT0DAILYBKP.22.tedv2d01_007   102G  tedv2d01_007   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD3
+IT0DAILYBKP.22.tedv2d01_008   34G   tedv2d01_008   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD9
+IT0DAILYBKP.22.tedv2d01_009   34G   tedv2d01_009   2017-12-11 22:00:00 CST  BBABD90D93D542ED000A8AD8</code>
+  - The above snapshot volumes need to be copied to target volumes in order to map it to the host.
+  - Set a variable starting volume number.<code>export vol_no=200</code>
+  - Store the volumes in a variable<code>export volumes=$(${SSH2PURE} purevol list --snap --pgrouplist ${SNAP} --notitle | grep -v 138G | awk '{print $1}' | tr "\n" " ")</code>
+  - Copy the snapshots to volumes<code>target_vols=""
+for volume in ${volumes}
+do
+   ${SSH2PURE} purevol copy ${volume} ${TESTHOST}_${vol_no}
+   target_vols="${target_vols} ${TESTHOST}_${vol_no}"
+   vol_no=$((vol_no+1))
+done</code>
+  - Connect the target volumes to the target host<code>${SSH2PURE} purevol connect --host ${TESTHOST} ${target_vols}</code>
+  - Login to the target host<code>ssh ${TESTHOST}</code>
+  - Take a snapshot of the volumes<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Discover new devices<code>sudo cfgmgr</code>
+  - Take a snapshot of the volumes after discovery<code>sudo /usr/local/scripts/lsvpcfg.sh > lsvpcfg.out.2</code>
+  - Recreate the VGs and change the PVIDs<code>cat /usr/local/scripts/file_systems.txt \
+| sed -n '/Printing diskmap/,/Done Printing diskmap/'p \
+| grep hdisk | grep -v rootvg > diskmap
+for VG in $(awk -F: '{print $NF}' diskmap | sort -u )
+do
+   grep ":${VG}$" diskmap | awk -F: '{print $2}' > ${VG}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   sudo recreatevg -Y/ -L/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>
+
+===== Cleanup old volumes =====
+
+  - Cleanup old volumes from Pure storage ( note that the snapshots taken from those volumes will be gone. )

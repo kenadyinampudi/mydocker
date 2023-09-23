@@ -1,0 +1,162 @@
+====== AIX/VIOS Server Post installation work ======
+
+===== Steps from the NIM Server (taitc118) =====
+
+  - Login to taitc118 and store the hostname<code>export targethost=<host></code>'host' is the one being built.
+  - Setup resolv.conf
+    - North America<code>sudo scp /prod/images/etc/resolv.conf.na ${targethost}:/etc/resolv.conf</code>
+    - Europe<code>sudo scp /prod/images/etc/resolv.conf.eu ${targethost}:/etc/resolv.conf</code>
+    - Others - refer this document[[unix:setupresolv.conf| Setup resolv.conf - Click here]]
+  - Setup NTP
+    - AIX<code>sudo scp /prod/images/etc/ntp.conf.aix ${targethost}:/etc/ntp.conf</code>
+    - VIOS<code>sudo scp /prod/images/etc/ntp.conf.vios ${targethost}:/home/padmin/config/ntp.conf</code>
+    - Refresh the daemons<code>sudo ssh ${targethost} "chrctcp -S -a xntpd"
+sudo ssh ${targethost} "ntpdate -u 10.1.1.1"</code>Check the date and time<code>sudo ssh ${targethost} date</code>
+  - Configure default ssh configs<code>sudo scp /prod/images/etc/global_ssh_config ${targethost}:/etc/ssh/ssh_config</code>
+  - Configure sysinter<code>sudo ssh ${targethost} "mkdir -p /usr/local/bin"
+sudo scp /prod/images/csi/sysinter.aix5 ${targethost}:/usr/local/bin/sysinter.aix5
+sudo ssh ${targethost} grep -q ^sysinter /etc/services
+[[ ${?} -ne 0 ]] && sudo ssh ${targethost} "echo 'sysinter                40035/tcp' >> /etc/services "
+sudo ssh ${targethost} grep -q ^sysinter /etc/inetd.conf
+[[ ${?} -ne 0 ]] && sudo ssh ${targethost} "echo 'sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5' >> /etc/inetd.conf "
+sudo ssh ${targethost} "refresh -s inetd"</code>
+  - Copy the scripts<code>sudo ssh ${targethost} "mkdir -p /usr/local/scripts"
+sudo scp /usr/local/scripts/* ${targethost}:/usr/local/scripts/</code>
+  - Create a mksysb filesystem<code>sudo ssh ${targethost} "crfs -vjfs2 -g rootvg -m /bkpmksb -A yes -t no -a size=20G"
+sudo ssh ${targethost} "mount /bkpmksb"</code>
+  - [[unix:installothersoftwaresaix|On AIX and VIOS, install additional softwares]]
+  - Setup mksysb backup<code>sudo scp /prod/images/etc/id_dsa.mksysb ${targethost}:/usr/local/scripts/id_dsa.mksysb
+sudo scp /prod/images/scripts/mksysb.sh ${targethost}:/usr/local/scripts/mksysb.sh</code>
+  - If AIX, Add the system to UUMA<code>sudo ssh taqa1a03 "echo ${targethost} >> /home/oracle/uuma/hosts.txt"</code>
+  - If AIX, configure snmpd<code>sudo scp /etc/snmpdv3.conf ${targethost}:/etc/snmpdv3.conf</code>
+
+===== Steps from the server that is being built =====
+
+  - Login to the server and perform the rest of the steps
+  - Configure network<code>sudo vi /etc/tunables/nextboot</code><code>vmo:
+        minperm% = "3"
+        maxclient% = "90"
+        maxperm% = "90"
+        maxfree = "1088"
+        minfree = "960"
+        strict_maxclient = 1
+        strict_maxperm = 0
+
+no:
+        udp_ephemeral_high = "65500"
+        udp_ephemeral_low = "9000"
+        tcp_ephemeral_high = "65500"
+        tcp_ephemeral_low = "9000"
+        rfc1323 = "1"
+        ipignoreredirects = "1"
+        ipforwarding = "1"
+        ipsendredirects = "0"
+        sb_max = "1048576"
+        tcp_recvspace = "262144"
+        tcp_sendspace = "262144"
+        udp_recvspace = "57344"
+        udp_sendspace = "57344"
+        tcp_pmtu_discover = "0"
+        udp_pmtu_discover = "0"
+
+ioo:
+        aio_minservers = "8"
+        aio_maxservers = "32"
+        aio_maxreqs = "1024"</code>
+
+
+==== Systems connected to SAN ====
+
+  - If using SAN, Install EMC ODM filesets **Not required on the VIO server if using NPIV. But it is needed on the VIO guests**
+    - NFS mount the source for packages
+      - Lincolnshire<code>sudo mkdir -p /mnt/emc ;sudo  mount taitc118:/prod/images/EMC /mnt/emc</code>
+      - Interexion<code>sudo mkdir -p /mnt/emc ;sudo  mount penmsv01:/prod/images/EMC /mnt/emc</code>
+    - If using Clariion or VNX, please (re)install NAVIAGENT<code>sudo rm /etc/log/HostIdFile.txt</code>Remove it<code>sudo installp -u NAVIAGENT</code>Install it<code>sudo installp -acX -d /mnt/emc/NaviHostAgent-AIX-32-NA-en_US-6.29.6.0.35-1.lpp NAVIAGENT</code>
+      - Configure the Navi agent
+        - Interexion<code>sudo scp penmsv01:/prod/images/EMC/config/agent.config.int.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - Edenkoben<code>sudo scp penmsv01:/prod/images/EMC/config/agent.config.ede.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - Lincolnshire<code>sudo scp taitc118:/prod/images/EMC/config/agent.config.ldc.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - Monroe<code>sudo scp taitc118:/prod/images/EMC/config/agent.config.mon.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - Rybnik<code>sudo scp penmsv01:/prod/images/EMC/config/agent.config.ryb.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - GrassLake<code>sudo scp taitc118:/prod/images/EMC/config/agent.config.glk.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - St Truiden<code>sudo scp penmsv01:/prod/images/EMC/config/agent.config.str.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+    - If using powerpath<code>sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMC.Symmetrix.fcp.rte</code>
+    - If using MPIO<code>sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</code>
+  - If ODM is installed, perform a reboot now.<code>sudo shutdown -Fr</code>
+  - On an NPIV LPAR ( not the VIOS ), enable round robin.<code>lsdev -Ccdisk | grep MPIO | awk '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</code>
+  - Cleanup cron jobs<code>for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v "^root$|^adm$|^sys$|^uucp$|^esaadmin$")
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</code>
+  - Enable cron if disabled<code>sudo mkitab cron:23456789:respawn:/usr/sbin/cron</code>
+  - [[unix:syslogconfigtenneco&#configuring_an_aix_host_to_send_errpt_entries_to_centralized_syslog_server|Enable Centralised syslog]]
+  - Configure FC SCSI attributes<code>for FSCSI in $(lscfg | grep fscsi | awk '{print $2}' )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</code>
+  - Create a file /var/adm/.information which explains the host's role and mksysb target e.g.<code>sudo vi /var/adm/.information</code>Enter these details<code>
+mksysbhost:
+location:
+rack:
+virtual:
+virtualization:
+physhost:
+appname:
+role:
+contacts:
+function:
+asset owner:
+asset owner email:ta-unix@tenneco.com
+asset owner phone:+1-847-482-6440
+application owner:
+department:GIOS
+status:Active
+part number: IBM AIX
+vendor Service Tag:N/A
+express code:N/A
+company asset tag:N/A
+cage/room:LDC Datacenter
+rack position:
+private IP: N/A
+mac address:
+wwn:
+warranty start date:08/01/2013
+warranty end date:07/31/2016
+warranty number:1HI17358CA
+warranty type:24x7x4
+maintenance start date:08/01/2013
+maintenance end date:07/31/2016
+maintenance number:1HI17358CA
+maintenance type: 24x7x4
+vendor:IBM
+classification level:Critical
+business criticality:High
+</code>
+  - Add the TMOUT variable to /etc/profile if it wasn't a clone<code>sudo vi /etc/profile</code><code># Automatic logout, include in export line if uncommented
+TMOUT=3600
+readonly TMOUT</code>
+  - [[unix:usersandgroups|Create basic unix group and users]]
+  - Schedule standard cron jobs<code>sudo crontab -e</code>Add these<code># Customized for Tenneco
+59 21 * * 4 /usr/local/scripts/cr_altdisk.sh 1>/dev/null 2>&1
+00 23 * * * /usr/local/scripts/mksysb.sh 1>/dev/null 2>&1
+03 03 * * 6 /usr/local/scripts/clean_var 1>/dev/null 2>&1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1>/dev/null 2>&1
+05 * * * * /usr/local/scripts/stales.sh 1>/dev/null 2>&1</code>
+  - If booting from SAN, Create an alt_disk_copy.<code>sudo alt_disk_copy -B -d hdiskX</code>
+  - If VIO install updates
+    - [[unix:vioupdatesinstall|Install updates on VIO servers.]]
+  - If booting from internal disks, Mirror rootvg
+    - AIX<code>extendvg rootvg hdiskX
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdiskX
+sudo bootlist -m normal hdiskX hdiskY</code>
+    - VIOS
+      - Mirror boot disk<code>extendvg -f rootvg hdiskX
+mirrorios -f hdiskX</code>**This will reboot the VIOS**
+        - For some reason, IBM does not set up bootlist, so let us do it<code>oem_setup_env</code><code>bootlist -m normal hdiskX hdiskY</code>
+  - If AIX,Send ticket for netbackup
+  - Send ticket for Monitoring
+  - If AIX, Send a ticket to "GIOS Operations - Entitlement" to add the systems.
+  - Do a final reboot<code>sudo shutdown -Fr</code>
+  - Login to the NIM server and perform a NIM client cleanup<code>sudo nim -F -o reset <hostname>
+sudo nim -o deallocate -a subclass=all <hostname></code>

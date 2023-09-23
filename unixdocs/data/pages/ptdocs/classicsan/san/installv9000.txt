@@ -1,0 +1,55 @@
+====== Installation - V9000 ======
+
+  - Add a line to pgunap01:/prod/storageteam/etc/allstgarrays
+  - <del>Add the storage array to TPC''https://pgtpcsv01.amer.int.tenneco.com:9569/srm''</del>
+  - Complete and fill in the TDA documents and checklists
+  - Change the default passwords on Brocades and SVC.
+    - IBM v9000. Login as superuser to the V9000 Virtual IP<code>IBM_FlashSystem:ldcv9ac3:superuser>chuser -password superuser
+Enter a value for -password :
+Enter the value:
+Confirm the value:
+IBM_FlashSystem:ldcv9ac3:superuser></code>
+    - Brocade - default root password is fibranne<code>for user - root
+Changing password for root
+Enter new password:
+Re-type new password:
+passwd: all authentication tokens updated successfully
+Please change passwords for switch default accounts now.
+for user - factory
+Changing password for factory
+Enter new password:
+Re-type new password:
+passwd: all authentication tokens updated successfully
+Saving passwords to stable storage.
+Passwords saved to stable storage successfully</code>
+  - Implement monitoring
+    - Send the MIBs and enable monitoring
+      - Configure SNMP.<code>host 10.32.8.187
+community SNMPMGR1</code>New hosts were added due to move to solarwind - checking with monitoring team if community stays the same<code>10.128.100.20
+10.128.100.21
+10.128.100.25
+10.128.100.26</code>
+    - Ping monitoring for the interfaces.
+  - Configure callhome
+  - Make sure contract database is upto date.
+  - Create documentation for capturing the storage array details.
+  - Create POOL_serial_number_from_lsenclosure_command!<code>IBM_FlashSystem:ldcv9000-1:pawetkac>lsenclosure
+id status type      managed IO_group_id IO_group_name product_MTM serial_number total_canisters online_canisters total_PSUs online_PSUs drive_slots total_fan_modules online_fan_modules site_id site_name
+1  online expansion yes     0                         9848-AE2    1381128       2               2                2          2           12          0                 0</code>
+  - Create user snowscan on new array in Monitoring group - with password - to be provided later on.
+  - Add newly configured array to stor2rrd tool by editing config file pgunap01 being a stor2rrd user:<code>-bash-4.2$ pwd
+/home/stor2rrd/stor2rrd
+-bash-4.2$ vi etc/storage-list.cfg</code>Add there new IBM storage array. Then test it config with this command:<code>-bash-4.2$ ./bin/config_check.sh MONIBMv7k
+=========================
+STORAGE: MONIBMv7k: SWIZ : sample rate: 300 seconds
+=========================
+  TCP connection to "monv7kvip1" on port "22" is ok
+  ssh -o ConnectTimeout=80 -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey -o SendEnv=no stor2rrd@monv7kvip1  "lscurrentuser"
+  connection ok
+-bash-4.2$</code>Of course you have to create stor2rrd user on given storage array with the public key of stor2rrd user form pguanap01 which is:<code>-bash-4.2$ pwd
+/home/stor2rrd
+-bash-4.2$ cat .ssh/id_rsa.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAp2u1OBnr0k2nT3oncilv7ftyGwGf+EBN+ZLVWcTrdhpbQRO8zU8+MiAMIuwQYOP2gl8pdToC8Udivz1Tnm2GLMS1fwv3WFCLD1N2yo57tXhROgSg9VGStChJjtYztqrGJPy8APREdcPahwmeInf3cXldbir/WC9JICf+3SqQU+oNWtf3+ivYAtzGT+/Sq4tP9Z1xBz+nZepxw86tNKgvdJfTqSKeIWsGc7BItFh40Ehmh8KlHL0Dm3+Pgc7YKTwMhCzoXUwuHP7HepLQf6cHlIDrx7EkeS58QBzM9XhOT5g4e7P/RCWCeRnWfiyIdVDbWen/wX8kdElluqp1XPuuWw== stor2rrd@pgunap01</code>
+Than wait for about 20 min and run this command to have it reflected on web page:<code>-bash-4.2$ pwd
+/home/stor2rrd/stor2rrd
+-bash-4.2$ ./load.sh</code>

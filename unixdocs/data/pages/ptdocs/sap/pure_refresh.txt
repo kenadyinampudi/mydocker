@@ -1,0 +1,513 @@
+====== Pure Refreshes ======
+==== SAP refreshes with Pure ==== 
+At a high level, an SAP refresh from Pure means copying production over top the existing QA disks. //
+// 
+A sample checklist is provided below along with the steps a UNIX admin will take to resolve the issue.  //
+// 
+<markdown>
+## Checklist for Refresh ##
+----------------
+  - Initial Preparations/ Pre Steps on INQ (Basis)*  
+  - Client 000 Export	(Basis)*  
+  - Client 500 Export	(Basis)*  
+  - Export INQ RFC Tables	 (Basis)*  
+  - Shutdown SAP Application	(Basis)*  
+  - Shutdown INQ database and stop listener	DB Stop	(DBA)*  
+  - [Complete snapshot VM		SAN](refreshes.md#complete-snapshot-vm)  
+  - [LUN Information of INP to SAN Team](refreshes.md#lun-information-of-inp-to-san-team)  
+  - INP Control File Backup	 	DBA*  
+  - Verify Actifio put INP in backup mode for snap	 	DBA*  
+  - [Unmounts file systems and export VGs on INQ](refreshes.md#unmounts-file-systems-and-export-vgs-on-inq)  
+  - [Validate the Actifio backup of INP](refreshes.md#validate-the-actifio-backup-of-inp)  
+  - [Actifio Refresh Process to restore INQ](refreshes.md#actifio-refresh-process-to-restore-inq)  
+  - End backup mode in INP	 	DBA*  
+  - [Import Backup disks to INQ](refreshes.md#import-backup-disks-to-inq)  
+  - [Reclaim Disk for INQ and set file system](refreshes.md#reclaim-disk-for-inq-and-set-file-system)  
+  - [Change permissions on imported filesystems](refreshes.md#change-permissions-on-imported-filesystems)  
+  - Start and Recover Database	 	DBA*  
+  - Truncate tables, adjust users & roles	 	DBA*  
+  - Post System Copy Steps	 	Basis*  
+  - Run BDLS	 	Basis*  
+*22	Shutdown all SAP and Oracle services		Basis*  
+[23	Power off the VM](refreshes.md#power-off-the-vm)  
+[24	Modify the RDM settings to be Dependent](refreshes.md#modify-the-rdm-settings-to-be-dependent)  
+[25	Run A FULL BACKUP](refreshes.md#run-a-full-backup)  
+*26	Release INQ to Business	 	Basis*  
+[27	vStorageMotion the RDM onto the datastores](refreshes.md#vstoragemotion-the-rdm-onto-the-datastores)  
+[28	Remove Actifio Mount](refreshes.md#remove-actifio-mount)  
+
+----------------
+
+## Complete snapshot VM
+> Find the Actifio appliance hosting the source system.  
+Make sure the target system exists on the same Actifio appliance.  
+If you need to add the target system, it does not need to have an active policy.  It just needs to exist so Actifio has a target to mount to.  
+Monitor Actifio (and VMware if desired) for snapshot completion.  
+
+
+!!! node "Mark the time of the snapshot."
+SAP team will need this for transport synchronization.  
+
+## LUN Information of INP to SAN Team
+> First thing I do is attempt to capture the state of storage on the test system.
+> `mount`  
+In particular, look for the sapvg and saplogvg.  These are needed for refreshes.  
+
+In all the examples below, I've omitted results for everything but saplogvg and sapvg  
+
+```
+cdcpillx082:~ # mount
+...
+/dev/mapper/saplogvgb-mirrlogAlv1 on /oracle/INQ/mirrlogA type ext3 (rw,acl,user_xattr)
+/dev/mapper/saplogvgb-mirrlogBlv1 on /oracle/INQ/mirrlogB type ext3 (rw,acl,user_xattr)
+/dev/mapper/saplogvga-origlogAlv1 on /oracle/INQ/origlogA type ext3 (rw,acl,user_xattr)
+/dev/mapper/saplogvga-origlogBlv1 on /oracle/INQ/origlogB type ext3 (rw,acl,user_xattr)
+/dev/mapper/oraarchvg-oraarchlv1 on /oracle/INQ/oraarch type ext3 (rw,acl,user_xattr)
+/dev/mapper/sapvg-sapdata1lv on /oracle/INQ/sapdata1 type ext3 (rw,acl,user_xattr)
+/dev/mapper/sapvg-sapdata2lv on /oracle/INQ/sapdata2 type ext3 (rw,acl,user_xattr)
+/dev/mapper/sapvg-sapdata3lv on /oracle/INQ/sapdata3 type ext3 (rw,acl,user_xattr)
+/dev/mapper/sapvg-sapdata4lv on /oracle/INQ/sapdata4 type ext3 (rw,acl,user_xattr)
+```
+> `pvs`  
+
+```
+cdcpillx082:~ # pvs
+  PV         VG        Fmt  Attr PSize   PFree
+  /dev/sde   sapvg     lvm2 a--  375.00g       0
+  /dev/sdf   sapvg     lvm2 a--  375.00g       0
+  /dev/sdg   sapvg     lvm2 a--  375.00g       0
+  /dev/sdh   sapvg     lvm2 a--  375.00g       0
+  /dev/sdi   saplogvga lvm2 a--   50.00g   30.00g
+  /dev/sdj   saplogvgb lvm2 a--   50.00g   30.00g
+  /dev/sdm   sapvg     lvm2 a--  250.00g   25.98g
+```
+> `lvs`
+
+```
+cdcpillx082:~ # lvs
+  LV          VG        Attr      LSize   Pool Origin Data%  Move Log Copy%  Convert
+  origlogAlv1 saplogvga -wi-ao---  10.00g
+  origlogBlv1 saplogvga -wi-ao---  10.00g
+  mirrlogAlv1 saplogvgb -wi-ao---  10.00g
+  mirrlogBlv1 saplogvgb -wi-ao---  10.00g
+  sapdata1lv  sapvg     -wi-ao--- 431.00g
+  sapdata2lv  sapvg     -wi-ao--- 431.00g
+  sapdata3lv  sapvg     -wi-ao--- 431.00g
+  sapdata4lv  sapvg     -wi-ao--- 431.00g
+```
+> `lsscsi`  Physical location can be matched to VG by the device name.
+```
+cdcpillx082:~ # lsscsi
+[1:0:0:0]    disk    VMware   Virtual disk     1.0   /dev/sde
+[1:0:1:0]    disk    VMware   Virtual disk     1.0   /dev/sdf
+[1:0:2:0]    disk    VMware   Virtual disk     1.0   /dev/sdg
+[1:0:3:0]    disk    VMware   Virtual disk     1.0   /dev/sdh
+[1:0:4:0]    disk    VMware   Virtual disk     1.0   /dev/sdi
+[1:0:5:0]    disk    VMware   Virtual disk     1.0   /dev/sdj
+[1:0:9:0]    disk    VMware   Virtual disk     1.0   /dev/sdm
+```
+> `cat /etc/fstab` This helps establish filesystem expectations by the OS.
+```
+cdcpillx082:~ # cat /etc/fstab
+/dev/saplogvgb/mirrlogAlv1  /oracle/INQ/mirrlogA    ext3    acl,user_xattr        1 2
+/dev/saplogvgb/mirrlogBlv1  /oracle/INQ/mirrlogB    ext3    acl,user_xattr        1 2
+/dev/saplogvga/origlogAlv1  /oracle/INQ/origlogA    ext3    acl,user_xattr        1 2
+/dev/saplogvga/origlogBlv1  /oracle/INQ/origlogB    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata1lv  /oracle/INQ/sapdata1    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata2lv  /oracle/INQ/sapdata2    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata3lv  /oracle/INQ/sapdata3    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata4lv  /oracle/INQ/sapdata4    ext3    acl,user_xattr        1 2
+```
+
+## Unmounts file systems and export VGs on INQ
+> `umount /oracle/INQ/sapdata*`  
+`umount /oracle/INQ/mirr*`  
+`umount /oracle/INQ/origl*`  
+
+```
+cdcpillx082:~ # umount /oracle/INQ/sapdata*
+umount: /oracle/INQ/sapdata1: device is busy.
+        (In some cases useful info about processes that use
+         the device is found by lsof(8) or fuser(1))
+umount: /oracle/INQ/sapdata5: not mounted
+umount: /oracle/INQ/sapdata6: not mounted
+umount: /oracle/INQ/sapdata7: not mounted
+umount: /oracle/INQ/sapdata8: not mounted
+```
+> If a filesystem is busy, you should try to track down the guilty party.  
+Usually this is a user in the wrong directory.  
+
+```
+cdcpillx082:~ # lsof /oracle/INQ/sapdata1
+COMMAND  PID   USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME
+csh     4743 orainq  cwd    DIR 253,12     4096 7307265 /oracle/INQ/sapdata1/sr3_10
+```
+Now that the filesystems are unmounted, the VGs can be deactivated and exports.  
+> `vgchange -an <vgname>`  
+`vgexport <vgname>`  
+
+```
+cdcpillx082:~ # vgchange -an sapvg
+  0 logical volume(s) in volume group "sapvg" now active
+cdcpillx082:~ # vgchange -an saplogvga
+  0 logical volume(s) in volume group "saplogvga" now active
+cdcpillx082:~ # vgchange -an saplogvgb
+  0 logical volume(s) in volume group "saplogvgb" now active
+cdcpillx082:~ # vgexport sapvg
+  Volume group "sapvg" successfully exported
+cdcpillx082:~ # vgexport saplogvga
+  Volume group "saplogvga" successfully exported
+cdcpillx082:~ # vgexport saplogvgb
+  Volume group "saplogvgb" successfully exported
+```
+
+Once the VGs are exported, the VGs should probably be renamed.  
+This could be done later in the process, but I like to do it now.  
+
+```
+cdcpillx082:~ # vgrename sapvg sapvg_old
+  Volume group "sapvg" successfully renamed to "sapvg_old"
+cdcpillx082:~ # vgrename saplogvga saplogvga_old
+  Volume group "saplogvga" successfully renamed to "saplogvga_old"
+cdcpillx082:~ # vgrename saplogvgb saplogvgb_old
+  Volume group "saplogvgb" successfully renamed to "saplogvgb_old"
+```
+
+> This results in the following view: (Note the "x" for "exported")
+
+```
+cdcpillx082:~ # vgs
+  VG                      #PV #LV #SN Attr   VSize   VFree
+  saplogvga_old             1   2   0 wzx-n-  50.00g   30.00g
+  saplogvgb_old             1   2   0 wzx-n-  50.00g   30.00g
+  sapvg_old                 5   4   0 wzx-n-   1.71t   25.98g
+```  
+
+## Validate the Actifio backup of INP
+This was already done earlier, but just reaffirm you're looking at the correct backup.
+
+## Actifio Refresh Process to restore INQ
+This is a simple mount of the backup image from the source to the target system.
+When we did mounts of SAN snapshots to AIX boxes, we needed to be extremely careful about which filesystems were presented to the target system, because if we had two volumes with the same PVID, AIX would be confused and strange things would happen.  
+Now, Linux is much more forgiving.  It will import and rename the volumes groups so there is never a contention.  
+To that end, you don't have to be picky about which disks to mount.  Mount them all, unless you feel the need to be exact.  
+  
+To mount an Actifio image, log into the Actifio appliance of the source system.  
+Once in to the Actifio management interface, find the source system.   
+Go to the "Restore" tab of the system to look at current backup images.  
+You should see the backup you just took with the same label you put on it earlier.  
+  
+Mount the backup image to the target system via the GUI.  
+!!! note "Make sure to put a label on the mount.  This helps identify the mount later during cleanup."  
+
+## Import  Backup disks to INQ
+This should be simple, but I've found the automated scripts don't work as expected.
+
+> `rescan-scsi-bus.sh` - This is the provided script, but doesn't work most times.  
+
+```
+/usr/bin/rescan-scsi-bus.sh: line 647: [: 1.11: integer expression expected
+Host adapter 0 (mptspi) found.
+Host adapter 1 (mptspi) found.
+Host adapter 2 (ata_piix) found.
+Host adapter 3 (ata_piix) found.
+Host adapter 4 (mptspi) found.
+...
+OLD: Host: scsi4 Channel: 00 Id: 05 Lun: 00
+      Vendor: VMware   Model: Virtual disk     Rev: 1.0
+      Type:   Direct-Access                    ANSI SCSI revision: 02
+ Scanning for device 4 0 6 0 ...
+OLD: Host: scsi4 Channel: 00 Id: 06 Lun: 00
+      Vendor: VMware   Model: Virtual disk     Rev: 1.0
+      Type:   Direct-Access                    ANSI SCSI revision: 02
+0 new or changed device(s) found.
+0 device(s) removed.
+```
+
+> In this instance, no new devices were found, so I need to scan the old school way.  
+`echo "- - -" > /sys/class/scsi_host/host#/scan`  
+This may cause a brief blip in host access, so space out the commands.  
+Hand-typing will give enough of a delay.
+
+```
+cdcpillx082:~ # echo "- - -" > /sys/class/scsi_host/host0/scan
+cdcpillx082:~ # echo "- - -" > /sys/class/scsi_host/host1/scan
+cdcpillx082:~ # echo "- - -" > /sys/class/scsi_host/host2/scan
+cdcpillx082:~ # echo "- - -" > /sys/class/scsi_host/host3/scan
+cdcpillx082:~ # pvs
+  PV         VG                      Fmt  Attr PSize   PFree
+  /dev/sda3  rootvg                  lvm2 a--   47.50g   14.50g
+  /dev/sdaa  sapvg_1477945314839     lvm2 ax-  375.00g       0
+  /dev/sdab  sapvg_1477945314839     lvm2 ax-  375.00g       0
+  /dev/sdc   oravg                   lvm2 a--  200.00g  144.00g
+  /dev/sdd   sapcivg                 lvm2 a--  250.00g    5.00g
+  /dev/sde   sapvg_old               lvm2 a--  375.00g       0
+  /dev/sdf   sapvg_old               lvm2 a--  375.00g       0
+  /dev/sdg   sapvg_old               lvm2 a--  375.00g       0
+  /dev/sdh   sapvg_old               lvm2 a--  375.00g       0
+  /dev/sdi   saplogvga_old           lvm2 a--   50.00g   30.00g
+  /dev/sdj   saplogvgb_old           lvm2 a--   50.00g   30.00g
+  /dev/sdk   oraarchvg               lvm2 a--   50.00g       0
+  /dev/sdl   oraarchvg               lvm2 a--   50.00g 1016.00m
+  /dev/sdm   sapvg_old               lvm2 a--  250.00g   25.98g
+  /dev/sdn   sapvg_1477945314839     lvm2 ax-  375.00g       0
+  /dev/sdo   sapvg_1477945314839     lvm2 ax-  375.00g       0
+  /dev/sdp   saplogvg_1477945313273  lvm2 ax-  100.00g   14.00g
+  /dev/sdq   saplogvg_1477945313273  lvm2 ax-   50.00g   50.00g
+  /dev/sdr   saplogvga_1477945314029 lvm2 ax-   50.00g   30.00g
+  /dev/sds   saplogvgb_1477945314494 lvm2 ax-   50.00g   30.00g
+  /dev/sdt   oraarchvg_1477945311354 lvm2 ax-   50.00g       0
+  /dev/sdu   oraarchvg_1477945311354 lvm2 ax-   50.00g 1016.00m
+  /dev/sdv   sapvg_1477945314839     lvm2 ax-  250.00g   25.98g
+  /dev/sdw3  rootvg_1477945312511    lvm2 ax-   47.50g   14.50g
+  /dev/sdy   oravg_1477945312136     lvm2 ax-  200.00g  144.00g
+  /dev/sdz   sapcivg_1477945312867   lvm2 ax-  250.00g  185.00g
+```
+So you can see that I mounted all the drives. There are a number of "<vgname>_#########" volume groups.  These are the discovered VGs from the Actifio mount.  Linux has discovered them and given them a non-conflicting name.
+
+## Reclaim Disk for INQ and set file system
+> Rename the new VGs to the expected names.  
+`vgrename <current_name> <desired_name>`
+
+```
+cdcpillx082:~ # vgrename sapvg_1477945314839 sapvg
+  Volume group "sapvg_1477945314839" successfully renamed to "sapvg"
+cdcpillx082:~ # vgrename saplogvga_1477945314029 saplogvga
+  Volume group "saplogvga_1477945314029" successfully renamed to "saplogvga"
+cdcpillx082:~ # vgrename saplogvgb_1477945314494 saplogvgb
+  Volume group "saplogvgb_1477945314494" successfully renamed to "saplogvgb"
+cdcpillx082:~ # vgs
+  VG                      #PV #LV #SN Attr   VSize   VFree
+  oraarchvg                 2   1   0 wz--n-  99.99g 1016.00m
+  oraarchvg_1477945311354   2   1   0 wzx-n-  99.99g 1016.00m
+  oravg                     1   9   0 wz--n- 200.00g  144.00g
+  oravg_1477945312136       1   9   0 wzx-n- 200.00g  144.00g
+  rootvg                    1   7   0 wz--n-  47.50g   14.50g
+  rootvg_1477945312511      1   7   0 wzx-n-  47.50g   14.50g
+  sapcivg                   1   4   0 wz--n- 250.00g    5.00g
+  sapcivg_1477945312867     1   3   0 wzx-n- 250.00g  185.00g
+  saplogvg_1477945313273    2   5   0 wzx-n- 149.99g   63.99g
+  saplogvga                 1   2   0 wz--n-  50.00g   30.00g
+  saplogvga_old             1   2   0 wzx-n-  50.00g   30.00g
+  saplogvgb                 1   2   0 wz--n-  50.00g   30.00g
+  saplogvgb_old             1   2   0 wzx-n-  50.00g   30.00g
+  sapvg                     5   4   0 wz--n-   1.71t   25.98g
+  sapvg_old                 5   4   0 wzx-n-   1.71t   25.98g
+```
+On this system, there's an unused "saplogvg" on the source system that isn't mounted anywhere.  You can also see the extraneous VGs from the backup image renamed by Linux to non-conflicting names.  
+
+> Import the VGs and activate them.  
+`vgimport <vgname>`  
+`vgchange -ay <vgname>`  
+
+```
+cdcpillx082:~ # vgimport sapvg_1477945314839
+  Volume group "sapvg_1477945314839" successfully imported
+cdcpillx082:~ # vgimport saplogvga_1477945314029 saplogvga
+  Volume group "saplogvga_1477945314029" successfully imported
+cdcpillx082:~ # vgimport "saplogvgb"
+  Volume group "saplogvgb" successfully imported
+cdcpillx082:~ # vgchange -ay sapvg
+  4 logical volume(s) in volume group "sapvg" now active
+cdcpillx082:~ # vgchange -ay saplogvga
+  2 logical volume(s) in volume group "saplogvga" now active
+cdcpillx082:~ # vgchange -ay saplogvgb
+  2 logical volume(s) in volume group "saplogvgb" now active
+```
+
+> Mount everything back up.  
+`mount -a` (if you're brave)  
+
+```
+cdcpillx082:~ # cat /etc/fstab
+/dev/saplogvgb/mirrlogAlv1  /oracle/INQ/mirrlogA    ext3    acl,user_xattr        1 2
+/dev/saplogvgb/mirrlogBlv1  /oracle/INQ/mirrlogB    ext3    acl,user_xattr        1 2
+/dev/saplogvga/origlogAlv1  /oracle/INQ/origlogA    ext3    acl,user_xattr        1 2
+/dev/saplogvga/origlogBlv1  /oracle/INQ/origlogB    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata1lv  /oracle/INQ/sapdata1    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata2lv  /oracle/INQ/sapdata2    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata3lv  /oracle/INQ/sapdata3    ext3    acl,user_xattr        1 2
+/dev/sapvg/sapdata4lv  /oracle/INQ/sapdata4    ext3    acl,user_xattr        1 2
+
+cdcpillx082:~ # mount /oracle/INQ/sapdata1
+cdcpillx082:~ # mount /oracle/INQ/sapdata2
+cdcpillx082:~ # mount /oracle/INQ/sapdata3
+cdcpillx082:~ # mount /oracle/INQ/sapdata4
+cdcpillx082:~ # mount /oracle/INQ/mirrlogA
+cdcpillx082:~ # mount /oracle/INQ/mirrlogB
+cdcpillx082:~ # mount /oracle/INQ/origlogA
+cdcpillx082:~ # mount /oracle/INQ/origlogB
+```
+
+> Once the filesystems are cleanly mounted and look good, cleanup the rest of the drives.  
+I like to remove the volumes so the OS doesn't have stale information.  
+First, identify unneeded disks.  Because I use underscores for old systems and Linux appends an underscore for all imported VGs, I can grep on that for PVs that can be removed.  
+`pvs | grep _`  
+
+```
+cdcpillx082:~ # pvs
+  PV         VG                      Fmt  Attr PSize   PFree
+  /dev/sda3  rootvg                  lvm2 a--   47.50g   14.50g
+  /dev/sdaa  sapvg                   lvm2 a--  375.00g       0
+  /dev/sdab  sapvg                   lvm2 a--  375.00g       0
+  /dev/sdc   oravg                   lvm2 a--  200.00g  144.00g
+  /dev/sdd   sapcivg                 lvm2 a--  250.00g    5.00g
+  /dev/sde   sapvg_old               lvm2 ax-  375.00g       0
+  /dev/sdf   sapvg_old               lvm2 ax-  375.00g       0
+  /dev/sdg   sapvg_old               lvm2 ax-  375.00g       0
+  /dev/sdh   sapvg_old               lvm2 ax-  375.00g       0
+  /dev/sdi   saplogvga_old           lvm2 ax-   50.00g   30.00g
+  /dev/sdj   saplogvgb_old           lvm2 ax-   50.00g   30.00g
+  /dev/sdk   oraarchvg               lvm2 a--   50.00g       0
+  /dev/sdl   oraarchvg               lvm2 a--   50.00g 1016.00m
+  /dev/sdm   sapvg_old               lvm2 ax-  250.00g   25.98g
+  /dev/sdn   sapvg                   lvm2 a--  375.00g       0
+  /dev/sdo   sapvg                   lvm2 a--  375.00g       0
+  /dev/sdp   saplogvg_1477945313273  lvm2 ax-  100.00g   14.00g
+  /dev/sdq   saplogvg_1477945313273  lvm2 ax-   50.00g   50.00g
+  /dev/sdr   saplogvga               lvm2 a--   50.00g   30.00g
+  /dev/sds   saplogvgb               lvm2 a--   50.00g   30.00g
+  /dev/sdt   oraarchvg_1477945311354 lvm2 ax-   50.00g       0
+  /dev/sdu   oraarchvg_1477945311354 lvm2 ax-   50.00g 1016.00m
+  /dev/sdv   sapvg                   lvm2 a--  250.00g   25.98g
+  /dev/sdw3  rootvg_1477945312511    lvm2 ax-   47.50g   14.50g
+  /dev/sdy   oravg_1477945312136     lvm2 ax-  200.00g  144.00g
+  /dev/sdz   sapcivg_1477945312867   lvm2 ax-  250.00g  185.00g
+cdcpillx082:~ # pvs | grep _
+  /dev/sde   sapvg_old               lvm2 ax-  375.00g       0
+  /dev/sdf   sapvg_old               lvm2 ax-  375.00g       0
+  /dev/sdg   sapvg_old               lvm2 ax-  375.00g       0
+  /dev/sdh   sapvg_old               lvm2 ax-  375.00g       0
+  /dev/sdi   saplogvga_old           lvm2 ax-   50.00g   30.00g
+  /dev/sdj   saplogvgb_old           lvm2 ax-   50.00g   30.00g
+  /dev/sdm   sapvg_old               lvm2 ax-  250.00g   25.98g
+  /dev/sdp   saplogvg_1477945313273  lvm2 ax-  100.00g   14.00g
+  /dev/sdq   saplogvg_1477945313273  lvm2 ax-   50.00g   50.00g
+  /dev/sdt   oraarchvg_1477945311354 lvm2 ax-   50.00g       0
+  /dev/sdu   oraarchvg_1477945311354 lvm2 ax-   50.00g 1016.00m
+  /dev/sdw3  rootvg_1477945312511    lvm2 ax-   47.50g   14.50g
+  /dev/sdy   oravg_1477945312136     lvm2 ax-  200.00g  144.00g
+  /dev/sdz   sapcivg_1477945312867   lvm2 ax-  250.00g  185.00g
+```
+
+Now that I have a list of devices to delete, I need to translate that into physical locations so I can remove them from the OS and later remove them from the VM.  
+  
+`lssscsi`  
+Again, the output below is edited for the devices we care about.  
+
+```
+cdcpillx082:~ # lsscsi
+[1:0:0:0]    disk    VMware   Virtual disk     1.0   /dev/sde
+[1:0:1:0]    disk    VMware   Virtual disk     1.0   /dev/sdf
+[1:0:2:0]    disk    VMware   Virtual disk     1.0   /dev/sdg
+[1:0:3:0]    disk    VMware   Virtual disk     1.0   /dev/sdh
+[1:0:4:0]    disk    VMware   Virtual disk     1.0   /dev/sdi
+[1:0:5:0]    disk    VMware   Virtual disk     1.0   /dev/sdj
+[1:0:9:0]    disk    VMware   Virtual disk     1.0   /dev/sdm
+[1:0:10:0]   disk    VMware   Virtual disk     1.0   /dev/sdw
+[1:0:12:0]   disk    VMware   Virtual disk     1.0   /dev/sdy
+[1:0:13:0]   disk    VMware   Virtual disk     1.0   /dev/sdz
+[4:0:2:0]    disk    VMware   Virtual disk     1.0   /dev/sdp
+[4:0:3:0]    disk    VMware   Virtual disk     1.0   /dev/sdq
+[4:0:6:0]    disk    VMware   Virtual disk     1.0   /dev/sdt
+[4:0:8:0]    disk    VMware   Virtual disk     1.0   /dev/sdu
+```  
+To remove a device from Linux, echo a "1" into the delete file of the device.  
+```
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:0\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:1\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:2\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:3\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:4\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:5\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:9\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:10\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:12\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/1\:0\:13\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/4\:0\:2\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/4\:0\:3\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/4\:0\:6\:0/device/delete
+cdcpillx082:/ # echo 1 > /sys/class/scsi_device/4\:0\:8\:0/device/delete
+cdcpillx082:/ # pvs
+  PV         VG        Fmt  Attr PSize   PFree
+  /dev/sda3  rootvg    lvm2 a--   47.50g   14.50g
+  /dev/sdaa  sapvg     lvm2 a--  375.00g       0
+  /dev/sdab  sapvg     lvm2 a--  375.00g       0
+  /dev/sdc   oravg     lvm2 a--  200.00g  144.00g
+  /dev/sdd   sapcivg   lvm2 a--  250.00g    5.00g
+  /dev/sdk   oraarchvg lvm2 a--   50.00g       0
+  /dev/sdl   oraarchvg lvm2 a--   50.00g 1016.00m
+  /dev/sdn   sapvg     lvm2 a--  375.00g       0
+  /dev/sdo   sapvg     lvm2 a--  375.00g       0
+  /dev/sdr   saplogvga lvm2 a--   50.00g   30.00g
+  /dev/sds   saplogvgb lvm2 a--   50.00g   30.00g
+  /dev/sdv   sapvg     lvm2 a--  250.00g   25.98g
+```
+
+## Change permissions on imported filesystems
+Usually, the oracle owner on the source system is a different userid than the oracle owner on the target system, so all the newly imported and mounted filesystems will need to have their ownership modified.
+
+`chown -R <oraSID> /oracle/SID/sapdata*`  
+```
+cdcpillx082:/oracle/INQ # chown -R orainq:dba sapdata*
+cdcpillx082:/oracle/INQ # chown -R orainq:dba mirr*
+cdcpillx082:/oracle/INQ # chown -R orainq:dba orig*
+```
+
+## Power off the VM
+This action isn't complicated, but having it explicitly stated helps the rest of the users understand what's happening.  
+From a root prompt, issue a shutdown.  
+`shutdown -h now`  
+Follow up with VM admin console to ensure the system is really powered off.
+
+## Modify the RDM settings to be Dependent
+This step is necessary to ensure the subsequent snapshots contain all the new drives.  
+Edit the settings of the target VM.  
+Using the list of SCSI addresses of the removed disks, delete (and remove from disk) the vDisks whose scsi addresses match the scsi addresses from lsscsi.  
+Sometimes the adapters have a different numbering scheme. For example, in Linux it shows up as SCSI adapter 4, but in VMware the SCSI adapter is 2.  The minor device addresses always match.  You can use the size of the disks as a double-check that the disk in the OS is the same as the disk in VMWare.
+  
+For example:  
+```
+cdcpillx082:~ # lsscsi
+[1:0:0:0]    disk    VMware   Virtual disk     1.0   /dev/sde
+[1:0:1:0]    disk    VMware   Virtual disk     1.0   /dev/sdf
+[1:0:2:0]    disk    VMware   Virtual disk     1.0   /dev/sdg
+[1:0:3:0]    disk    VMware   Virtual disk     1.0   /dev/sdh
+[4:0:2:0]    disk    VMware   Virtual disk     1.0   /dev/sdp
+[4:0:3:0]    disk    VMware   Virtual disk     1.0   /dev/sdq
+``` 
+
+For disk "/dev/sdg", the SCSI adapter is adapter 1 and the device number is the minor number "2".  The zeroes are extraneous for our purposes.  
+For disk "/dev/sdp", the SCSI adapter is adapter 4 and the device number is 2.  In VMware, I found the SCSI adapter as adapter "2", but the minor number and the disk size matched as expected.  This held true for all disks on that adapter, so I can be confident that the OS adapter 4 is really VM adapter 2.  
+Once the unnecessary disks are deleted, room is made so I can move the RDMs to physical disk. This is done later.  
+
+!!! warning "This is a permanent delete!"
+
+Change the properties of the required RDMs to be "dependent" by **unchecking** the "Independent" checkbox.  
+
+Once the RDM modifications are made, the server should boot up and mount the filesystems as normal.  
+
+Boot the VM.  
+Make sure the system comes up cleanly.  
+Once you've verified functionality, you are free to proceed to the next step.  
+
+## Run A FULL BACKUP
+Now that new disks were added, their properties changes to allow them to take place in a snapshot, and old drives were removed from the VM, we can take a snapshot with a greater degree of confidence that we will be capturing all the pertinent information.  
+Take a snap of the system.  It will take a while to complete because almost every drive on the system is new to Actifio, so all the data needs to be reingested.  The deduped image should compress nicely, but the initial backup still takes a while.  
+
+## vStorageMotion the RDM onto the datastores
+Since we've removed all "old" drives in previous steps, the next step to make sure that any remaining RDMs get moved over to physical disks.  If the old drives were deleted properly, then there should be space enough for the RDMs on the existing datastores.
+
+## Remove Actifio Mount
+Finally, we clean up after ourselves by removing the Actifio mount via Actifio.  
+!!! warning "This is another permanent action.  Ensure no RDMs exist in the VM definition."  
+
+Go into the Actifio appliance which is hosting the mount.  
+Find the actual mounted image, either in the Domain Manager or by going to the source system/Restore tab and looking in the grey box at the bottom.  
+
+Issue the unmount command.  
+
+Actifio will attempt to contact the vCenter and directly remove the RDMs from the VM definition.  At the same time, Actifio will remove the mounts from the VM Host and rescan the adapters to make sure they disappear as expected.
+
+Once this finishes, you have a refreshed system.  The data has been copied from production.  The old data has been cleaned up and deleted.  Backups have completed successfully.  Actifio mounts have been removed and cleaned up.
+</markdown>

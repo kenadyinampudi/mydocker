@@ -1,0 +1,23 @@
+====== AIX initial configuration of SAN connected systems ======
+
+  - Configure FC SCSI attributes<code>for FSCSI in $(lscfg | grep fscsi | awk '{print $2}' )
+do
+   sudo chdev -Pl ${FSCSI} -a fc_err_recov=fast_fail -a dyntrk=yes
+done</code>
+  - Install EMC ODM filesets **Not required on the VIO server if using NPIV. But it is needed on the VIO guests**
+    - NFS mount the source for packages
+      - Lincolnshire<code>sudo mkdir -p /mnt/emc ;sudo  mount pgnmsv01:/prod/images/EMC /mnt/emc</code>
+      - Interexion<code>sudo mkdir -p /mnt/emc ;sudo  mount penmsv01:/prod/images/EMC /mnt/emc</code>
+    - If using Clariion or VNX, please (re)install NAVIAGENT<code>sudo rm /etc/log/HostIdFile.txt</code>Remove it<code>sudo installp -u NAVIAGENT</code>Install it<code>sudo installp -acX -d /mnt/emc/NaviHostAgent-AIX-32-NA-en_US-6.29.6.0.35-1.lpp NAVIAGENT</code>
+      - Configure the Navi agent
+        - Interexion<code>sudo scp penmsv01:/prod/images/EMC/config/agent.config.int.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - Edenkoben<code>sudo scp penmsv01:/prod/images/EMC/config/agent.config.ede.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - Lincolnshire<code>sudo scp pgnmsv01:/prod/images/EMC/config/agent.config.ldc.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - Monroe<code>sudo scp pgnmsv01:/prod/images/EMC/config/agent.config.mon.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - Rybnik<code>sudo scp penmsv01:/prod/images/EMC/config/agent.config.ryb.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - GrassLake<code>sudo scp pgnmsv01:/prod/images/EMC/config/agent.config.glk.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+        - St Truiden<code>sudo scp penmsv01:/prod/images/EMC/config/agent.config.str.clariion /etc/Navisphere/agent.config</code>And start it<code>sudo /etc/rc.agent start</code>
+    - If using powerpath<code>sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMC.Symmetrix.fcp.rte</code>
+    - If using MPIO<code>sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.MPIO.rte EMC.Symmetrix.fcp.MPIO.rte</code>
+  - If ODM is installed, perform a reboot now.<code>sudo shutdown -Fr</code>
+  - On an NPIV LPAR ( not the VIOS ), enable round robin.<code>lsdev -Ccdisk | grep MPIO | awk '{print $1}' | xargs -n1 sudo chdev -a algorithm=round_robin -a reserve_policy=no_reserve -Pl</code>

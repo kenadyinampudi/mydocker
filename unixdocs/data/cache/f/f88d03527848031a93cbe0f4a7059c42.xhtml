@@ -1,0 +1,68 @@
+
+<h1 class="sectionedit1" id="configuring_sudo">Configuring sudo</h1>
+<div class="level1">
+<ul>
+<li class="level1"><div class="li"> Discuss and make sure what users ask for is legit.</div>
+</li>
+<li class="level1"><div class="li"> Backup the master file.<pre class="code">sudo cp -p /prod/images/etc/sudoers /prod/images/etc/old/sudoers.$(date +%m%d%y%H%M)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Edit the master file on pgnmsv01<pre class="code">sudo vi /prod/images/etc/sudoers</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Make the changes, copy the sudoers to a test system i.e. atlasdr, panmsv02 etc and test if the file is ok. If there is a typo, it will fail on syntax.</div>
+<ul>
+<li class="level2"><div class="li"> Push the file<pre class="code">sudo scp /prod/images/etc/sudoers panmsv02:/etc/sudoers</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Test it on panmsv02<pre class="code">ssh panmsv02</pre>
+
+<p>
+Test it
+</p>
+<pre class="code">sudo su -</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Once tested, copy the file to all the systems. As root,<pre class="code">for host in $(cat /prod/images/etc/allhosts.tenneco)
+do
+   echo &quot;Copying to ${host} ..&quot;
+   sudo scp -o Batchmode=yes /prod/images/etc/sudoers ${host}:/etc/sudoers
+done</pre>
+
+<p>
+Ignore the errors unless it is the server you want it to go.
+</p>
+</div>
+</li>
+</ul>
+
+<p>
+As the sudo project did not go initially the way wanted it to go, we had to change the policies a little bit.
+</p>
+<ul>
+<li class="level1"><div class="li"> No more itocroot requests, we will not reset itocroot&#039;s password for any one.</div>
+</li>
+<li class="level1"><div class="li"> The access will be given to an individual hence there is no need to share the password any more.</div>
+</li>
+<li class="level1"><div class="li"> The access will not be given to extended period of time</div>
+</li>
+</ul>
+
+<p>
+<strong> Enabling a user for sudo su - access </strong>
+</p>
+
+<p>
+No more sudo access here unless there is an exception.
+</p>
+<ul>
+<li class="level1"><div class="li"> Login to pgnmsv01 </div>
+</li>
+<li class="level1"><div class="li"> Enable xxx user for yyy host<pre class="code">sudo /prod/images/scripts/manage_sudo enable xxx yyy</pre>
+</div>
+</li>
+</ul>
+
+</div>

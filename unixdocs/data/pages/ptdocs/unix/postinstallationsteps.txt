@@ -1,0 +1,95 @@
+====== AIX/VIOS Server Post installation work ======
+
+===== Steps from the NIM Server (pgnmsv01) =====
+
+  - Login to pgnmsv01 and store the hostname<code>export targethost=<host></code>'host' is the one being built.
+  - For some of our favorite team members, we also copy the ssh keys for them.<code>for user in x1kousra sxp8856 x1jhz999 jhf1625 pawetkac tauxrpt x1kxk630 x1shukla x1vasuna x1rzb826 x1cxs952 snowscan rajhsubr raghk x1nithsa secscan
+do
+   sudo scp -p /home/${user}/.profile ${targethost}:/home/${user}/.profile
+   sudo rsync -avv /home/${user}/.ssh/ ${targethost}:/home/${user}/.ssh/
+done</code>
+  - Setup resolv.conf
+    - North America<code>sudo scp /prod/images/etc/resolv.conf.na ${targethost}:/etc/resolv.conf</code>
+    - Europe<code>sudo scp /prod/images/etc/resolv.conf.eu ${targethost}:/etc/resolv.conf</code>
+    - Others - refer this document[[unix:setupresolv.conf| Setup resolv.conf - Click here]]
+  - Setup NTP
+    - AIX<code>sudo scp /prod/images/etc/ntp.conf.aix ${targethost}:/etc/ntp.conf</code>
+    - VIOS<code>sudo scp /prod/images/etc/ntp.conf.vios ${targethost}:/home/padmin/config/ntp.conf</code>
+    - Refresh the daemons<code>sudo ssh ${targethost} "chrctcp -S -a xntpd"
+sudo ssh ${targethost} "ntpdate -u pgntpap01.amer.int.tenneco.com"</code>Check the date and time<code>sudo ssh ${targethost} date</code>
+  - Configure default ssh configs<code>sudo scp /prod/images/etc/global_ssh_config ${targethost}:/etc/ssh/ssh_config</code>
+  - Configure sysinter<code>sudo ssh ${targethost} "mkdir -p /usr/local/bin"
+sudo scp /prod/images/applications/csi/sysinter.aix5 ${targethost}:/usr/local/bin/sysinter.aix5
+sudo ssh ${targethost} grep -q ^sysinter /etc/services
+[[ ${?} -ne 0 ]] && sudo ssh ${targethost} "echo 'sysinter                40035/tcp' >> /etc/services "
+sudo ssh ${targethost} grep -q ^sysinter /etc/inetd.conf
+[[ ${?} -ne 0 ]] && sudo ssh ${targethost} "echo 'sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5' >> /etc/inetd.conf "
+sudo ssh ${targethost} "refresh -s inetd"</code>
+  - Copy the scripts<code>sudo ssh ${targethost} "mkdir -p /usr/local/scripts"
+sudo rsync -a /usr/local/scripts/ ${targethost}:/usr/local/scripts/</code>
+  - Create a mksysb filesystem<code>sudo ssh ${targethost} "crfs -vjfs2 -g rootvg -m /bkpmksb -A yes -t no -a size=20G"
+sudo ssh ${targethost} "mount /bkpmksb"</code>
+  - [[unix:installothersoftwaresaix|On AIX and VIOS, install additional softwares]]
+  - Setup mksysb backup<code>sudo scp /prod/images/etc/id_dsa.mksysb ${targethost}:/usr/local/scripts/id_dsa.mksysb
+sudo scp /prod/images/scripts/mksysb.sh ${targethost}:/usr/local/scripts/mksysb.sh</code>
+  - If AIX, Add the system to UUMA<code>sudo ssh taqa1a03 "echo ${targethost} >> /home/oracle/uuma/hosts.txt"</code>
+  - If AIX, configure snmpd<code>sudo scp /prod/images/etc/snmpdv3.conf.aix ${targethost}:/etc/snmpdv3.conf</code>
+  - [[unix:lpar2rrd-os-agent|Install Lpar2rrd agent]]
+  - Enable centralized syslog
+    - Add ODM<code>sudo scp /prod/images/etc/tensyslogadd ${targethost}:/var/tmp/tensyslogadd
+sudo ssh ${targethost} "/usr/bin/odmadd /var/tmp/tensyslogadd"
+sudo ssh ${targethost} "rm /var/tmp/tensyslogadd"</code>
+    - Add configurations to syslog<code>sudo ssh ${targethost} "grep ^'*.notice' /etc/syslog.conf | grep -q pglgsv01"
+[[ ${?} -ne 0 ]] && config=yes || config=no
+[[ "${config}" = "yes" ]] && sudo ssh ${targethost} 'echo *.notice           @pglgsv01 >> /etc/syslog.conf'
+[[ "${config}" = "yes" ]] && sudo ssh ${targethost} 'refresh -s syslogd'</code>
+===== Steps from the server that is being built =====
+
+  - Login to the server and perform the rest of the steps
+  - [[unix:aixnetworkmemparam|If AIX, Configure Network and Memory parameters]]
+  - [[unix:correct-ssh-startup | Set start in sshd from inetd ]]
+  - [[unix:aixsaninitconfig|Perform initial SAN configuration on AIX and VIOS(vSCSI only) ]]
+  - Cleanup cron jobs<code>for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v "^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$")
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</code>
+  - Enable cron if disabled<code>sudo mkitab cron:23456789:respawn:/usr/sbin/cron</code>
+  - [[unix:createinformationfile|Create information file]]
+  - Add the TMOUT variable to /etc/profile if it wasn't a clone<code>sudo vi /etc/profile</code><code># Automatic logout, include in export line if uncommented
+TMOUT=3600
+readonly TMOUT
+PS1="$LOGNAME on "$(uname -n)":"'$PWD $ '</code>
+  - [[unix:usersandgroups|Create basic unix group and users]]
+  - Schedule standard cron jobs
+    - root<code>sudo crontab -e</code>Add these<code># Customized for Tenneco
+59 21 * * 4 /usr/local/scripts/cr_altdisk.sh 1>/dev/null 2>&1
+00 23 * * * /usr/local/scripts/mksysb.sh 1>/dev/null 2>&1
+03 03 * * 6 /usr/local/scripts/clean_var 1>/dev/null 2>&1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1>/dev/null 2>&1
+05 * * * * /usr/local/scripts/stales.sh 1>/dev/null 2>&1</code>
+    - tauxrpt - Grant cron access<code>sudo crontab -l tauxrpt</code><code>echo "tauxrpt" | sudo tee -a /var/adm/cron/cron.allow</code><code>sudo -u tauxrpt crontab -e</code>Add these<code>30 23 * * 6 /usr/local/scripts/rpt_config_tauxrpt.sh 1>/dev/null 2>&1</code>
+    - Check if oracle user has cron access, If not please Grant access<code>sudo crontab -l oracle</code><code>echo "oracle" | sudo tee -a /var/adm/cron/cron.allow</code>
+     - Restart Cron<code>ps -ef | grep cron | grep -v grep | awk '{print $2}' | xargs -n1 sudo kill</code>
+  - If booting from SAN, Create an alt_disk_copy.<code>sudo alt_disk_copy -B -d hdiskX</code>
+  - If VIO install updates
+    - [[unix:vioupdatesinstall|Install updates on VIO servers.]]
+  - Remove the xmdaily entry from /etc/inittab.
+    - <code>sudo rmitab "xmdaily"</code>
+  - If booting from internal disks, Mirror rootvg
+    - AIX<code>extendvg rootvg hdiskX
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdiskX
+sudo bootlist -m normal hdiskX hdiskY</code>
+    - VIOS
+      - Login as padmin Mirror boot disk<code>extendvg -f rootvg hdiskX
+mirrorios -f hdiskX</code>**Check the bootlist**
+        - <code>oem_setup_env</code><code>bootlist -m normal hdiskX hdiskY</code>
+  - If VIOS, Check the root file system "/". If it is 300M, extend it by 1324M<code>df -gt /
+sudo chfs -a size=+1324M / </code>
+  - If AIX,Send ticket for netbackup ** MAKE SURE YOU HAVE COPIED THE /usr/openv FILE SYSTEM TO THE NEW SERVER IF THIS IS A MIGRATION **
+  - Send ticket for Monitoring
+  - If AIX, Send a ticket to "GIOS Operations - Entitlement" to add the systems.
+  - Do a final reboot<code>sudo shutdown -Fr</code>
+  - Login to the NIM server and perform a NIM client cleanup<code>sudo nim -F -o reset <hostname>
+sudo nim -o deallocate -a subclass=all <hostname></code>
+  - ** If you have build a New server, please fill the missing attributes of the new server in CMDB later. **

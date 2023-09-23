@@ -1,0 +1,44 @@
+===== WORK TO DO AFTER PIM UPGRADE TO FIX /USR/SAP/TRANS ISSUE =====
+ 
+  -  on  pcdcpimaxdb01.driv.com make a copy of the /etc/filesystems file <code> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S).cs</code>
+  -  on pcdcpimaxdb01.driv.com umount /usr/sap/tras and remove NFS file system <code>ddimci1a:/usr/sap/trans       6.00      2.95   51%     4314     1% /usr/sap/trans</code> <code>sudo umount /usr/sap/trans </code> <code>smit rmnfsmnt </code>
+
+  - mount premade /usr/sap/file system on pcdcunxaxap01 <code>mount /usr/sap/trans </code> <code>cd /usr/sap/trans </code>
+  - clear the old data from teh file on pcdcunxaxap01 confirm server name in nim server <code> uname -n</code> Mist be  <code>pcdcunxaxap01</code> confirm directory <code> pwd </code> must be <code>/usr/sap/trans </code> If everything is OK clear the file - remove all entries so that is is an empty file. 
+  -  copy the data from PIM /usr/sap/trans to /usr/sap/tras on pcdcunxaxap01 <code>sudo rsync -avv dcdcdimaxdb01:/usr/sap/trans/ . </code>
+  -  compare count on dcdcdimaxdb01:/usr/sap/trans/  with pcdcunxaxap01:/usr/sap/trans <code>ls -liatR | wc -l  ==  ls -liatR | wc -l  </code>
+  -  create /usr/sap/trans on PIM pcdcpimaxdb01.driv.com <code>sudo mkdir -p /usr/sap/trans 
+sudo chown root:system /usr/sap/trans
+sudo chmod 755 /usr/sap/trans
+sudo crfs -g datavg01 -A yes -v jfs2 -m /usr/sap/trans -a size=6G
+sudo mount /usr/sap/trans
+sudo chown pimadm:sapsys /usr/sap/trans
+sudo chmod 755 /usr/sap/trans</code>
+
+  -  create the /etc/exports entry on pcdcpimaxdb01.driv.com vi /etc/exports and add this <code>/usr/sap/trans -sec=sys:krb5p:krb5i:krb5:dh,access=qcdcqimaxdb01:dcdcdimaxdb01,root=qcdcqimaxdb01:dcdcdimaxdb01 </code>
+  - copy the data from pcdcunxaxap01:/usr/sap/trans to pcdcpimaxdb01.driv.com:/usr/sap/trans <code>sudo rsync -avv /usr/sap/trans/ pcdcpimaxdb01.driv.com:/usr/sap/trans/ </code>
+  -  compare count on pcdcpimaxdb01.driv.com:/usr/sap/trans  with count on dcdcdimaxdb01:/usr/sap/trans/  both should be the same <code>ls -liatR | wc -l ==  ls -liatR | wc -l  </code>
+  -  change the ownership of files in /usr/sap/trans on pcdcpimaxdb01.driv.com from dimadm  to pimadm <code> cd /usr/sap/tans </code> <code>sudo chown -R pimadm * </code>
+  -  if all match then export the /usr/sap/trans from pcdcpimaxdb01.driv.com<code> sudo exportfs -i /usr/sap/trans</code>
+  -  on dcdcdimaxdb01 umount /usr/sap/trans <code>sudo umount /usr/sap/trans </code>
+  -  rename  the file system - save it just in case <code>sudo chfs -m /usr/sap/trans-HOLD /usr/sap/trans </code>
+  -  mount the saved file system <code>sudo mount /usr/sap/trans-HOLD</code>
+  -  make a copy of /etc/exports- just in case <code> sudo cp -p /etc/exports /etc/exports-$(date +%Y%m%d-%H:%M:%S).cs</code>
+  -  on dcdcdimaxdb01 edit and remove the entry in /etc/exports <code>/usr/sap/trans -sec=sys:krb5p:krb5i:krb5:dh,access=qcdcqimaxdb01:pcdcpimaxdb01,root=qcdcqimaxdb01:pcdcpimaxdb01 </code>
+  - make a copy of the /etc/filesystems file <code> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S).cs</code>
+  - add the NFS file definition to /etc/filesystems on dcdcdimaxdb01 and qcdcqimaxdb01.
+  - vi the /etc/filesystems file and add the following lines <code>/usr/sap/trans:
+        dev             = "/usr/sap/trans"
+        vfs             = nfs
+        nodename        = ppimci1a
+        mount           = true
+        options         = bg,soft,intr,sec=sys
+        account         = false</code>
+  - mount the new /usr/sap/trans <code> sudo mount /usr/sap/trans</code> results should look something like this <code>ppsrci1a:/usr/sap/trans       5.00      2.59   49%     1447     1% /usr/sap/trans</code>
+  - if all looks good on the nfs mount above make the changes on qcdcqimaxdb01
+  - make a copy of the /etc/filesystems file <code> sudo cp -p /etc/filesystems /etc/filesystems-$(date +%Y%m%d-%H:%M:%S).cs</code>
+  - <code> sudo vi /etc/filesystem> </code>Find /usr/sap/trans and change the nodename From ddimci1a To ppsrci1a
+
+
+Name =  ppimci1a.driv.com
+Address = 10.128.47.40

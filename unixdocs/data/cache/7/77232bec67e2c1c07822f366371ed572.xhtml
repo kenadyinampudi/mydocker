@@ -1,0 +1,146 @@
+
+<h1 class="sectionedit1" id="move_qaap3p01_and_qaerap01_to_power8">Move qaap3p01 and qaerap01 to Power8</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> The current disk map</div>
+<ol>
+<li class="level2"><div class="li"> qaerap01<pre class="code">hdisk24:138090:qaerap01:N/A:vhost4:00035ddb22001685:APM00125129684:0122
+hdisk25:138090:qaerap01:N/A:vhost4:00035ddb220017a8:APM00125129684:0123
+hdisk30:34522:qaerap01:N/A:vhost4:00035ddb22001dc7:APM00125129684:0128</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> qaap3p01<pre class="code">hdisk19:34522:qaap3p01:N/A:vhost0:00014bfa8e8e0c08:APM00125129684:0635
+hdisk20:34522:qaap3p01:N/A:vhost0:00014bfa8e8e0d3d:APM00125129684:0636
+hdisk37:138090:qaap3p01:N/A:vhost0:00014bfa2bbf388d:APM00125129684:0208
+hdisk38:138090:qaap3p01:N/A:vhost0:00014bfa2bbf3a28:APM00125129684:0207</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Shutdown qaerap01 and qaap3p01</div>
+</li>
+<li class="level1"><div class="li"> Remove qaerap01 devices - Login to taprvio18 and remove devices<pre class="code">sudo su - padmin
+for dev in hdisk24 hdisk25 hdisk30
+do
+   rmvdev -vdev $dev
+done
+
+exit
+
+echo &quot;hdisk24 hdisk25 hdisk30&quot; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove qaap3p01 devices - Login to taprvio8<pre class="code">sudo su - padmin
+for dev in hdisk19 hdisk20 hdisk37 hdisk38
+do
+   rmvdev -vdev $dev
+done
+
+exit
+
+echo &quot;hdisk19 hdisk20 hdisk37 hdisk38&quot; | xargs -n1 sudo rmdev -dl</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Swing qaerap01 LUNs from taprvio18 to Power8. Login to pablsv01</div>
+<ol>
+<li class="level2"><div class="li"> List current config<pre class="code">naviseccli -h ldcvnx53001spa storagegroup -list -gname TAPRVIO18</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove LUNs from taprvio18<pre class="code">naviseccli -h ldcvnx53001spa storagegroup -removehlu -gname TAPRVIO18 -hlu 4
+naviseccli -h ldcvnx53001spa storagegroup -removehlu -gname TAPRVIO18 -hlu 5
+naviseccli -h ldcvnx53001spa storagegroup -removehlu -gname TAPRVIO18 -hlu 10</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> List current config<pre class="code">naviseccli -h ldcvnx53001spa storagegroup -list -gname TAPRVIO18</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add LUNs to qaerap01<pre class="code">naviseccli -h ldcvnx53001spa  storagegroup -addhlu -gname QAERAP01 -alu 122 -hlu 0
+naviseccli -h ldcvnx53001spa  storagegroup -addhlu -gname QAERAP01 -alu 123 -hlu 1
+naviseccli -h ldcvnx53001spa  storagegroup -addhlu -gname QAERAP01 -alu 128 -hlu 2</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> List current config<pre class="code">naviseccli -h ldcvnx53001spa storagegroup -list -gname QAERAP01</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Swing qaap3p01 LUNs from taprvio8 to Power8. Login to pablsv01</div>
+<ol>
+<li class="level2"><div class="li"> List current config<pre class="code">naviseccli -h ldcvnx53001spa storagegroup -list -gname TAPRVIO8</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Remove LUNs from taprvio8<pre class="code">naviseccli -h ldcvnx53001spa storagegroup -removehlu -gname TAPRVIO8 -hlu 5
+naviseccli -h ldcvnx53001spa storagegroup -removehlu -gname TAPRVIO8 -hlu 8
+naviseccli -h ldcvnx53001spa storagegroup -removehlu -gname TAPRVIO8 -hlu 2
+naviseccli -h ldcvnx53001spa storagegroup -removehlu -gname TAPRVIO8 -hlu 3</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> List current config<pre class="code">naviseccli -h ldcvnx53001spa storagegroup -list -gname TAPRVIO8</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add LUNs to qaerap01<pre class="code">naviseccli -h ldcvnx53001spa  storagegroup -addhlu -gname QAAP3P01 -alu 208 -hlu 0
+naviseccli -h ldcvnx53001spa  storagegroup -addhlu -gname QAAP3P01 -alu 207 -hlu 1
+naviseccli -h ldcvnx53001spa  storagegroup -addhlu -gname QAAP3P01 -alu 635 -hlu 2
+naviseccli -h ldcvnx53001spa  storagegroup -addhlu -gname QAAP3P01 -alu 636 -hlu 3</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> List current config<pre class="code">naviseccli -h ldcvnx53001spa storagegroup -list -gname QAAP3P01</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Boot qaerap01 and configure network<pre class="code">cp /etc/hosts /etc/hosts.backup
+
+ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach
+
+for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done
+
+cfgmgr
+
+/usr/sbin/mktcpip -h qaerap01 -a 10.0.48.17 -m 255.255.255.0 -i en0 -g 10.0.48.1 -A no -s
+chdev -l en1 -a netaddr=10.0.49.17 -a netmask=255.255.255.0 -a state=up
+
+cp /etc/hosts.backup /etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Boot qaap3p01 and configure network<pre class="code">cp /etc/hosts /etc/hosts.backup
+
+ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk &#039;{print $1}&#039; | sed &quot;s;:;;g&quot;) down detach
+
+for dev in $(lsdev -Ccif | grep ^en | awk &#039;{print $1}&#039; | sed &quot;s;en;;g&quot;)
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo &quot;${dev} removed&quot;
+done
+
+cfgmgr
+
+/usr/sbin/mktcpip -h qaap3p01 -a 10.0.48.121 -m 255.255.255.0 -i en0 -g 10.0.48.1 -A no -s
+chdev -l en1 -a netaddr=10.0.49.31 -a netmask=255.255.255.0 -a state=up
+
+cp /etc/hosts.backup /etc/hosts</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure NTP on qaerap01 and qaap3p01. Login to taitc118<pre class="code">for host in qaerap01 qaap3p01
+do
+   sudo scp /prod/images/etc/ntp.conf.aix ${host}:/etc/ntp.conf
+   sudo ssh ${host} &quot;chrctcp -S -a xntpd&quot;
+   sudo ssh ${host} &quot;ntpdate -u 10.1.1.1&quot;
+   sudo ssh ${host} &quot;sudo xntpdc -l&quot;
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Update console database on taitc118<pre class="code">sudo cp /prod/images/etc/unix_sys_console.new.kapil /prod/images/etc/unix_sys_console</pre>
+</div>
+</li>
+</ol>
+
+</div>

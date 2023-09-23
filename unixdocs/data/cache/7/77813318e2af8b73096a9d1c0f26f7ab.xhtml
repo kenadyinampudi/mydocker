@@ -1,0 +1,158 @@
+
+<h1 class="sectionedit1" id="alt_clone_on_mirrored_rootvg_process_documentation">alt_clone on mirrored rootvg Process Documentation</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "alt_clone on mirrored rootvg Process Documentation" [1-66] -->
+<h2 class="sectionedit2" id="introduction">Introduction</h2>
+<div class="level2">
+
+<p>
+This document outlines the process of performing an alternative cloning (alt_clone) operation in scenarios where maintaining the integrity of a mirrored rootvg is essential. The alt_clone procedure allows for the duplication of system configurations and data to an alternate disk without breaking the existing mirrored setup.
+</p>
+
+</div>
+<!-- EDIT2 SECTION "Introduction" [67-419] -->
+<h2 class="sectionedit3" id="prerequisites">Prerequisites</h2>
+<div class="level2">
+
+<p>
+Before proceeding with the alt_clone process, ensure the following:
+</p>
+
+<p>
+<strong>Server Reboot:</strong> Confirm that the servers are scheduled for a reboot. This reboot can provide a clean starting point for the cloning process.
+</p>
+
+<p>
+<strong>Backup:</strong> Perform a comprehensive backup of critical data to ensure data integrity and availability throughout the process.
+</p>
+
+</div>
+<!-- EDIT3 SECTION "Prerequisites" [420-786] -->
+<h2 class="sectionedit4" id="alternative_cloning_steps">Alternative Cloning Steps</h2>
+<div class="level2">
+
+<p>
+<strong>Unmirror rootvg:</strong>
+To initiate the alt_clone process, unmirror the rootvg volume group. This temporary step prepares the mirrored configuration for cloning.
+</p>
+<pre class="code">sudo unmirrorvg rootvg hdiskX
+sudo reducevg rootvg hdiskX
+sudo bootlist -m normal hdiskY</pre>
+
+<p>
+<strong>Perform alt_clone:</strong>
+Execute the alt_clone operation to duplicate the system configuration and data. This step involves creating a new disk image.
+</p>
+<pre class="code">sudo alt_disk_copy -B -d hdiskY</pre>
+
+<p>
+<strong>Mirror rootvg again:</strong>
+After successfully completing the alt_clone operation, re-establish the mirrored state of the rootvg volume group.
+</p>
+<pre class="code">sudo mirrorvg rootvg hdiskX</pre>
+
+</div>
+<!-- EDIT4 SECTION "Alternative Cloning Steps" [787-1463] -->
+<h2 class="sectionedit5" id="disk_space_consideration">Disk Space Consideration</h2>
+<div class="level2">
+
+<p>
+It&#039;s important to ensure that sufficient disk space is available for the alt_clone operation. If the target disk space is insufficient, the operation will fail with an error message indicating the required disk space.
+</p>
+<pre class="code">taede651:/root&gt;nohup alt_disk_copy -b -d hdisk3 hdisk5 &amp;
+… output omitted
+Checking disk sizes.
+0505-111 alt_disk_install: There is not enough disk space on target disks specified.
+Total disk space required is 235520 megabytes and target disk space is only 141312 megabytes.</pre>
+
+</div>
+<!-- EDIT5 SECTION "Disk Space Consideration" [1464-2008] -->
+<h2 class="sectionedit6" id="innovative_approach">Innovative Approach</h2>
+<div class="level2">
+
+<p>
+In cases where breaking the mirror is not an option due to operational requirements, an innovative approach involves creating an /image.data file using the mkszfile utility. This file defines the disk layout for the alt_clone operation. By modifying the /image.data file to adjust configurations such as LV_SOURCE_DISK_LIST, COPIES, and PP, you can tailor the alt_clone operation to specific disk requirements without breaking the mirror.
+</p>
+
+</div>
+<!-- EDIT6 SECTION "Innovative Approach" [2009-2481] -->
+<h3 class="sectionedit7" id="procedure_summary">Procedure Summary</h3>
+<div class="level3">
+<ul>
+<li class="level1"><div class="li"> Create an /image.data file using <strong>mkszfile</strong> to define the disk layout.</div>
+</li>
+<li class="level1"><div class="li"> Modify the /image.data file to adjust configurations. Below code snippet will help you do that.<pre class="code">cat /image.data | sed -e &quot;s;COPIES= 2;COPIES= 1;g&quot; -e &quot;s;PP= 2;PP= 1;g&quot; &gt; /newimage.data</pre>
+
+<p>
+ Or you can manually edit the files by changing the three lines
+</p>
+<pre class="code">lv_data:
+        VOLUME_GROUP= rootvg
+        **LV_SOURCE_DISK_LIST= hdisk0 hdisk1  --&gt; LV_SOURCE_DISK_LIST= hdisk0**
+        LV_IDENTIFIER= 00f65ba700004c000000014d0fe343e5.3
+        LOGICAL_VOLUME= hd8
+        VG_STAT= active/complete
+        TYPE= jfs2log
+        MAX_LPS= 512
+        **COPIES= 2 --&gt; COPIES= 1**
+        LPs= 1
+        STALE_PPs= 0
+        INTER_POLICY= minimum
+        INTRA_POLICY= center
+        MOUNT_POINT=
+        MIRROR_WRITE_CONSISTENCY= off
+        LV_SEPARATE_PV= yes
+        PERMISSION= read/write
+        LV_STATE= opened/syncd
+        WRITE_VERIFY= off
+        PP_SIZE= 256
+        SCHED_POLICY= parallel
+        **PP= 2 --&gt; PP= 1**
+        BB_POLICY= relocatable
+        RELOCATABLE= yes
+        UPPER_BOUND= 32
+        LABEL=
+        MAPFILE=
+        LV_MIN_LPS= 1
+        STRIPE_WIDTH=
+        STRIPE_SIZE=
+        SERIALIZE_IO= no
+        FS_TAG=
+        DEV_SUBTYP=</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Execute the alt_clone process with the modified /image.data file using the -i flag.<pre class="code">#nohup alt_disk_copy -i /newimage.data -d hdiskY &amp;
+… output omitted
+forced unmount of /alt_inst/home
+forced unmount of /alt_inst/bkpmksb
+forced unmount of /alt_inst/bkpmksb
+forced unmount of /alt_inst
+forced unmount of /alt_inst
+Changing logical volume names in volume group descriptor area.
+Fixing LV control blocks...
+Fixing file system superblocks...</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Monitor the process for any errors or warnings.</div>
+</li>
+<li class="level1"><div class="li"> Validate the cloned system on the target disk.</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT7 SECTION "Procedure Summary" [2482-4326] -->
+<h2 class="sectionedit8" id="conclusion">Conclusion</h2>
+<div class="level2">
+
+<p>
+The alt_clone process offers a versatile solution for duplicating system configurations and data while preserving the mirrored state of critical volumes. By following the outlined steps and considering disk space requirements, you can effectively implement alt_clone without compromising the integrity of your mirrored rootvg.
+</p>
+
+<p>
+Remember to document any modifications and results for future reference.
+</p>
+
+</div>
+<!-- EDIT8 SECTION "Conclusion" [4327-] -->

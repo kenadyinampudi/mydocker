@@ -1,0 +1,16 @@
+====== VMWare Guest installation process ======
+ 
+  * Mount the ISO file to Virtual CDROM
+    * On vSphere, select the VM --> Right click to edit settings.
+      * At the Hardware Tab Click on CDROM
+        * Click and browse Datastore ISO file
+          * Select the iso file we copied.
+            * At the top right hand corner, click "Connect on Power on "
+  * Open the console from vSphere
+  * Power on the server
+  * At the console, at BIOS screen hit escape once and select boot from CDROM. 
+    * If you missed to hit the ESC key, On the console window, click VM -> Guest -> Send CTRL+ALT+DELETE
+  * When the VM startup using ''down arrow'' key select the hostname and hit enter. This will start the installation.
+  * To see the progress of installation
+    * Login to unixlogs<code>ssh unixlogs</code>Tail the syslog<code>sudo tail -f /prod/unixlog/syslog/syslog.log | grep <server_name></code>
+  * [[unix:postinstallationsteps-redhat|Proceed to post install steps]]

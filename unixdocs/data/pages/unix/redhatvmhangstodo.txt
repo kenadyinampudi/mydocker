@@ -1,0 +1,28 @@
+====== What to do when you are dealing with a hung or corrupted Redhat system ======
+
+  - Document the data if you are able to login to the server. I would say, copy the logs to NIM server, because, the filesystems may not remount.
+    - Login to NIM server and execute these commands<code>export failed_server="<hostname_of_the_server>"
+mkdir logs.${failed_server}
+cd logs.${failed_server}
+
+ssh ${failed_server} "df -k    " > dfk.out
+ssh ${failed_server} "mount    " > mount.out
+ssh ${failed_server} "sudo pvs " > pvs.out
+ssh ${failed_server} "sudo vgs " > vgs.out
+ssh ${failed_server} "sudo lvs " > lvs.out
+
+sudo scp ${failed_server}:/var/log/messages messages.${failed_server}</code>
+  - Run "sosreport"
+    - If /var/tmp is writable, run sosreport with ''--batch'' option<code>ssh ${failed_server} "sudo /usr/sbin/sosreport --batch"</code>
+    - If /var/tmp is not writable, run sosreport with ''--tmpdir'' pointing to a writable directory. e.g.<code>ssh ${failed_server} "sudo /usr/sbin/sosreport --batch --tmp-dir /home/x1kxk630"</code>
+  - Copy the sosreport to NIM server<code>sudo scp ${failed_server}:/var/tmp/sosreport-*.tar.xz .</code>
+  - Collect core-dump
+    - If the server responds to "ssh"
+      - Enable dump<code>ssh ${failed_server} "echo 1 | sudo tee /proc/sys/kernel/sysrq"</code>
+      - Start dump and reboot<code>ssh ${failed_server} "echo c | sudo tee /proc/sysrq-trigger"</code>
+      - If the system reboots well, collect the coredump from ''/var/crash'' directory.
+    - If the server does not respond to "ssh"
+      - Use VMWARE to take a snapshot of the VM. Select ''snapshot virtual machines memory''
+      - Work with Wintel team to take the snapshot file ".vmsn", download it to a place that has space.
+  - Once we have all the files, open a case with Vendor and give them all the logs and crash dump we created / collected.
+  - Ask the operating system or hypervisor Vendor on what to do with the snapshot. There is a tool that can be used to extract some information from the snapshot''https://labs.vmware.com/flings/vmss2core''

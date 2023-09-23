@@ -1,0 +1,306 @@
+====== TA2 App servers -- provisioning examples ======
+
+  - Input<code>peerap03-ta2
+---------------------
+c0507607fdbd001c		Fabric A
+c0507607fdbd001d		Fabric A
+
+c0507607fdbd001e		Fabric B
+c0507607fdbd001f		Fabric B
+
+
+
+peerap02-ta2
+==============
+c0507607fdbd0022		Fabric A
+c0507607fdbd0023		Fabric A
+
+c0507607fdbd0020		Fabric B	
+c0507607fdbd0021		Fabric B
+
+Fabric A
+
+alicreate "peerap03_bd001c","c0:50:76:07:fd:bd:00:1c"
+alicreate "peerap03_bd001d","c0:50:76:07:fd:bd:00:1d"
+alicreate "peerap02_bd0022","c0:50:76:07:fd:bd:00:22"
+alicreate "peerap02_bd0023","c0:50:76:07:fd:bd:00:23"
+
+zonecreate "peerap03_bd001c__vmax_0301_4g1","peerap03_bd001c;vmax_0301_4g1"
+zonecreate "peerap03_bd001d__vmax_0301_4g1","peerap03_bd001d;vmax_0301_4g1"
+zonecreate "peerap02_bd0022__vmax_0301_4g1","peerap02_bd0022;vmax_0301_4g1"
+zonecreate "peerap02_bd0023__vmax_0301_4g1","peerap02_bd0023;vmax_0301_4g1"
+
+cfgadd "fab_a_act_config","peerap03_bd001c__vmax_0301_4g1;peerap03_bd001d__vmax_0301_4g1"
+cfgadd "fab_a_act_config","peerap02_bd0022__vmax_0301_4g1;peerap02_bd0023__vmax_0301_4g1"
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+Fabric B
+
+
+alicreate "peerap03_bd001e","c0:50:76:07:fd:bd:00:1e"
+alicreate "peerap03_bd001f","c0:50:76:07:fd:bd:00:1f"
+alicreate "peerap02_bd0020","c0:50:76:07:fd:bd:00:20"
+alicreate "peerap02_bd0021","c0:50:76:07:fd:bd:00:21"
+
+zonecreate "peerap03_bd001e__vmax_0301_1g1","peerap03_bd001e;vmax_0301_1g1"
+zonecreate "peerap03_bd001f__vmax_0301_1g1","peerap03_bd001f;vmax_0301_1g1"
+zonecreate "peerap02_bd0020__vmax_0301_1g1","peerap02_bd0020;vmax_0301_1g1"
+zonecreate "peerap02_bd0021__vmax_0301_1g1","peerap02_bd0021;vmax_0301_1g1"
+
+cfgadd "fab_b_act_config","peerap03_bd001e__vmax_0301_1g1;peerap03_bd001f__vmax_0301_1g1"
+cfgadd "fab_b_act_config","peerap02_bd0020__vmax_0301_1g1;peerap02_bd0021__vmax_0301_1g1"
+cfgsave
+cfgenable "fab_b_act_config"
+
+
+VMAX
+
+sudo symaccess -sid 0301 -name peerap03-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerap03-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap03-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerap03-p8_IG -type initiator -wwn c0507607fdbd001c add
+sudo symaccess -sid 0301 -name peerap03-p8_IG -type initiator -wwn c0507607fdbd001d add
+sudo symaccess -sid 0301 -name peerap03-p8_IG -type initiator -wwn c0507607fdbd001e add
+sudo symaccess -sid 0301 -name peerap03-p8_IG -type initiator -wwn c0507607fdbd001f add
+
+sudo symaccess -sid 0301 -name peerap02-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerap02-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap02-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerap02-p8_IG -type initiator -wwn c0507607fdbd0022 add
+sudo symaccess -sid 0301 -name peerap02-p8_IG -type initiator -wwn c0507607fdbd0023 add
+sudo symaccess -sid 0301 -name peerap02-p8_IG -type initiator -wwn c0507607fdbd0020 add
+sudo symaccess -sid 0301 -name peerap02-p8_IG -type initiator -wwn c0507607fdbd0021 add
+
+
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 307B;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 4 devices copying dev 307B;" commit -nop
+
+sudo symaccess -sid 0301 -name peerap03-p8_SG -type storage create -dev 
+sudo symfast -sid 0301 -fp_name Gold associate -sg peerap03-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap03-p8_MV -sg peerap03-p8_SG -pg 1G1_4G1_PG -ig peerap03-p8_IG
+
+sudo symaccess -sid 0301 -name peerap02-p8_SG -type storage create -dev 
+sudo symfast -sid 0301 -fp_name Gold associate -sg peerap02-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap02-p8_MV -sg peerap02-p8_SG -pg 1G1_4G1_PG -ig peerap02-p8_IG</code><code>peerap08-ta2
+----------------------
+c0507607f34d001c			Fabric A
+c0507607f34d001d			Fabric A
+c0507607f34d001e			Fabric B
+c0507607f34d001f			Fabric B
+
+peerap09-ta2
+------------------------
+c0507607f34d001a			Fabric A
+c0507607f34d001b			Fabric A
+c0507607f34d0018			Fabric B
+c0507607f34d0019			Fabric B
+
+peerap06-ta2
+-------------------
+c0507607f3530022			Fabric A
+c0507607f3530023			Fabric A
+c0507607f3530020			Fabric B
+c0507607f3530021			Fabric B
+
+peerap07-ta2
+--------------------
+c0507607f3530024			Fabric A
+c0507607f3530025			Fabric A
+c0507607f3530026			Fabric B
+c0507607f3530027			Fabric B
+
+peerap04
+----------------
+c0507607fdbb0022			Fabric A
+c0507607fdbb0023			Fabric A
+c0507607fdbb0024			Fabric B
+c0507607fdbb0025			Fabric B
+
+peerap05
+---------------
+c0507607fdbb0028			Fabric A
+c0507607fdbb0029			Fabric A
+c0507607fdbb0026			Fabric B
+c0507607fdbb0027			Fabric B</code>
+  - Zoning<code>Fabric A
+
+alicreate "vmax_0301_4g1","50:00:09:73:f0:04:b5:8d"
+
+alicreate "peerap08_4d001c","c0:50:76:07:f3:4d:00:1c"
+alicreate "peerap08_4d001d","c0:50:76:07:f3:4d:00:1d"
+
+alicreate "peerap09_4d001a","c0:50:76:07:f3:4d:00:1a"
+alicreate "peerap09_4d001b","c0:50:76:07:f3:4d:00:1b"
+
+alicreate "peerap06_530022","c0:50:76:07:f3:53:00:22"
+alicreate "peerap06_530023","c0:50:76:07:f3:53:00:23"
+
+alicreate "peerap07_530024","c0:50:76:07:f3:53:00:24"
+alicreate "peerap07_530025","c0:50:76:07:f3:53:00:25"
+
+alicreate "peerap04_bb0022","c0:50:76:07:fd:bb:00:22"
+alicreate "peerap04_bb0023","c0:50:76:07:fd:bb:00:23"
+
+alicreate "peerap05_bb0028","c0:50:76:07:fd:bb:00:28"
+alicreate "peerap05_bb0029","c0:50:76:07:fd:bb:00:29"
+
+
+zonecreate "peerap08_4d001c__vmax_0301_4g1","peerap08_4d001c;vmax_0301_4g1"
+zonecreate "peerap08_4d001d__vmax_0301_4g1","peerap08_4d001d;vmax_0301_4g1"
+
+zonecreate "peerap09_4d001a__vmax_0301_4g1","peerap09_4d001a;vmax_0301_4g1"
+zonecreate "peerap09_4d001b__vmax_0301_4g1","peerap09_4d001b;vmax_0301_4g1"
+
+zonecreate "peerap06_530022__vmax_0301_4g1","peerap06_530022;vmax_0301_4g1"
+zonecreate "peerap06_530023__vmax_0301_4g1","peerap06_530023;vmax_0301_4g1"
+
+zonecreate "peerap07_530024__vmax_0301_4g1","peerap07_530024;vmax_0301_4g1"
+zonecreate "peerap07_530025__vmax_0301_4g1","peerap07_530025;vmax_0301_4g1"
+
+zonecreate "peerap04_bb0022__vmax_0301_4g1","peerap04_bb0022;vmax_0301_4g1"
+zonecreate "peerap04_bb0023__vmax_0301_4g1","peerap04_bb0023;vmax_0301_4g1"
+
+zonecreate "peerap05_bb0028__vmax_0301_4g1","peerap05_bb0028;vmax_0301_4g1"
+zonecreate "peerap05_bb0029__vmax_0301_4g1","peerap05_bb0029;vmax_0301_4g1"
+
+cfgadd "fab_a_act_config","peerap08_4d001c__vmax_0301_4g1;peerap08_4d001d__vmax_0301_4g1"
+cfgadd "fab_a_act_config","peerap09_4d001a__vmax_0301_4g1;peerap09_4d001b__vmax_0301_4g1"
+cfgadd "fab_a_act_config","peerap06_530022__vmax_0301_4g1;peerap06_530023__vmax_0301_4g1"
+cfgadd "fab_a_act_config","peerap07_530024__vmax_0301_4g1;peerap07_530025__vmax_0301_4g1"
+cfgadd "fab_a_act_config","peerap04_bb0022__vmax_0301_4g1;peerap04_bb0023__vmax_0301_4g1"
+cfgadd "fab_a_act_config","peerap05_bb0028__vmax_0301_4g1;peerap05_bb0029__vmax_0301_4g1"
+
+cfgsave
+cfgenable "fab_a_act_config"
+
+
+Fabric B
+
+alicreate "vmax_0301_1g1","50:00:09:73:f0:04:b5:81"
+
+alicreate "peerap08_4d001e","c0:50:76:07:f3:4d:00:1e"
+alicreate "peerap08_4d001f","c0:50:76:07:f3:4d:00:1f"
+
+alicreate "peerap09_4d0018","c0:50:76:07:f3:4d:00:18"
+alicreate "peerap09_4d0019","c0:50:76:07:f3:4d:00:19"
+
+alicreate "peerap06_530020","c0:50:76:07:f3:53:00:20"
+alicreate "peerap06_530021","c0:50:76:07:f3:53:00:21"
+
+alicreate "peerap07_530026","c0:50:76:07:f3:53:00:26"
+alicreate "peerap07_530027","c0:50:76:07:f3:53:00:27"
+
+alicreate "peerap04_bb0024","c0:50:76:07:fd:bb:00:24"
+alicreate "peerap04_bb0025","c0:50:76:07:fd:bb:00:25"
+
+alicreate "peerap05_bb0026","c0:50:76:07:fd:bb:00:26"
+alicreate "peerap05_bb0027","c0:50:76:07:fd:bb:00:27"
+
+zonecreate "peerap08_4d001e__vmax_0301_1g1","peerap08_4d001e;vmax_0301_1g1"
+zonecreate "peerap08_4d001f__vmax_0301_1g1","peerap08_4d001f;vmax_0301_1g1"
+
+zonecreate "peerap09_4d0018__vmax_0301_1g1","peerap09_4d0018;vmax_0301_1g1"
+zonecreate "peerap09_4d0019__vmax_0301_1g1","peerap09_4d0019;vmax_0301_1g1"
+
+zonecreate "peerap06_530020__vmax_0301_1g1","peerap06_530020;vmax_0301_1g1"
+zonecreate "peerap06_530021__vmax_0301_1g1","peerap06_530021;vmax_0301_1g1"
+
+zonecreate "peerap07_530026__vmax_0301_1g1","peerap07_530026;vmax_0301_1g1"
+zonecreate "peerap07_530027__vmax_0301_1g1","peerap07_530027;vmax_0301_1g1"
+
+zonecreate "peerap04_bb0024__vmax_0301_1g1","peerap04_bb0024;vmax_0301_1g1"
+zonecreate "peerap04_bb0025__vmax_0301_1g1","peerap04_bb0025;vmax_0301_1g1"
+
+zonecreate "peerap05_bb0026__vmax_0301_1g1","peerap05_bb0026;vmax_0301_1g1"
+zonecreate "peerap05_bb0027__vmax_0301_1g1","peerap05_bb0027;vmax_0301_1g1"
+
+cfgadd "fab_b_act_config","peerap08_4d001e__vmax_0301_1g1;peerap08_4d001f__vmax_0301_1g1"
+cfgadd "fab_b_act_config","peerap09_4d0018__vmax_0301_1g1;peerap09_4d0019__vmax_0301_1g1"
+cfgadd "fab_b_act_config","peerap06_530020__vmax_0301_1g1;peerap06_530021__vmax_0301_1g1"
+cfgadd "fab_b_act_config","peerap07_530026__vmax_0301_1g1;peerap07_530027__vmax_0301_1g1"
+cfgadd "fab_b_act_config","peerap04_bb0024__vmax_0301_1g1;peerap04_bb0025__vmax_0301_1g1"
+cfgadd "fab_b_act_config","peerap05_bb0026__vmax_0301_1g1;peerap05_bb0027__vmax_0301_1g1"
+
+cfgsave
+cfgenable "fab_b_act_config"</code>
+  - Provisioning VMAX<code>sudo symaccess -sid 0301 -name peerap08-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerap08-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap08-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerap08-p8_IG -type initiator -wwn c0507607f34d001c add
+sudo symaccess -sid 0301 -name peerap08-p8_IG -type initiator -wwn c0507607f34d001d add
+sudo symaccess -sid 0301 -name peerap08-p8_IG -type initiator -wwn c0507607f34d001e add
+sudo symaccess -sid 0301 -name peerap08-p8_IG -type initiator -wwn c0507607f34d001f add
+
+sudo symaccess -sid 0301 -name peerap09-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerap09-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap09-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerap09-p8_IG -type initiator -wwn c0507607f34d001a add
+sudo symaccess -sid 0301 -name peerap09-p8_IG -type initiator -wwn c0507607f34d001b add
+sudo symaccess -sid 0301 -name peerap09-p8_IG -type initiator -wwn c0507607f34d0018 add
+sudo symaccess -sid 0301 -name peerap09-p8_IG -type initiator -wwn c0507607f34d0019 add
+
+sudo symaccess -sid 0301 -name peerap06-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerap06-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap06-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerap06-p8_IG -type initiator -wwn c0507607f3530022 add
+sudo symaccess -sid 0301 -name peerap06-p8_IG -type initiator -wwn c0507607f3530023 add
+sudo symaccess -sid 0301 -name peerap06-p8_IG -type initiator -wwn c0507607f3530020 add
+sudo symaccess -sid 0301 -name peerap06-p8_IG -type initiator -wwn c0507607f3530021 add
+
+sudo symaccess -sid 0301 -name peerap07-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerap07-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap07-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerap07-p8_IG -type initiator -wwn c0507607f3530024 add
+sudo symaccess -sid 0301 -name peerap07-p8_IG -type initiator -wwn c0507607f3530025 add
+sudo symaccess -sid 0301 -name peerap07-p8_IG -type initiator -wwn c0507607f3530026 add
+sudo symaccess -sid 0301 -name peerap07-p8_IG -type initiator -wwn c0507607f3530027 add
+
+sudo symaccess -sid 0301 -name peerap04-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerap04-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap04-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerap04-p8_IG -type initiator -wwn c0507607fdbb0022 add
+sudo symaccess -sid 0301 -name peerap04-p8_IG -type initiator -wwn c0507607fdbb0023 add
+sudo symaccess -sid 0301 -name peerap04-p8_IG -type initiator -wwn c0507607fdbb0024 add
+sudo symaccess -sid 0301 -name peerap04-p8_IG -type initiator -wwn c0507607fdbb0025 add
+
+sudo symaccess -sid 0301 -name peerap05-p8_IG -type initiator create
+sudo symaccess -sid 0301 -name peerap05-p8_IG -type initiator set consistent_lun on
+sudo symaccess -sid 0301 -name peerap05-p8_IG -type initiator set ig_flags on SC3,SPC2,OS2007 -enable
+sudo symaccess -sid 0301 -name peerap05-p8_IG -type initiator -wwn c0507607fdbb0026 add
+sudo symaccess -sid 0301 -name peerap05-p8_IG -type initiator -wwn c0507607fdbb0027 add
+sudo symaccess -sid 0301 -name peerap05-p8_IG -type initiator -wwn c0507607fdbb0028 add
+sudo symaccess -sid 0301 -name peerap05-p8_IG -type initiator -wwn c0507607fdbb0029 add
+
+sudo symconfigure -sid 0301 -cmd "configure 6 devices copying dev 0900;" prepare -nop
+sudo symconfigure -sid 0301 -cmd "configure 6 devices copying dev 0900;" commit -nop
+
+sudo symaccess -sid 0301 -name xnpr3d01_SG -type storage create
+sudo symaccess -sid 0301 -type storage -name xnpr3d01_SG add devs 
+sudo symfast -sid 0301 -fp_name Bronze associate -sg xnpr3d01_SG -priority 2
+sudo symaccess -sid 0301 create view -name xnpr3d01_MV -sg xnpr3d01_SG -pg 2G1_3G1_PG -ig xnpr3d01_IG
+
+sudo symaccess -sid 0301 -name peerap08-p8_SG -type storage create -dev 306F
+sudo symfast -sid 0301 -fp_name Gold associate -sg peerap08-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap08-p8_MV -sg peerap08-p8_SG -pg 1G1_4G1_PG -ig peerap08-p8_IG
+
+sudo symaccess -sid 0301 -name peerap09-p8_SG -type storage create -dev 3073
+sudo symfast -sid 0301 -fp_name Gold associate -sg peerap09-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap09-p8_MV -sg peerap09-p8_SG -pg 1G1_4G1_PG -ig peerap09-p8_IG
+
+sudo symaccess -sid 0301 -name peerap06-p8_SG -type storage create -dev 3077
+sudo symfast -sid 0301 -fp_name Gold associate -sg peerap06-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap06-p8_MV -sg peerap06-p8_SG -pg 1G1_4G1_PG -ig peerap06-p8_IG
+
+sudo symaccess -sid 0301 -name peerap07-p8_SG -type storage create -dev 307B
+sudo symfast -sid 0301 -fp_name Gold associate -sg peerap07-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap07-p8_MV -sg peerap07-p8_SG -pg 1G1_4G1_PG -ig peerap07-p8_IG
+
+sudo symaccess -sid 0301 -name peerap04-p8_SG -type storage create -dev 307F
+sudo symfast -sid 0301 -fp_name Gold associate -sg peerap04-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap04-p8_MV -sg peerap04-p8_SG -pg 1G1_4G1_PG -ig peerap04-p8_IG
+
+sudo symaccess -sid 0301 -name peerap05-p8_SG -type storage create -dev 3083
+sudo symfast -sid 0301 -fp_name Gold associate -sg peerap05-p8_SG -priority 2
+sudo symaccess -sid 0301 create view -name peerap05-p8_MV -sg peerap05-p8_SG -pg 1G1_4G1_PG -ig peerap05-p8_IG</code>

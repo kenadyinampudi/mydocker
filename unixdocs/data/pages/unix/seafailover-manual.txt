@@ -1,0 +1,6 @@
+====== SEA failover manually ======
+
+  * There are times when network outages occur where layer2 stays up but layer3 fails, like today 8/4/2014 at around 2:15 PM.
+  * To failover a SEA interface, login to the VIOS server whose SEA is primary at this time and designate it's role to standby<code>sudo chdev -l entX -a ha_mode=standby</code>entX is the SEA adapter name
+  * To failback, <code>sudo chdev -l entX -a ha_mode=auto</code>
+  * To check<code>sudo entstat -d ent6 | grep -e "  Priority" -e "Virtual Adapter" -e "  State:" -e "High Availability Mode"</code>

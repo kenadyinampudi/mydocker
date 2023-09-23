@@ -1,0 +1,25 @@
+====== HP1 DB refresh documentation ======
+
+^Source System  ^Source DC ^Target System  ^Target DC|
+|cdcvilax027    |CDC/MPPS   |acdchp1axdb01 |CDC/MPPS|
+
+  - Get a latest copy of PVIDs from the source server and copy to the target system.
+    - Login to one of the jump servers ''pcdcunxaxap01''<code>ssh cdcvilax027 "lspv | grep -e sapsortvg -e vg1144HP1 -e vg1144HP1data -e vg1143CS1data -e \
+vg1143HP1orig -e vg1143HP1mirr -e vg1143data -e vg1143HP1 -e vg1143HP1sapdat -e vgpub" > HP1.pvids
+scp HP1.pvids acdchp1axdb01:</code>
+  - Login to the target server and perform the rest of the work<code>ssh acdchp1axdb01</code>
+    - Discover the new disks<code>sudo cfgmgr</code>
+    - Import VGs and mount filesystems<code>for vg in sapsortvg  vg1143data  vg1143HP1  vg1144HP1  vg1144HP1data  vg1143CS1data vg1143HP1orig  vg1143HP1mirr  vg1143HP1sapdat  vgpub
+do
+   echo "Working on ${vg} "
+   grep -w ${vg} HP1.pvids | awk '{print $2 }' > ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " ")
+   sudo recreatevg -Y/ -L/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} | sort )
+   do
+      echo "$(date) :: Working on ${vg} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>

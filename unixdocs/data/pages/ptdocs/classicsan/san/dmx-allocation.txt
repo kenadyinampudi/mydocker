@@ -1,0 +1,57 @@
+======Allocation======
+
+  * Find out the WWN of the host
+    * AIX<code>sudo lscfg -vpl fcs1 | grep -i network</code>
+    * HPUX<code>sudo ioscan -fnkC fc 2>/dev/null| grep /dev | xargs -n1 sudo fcmsutil 2>/dev/null |grep "N_Port Port"</code>
+  * Login to the correct host to perform the SYMCLI operations<code>DMX4 (000190103339)   teprbk01/taitc118
+VMAX (000198700301)    pablsv01</code>
+  * Find out the FA's the WWNs are logged into<code>sudo symmaskdb -sid 71 -wwn <wwn1> list devs
+sudo symmaskdb -sid 71 -wwn <wwn2> list devs</code> If the host has more HBAs, repeat the command on all of them and the second column normally shows the Director and it's port.i.e.<code>sudo symmaskdb -sid 71 -wwn  50060b0000604024 list devs
+
+Symmetrix ID        : 000190103471
+
+Originator Port wwn : 50060b0000604024
+User-generated Name : 50060b0000604024/50060b0000604024
+
+Sym Dev                                               LUN
+Name    Dir:P  Physical Device Name     VBUS  TID  SYMM HOST  Attr  Cap(MB)
+------  -----  -----------------------  ----  ---  ---- ----  ----  -------
+0425     9D:1  Not Visible                 0    2     6  N/A  (M)     34523  
+0439     9D:1  Not Visible                 0    3     1  N/A  (M)     34523
+.....lines removed.......
+19ED     9D:1  Not Visible                 0    3     2  N/A  (M)    138090  
+1B57     9D:1  Not Visible                 0    3     3  N/A  (M)    138090</code>In this case, the WWN is logged on to FA9D Port 1 from **9D:1**
+  * Check the assignment of devices that you present to make sure they are not in use by any other host.<code>sudo symmaskdb -sid 71 list assignment -dev 02E9,02F9,0309,0319          
+
+No device masking database records could be found for the specified input parameters</code>This is good.
+  * In order to present storage to the host, you need to map a sym device to the FA.
+    * Find out these LUNs have been already mapped to the FA<code>sudo symcfg list -sid 71 -FA 8C -P 1 -addr -avail | egrep "02E9|02F9|0309|0319"</code>
+    * For the rest of the LUNs, we need to map them to the FA.
+    * Find out the next available LUN id (This is not the sym device id)<code>sudo symcfg list -sid 71 -FA 8C -P 1 -addr -avail | grep "AVAILABLE" \
+| tail -1 </code>LUN ID in map file should be in HEX. I do have such loop to speed up this process<code>#!/usr/bin/sh
+#scrpit to create mapping file to map DMX devices to FA
+#PORT - in this var put all FAs you want to map LUN to
+#LUN - in here put all LUNs to be mapped - space delimited
+#below are example from my last work on DMX4
+#STARTLUNID is the VAR which should be in hex - next available LUN ID
+
+PORT="8D:0 9D:0"
+LUN="166A 166E 1672 1676 167A 167E 1682 1686 168A 172A 172E 1732 1736 173A 173E"
+STARTLUNID=72A
+
+for luns in $LUN ;
+do
+        for ports in $PORT ;
+        do
+                echo "map dev $luns to dir $ports target=0 lun=$STARTLUNID;"
+        done
+STARTLUNID=`echo "obase=16;ibase=16;$STARTLUNID+1"|bc`
+done</code>
+    * Create a map file in this syntax<code>map dev 0C61 to dir <FA-1>:<Port-1/0> target=X lun=YY;
+map dev 0C61 to dir <FA-2>:<Port-1/0> target=X lun=YY;</code>Unless an exception - there will always be two FAs(or more) the LUN is mapped to.
+    * Preview the config<code>sudo symconfigure -sid <sid> -f <mapfile> preview</code>
+    * Commit the config<code>sudo symconfigure -sid <sid> -f <mapfile> commit</code>
+  * Once mapped, the next step is to mask the LUNs to the WWN.
+    * Map LUNs to the first HBA<code>sudo symmask -sid <sid> -wwn <wwn1> -dir <FA1> -p <port> add devs abcd,efgh,hijk,lmno
+sudo symmask -sid <sid> -wwn <wwn2> -dir <FA2> -p <port> add devs abcd,efgh,hijk,lmno</code>
+    * Refresh the FAs<code>sudo symmask -sid 71 refresh</code>

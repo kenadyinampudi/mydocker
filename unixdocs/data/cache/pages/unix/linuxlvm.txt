@@ -1,0 +1,78 @@
+====== Linux LVM notes ======
+
+==== Redhat ====
+
+== Discover a newly added VMWare disk ==
+
+  * Dont know which host has it hence<code>echo "- - -" | sudo tee /sys/class/scsi_host/host0/scan
+echo "- - -" | sudo tee /sys/class/scsi_host/host1/scan
+echo "- - -" | sudo tee /sys/class/scsi_host/host2/scan</code>
+
+== Find free space on LVM ==
+
+  * Check the VGs and find free space<code>sudo vgs</code>
+
+== Extend a filesystem ==
+
+  * Extend the logical volume<code>sudo lvextend -L 13G /dev/datavg/fslv12</code>
+  * Extend the filesystem<code>sudo resize2fs /dev/datavg/fslv12</code>
+
+== Create a new filesystem ==
+
+  * Create a logical volume<code>sudo lvcreate -L 12G -n fslv26 /dev/datavg</code>
+  * Create a filesystem<code>sudo mkfs -t ext4 /dev/datavg/fslv26</code>
+  * Make an entry in fstab<code>echo "/dev/mapper/datavg-fslv26   /data/fsname                    ext4    defaults        1 2" | sudo tee -a /etc/fstab</code>
+  * Create Mount point and mount the filesystem<code>sudo mkdir -p /data/fsname
+sudo mount /data/fsname</code>
+
+==== SuSE ====
+
+== Managing disks ==
+
+  * List all disks<code>x1kxk630@paitap01:~> sudo lsscsi
+[2:0:0:16]   disk    EMC      SYMMETRIX        5773  /dev/sda
+[2:0:0:255]  disk    EMC      SYMMETRIX        5773  /dev/sdb
+[2:0:1:0]    disk    EMC      SYMMETRIX        5773  /dev/sdc
+....lines removed....
+[2:0:2:0]    disk    DGC      VRAID            0532  /dev/sdl
+[5:0:1:0]    disk    EMC      SYMMETRIX        5773  /dev/sdj
+[5:0:1:239]  disk    EMC      SYMMETRIX        5773  /dev/sdk</code>
+  * Remove a disk<code>echo 1 | sudo tee -a /sys/block/sdX/device/delete</code>**sdX** is the device that gets deleted.
+  * Rescan the bus for new disks<code>sudo rescan-scsi-bus.sh -l</code>
+
+== Extend a filesystem ==
+
+  * Find out which volume group it is on<code>grep /oracle/OEM /etc/fstab</code>It should print something like this<code>/dev/datavg01/oracleOEM /oracle/OEM reiserfs   acl,user_xattr        1 2</code>It is on datavg01
+  * Find out if datavg01 has enough space<code>sudo vgs</code>It prints<code>VG       #PV #LV #SN Attr   VSize  VFree
+  datavg01   1   2   0 wz--n- 20.00G 10.00G</code>That says it has 10 GB free
+  * Extend the logical volume<code>sudo lvextend -L 13G /dev/datavg01/oracleOEM
+  Extending logical volume fslv12 to 13.00 GB
+  Logical volume fslv12 successfully resized</code>
+  * Extend the filesystem<code>sudo /sbin/resize_reiserfs /dev/datavg01/oracleOEM
+resize_reiserfs 3.6.19 (2003 www.namesys.com)
+resize_reiserfs: On-line resizing finished successfully.</code>
+
+== Create a new filesystem ==
+
+  * Create a logical volume<code>sudo lvcreate -L 12G -n fslv26 /dev/datavg
+  Logical volume "fslv26" created</code>
+  * Create a filesystem<code>sudo /sbin/mkreiserfs -f /dev/datavg/fslv26
+mkreiserfs 3.6.19 (2003 www.namesys.com)
+....... lines removed .....
+....... lines removed .....
+Initializing journal - 0%....20%....40%....60%....80%....100%
+Syncing..ok
+ReiserFS is successfully created on /dev/datavg/fslv26.</code>
+  * Make an entry in fstab<code>echo "/dev/datavg/fslv26 /oracle/QCU/11203 reiserfs   acl,user_xattr        1 2" | sudo tee -a /etc/fstab</code>
+  * Create Mount point and mount the filesystem<code>sudo mkdir -p /oracle/QCU/11203
+sudo mount /oracle/QCU/11203</code>
+
+
+== Remove a filesystem ==
+
+   * Unmount the file system<code>sudo umount /oracle/TCOG/11203</code>
+   * Remove the logical volume and file system <code>sudo lvremove /dev/datavg/fslv36
+Do you really want to remove active logical volume "fslv36"? [y/n]: y
+  Logical volume "fslv36" successfully removed </code>
+   * Remove entry from /etc/fstab<code>sudo vi /etc/fstab</code>Delete line for file system <code>/dev/datavg/fslv36 /oracle/TCOG/11203 reiserfs   acl,user_xattr        1 2,</code>
+   * Remove mount point <code>sudo rmdir /oracle/TCOG/11203</code>

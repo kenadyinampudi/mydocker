@@ -1,0 +1,32 @@
+====== Disable NFS and shutdown Wave 0 servers. ======
+
+  - This is a Unix team task
+  - Login to pgnmsv01
+  - Disable NFS on Wave0 servers at LDC<code>for host in dreiap99 dreidb99 ereiap99 ereidb99 drenap99 drendb99 erenap99 erendb99 drgtdb01 drsndb01 drsrdb01 drhgap99 drhgdb99 prhgap99 prhgdb99 prgtdb01 prsndb01 prsrdb01 prenap99 prendb99 xrenap99 xrendb99 preiap99 preidb99 xreiap99 xreidb99
+do
+   thishost=${host}.amer.int.tenneco.com
+   nfsfilesystems=$(ssh ${thishost}  grep -p nfs /etc/filesystems | grep : | sed "s;:;;g" | tr "\n" " " )
+   for nfsfs in ${nfsfilesystems}
+   do
+      ssh ${thishost} "sudo /usr/local/scripts/manage_auto_mount_nfs disable ${nfsfs} "
+      echo "${thishost} -- ${nfsfs} automount disabled "
+   done
+done</code>
+  - Shutdown Wave0 servers at LDC
+    - Shukant<code>for host in dreiap99 dreidb99 ereiap99 ereidb99 drenap99 drendb99
+do
+   ssh ${host}.amer.int.tenneco.com
+done</code>
+    - Vasu<code>for host in erenap99 erendb99 drgtdb01 drsndb01 drsrdb01 drhgap99
+do
+   ssh ${host}.amer.int.tenneco.com
+done</code>
+    - Naveej<code>for host in drhgdb99 prhgap99 prhgdb99 prgtdb01 prsndb01 prsrdb01
+do
+   ssh ${host}.amer.int.tenneco.com
+done</code>
+    - Sumit<code>for host in prenap99 prendb99  xrenap99 xrendb99 preiap99 preidb99 xreiap99 xreidb99
+do
+   ssh ${host}.amer.int.tenneco.com
+done</code>
+  - On each server, execute<code>sudo shutdown -F</code>**Don't shutdown the NIM server, after the for loop, you will end up on the NIM server !!**

@@ -1,0 +1,147 @@
+====== HPUX LVM ======
+
+==== Describe steps adding a disk and expanding filesystem on taitc113 ====
+
+  - Document the request<code>Increase the following filesystems by 15g each
+/oracle/POMU/data1
+/oracle/POMU/data2</code>
+  - Identify the logical volume for each filesystem<code>x1kxk630 on taitc113:/home/x1kxk630 $ bdf /oracle/POMU/data1 /oracle/POMU/data2
+Filesystem          kbytes    used   avail %used Mounted on
+/dev/vgOVP/lvol32  46989312 22912136 23889656   49% /oracle/POMU/data1
+/dev/vgOVP/lvol1   57671680 38732069 17755889   69% /oracle/POMU/data2</code>Hence<code>/oracle/POMU/data1 is on /dev/vgOVP/lvol32 i.e. Volume group "vgOVP" logical volume "lvol32"
+/oracle/POMU/data2 is on /dev/vgOVP/lvol1 i.e. Volume group "vgOVP" logical volume "lvol1"</code>
+  - Check if we have enough free space<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo vgdisplay vgOVP
+--- Volume groups ---
+VG Name                     /dev/vgOVP
+VG Write Access             read/write
+VG Status                   available
+Max LV                      255
+Cur LV                      22
+Open LV                     22
+Max PV                      255
+Cur PV                      7
+Act PV                      7
+Max PE per PV               1016
+VGDA                        14
+PE Size (Mbytes)            64
+Total PE                    3773
+Alloc PE                    3487
+Free PE                     286
+Total PVG                   0
+Total Spare PVs             0
+Total Spare PVs in use      0
+VG Version                  1.0
+VG Max Size                 16581120m
+VG Max Extents              259080</code>We are looking for "Free PE" and "PE Size". In this case<code>We have 286 free PEs, PE size is 64 Meg. Hence we have a total of 286 * 64M / 1024 = 17.87GB available on vgOVP</code>
+  - We can expand the first filesystem
+    - First step is to extend the logical volume. Let us find out the size of the LV<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo lvdisplay  /dev/vgOVP/lvol1
+--- Logical volumes ---
+LV Name                     /dev/vgOVP/lvol1
+VG Name                     /dev/vgOVP
+LV Permission               read/write
+LV Status                   available/syncd
+Mirror copies               0
+Consistency Recovery        MWC
+Schedule                    parallel
+LV Size (Mbytes)            40960
+Current LE                  640
+Allocated PE                640
+Stripes                     0
+Stripe Size (Kbytes)        0
+Bad block                   on
+Allocation                  strict
+IO Timeout (Seconds)        default</code>As you see<code>"LV Size" is 40960MB. We need to add additional 15G i.e. 15*1024 Meg = 15360 Meg. lvextend expectes the target size in Megabytes as an argument to -L. So that is 40960+15360 = 56320</code>So the command you would execute is<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo lvextend -L 56320 /dev/vgOVP/lvol1
+Logical volume "/dev/vgOVP/lvol1" has been successfully extended.
+Volume Group configuration for /dev/vgOVP has been saved in /etc/lvmconf/vgOVP.conf</code>
+    - Now extend the filesystem<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo fsadm -F vxfs -b 56320m /oracle/POMU/data2
+UX:vxfs fsadm: INFO: V-3-25942: /dev/vgOVP/rlvol1 size increased from 41943040 sectors to 57671680 sectors</code>Check it<code>x1kxk630 on taitc113:/home/x1kxk630 $ bdf /oracle/POMU/data2
+Filesystem          kbytes    used   avail %used Mounted on
+/dev/vgOVP/lvol1   57671680 38732069 17755889   69% /oracle/POMU/data2</code>
+  - At this stage, you would request SAN team to add another disk to taitc113. They are all 34G devices. Once allocation is done.
+    - Document the current disks<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo ioscan -m dsf
+Persistent DSF           Legacy DSF(s)
+========================================
+/dev/pt/pt2              /dev/rscsi/c21t0d0
+/dev/rdisk/disk2         /dev/rdsk/c2t1d0
+/dev/rdisk/disk2_p1      /dev/rdsk/c2t1d0s1
+/dev/rdisk/disk2_p2      /dev/rdsk/c2t1d0s2
+/dev/rdisk/disk2_p3      /dev/rdsk/c2t1d0s3
+/dev/rtape/tape1_BEST    /dev/rmt/c0t3d0BEST
+/dev/rtape/tape1_BESTn   /dev/rmt/c0t3d0BESTn
+/dev/rtape/tape1_BESTb   /dev/rmt/c0t3d0BESTb
+/dev/rtape/tape1_BESTnb   /dev/rmt/c0t3d0BESTnb
+/dev/pt/pt3              /dev/rscsi/c20t0d0
+/dev/rdisk/disk3         /dev/rdsk/c2t0d0
+/dev/rdisk/disk3_p1      /dev/rdsk/c2t0d0s1
+/dev/rdisk/disk3_p2      /dev/rdsk/c2t0d0s2
+/dev/rdisk/disk5         /dev/rdsk/c3t0d0
+/dev/rdisk/disk71        /dev/rdsk/c22t0d0
+                         /dev/rdsk/c23t0d0
+/dev/rdisk/disk72        /dev/rdsk/c22t0d1
+                         /dev/rdsk/c23t0d1
+/dev/rdisk/disk73        /dev/rdsk/c22t0d2
+                         /dev/rdsk/c23t0d2
+/dev/rdisk/disk74        /dev/rdsk/c22t0d3
+                         /dev/rdsk/c23t0d3
+/dev/rdisk/disk75        /dev/rdsk/c22t0d4
+                         /dev/rdsk/c23t0d4
+/dev/rdisk/disk76        /dev/rdsk/c22t0d5
+                         /dev/rdsk/c23t0d5
+/dev/rdisk/disk77        /dev/rdsk/c22t0d6
+                         /dev/rdsk/c23t0d6
+/dev/rdisk/disk85        /dev/rdsk/c22t0d7
+                         /dev/rdsk/c23t0d7</code>Look for disks with multiple paths i.e. /dev/rdisk/disk71 through 85. They are the SAN LUNs. Now discover the LUNs<code>sudo ioscan</code>List devices now<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo ioscan -m dsf
+Persistent DSF           Legacy DSF(s)
+========================================
+/dev/pt/pt2              /dev/rscsi/c21t0d0
+/dev/rdisk/disk2         /dev/rdsk/c2t1d0
+/dev/rdisk/disk2_p1      /dev/rdsk/c2t1d0s1
+/dev/rdisk/disk2_p2      /dev/rdsk/c2t1d0s2
+/dev/rdisk/disk2_p3      /dev/rdsk/c2t1d0s3
+/dev/rtape/tape1_BEST    /dev/rmt/c0t3d0BEST
+/dev/rtape/tape1_BESTn   /dev/rmt/c0t3d0BESTn
+/dev/rtape/tape1_BESTb   /dev/rmt/c0t3d0BESTb
+/dev/rtape/tape1_BESTnb   /dev/rmt/c0t3d0BESTnb
+/dev/pt/pt3              /dev/rscsi/c20t0d0
+/dev/rdisk/disk3         /dev/rdsk/c2t0d0
+/dev/rdisk/disk3_p1      /dev/rdsk/c2t0d0s1
+/dev/rdisk/disk3_p2      /dev/rdsk/c2t0d0s2
+/dev/rdisk/disk5         /dev/rdsk/c3t0d0
+/dev/rdisk/disk7         /dev/rdsk/c22t1d0
+                         /dev/rdsk/c23t1d0
+/dev/rdisk/disk71        /dev/rdsk/c22t0d0
+                         /dev/rdsk/c23t0d0
+/dev/rdisk/disk72        /dev/rdsk/c22t0d1
+                         /dev/rdsk/c23t0d1
+/dev/rdisk/disk73        /dev/rdsk/c22t0d2
+                         /dev/rdsk/c23t0d2
+/dev/rdisk/disk74        /dev/rdsk/c22t0d3
+                         /dev/rdsk/c23t0d3
+/dev/rdisk/disk75        /dev/rdsk/c22t0d4
+                         /dev/rdsk/c23t0d4
+/dev/rdisk/disk76        /dev/rdsk/c22t0d5
+                         /dev/rdsk/c23t0d5
+/dev/rdisk/disk77        /dev/rdsk/c22t0d6
+                         /dev/rdsk/c23t0d6
+/dev/rdisk/disk85        /dev/rdsk/c22t0d7
+                         /dev/rdsk/c23t0d7</code>As you see, the new disk is added and here is the device file<code>/dev/rdisk/disk7         /dev/rdsk/c22t1d0
+                         /dev/rdsk/c23t1d0
+</code>
+    - Prepare the device for LVM. ** Be extremely careful here, HPUX is not forgiving as AIX -- it will wipe out a disk that is in use **. Anyways start with checking the size of the disk. We requested for 34G<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo diskinfo /dev/rdisk/disk7
+SCSI describe of /dev/rdisk/disk7:
+             vendor: EMC
+         product id: SYMMETRIX
+               type: direct access
+               size: 35354880 Kbytes
+   bytes per sector: 512</code>"size: 35354880 Kbytes"<code>35354880/1024/1024 is 33.71 -- so yes we have a 34G LUN and we are able to read it.</code>Now prepare the disk for LVM<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo pvcreate /dev/rdisk/disk7
+Physical volume "/dev/rdisk/disk7" has been successfully created.</code>
+    - Add the LUN to the Volume group<code>x1kxk630 on taitc113:/home/x1kxk630 $ sudo vgextend vgOVP /dev/disk/disk7
+Volume group "vgOVP" has been successfully extended.
+Volume Group configuration for /dev/vgOVP has been saved in /etc/lvmconf/vgOVP.conf</code>
+    - At this point, you will see the additional space available on vgOVP. Continue expanding filesystem as explained above.
+   
+
+
+==== Notes ====
+
+  * If you get the error message: "You don't have a license to run this command" enable online JFS with the command: <code>/sbin/fs/vxfs/vxenablef -a </code>

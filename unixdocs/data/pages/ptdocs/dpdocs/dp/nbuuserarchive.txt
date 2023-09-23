@@ -1,0 +1,123 @@
+Recently end user(Tomas Casse, John Breels, Artur Spendel) came to me asking if we can help out with data archiving. It was about taitc133 server located in INX DC. I have explained them my understanding of archiving and they did agree to use it.
+So let me share with you what is archiving in NetBackup:
+“A user initiates a user archive through the Backup, Archive, and Restore client interface.
+A user archive backup first backs up the files that the user indicates. The archive then deletes the files from the local disk if the backup is successful. Archive backups free local disk space while retaining a copy for future use. The copy is kept until the retention period expires. Users can start archives only during the times that are specified in the schedule Start Window tab. For a user to be able to initiate an archive, the policy must contain a schedule of the User Archive type.
+Note: The NetBackup administrator should make sure that a full backup of the client exists before a user archives files from the client.”
+
+So I asked them to create a folder on taitc133 server which they want to archive. They copied all data into only one folder -> E:\Backup\robocopy and asked to archive it. 
+On master server I did create a separate policy for this task:
+------------------------------------------------------------
+
+Policy Name:       USR_ARCHIVE
+
+  Policy Type:         MS-Windows
+  Active:              yes
+  Effective date:      07/24/2017 12:28:06
+  Backup network drvs: no
+  Collect TIR info:    no
+  Mult. Data Streams:  no
+  Client Encrypt:      no
+  Checkpoint:          no
+  Policy Priority:     0
+  Max Jobs/Policy:     Unlimited
+  Disaster Recovery:   0
+  Collect BMR info:    no
+  Residence:           USR_ARCHIVE
+  Volume Pool:         NetBackup
+  Server Group:        *ANY*
+  Keyword:             (none specified)
+  Data Classification:       Bronze
+  Residence is Storage Lifecycle Policy:    yes
+  Application Discovery:      no
+  Discovery Lifetime:      0 seconds
+  ASC Application and attributes: (none defined)
+
+  Granular Restore Info:  no
+  Ignore Client Direct:  no
+  Use Accelerator:  no
+  Optimized Backup:  no
+  HW/OS/Client:  Windows-x64   Windows       taitc133.emea.int.tenneco.com
+
+  Include:      (none defined)
+
+  Schedule:              USR_ARCHIVE_ON_DEMAND
+    Type:                User Archive
+     Excluded Dates----------
+        No specific exclude dates entered
+        No exclude days of week entered
+    PFI Recovery:        0
+    Maximum MPX:         1
+    Retention Level:     8 (1 year)
+    Number Copies:       1
+    Fail on Error:       1
+    Residence:           (specific storage unit not required)
+    Volume Pool:         (same as policy volume pool)
+    Server Group:        (same as specified for policy)
+    Residence is Storage Lifecycle Policy:         0
+    Daily Windows:
+          Monday     00:00:00  -->  Saturday   00:00:00
+
+That policy uses newly created SLP named: USR_ARCHIVE (I believe I need to apply some standard to such SLPs) which is configured as follows:
+----------------------------------------------------------------------
+                                Name: USR_ARCHIVE
+                 Data Classification: Bronze
+            Duplication Job Priority: 0
+                               State: active
+                             Version: 0
+Operation  1                Use for: 0 (backup)
+                             Storage: INX_PD_DSU2
+                         Volume Pool: (none specified)
+                        Server Group: (none specified)
+                      Retention Type: 0 (Fixed)
+                     Retention Level: 8 (1 year)
+               Alternate Read Server: (none specified)
+               Preserve Multiplexing: false
+      Enable Automatic Remote Import: false
+                               State: active
+                              Source: 0 (client)
+                        Operation ID: (none specified)
+                     Operation Index: 1
+                         Window Name: --
+                 Window Close Option: --
+                Deferred Duplication: no
+Operation  2                Use for: 1 (duplication)
+                             Storage: inxnbu5230amd-hcart-robot-tld-0
+                         Volume Pool: INX_YEARLY
+                        Server Group: Any
+                      Retention Type: 0 (Fixed)
+                     Retention Level: 10 (10 years)
+               Alternate Read Server: (none specified)
+               Preserve Multiplexing: false
+      Enable Automatic Remote Import: false
+                               State: active
+                              Source: Operation 1 (backup:INX_PD_DSU2)
+                        Operation ID: (none specified)
+                     Operation Index: 2
+                         Window Name: Default_24x7_Window
+                 Window Close Option: SFN
+                Deferred Duplication: no
+
+Then on client side – I added the user ID on which NBU services are running to security tab (full control) of the folder to be archived. Configured this client to use that policy and schedule for this task. Then I ran this archive job.
+Now that archive will have two copies – 1st on disk stored for one year, 2nd on tape stored for 10 years. 
+What did we gain by doing so…. Please look into this table:
+
+|Backed Up	|Expires	   |Files	      |KB	|Sched Type	|Policy|
+|7/25/2017 3:01	|8/4/2017	|1,465,190	|671,287,756	|FullBackup	|VM_WAREs_INX|
+|7/24/2017 13:26	|7/24/2018	|925,567	        |__218,070,155__	|UserArchive	|USR_ARCHIVE|
+|7/24/2017 3:41	|8/3/2017	|2,389,573	|887,054,824	|FullBackup	|VM_WAREs_INX|
+|7/22/2017 0:21	|8/22/2017	|2,389,352	|887,448,822	|FullBackup	|VM_WAREs_INX|
+|7/21/2017 3:22	|7/31/2017	|2,388,681	|887,298,216	|FullBackup	|VM_WAREs_INX|
+|7/20/2017 3:44	|7/30/2017	|2,387,301	|887,084,110	|FullBackup	|VM_WAREs_INX|
+|7/19/2017 3:42	|7/29/2017	|2,385,660	|886,840,551	|FullBackup	|VM_WAREs_INX|
+|7/18/2017 3:22	|7/28/2017	|2,385,053	|886,595,379	|FullBackup	|VM_WAREs_INX|
+|7/17/2017 3:50	|7/27/2017	|2,383,608	|887,622,932	|FullBackup	|VM_WAREs_INX|
+
+User archive is ca. 200 GB in size, the one underlined in KB column – and we can easily see that these 200 GB was subtracted from next full VMWARE based backups – also you need to know that such archive does not count to ours Front End TB licensing model.  So we did ‘save’ 200 GB on NBU licenses.
+
+I am scheduling a meeting with data owners here in GLW to do something similar to above.
+
+Now if you will be asked to restore anything from this archive you need to:
+  - Ordered List ItemSelect client name – taitc133.emea.int.tenneco.com – same client name should be in destination client
+  - Ordered List ItemSet policy type to MS-Windows
+  - Set restore type to Archived Backups
+  - Now you can proceed as usual – and restore the requested data.

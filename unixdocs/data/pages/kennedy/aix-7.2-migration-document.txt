@@ -1,0 +1,95 @@
+====== Migration with NIMADM: Network Install Manager Alternate Disk Migration ======
+
+===== I. Prerequisites on NIM master =====
+
+**NIM master level** 
+    - NIM master must be at the same or higher level than the level being migrated to.
+  - To check the OS level of the NIM master: `oslevel -s`
+      * //Example NIM servers: sfldmiax241, cdcvilax118//
+
+**lpp_source and SPOT level**
+    - The selected lpp_source and SPOT must match the AIX level to which you are migrating.
+    - To check existing lpp_source and SPOT: `lsnim|grep 7200`
+       * //Example lpp_source: 7200-05-00-2037, Example SPOT: 7200-05-00-2037_spot//
+
+**bos.alt_disk_install.rte**
+    - The same level of bos.alt_disk_install.rte must be installed in the rootvg (on NIM master) and in the SPOT which will be used.
+    - Check on NIM master: `lslpp -l bos.alt_disk_install.rte`
+    - Check in SPOT: `nim -o lslpp -a filesets='bos.alt_disk_install.rte' <spot_name>`
+        * //Example output on NIM master//
+    <code>    Fileset                      Level  State      Description
+    ----------------------------------------------------------------------------
+    Path: /usr/lib/objrepos
+    bos.alt_disk_install.rte   7.2.5.0  APPLIED    Alternate Disk Installation Runtime
+    Path: /etc/objrepos
+    bos.alt_disk_install.rte   7.2.5.0  APPLIED    Alternate Disk Installation Runtime</code>
+
+**Free space in vg**
+    - In the VG, which will be used for migration, there must be enough free space (about the size of the client's rootvg). 
+        * Example: VG name: nimadmvg, Free PPs: 1598 (204544 megabytes)
+    - To check free space in the VG: `lsvg nimadmvg | grep -i free`
+
+**rsh**
+    - Check if the client can be reached via RSH from NIM master: `rsh <client_name> date`
+    - Ensure the necessary entries in ~/.rhosts file in both client and NIM.
+    - Format of ~/.rhosts:
+      <code>      sap2212 root      </code>
+    
+=====  II. Prerequisites on NIM client ===== 
+
+**Hardware and firmware levels**
+    * The client's hardware and software must be at the required level to support the level that is being migrated to.
+
+**Free disk**
+    * The client must have a free disk, large enough to clone rootvg.
+
+**NFS mount**
+    * NIM client must be able to perform NFS mounts and read/write operations.
+
+**multibos**
+    * The nimadm command is not supported with the multibos command when there is a bos_hd5 logical volume.
+
+**LV names**
+    * LV names must not be longer than 11 characters (because they will get an alt_ prefix during migration, and AIX limitation is 15 characters for an LV).
+
+**TCB (Trusted Computing Base)**
+    * If you use disk caching option (-j flag), it does not matter if TCB is turned on or off (usually it is not turned on).
+    * However, if you omit "-j" flag (NFS read/write), TCB should be turned off. (TCB needs to access file metadata which is not visible over NFS).
+    * Command to check if TCB is enabled/disabled: `odmget -q attribute=TCB_STATE PdAt`
+
+**ncargs (Specifies the maximum allowable size of the ARG/ENV list when running exec() subroutines)**
+    * Ensure ncargs value is at least 256: `lsattr -El sys0 -a ncargs` (chdev -l sys0 -a ncargs='256')
+
+=====    III. Preparation on NIM client =====  
+
+  -   Create mksysb.
+  -   Check filesets, commit: `lppchk -v`, `installp -s` (use `smitty commit` if needed).
+  -   Run pre_migration script: `/usr/lpp/bos/pre_migration` (it will show you if anything must be corrected, output is in `/home/pre_migration...`).
+  -   Save actual config (mounts, routes, filesystems, interfaces, `lsattr -El sys0`, `vmo -a`, `no -a`, `ioo -a`, ...).
+  -   Save some config files (/etc/motd, /etc/sendmail.cf, /etc/ssh...) to `/home` (these won't be overwritten and can be restored later).
+         * //Example for SSH config: //<code># ssh -v dummyhost 2>&1 | grep "Reading configuration" (it will show the location of ssh_config: debug1: Reading configuration data /etc/ssh/ssh_config)
+# cp -pr <path_to_ssh_dir> /home/pre_migration.<timestamp>/ssh</code>
+  -   Free up disk: unmirrorvg, reducevg, bosboot, bootlist.
+
+=====   IV. Migration (on NIM master) =====  
+  - Run the following nimadm command<code>nimadm -j nimadmvg -c "aix_client" -s "spot" -l "lpp_source" -d "hdisk*" -Y
+
+`-j`: specifies VG on master which will be used for migration (filesystems will be created here and client's data is cached here via rsh).
+`-c`: client name
+`-s`: SPOT name
+`-l`: lpp_source name
+`-d`: hdisk name for the alternate root volume group (altinst_rootvg)
+`-Y`: agrees to the software license agreements for software that will be installed during the migration.
+
+Example:
+nimadm -j nimadmvg -l 7200-05-00-2037 -c sap2212 -s 7200-05-00-2037_spot -d hdisk2 -Y</code>
+- Migration logs can be found in `/var/adm/ras/alt_mig` directory. There will be 12 phases after that, and you will get back the prompt.
+Check if `alt_inst_rootvg` exists on the client and bootlist is set correctly.
+
+=====    V. Post migration checks on the client =====    
+
+  - Check filesets: `oslevel -s`, `lppchk -v`, `instfix -i | grep ML` (update/correct/commit other software/filesets if needed).
+  - Check config, config files: (`sys0`, `vmo`, tunables: `tuncheck -p -f /etc/tunables/nextboot`) (`maxuproc`: `lsattr -El sys0`, `chdev -l sys0 -a maxuproc=<value>`).
+  - Run post_migration script: `/usr/lpp/bos/post_migration` (it can run for a long time, 5-10 minutes).
+  - Others: mksysb, smtctl, rsh, rootvg mirror.
+

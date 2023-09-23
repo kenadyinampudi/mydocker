@@ -1,0 +1,33 @@
+
+<h1 class="sectionedit1" id="fedora_tricks">Fedora Tricks</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Create an LVM partition on a disk</div>
+<ol>
+<li class="level2"><div class="li"> Get to parted<pre class="code">sudo parted /dev/sda</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Create the partition<pre class="code">mkpart primary ext2 282625 282624</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Print to list the partitions<pre class="code">print                                                            
+Model: ATA ST31000528AS (scsi)
+Disk /dev/sda: 1000GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+Disk Flags: 
+
+Number  Start   End     Size    Type     File system  Flags
+ 1      1049kB  1075MB  1074MB  primary  ext4         boot
+ 2      1075MB  276GB   275GB   primary               lvm
+ 3      283GB   565GB   283GB   primary</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Label it for LVM<pre class="code">set 3 lvm on</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>

@@ -1,0 +1,96 @@
+====== DRiV - AIX  build documentation -- standard ======
+
+  * Us this documentation for servers built in the DRiV environment that stays permanent. And those which does not need any special network isolation.
+  * Build AIX systems on these frames 
+
+^HMC                          ^Frame                     ^
+|cdcvilhmc003.fmmotorparts.com|Powervm40-9040-MR9-78AAE7X|
+|cdcvilhmc003.fmmotorparts.com|Powervm39-9040-MR9-78AAE8X|
+|cdcvilhmc003.fmmotorparts.com|Powervm44-9009-42A-7823D20|
+|cdcvilhmc003.fmmotorparts.com|Powervm41-9009-42A-7823D40|
+|cdcvilhmc003.fmmotorparts.com|Powervm42-9009-42A-7823D50|
+|cdcvilhmc003.fmmotorparts.com|Powervm43-9009-42A-7823D30|
+
+
+===== Configuration guidelines =====
+
+  - There is only one NIC instead of two at LDC.
+
+==== NIM installation Steps ====
+
+  - Login to Legacy Tenneco NIM server ''pgnmsv01'' for now.
+  - For ease of documentation, export variables for source and target systems<code>export srcsystem=<system_of_which_you_plan_to_use_mksysb_from>
+export tgtsystem=<system_which_you_plan_to_built></code>
+  - Copy the mksysb to a temp location and umcompress it<code>sudo cp /mksysb-images/bos.obj.${srcsystem}.gz /preupgrade/mksysb/
+cd /preupgrade/mksysb/ ; sudo gunzip bos.obj.${srcsystem}.gz</code>
+  - Define a mksysb resource<code>sudo nim -o define -t mksysb -a server=master -a location=/preupgrade/mksysb/bos.obj.${srcsystem} ${srcsystem}-mksysb</code>If NIM complains there is an existing resource with that name, please remove it<code>sudo nim -o remove ${srcsystem}-mksysb</code>
+  - Find out the OSLEVEL on the system that we plan to clone<code>ssh ${srcsystem} oslevel -s
+7100-05-02-1810	</code>
+  - Find out the correct Spot and LPPSRC for the above AIX release level. In this case they are,<code>710TL05-02_spot
+710TL05-02_lppsrc</code>Export them as variables<code>export lppsrc="710TL05-02_lppsrc"
+export spot="710TL05-02_spot"</code>
+  - Add systems to /etc/hosts file because the reverse lookups don't work.<code>host ${tgtsystem}.driv.com | awk '{print $NF"\t"$1}' | sed "s;.driv.com;;g" | sudo tee -a /etc/hosts</code>
+  - Define system on NIM<code>sudo nim -o define -t standalone -a platform=chrp -a if1="find_net ${tgtsystem} 0" -a netboot_kernel=mp ${tgtsystem}</code>
+  - Prepare for a NIM installation<code>sudo nim -o bos_inst \
+-a source=mksysb \
+-a spot=${spot} \
+-a lpp_source=${lppsrc} \
+-a no_client_boot=yes \
+-a script=postinstallcloneDRiVpermanent \
+-a mksysb=${srcsystem}-mksysb \
+${tgtsystem}</code>
+    - Change the bootp config to send traffic to 10.32.60/24 subnet<code>sudo ex -sc "/${tgtsystem}/s/10.0.48.12/10.32.60.60/|x" /etc/bootptab</code>
+  - Add the server to the console database **/prod/images/etc/unix_sys_console**<code>sudo vi /prod/images/etc/unix_sys_console</code>
+    - A regular lpar on a P Series frame<code>pgnmsv01:lpar-ibm:taitc051:pgnmsv01-9111-520-SN10B4F8D:pgnmsv01:2:hscroot</code>
+  - Power on the server to SMS from HMC.
+    - Find out the frame<code>export frame=$(grep -i ^${tgtsystem} /prod/images/etc/unix_sys_console | awk -F: '{print $4}' )</code>
+    - Power on <code>ssh cdcvilhmc003.fmmotorparts.com "chsysstate -r lpar -o on -b sms -m ${frame} -n ${tgtsystem}"</code>
+  - Open up a console session to the new server. On pgnmsv01<code>sudo getconsole ${tgtsystem}</code>
+  - At the console, setup Remote IPL as normal and perform a network boot.
+    - Details you need<code>Client IP : The IP address of the host you are building
+Server IP : 10.32.60.60
+Netmask   : 255.255.255.0
+Def Route : 10.128.40.1 (MP AIX systems), 10.32.60.1 (LDC Clones)</code>
+  - Wait for the installation to complete
+==== Tasks on first boot from console ====
+
+  - Login on console as root.
+  - Completely remove network configuration.
+    - Down and detach the active interface<code>ifconfig $(ifconfig -a | grep : | grep -v lo0 |grep RUNNING | awk '{print $1}' | sed "s;:;;g") down detach</code>
+    - Remove all network device files<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g")
+do
+   rmdev -dl en${dev}
+   rmdev -dl et${dev}
+   rmdev -dl ent${dev}
+   echo "${dev} removed"
+done</code>
+    - Run cfgmgr<code>cfgmgr</code>
+  - Configure IP address.
+    - Configure the front end IP address on en0 interface<code>/usr/sbin/mktcpip -h <hostname> -a a.b.c.d -m 255.255.255.0 -i en0 -g a.b.c.d -A no -s</code>
+  - Once done, disconnect from the console, get back to NIM server and remove the temporary /etc/hosts entry<code>sudo cp /etc/hosts /etc/hosts.$(date +%m%d%Y)
+sudo ex -sc "/${tgtsystem}/d|x" /etc/hosts</code>
+
+==== Post installation tasks from NIM server ====
+
+  - Login to pgnmsv01 and define a variable pointing to the system you are building<code>export tgtsystem=<host_name></code>
+  - For some of our favorite team members, we also copy the ssh keys for them.<code>for user in x1kousra sxp8856 x1jhz999 jhf1625 pawetkac tauxrpt x1kxk630 x1shukla x1vasuna x1rzb826 x1cxs952 snowscan rajhsubr raghk
+do
+   sudo scp -p /home/${user}/.profile ${tgtsystem}:/home/${user}/.profile
+   sudo rsync -avv /home/${user}/.ssh/ ${tgtsystem}:/home/${user}/.ssh/
+done</code>
+
+==== Post installation - generic tasks from the host ====
+
+  - Login to the host you are building<code>ssh ${tgtsystem}.driv.com</code>
+  - Update time<code>sudo ntpdate -u cdcvildns001.fmmotorparts.com</code>
+  - Cleanup cron jobs<code>for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v "^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$")
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</code>
+  - Inspect cron jobs and remove what is not needed**Check root user's for NIM build**<code>sudo ls -l /var/spool/cron/crontabs</code>
+  - Enable cron<code>sudo mkitab cron:23456789:respawn:/usr/sbin/cron</code>
+  - [[unix:createinformationfile|Create information file]]
+  - Setup alt_rootvg
+    - Look for another 138G device that is not allocated to any volume group<code>sudo /usr/local/scripts/lsvpcfg.sh</code>Create a alt_disk_copy<code>sudo alt_disk_copy -B -d hdiskX</code>
+  - Send an email to John Ziegler and Koushik to setup monitoring.
+  - Send an email to giosdatapres@tenneco.com to setup backups.

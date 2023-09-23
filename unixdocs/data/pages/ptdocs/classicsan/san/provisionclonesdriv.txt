@@ -1,0 +1,54 @@
+====== Provision cloned storage to DRiV systems ======
+
+===== Run replications from sources =====
+
+  - Login to pgunap01
+  - Define a suffix<code>export suffix=$(date +%b%d%Y%H%M)</code>
+    - LDC<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@ldcpm70v1"
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} ldcpm70-cdcvilns013-imo-wave0-volumes
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} ldcpm70-cdcvilns013-imo-wave0-hosts</code>
+    - CDC/PTT -> CDC/MP M50<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} taprpur001-cdcvilns013-imoclone-aix
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} taprpur001-cdcvilns013-imoclone-vmware</code>
+    - CDC/PTT -> CDC/MP M70<code>export SSH2PURE="ssh taprpur001.pt.int.tenneco.com"
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} taprpur001-cdcvilns015-imoclone-aix</code>
+    - Interxion<code>export SSH2PURE="sudo -u sanmontr ssh pureuser@inxpm20v1"
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} inxpm20v1-cdcvilns013-aix
+${SSH2PURE} purepgroup snap --replicate --suffix ${suffix} inxpm20v1-cdcvilns013-vmware</code>
+
+===== Store all snapshots to a file =====
+
+  - Connect to the respective Pure 
+    - cdcvilns013<code>export SSH2PURE="ssh kapil.koroth@cdcvilns013.fmmotorparts.com"</code>
+    - cdcvilns015<code>export SSH2PURE="ssh kapil.koroth@cdcvilns015.fmmotorparts.com"</code>
+  - Store all protection groups<code>export pgroups="INXPM20V1:inxpm20v1-cdcvilns013-aix INXPM20V1:inxpm20v1-cdcvilns013-vmware \
+LDCPM70V1:ldcpm70-cdcvilns013-imo-wave0-volumes LDCPM70V1:ldcpm70-cdcvilns013-imo-wave0-hosts \
+taprpur001:taprpur001-cdcvilns013-imoclone-aix taprpur001:taprpur001-cdcvilns013-imoclone-vmware taprpur001:taprpur001-cdcvilns015-imoclone-aix"</code>
+  - Store all snapshots<code>cat /dev/null > allclones.${suffix}
+for pgrp in ${pgroups}
+do
+   echo "Storing ${pgrp} snapshots in to text file"
+   ${SSH2PURE} purevol list --snap --pgrouplist ${pgrp}.${suffix} >> allclones.${suffix}
+done</code>
+
+===== Provision cloned data from source to target =====
+
+  - Define functions
+    - Provision all volumes<code>function copy_and_provision_snapshot {
+export source_host=${1}
+export target_host=${2}
+
+ser_no=100
+
+volumes=""
+
+for snapshot in $(grep "${source_host}_" allclones.${suffix} | awk '{print $1}' )
+do
+   ${SSH2PURE} purevol copy ${snapshot} ${target_host}_${ser_no}
+   volumes="${volumes} ${target_host}_${ser_no}"
+   ser_no=$(echo "${ser_no} + 1 " | bc )
+done
+
+${SSH2PURE} purevol connect --host ${target_host} ${volumes}
+}</code>
+  - Allocate storage<code>copy_and_provision_snapshot <source_host> <target_host></code>

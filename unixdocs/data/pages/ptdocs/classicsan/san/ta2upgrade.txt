@@ -1,0 +1,54 @@
+====== Procedure to perform cold backup on TA2 ======
+
+  - Get confirmation from DBA that the TA2 backup is complete.
+  - Login to teprbk01 and offline the disks<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Offline all VGs<code>for vg in $(grep datavg0 lsvpcfg.out.1 | awk -F: '{print $NF}' | sort -u)
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         echo "Unable to unmount ${fs} -- please check "
+      fi
+   done
+   sudo varyoffvg ${vg}
+   if [ ${?} -ne 0 ]
+   then
+      echo "Unable to varyoff ${vg} -- please check"
+   fi
+   sudo exportvg ${vg}   
+   if [ ${?} -ne 0 ]
+   then
+      echo "Unable to export ${vg} -- please check"
+   fi
+done</code>
+  - Delete all the disks<code>grep datavg0 lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+  - Stop previous flashcopy job.<code>ssh ldcv9ac2vip1 stopfcconsistgrp TA2ONLINEBKP</code>
+
+====== Backup of the database ======
+
+  - Ask DBA to shutdown database on peerdb99
+  - AsK DBA to copy redologs to sapdata file system
+  - Start flashcopy job<code>ssh ldcv9ac2vip1 startfcconsistgrp -prep TA2ONLINEBKP</code>
+  - Ask DBA to start the database back up and continue.
+  - Get a copy of lspv from Primary system<code>ssh peerdb99 lspv > lspv.peerdb99.out</code>
+  - Take a snapshot<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>
+  - cfgmgr<code>sudo cfgmgr</code>
+  - Take a snapshot now<code>sudo lsvpcfg.sh > lsvpcfg.out.3</code>
+  - Change the allocation policy<code>diff lsvpcfg.out.2 lsvpcfg.out.3 | grep ">" | awk '{print $2}' | awk -F: '{print $1}' | xargs -n1 -a algorithm=round_robin -a reserve_policy=no_reserve -l</code>
+  - Re-create the VGs and mount filesystems<code>for VG in $(grep datavg0 lspv.peerdb99.out | awk '{print $3}' | sort -u)
+do
+   echo "Working on ${VG} "
+   grep -w ${VG} lspv.peerdb99.out | awk '{print $2}' > ${VG}.pvids
+   PVS=$(lspv | grep -f ${VG}.pvids | awk '{print $1}' | tr "\n" " ")
+   echo "Recreating ${VG} using ${PVS}"
+   sudo recreatevg -Y/ -L/ -y ${VG} ${PVS}
+   for fs in $(lsvgfs ${VG} )
+   do
+      echo "Running fsck on ${VG} -- ${fs} "
+      sudo fsck -y ${fs}
+      echo "Mounting ${VG} -- ${fs} "
+      sudo mount ${fs}
+   done
+done</code>

@@ -1,0 +1,16 @@
+====== Power on the LPAR at the DR site ======
+**Make sure you login to the right server for MPPS pcdcunxaxap01 and for PTCA pgnmsv01**
+  - Function to activiate the lpar<code>function power_on_lpar_fdc {
+export lparnames=${*}
+for lparname in ${lparnames}
+do
+    HMC=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: '{print $3}' )
+    FRAME=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: '{print $4}' )
+    LPARNAME=$(grep ^phly${lparname} /prod/images/etc/unix_sys_console | awk -F: '{print $5}' )
+    echo "Powering on ${HMC} -> ${FRAME} -> ${LPARNAME} "
+    ssh ${HMC} "chsysstate -m ${FRAME} -r lpar -o on -n ${LPARNAME}"
+done
+}</code>
+  - Call the function<code>power_on_lpar_fdc lpar1</code>
+    - Example for single server startup<code>power_on_lpar_fdc pcdcunxaxap01</code>
+    - Example for multiple server startup<code>power_on_lpar_fdc pcdcunxaxap01 dcdcc11axdb98 dcdcc11axdb99</code>

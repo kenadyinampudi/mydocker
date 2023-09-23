@@ -1,0 +1,192 @@
+====== MT-I-Migrate-AIX-SR_LV ======
+
+
+===== T(-) Confirm Target UNIX Server is Online and all Required Configs Updated =====
+
+From NIM server:
+<code>
+ssh $clonesystem
+</code>
+
+In case you cannot login into $clonesystem, escalate to UNIX team lead.
+
+Check the CPU and memory values against master report : [[unix:imodc:cutovertasks-0|Master Source Host-Cloned Target Host-CPU-Memory Report ]]
+<code>
+prtconf | grep -E "Number Of Processors|Good Memory Size"
+</code>
+
+In case values do not match, escalate to UNIX team lead.
+
+
+
+===== T(-) Validate that Test data has been cleaned out in preparation for final data sync =====
+
+Validate that only rootvg and page volume groups are present, expected output:
+
+<code>
+lsvg
+
+altinst_rootvg
+rootvg
+[pagevg01 or sanpagevg01] -- only on large database servers: peerdb99, peerdb98, paerdb99, paerdb98
+</code>
+
+In case you see any other volume groups present on the server, escalate to UNIX team lead.
+
+Check if /etc/filesystems contains any filesystems definitions outside of rootvg
+
+<code>
+lsvg -l rootvg | awk '{print $7}' | grep "^/" > /tmp/rootfs.txt
+cat /etc/filesystems | grep -vp nfs | grep : | cut -d: -f1 | grep "^/" | grep -Ev "/proc|/cdrom" | while read fsname
+do
+grep -qx "$fsname" /tmp/rootfs.txt
+if [ $? -ne 0 ]
+then
+echo "STOP - filesystem $fsname exists in /etc/filesystems but not in rootvg."
+echo "$fsname >> /tmp/fsfix.sh"
+fi
+done
+</code>
+
+In case you see any messages with the word "STOP",  escalate to UNIX team lead.
+
+
+===== T(0) Stop Source Server OS in Tenneco environment =====
+
+From NIM server:
+<code>
+ssh $source_system
+</code>
+
+In case you cannot login into $source_system, escalate to UNIX team lead.
+
+Validate that Oracle database(s) is not running
+<code>
+ps -ef | grep ora_ | grep -v grep
+</code>
+
+In case you see DB processes are running, escalate to UNIX team lead.
+
+Perform AIX shutdown:
+<code>
+sudo shutdown -F
+</code>
+
+If on console, wait for the "Halt Completed" message or check HMC for lpar status.
+
+
+===== T(0) Validate firewall separation between DRiV and Tenneco =====
+
+From NIM server:
+<code>
+ssh $clonesystem
+</code>
+
+In case you cannot login into $clonesystem, escalate to UNIX team lead.
+
+Perform ping test to default gateways:
+<code>
+ping 10.0.48.1
+ping 10.32.50.1
+</code>
+
+If you see any of the following responses, escalate to UNIX team lead.
+<code>
+64 bytes from 10.32.50.1: icmp_seq=0 ttl=255 time=1 ms
+64 bytes from 10.32.50.1: icmp_seq=1 ttl=255 time=1 ms
+
+64 bytes from 10.32.50.1: icmp_seq=0 ttl=255 time=1 ms
+64 bytes from 10.32.50.1: icmp_seq=1 ttl=255 time=1 ms
+</code>
+
+===== T(0) Mount and validate provisioned Storage in DRiV environment =====
+
+From NIM server:
+<code>
+ssh $clonesystem
+</code>
+
+In case you cannot login into $clonesystem, escalate to UNIX team lead.
+
+Run cfgmgr to acquire presented luns
+<code>
+cfgmgr -v
+</code>
+
+Check if all luns are in available state
+<code>
+lsdev -Cc disk | grep -v Available
+</code>
+
+If you see luns in other state than "Available", escalate to Unix team lead.
+
+Check if all paths are available
+<code>
+lspath | grep -v Enabled
+</code>
+
+If you see paths in other state than "Enabled", escalate to Unix team lead.
+
+
+Do we have recent disk map file? 
+<code>
+ls -l /home/tauxrpt/rpt_config/cutover_file_systems.txt
+</code>
+In case the file does not exist or is more than 3 days old, escalate to Unix lead.
+
+<code>
+sudo rm /var/tmp/diskmap.imoclone
+</code>
+
+<code>
+sudo cat /home/tauxrpt/rpt_config/cutover_file_systems.txt |\
+sed -n "/Printing diskmap/,/Done Printing diskmap/p" | egrep "datavg|redovg|binvg|nfsvg|logvg|dgtvg01|dwvg01|edivg|edivg01|erappvg01|hydvg01\
+|hypvg01|internalsasvg|nim6vg01|nimvg|orasoftvg|pagevg01|psbivg01|pujmvg|pujmvg01|raid5vg01|sanpagevg01|sapexportvg|sapmedia|sapsoft_V6|softvg01\
+|srmvg01|srmvg02|swvg01|tctpvg|testvg01|tmplppvg|transfervg|tsbivg01|veritasvg|zycusvg" > /var/tmp/diskmap.imoclone
+</code>
+
+
+<code>
+for vg in $(awk -F: '{print $NF}' /var/tmp/diskmap.imoclone | sort -u | sort)
+do
+   echo "Working on ${vg} ... "
+   grep ${vg}$ /var/tmp/diskmap.imoclone | awk -F: '{print $2}' > ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " " )
+   echo "Recreating ${vg} using ${disks} ... "
+   sudo recreatevg -L/ -Y/ -y ${vg} ${disks}
+   if [ ${?} -eq 0 ]
+   then
+      for fs in $(lsvgfs ${vg} | sort )
+      do
+         sudo mkdir -p ${fs}
+         sudo mount ${fs}
+         if [ ${?} -ne 0 ]
+         then
+            echo "Unable to mount ${newname} -- Fix and proceed "
+         fi
+      done
+   else
+      echo "Error running recreatevg ${vg} using ${disks} -- Fix and proceed "
+   fi
+done
+</code>
+
+
+===== T(0) Re-establish NFS shares on AIX Server =====
+
+Umount NFS filesystems
+
+<code>
+df -k | grep : | awk '{print $7}' | sort -r | xargs -n1 sudo umount
+</code>
+
+Double check
+<code>
+df -k | grep :
+</code>
+
+
+Mount NFS filesystems
+<code>
+lsnfsmnt | awk '{if ($(NF-1) == "yes") print $0}' | awk '{print $1}' | sort  | xargs -n1 sudo mount
+</code>

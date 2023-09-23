@@ -1,0 +1,89 @@
+====== Using Pure for DR Recovery ======
+
+To do a DR test quickly, go to cdcpillx151:/home/storage/tools/pure/ \\
+
+The "ca-drtest" folder accesses PHLYPANS016 and checks for recovery items.\\ 
+The "pt-drtest" folder accesses PHLYPANS020 and checks for recovery items.\\ 
+The "as400s" folder accesses PHLYPANS020 and recovers the AS400 disks. \\
+The "nas" folder accesses PHLYPANS019 and recovers replicated filesystems.\\ 
+The "aix-lpar" folder accesses PHLYPAHMC011 and starts LPARs.\\
+
+\\
+Check the existing configuration by running the [[backup:purecheckdrtest | "check_drtest.py"]].\\
+This will roll through the replicated snapshots and attempt to match up what it sees in the snapshot with what it sees on the recovery array.  It will prompt you if any discrepencies are found.\\ 
+\\
+\\
+Run the [[backup:purestartdrtest | "start_drtest.py"]] script to get started.  It will have the same parameters as the check_drtest.py, but will actually copy the drives and mount them to the hosts.
+\\
+\\
+Run through the cleanup scripts after a test with [[backup:purecleanupdrtest | "cleanup_drtest.py"]]. \\
+This will run through the mounted disks and gather a list of servers.  Having identified it, it will check with you once more, then unmount and delete the copies.\\ 
+\\ 
+\\
+
+==== Recovery procedures ====
+  - SSH into CDCPILLX151.  su over to Storage.
+  - cd to /home/storage/tools/pure/ca-drtest\\  Run the start_drtest.py\\ This will need to be done twice, once for the main CA systems (taprpur001:dr-powervm-fdc) and again for the secondary CA systems     (taprpur001:dr-powervm2-fdc).\\ Use different names for each run of DR test script.  The script will error out if the same name is used as a previous run. \\ <code>
+	Type the number of one of the following protection groups:
+	  1:) h1ttest
+	  2:) taprpur001:dr-vmware-fdc
+	  3:) taprpur001:dr-powervm-fdc
+	  4:) taprpur001:dr-powervm2-fdc
+	> 3
+	Please enter a name for this test (letters, numbers and dashes only) .  eg: drtest201901 >: drtest1-202011
+</code> \\ Second Run ... \\ <code>
+	Type the number of one of the following protection groups:
+	  1:) h1ttest
+	  2:) taprpur001:dr-vmware-fdc
+	  3:) taprpur001:dr-powervm-fdc
+	  4:) taprpur001:dr-powervm2-fdc
+	> 4
+	Please enter a name for this test (letters, numbers and dashes only) .  eg: drtest201901 >: drtest2-202011
+</code>
+  - cd into /home/storage/tools/pure/pt-drtest\\ Run the start_drtest.py \\  This will need to be done only once for the main pt systems (taprpur003:dr-aix-servers). \\ Use different names for each DR test. \\ The script will error out if the same name is used. \\ <code>
+	Type the number of one of the following protection groups:       
+	  1:) localsnaps                                                 
+	  2:) fdcas400                                                   
+	  3:) taprpur003:dr-aix-servers                                  
+	  4:) taprpur003:dr-infrastructure-fdc                           
+	> 3
+	Please enter a name for this test (letters, numbers and dashes only) .  eg: drtest201901 >: drtest-202011
+</code>
+  - cd into /home/storage/tools/pure/nas\\ Run the start_drtest.sh \\ This will give you commands to run.  You will need to copy these commands, then manually log into PHLYPANS019 as your own AD account and run those commands.\\ <cli prompt="> ">
+	storage@cdcpillx151:~/tools/pure/nas> ./start_drtest.sh            
+																	   
+																	   
+	This is probably better run under your own account.                
+	ssh phlypans019 as your own AD account and enter your password.    
+	Then copy and paste the following commands into the CLI.           
+																	   
+																	   
+	purefs promote h1p                                                 
+	purefs promote hpcc                                                
+	purefs promote hpcc_apps                                           
+	purefs promote hpcc_archive                                        
+	purefs promote hpcc_home                                           
+	purefs promote hpcc_lsf                                            
+	purefs promote pta                                                 
+	purefs promote ta2                                                 
+																	   
+
+	storage@cdcpillx151:~/tools/pure/nas> ssh leedsn16@phlypans019                                           
+	leedsn16@phlypans019's password:                                                                         
+	Welcome to Purity//FB                                                                                    
+	(phlypans019-ch1-fm1  3.16.0-44-iridium  #59~14.04.1 SMP PREEMPT Sat Jul 18 02:08:59 UTC 2020)           
+	Last login: Fri Nov 13 19:09:58 2020 from 10.131.12.109                                                  
+	leedsn16@phlypans019>                                                                                    
+</cli>	
+  - cd into /home/storage/tools/pure/as400s \\ Run the start_drtest.sh \\ There is no additional work necessary.
+  - Enable the COD for the 9040
+  - Run the commands to start up the LPARs \\ cd into /home/storage/tools/pure/aix-lpar \\ Run the start_drtest.sh
+  - Start up the AS400s
+  - Log into each machine and find the root volume \\ This will need to be done via the vtmenu command. \\ //We should research this further.  I believe part of the problem is when I delete all the drives and add them for each test.  If I just overwrite the volumes each test, that may help us skip the disk discovery and go straight to booting.  However, it would require me to rewrite our startup scripts.//
+  - Follow each app's startup procedures (like running the "cluster" scripts if necessary.
+
+
+
+
+
+

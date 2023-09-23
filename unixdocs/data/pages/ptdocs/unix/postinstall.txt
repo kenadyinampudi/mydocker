@@ -1,0 +1,39 @@
+====== Post Installation ======
+ 
+===== AIX Physical LPARs =====
+  - Login from the console
+  - Remove the existing network adapter configurations and delete any ethernet devices from kernel<code>ifconfig enX down detach
+lsdev -C | egrep "ent|en|et" | sort | xargs -n1 rmdev -dl # Repeat this step until all errors go away</code>
+  - Scan for devices <code>cfgmgr</code>
+  - configure etherchannel for the public and backup network<code> smitty etherchannel</code>
+  - Configure TCP/IP and start the TCP/IP subsystems<code>smitty tcpip ===>Initial configuration </code>
+  - Configure the bck network adapter<code>smitty tcpip ===> Further configuration</code>
+  - Remove unwanted jobs from CRON and setup the following jobs
+     - AIX mksysb
+     - AIX alt_disk_copy script # Only if this is a SAN booting system.
+  - Configure Multipathing
+     - Powerpath <code>powermt config </code>
+     - MPIO <code>lspath # Make sure each disk has two paths </code>
+  - Turn on powerpath booting <code>pprootdev on</code>
+  - Create alt_rootvg <code> alt_disk_copy -d <diskname></code>
+  - Send a ticket to the openview team to configure Openview on the system
+  - Send a ticket to the NBU team to setup backups.
+
+===== AIX Virtual LPARs =====
+  - Login from the console
+  - Remove the existing network adapter configurations and delete any ethernet devices from kernel<code>ifconfig enX down detach
+lsdev -C | egrep "ent|en|et" | sort | xargs -n1 rmdev -dl # Repeat this step until all errors go away</code>
+  - Scan for devices <code>cfgmgr</code>
+  - Configure TCP/IP and start the TCP/IP subsystems<code>smitty tcpip ===>Initial configuration </code>
+  - Configure the bck network adapter<code>smitty tcpip ===> Further configuration</code>
+  - Remove unwanted jobs from CRON and setup the following jobs
+     - AIX mksysb
+     - AIX alt_disk_copy script # Only if this is a SAN booting system.
+  - Mirror rootvg if the system boots from internal disks. <code> extendvg rootvg <diskname>
+mirrorvg -c2 rootvg
+bootlist -m normal <bootdisk> <mirrdisk></code> 
+  - Configure Multipathing
+     - MPIO <code>lspath # Make sure each disk has two paths in case of VIO clusters </code>
+  - Create alt_rootvg <code> alt_disk_copy -d <diskname></code>
+  - Send a ticket to the openview team to configure Openview on the system
+  - Send a ticket to the NBU team to setup backups.

@@ -1,0 +1,238 @@
+
+<h1 class="sectionedit1" id="aix_vios_server_post_installation_work">AIX/VIOS Server Post installation work</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "AIX/VIOS Server Post installation work" [1-54] -->
+<h2 class="sectionedit2" id="steps_from_the_nim_server_pcdcunxaxap01">Steps from the NIM Server (pcdcunxaxap01)</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to pcdcunxaxap01 and store the hostname<pre class="code">export targethost=&lt;host&gt;</pre>
+
+<p>
+&#039;host&#039; is the one being built.
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> For some of our favorite team members, we also copy the ssh keys for them.<pre class="code">for user in x1kousra x1jhz999 jhf1625 pawetkac tauxrpt x1kxk630 x1shukla x1vasuna x1rzb826 x1cxs952 snowscan rajhsubr raghk x1nithsa secscan
+do
+   sudo scp -p /home/${user}/.profile ${targethost}:/home/${user}/.profile
+   sudo rsync -avv /home/${user}/.ssh/ ${targethost}:/home/${user}/.ssh/
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Setup resolv.conf</div>
+<ol>
+<li class="level2"><div class="li"> North America<pre class="code">sudo scp /prod/images/etc/resolv.conf.na ${targethost}:/etc/resolv.conf</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Europe<pre class="code">sudo scp /prod/images/etc/resolv.conf.eu ${targethost}:/etc/resolv.conf</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Others - refer this document<a href="/doku.php?id=unix:setupresolv.conf" class="wikilink1" title="unix:setupresolv.conf"> Setup resolv.conf - Click here</a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Setup NTP</div>
+<ol>
+<li class="level2"><div class="li"> AIX<pre class="code">sudo scp /prod/images/etc/ntp.conf.aix ${targethost}:/etc/ntp.conf</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> VIOS<pre class="code">sudo scp /prod/images/etc/ntp.conf.vios ${targethost}:/home/padmin/config/ntp.conf</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Refresh the daemons<pre class="code">sudo ssh ${targethost} &quot;chrctcp -S -a xntpd&quot;
+sudo ssh ${targethost} &quot;ntpdate -u cdcvildns001.fmmotorparts.com&quot;</pre>
+
+<p>
+Check the date and time
+</p>
+<pre class="code">sudo ssh ${targethost} date</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Configure default ssh configs<pre class="code">sudo scp /prod/images/etc/global_ssh_config ${targethost}:/etc/ssh/ssh_config</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Configure sysinter<pre class="code">sudo ssh ${targethost} &quot;mkdir -p /usr/local/bin&quot;
+sudo scp /prod/images/applications/csi/sysinter.aix5 ${targethost}:/usr/local/bin/sysinter.aix5
+sudo ssh ${targethost} grep -q ^sysinter /etc/services
+[[ ${?} -ne 0 ]] &amp;&amp; sudo ssh ${targethost} &quot;echo &#039;sysinter                40035/tcp&#039; &gt;&gt; /etc/services &quot;
+sudo ssh ${targethost} grep -q ^sysinter /etc/inetd.conf
+[[ ${?} -ne 0 ]] &amp;&amp; sudo ssh ${targethost} &quot;echo &#039;sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5&#039; &gt;&gt; /etc/inetd.conf &quot;
+sudo ssh ${targethost} &quot;refresh -s inetd&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Copy the scripts<pre class="code">sudo ssh ${targethost} &quot;mkdir -p /usr/local/scripts&quot;
+sudo rsync -a /usr/local/scripts/ ${targethost}:/usr/local/scripts/</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Create a mksysb filesystem<pre class="code">sudo ssh ${targethost} &quot;crfs -vjfs2 -g rootvg -m /bkpmksb -A yes -t no -a size=20G&quot;
+sudo ssh ${targethost} &quot;mount /bkpmksb&quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:installothersoftwaresaix" class="wikilink1" title="unix:installothersoftwaresaix">On AIX and VIOS, install additional softwares</a></div>
+</li>
+<li class="level1"><div class="li"> Setup mksysb backup<pre class="code">sudo scp /prod/images/etc/id_dsa.mksysb ${targethost}:/usr/local/scripts/id_dsa.mksysb
+sudo scp /prod/images/scripts/mksysb.sh ${targethost}:/usr/local/scripts/mksysb.sh</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Add the system to Ansible Provisioning tool. Follow the link <a href="/doku.php?id=kennedy:manage-hosts-ansible" class="wikilink1" title="kennedy:manage-hosts-ansible">Managing Hosts in Ansible provisioning tool</a></div>
+</li>
+<li class="level1"><div class="li"> If AIX, configure snmpd<pre class="code">sudo scp /prod/images/etc/snmpdv3.conf.aix ${targethost}:/etc/snmpdv3.conf</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:lpar2rrd-os-agent" class="wikilink1" title="unix:lpar2rrd-os-agent">Install Lpar2rrd agent</a></div>
+</li>
+<li class="level1"><div class="li"> Enable centralized syslog</div>
+<ol>
+<li class="level2"><div class="li"> Add ODM<pre class="code">sudo scp /prod/images/etc/tensyslogadd ${targethost}:/var/tmp/tensyslogadd
+sudo ssh ${targethost} &quot;/usr/bin/odmadd /var/tmp/tensyslogadd&quot;
+sudo ssh ${targethost} &quot;rm /var/tmp/tensyslogadd&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Add configurations to syslog<pre class="code">sudo ssh ${targethost} &quot;grep ^&#039;*.notice&#039; /etc/syslog.conf | grep -q pcdcunxlxap04&quot;
+[[ ${?} -ne 0 ]] &amp;&amp; config=yes || config=no
+[[ &quot;${config}&quot; = &quot;yes&quot; ]] &amp;&amp; sudo ssh ${targethost} &#039;echo *.notice           @unixlogs.driv.com &gt;&gt; /etc/syslog.conf&#039;
+[[ &quot;${config}&quot; = &quot;yes&quot; ]] &amp;&amp; sudo ssh ${targethost} &#039;refresh -s syslogd&#039;</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+
+</div>
+<!-- EDIT2 SECTION "Steps from the NIM Server (pcdcunxaxap01)" [55-3591] -->
+<h2 class="sectionedit3" id="steps_from_the_server_that_is_being_built">Steps from the server that is being built</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> Login to the server and perform the rest of the steps</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:aixnetworkmemparam" class="wikilink1" title="unix:aixnetworkmemparam">If AIX, Configure Network and Memory parameters</a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:correct-ssh-startup" class="wikilink1" title="unix:correct-ssh-startup"> Set start in sshd from inetd </a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:aixsaninitconfig" class="wikilink1" title="unix:aixsaninitconfig">Perform initial SAN configuration on AIX and VIOS(vSCSI only) </a></div>
+</li>
+<li class="level1"><div class="li"> Cleanup cron jobs<pre class="code">for file in $(sudo ls -1 /var/spool/cron/crontabs | egrep -v &quot;^root$|^adm$|^sys$|^uucp$|^tauxrpt$|^lpar2rrd$|^snowscan$&quot;)
+do
+   sudo rm -i /var/spool/cron/crontabs/${file} # Remove the -i if you are confident
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Enable cron if disabled<pre class="code">sudo mkitab cron:23456789:respawn:/usr/sbin/cron</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:createinformationfile" class="wikilink1" title="unix:createinformationfile">Create information file</a></div>
+</li>
+<li class="level1"><div class="li"> Add the TMOUT variable to /etc/profile if it wasn&#039;t a clone<pre class="code">sudo vi /etc/profile</pre>
+<pre class="code"># Automatic logout, include in export line if uncommented
+TMOUT=3600
+readonly TMOUT
+PS1=&quot;$LOGNAME on &quot;$(uname -n)&quot;:&quot;&#039;$PWD $ &#039;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:usersandgroups" class="wikilink1" title="unix:usersandgroups">Create basic unix group and users</a></div>
+</li>
+<li class="level1"><div class="li"> Schedule standard cron jobs</div>
+<ol>
+<li class="level2"><div class="li"> root<pre class="code">sudo crontab -e</pre>
+
+<p>
+Add these
+</p>
+<pre class="code"># Customized for DRiV
+59 21 * * 4 /usr/local/scripts/cr_altdisk.sh 1&gt;/dev/null 2&gt;&amp;1
+00 23 * * * /usr/local/scripts/mksysb.sh 1&gt;/dev/null 2&gt;&amp;1
+03 03 * * 6 /usr/local/scripts/clean_var 1&gt;/dev/null 2&gt;&amp;1
+30 23 * * 6 /usr/local/scripts/rpt_config.sh 1&gt;/dev/null 2&gt;&amp;1
+05 * * * * /usr/local/scripts/stales.sh 1&gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> tauxrpt - Grant cron access<pre class="code">sudo crontab -l tauxrpt</pre>
+<pre class="code">echo &quot;tauxrpt&quot; | sudo tee -a /var/adm/cron/cron.allow</pre>
+<pre class="code">sudo -u tauxrpt crontab -e</pre>
+
+<p>
+Add these
+</p>
+<pre class="code">30 23 * * 6 /usr/local/scripts/rpt_config_tauxrpt.sh 1&gt;/dev/null 2&gt;&amp;1</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Check if oracle user has cron access, If not please Grant access<pre class="code">sudo crontab -l oracle</pre>
+<pre class="code">echo &quot;oracle&quot; | sudo tee -a /var/adm/cron/cron.allow</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Restart Cron<pre class="code">ps -ef | grep cron | grep -v grep | awk &#039;{print $2}&#039; | xargs -n1 sudo kill</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If booting from SAN, Create an alt_disk_copy.<pre class="code">sudo alt_disk_copy -B -d hdiskX</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If VIO install updates</div>
+<ol>
+<li class="level2"><div class="li"> <a href="/doku.php?id=unix:vioupdatesinstall" class="wikilink1" title="unix:vioupdatesinstall">Install updates on VIO servers.</a></div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> Remove the xmdaily entry from /etc/inittab.</div>
+<ol>
+<li class="level2"><div class="li"> <pre class="code">sudo rmitab &quot;xmdaily&quot;</pre>
+</div>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If booting from internal disks, Mirror rootvg</div>
+<ol>
+<li class="level2"><div class="li"> AIX<pre class="code">extendvg rootvg hdiskX
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdiskX
+sudo bootlist -m normal hdiskX hdiskY</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> VIOS</div>
+<ol>
+<li class="level3"><div class="li"> Login as padmin Mirror boot disk<pre class="code">extendvg -f rootvg hdiskX
+mirrorios -f hdiskX</pre>
+
+<p>
+<strong>Check the bootlist</strong>
+</p>
+</div>
+<ol>
+<li class="level4"><div class="li"> <pre class="code">oem_setup_env</pre>
+<pre class="code">bootlist -m normal hdiskX hdiskY</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="level1"><div class="li"> If VIOS, Check the root file system ”/”. If it is 300M, extend it by 1324M<pre class="code">df -gt /
+sudo chfs -a size=+1324M / </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> If AIX,Send ticket for netbackup <strong> MAKE SURE YOU HAVE COPIED THE /usr/openv FILE SYSTEM TO THE NEW SERVER IF THIS IS A MIGRATION </strong></div>
+</li>
+<li class="level1"><div class="li"> Send ticket for Monitoring</div>
+</li>
+<li class="level1"><div class="li"> If AIX, Send a ticket to “GIOS Operations - Entitlement” to add the systems.</div>
+</li>
+<li class="level1"><div class="li"> Do a final reboot<pre class="code">sudo shutdown -Fr</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Login to the NIM server and perform a NIM client cleanup<pre class="code">sudo nim -F -o reset &lt;hostname&gt;
+sudo nim -o deallocate -a subclass=all &lt;hostname&gt;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <strong> If you have build a New server, please fill the missing attributes of the new server in CMDB later. </strong></div>
+</li>
+</ol>
+
+</div>
+<!-- EDIT3 SECTION "Steps from the server that is being built" [3592-] -->

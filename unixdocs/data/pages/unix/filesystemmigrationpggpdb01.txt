@@ -1,0 +1,161 @@
+====== Filesystem Migration from one VG to Another on Pggpdb01 ======
+
+===== A week before we perform the following steps - Prework =====
+
+  - Ask for 4 new disks from the storage team
+  - Create new vg in this case datavg02<code>mkvg -B -s 512 -y datavg02 disk1 .....</code>
+  - Create new filesystem<code>lsvgfs datavg01 | xargs -n1 df -g | grep -v File | grep -v sapdata | awk '{print "/NEW"$NF}' | xargs -n1 sudo mkdir -p
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/application/CA -a size=2G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle -a size=2G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP -a size=10G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/11203 -a size=10G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/oraarch -a size=60G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/sapmnt/PLP -a size=31G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/users/unispool -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/usr/sap -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/usr/sap/PLP -a size=16G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/usr/sap/put -a size=30G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/mirrlogA -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/mirrlogB -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/mirrlogC -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/origlogA -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/origlogB -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/origlogC -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/usr/sap/trans -a size=65G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/home/pw1adm -a size=3G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/usr/sap/PW1 -a size=3G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/sapmnt/PW1 -a size=4G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/usr/sap/DAA -a size=4G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/sapcomm -a size=1G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/stage -a size=20G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/oracle/PLP/12102 -a size=20G
+sudo crfs -vjfs2 -g datavg02 -A yes -t no -m /NEW/usr/sap/PLP/SUM -a size=1G49G</code>
+  - Start the rsync with --delete option<code>sudo rsync --delete  -axvv /application/CA/ /NEW/application/CA/
+sudo rsync --delete  -axvv /oracle/ /NEW/oracle/
+sudo rsync --delete  -axvv /oracle/PLP/ /NEW/oracle/PLP/
+sudo rsync --delete  -axvv /oracle/PLP/11203/ /NEW/oracle/PLP/11203/
+sudo rsync --delete  -axvv /sapmnt/PLP/ /NEW/sapmnt/PLP/
+sudo rsync --delete  -axvv /users/unispool/ /NEW/users/unispool/
+sudo rsync --delete  -axvv /usr/sap/ /NEW/usr/sap/
+sudo rsync --delete  -axvv /usr/sap/PLP/ /NEW/usr/sap/PLP/
+sudo rsync --delete  -axvv /usr/sap/put/ /NEW/usr/sap/put/
+sudo rsync --delete  -axvv /usr/sap/trans/ /NEW/usr/sap/trans/
+sudo rsync --delete  -axvv /home/pw1adm/ /NEW/home/pw1adm/
+sudo rsync --delete  -axvv /usr/sap/PW1/ /NEW/usr/sap/PW1/
+sudo rsync --delete  -axvv /sapmnt/PW1/ /NEW/sapmnt/PW1/
+sudo rsync --delete  -axvv /usr/sap/DAA/ /NEW/usr/sap/DAA/
+sudo rsync --delete  -axvv /sapcomm/ /NEW/sapcomm/
+sudo rsync --delete  -axvv /oracle/stage/ /NEW/oracle/stage/
+sudo rsync --delete  -axvv /oracle/PLP/12102/ /NEW/oracle/PLP/12102/
+sudo rsync --delete  -axvv /usr/sap/PLP/SUM/ /NEW/usr/sap/PLP/SUM/</code>
+
+===== During the outage, perform the following steps =====
+
+  - Shutdown the applications on the server
+  - Unmount all filesystems<code>lsvgfs datavg01 | sort -r | xargs -n1 sudo umount</code>
+  - Rename all other filesystems except sapdata to /OLD prefix
+    - To check the filesystem<code>lsvgfs datavg01 | grep -v sapdata | awk '{print "/OLD"$NF}'</code>
+    - Rename the filesystem to /old<code>sudo chfs -m /OLD/application/CA /application/CA
+sudo chfs -m /OLD/oracle /oracle
+sudo chfs -m /OLD/oracle/PLP /oracle/PLP
+sudo chfs -m /OLD/oracle/PLP/11203 /oracle/PLP/11203
+sudo chfs -m /OLD/oracle/PLP/oraarch /oracle/PLP/oraarch
+sudo chfs -m /OLD/sapmnt/PLP /sapmnt/PLP
+sudo chfs -m /OLD/users/unispool /users/unispool
+sudo chfs -m /OLD/usr/sap /usr/sap
+sudo chfs -m /OLD/usr/sap/PLP /usr/sap/PLP
+sudo chfs -m /OLD/usr/sap/put /usr/sap/put
+sudo chfs -m /OLD/oracle/PLP/mirrlogA /oracle/PLP/mirrlogA
+sudo chfs -m /OLD/oracle/PLP/mirrlogB /oracle/PLP/mirrlogB
+sudo chfs -m /OLD/oracle/PLP/mirrlogC /oracle/PLP/mirrlogC
+sudo chfs -m /OLD/oracle/PLP/origlogA /oracle/PLP/origlogA
+sudo chfs -m /OLD/oracle/PLP/origlogB /oracle/PLP/origlogB
+sudo chfs -m /OLD/oracle/PLP/origlogC /oracle/PLP/origlogC
+sudo chfs -m /OLD/usr/sap/trans /usr/sap/trans
+sudo chfs -m /OLD/home/pw1adm /home/pw1adm
+sudo chfs -m /OLD/usr/sap/PW1 /usr/sap/PW1
+sudo chfs -m /OLD/sapmnt/PW1 /sapmnt/PW1
+sudo chfs -m /OLD/usr/sap/DAA /usr/sap/DAA
+sudo chfs -m /OLD/sapcomm /sapcomm
+sudo chfs -m /OLD/oracle/stage /oracle/stage
+sudo chfs -m /OLD/oracle/PLP/12102 /oracle/PLP/12102
+sudo chfs -m /OLD/usr/sap/PLP/SUM /usr/sap/PLP/SUM</code>
+  - Disable cio options on filesystems<code>sudo chfs -a options="" /OLD/oracle/PLP/mirrlogA
+sudo chfs -a options="" /OLD/oracle/PLP/mirrlogB
+sudo chfs -a options="" /OLD/oracle/PLP/mirrlogC
+sudo chfs -a options="" /OLD/oracle/PLP/origlogA
+sudo chfs -a options="" /OLD/oracle/PLP/origlogB
+sudo chfs -a options="" /OLD/oracle/PLP/origlogC</code>
+  - Mount the /OLD filesystems<code>lsvgfs datavg01 | grep -v sapdata | xargs -n1 sudo mount</code>
+  - Start the rsync with --delete option<code>sudo rsync --delete  -axvv /OLD/application/CA/ /NEW/application/CA/
+sudo rsync --delete  -axvv /OLD/oracle/ /NEW/oracle/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/ /NEW/oracle/PLP/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/11203/ /NEW/oracle/PLP/11203/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/oraarch/ /NEW/oracle/PLP/oraarch/
+sudo rsync --delete  -axvv /OLD/sapmnt/PLP/ /NEW/sapmnt/PLP/
+sudo rsync --delete  -axvv /OLD/users/unispool/ /NEW/users/unispool/
+sudo rsync --delete  -axvv /OLD/usr/sap/ /NEW/usr/sap/
+sudo rsync --delete  -axvv /OLD/usr/sap/PLP/ /NEW/usr/sap/PLP/
+sudo rsync --delete  -axvv /OLD/usr/sap/put/ /NEW/usr/sap/put/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/mirrlogA/ /NEW/oracle/PLP/mirrlogA/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/mirrlogB/ /NEW/oracle/PLP/mirrlogB/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/mirrlogC/ /NEW/oracle/PLP/mirrlogC/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/origlogA/ /NEW/oracle/PLP/origlogA/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/origlogB/ /NEW/oracle/PLP/origlogB/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/origlogC/ /NEW/oracle/PLP/origlogC/
+sudo rsync --delete  -axvv /OLD/usr/sap/trans/ /NEW/usr/sap/trans/
+sudo rsync --delete  -axvv /OLD/home/pw1adm/ /NEW/home/pw1adm/
+sudo rsync --delete  -axvv /OLD/usr/sap/PW1/ /NEW/usr/sap/PW1/
+sudo rsync --delete  -axvv /OLD/sapmnt/PW1/ /NEW/sapmnt/PW1/
+sudo rsync --delete  -axvv /OLD/usr/sap/DAA/ /NEW/usr/sap/DAA/
+sudo rsync --delete  -axvv /OLD/sapcomm/ /NEW/sapcomm/
+sudo rsync --delete  -axvv /OLD/oracle/stage/ /NEW/oracle/stage/
+sudo rsync --delete  -axvv /OLD/oracle/PLP/12102/ /NEW/oracle/PLP/12102/
+sudo rsync --delete  -axvv /OLD/usr/sap/PLP/SUM/ /NEW/usr/sap/PLP/SUM/</code>
+  - Unmount /OLD filesystems and configure them to not auto mount<code>lsvgfs datavg01 | grep -v sapdata | sort -r | xargs -n1 sudo umount
+lsvgfs datavg01 | grep -v sapdata | xargs -n1 sudo chfs -A no</code>
+  - Unmount /NEW filesystems from datavg02<code>lsvgfs datavg02 | sort -r | xargs -n1 sudo umount</code>
+  - Rename /NEW / <code>sudo chfs -m /application/CA /NEW/application/CA
+sudo chfs -m /oracle /NEW/oracle
+sudo chfs -m /oracle/PLP /NEW/oracle/PLP
+sudo chfs -m /oracle/PLP/11203 /NEW/oracle/PLP/11203
+sudo chfs -m /oracle/PLP/oraarch /NEW/oracle/PLP/oraarch
+sudo chfs -m /sapmnt/PLP /NEW/sapmnt/PLP
+sudo chfs -m /users/unispool /NEW/users/unispool
+sudo chfs -m /usr/sap /NEW/usr/sap
+sudo chfs -m /usr/sap/PLP /NEW/usr/sap/PLP
+sudo chfs -m /usr/sap/put /NEW/usr/sap/put
+sudo chfs -m /oracle/PLP/mirrlogA /NEW/oracle/PLP/mirrlogA
+sudo chfs -m /oracle/PLP/mirrlogB /NEW/oracle/PLP/mirrlogB
+sudo chfs -m /oracle/PLP/mirrlogC /NEW/oracle/PLP/mirrlogC
+sudo chfs -m /oracle/PLP/origlogA /NEW/oracle/PLP/origlogA
+sudo chfs -m /oracle/PLP/origlogB /NEW/oracle/PLP/origlogB
+sudo chfs -m /oracle/PLP/origlogC /NEW/oracle/PLP/origlogC
+sudo chfs -m /usr/sap/trans /NEW/usr/sap/trans
+sudo chfs -m /home/pw1adm /NEW/home/pw1adm
+sudo chfs -m /usr/sap/PW1 /NEW/usr/sap/PW1
+sudo chfs -m /sapmnt/PW1 /NEW/sapmnt/PW1
+sudo chfs -m /usr/sap/DAA /NEW/usr/sap/DAA
+sudo chfs -m /sapcomm /NEW/sapcomm
+sudo chfs -m /oracle/stage /NEW/oracle/stage
+sudo chfs -m /oracle/PLP/12102 /NEW/oracle/PLP/12102
+sudo chfs -m /usr/sap/PLP/SUM /NEW/usr/sap/PLP/SUM</code>
+  - Enable the cio options in filesystems<code>sudo chfs -a options=cio /oracle/PLP/mirrlogA
+sudo chfs -a options=cio /oracle/PLP/mirrlogB
+sudo chfs -a options=cio /oracle/PLP/mirrlogC
+sudo chfs -a options=cio /oracle/PLP/origlogA
+sudo chfs -a options=cio /oracle/PLP/origlogB
+sudo chfs -a options=cio /oracle/PLP/origlogC</code>
+  - To check if we can mount all the filesystems on datavg02<code>lsvgfs datavg02 | xargs -n1 sudo mount</code>
+  - Unmount all the filesystems on datavg02<code>lsvgfs datavg02 |sort -r | xargs -n1 sudo umount</code>
+  - Make sure all the filesystems are unmount and then export both datavg01 & datavg02<code>sudo exportvg datavg01
+sudo exportvg datavg02</code>
+  - import datavg02 as datavg01<code>sudo importvg -y datavg01 00cc49c70a92319d</code>
+  - Import datavg01 as datavg02<code>sudo importvg -y datavg02 00f72d67670cc971</code>
+  - Mount datavg01 first and then sapdata filesystems on datavg02<code>lsvgfs datavg01 | sort | xargs -n1 sudo mount
+lsvgfs datavg02 | sort | xargs -n1 sudo mount</code>
+  - Handover to apps team to do the functional testing.
+
+===== After a week, perform the following steps =====
+
+  - After a week , remove the /OLD filesystems -- release the disks to storage team

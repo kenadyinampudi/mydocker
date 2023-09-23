@@ -1,0 +1,76 @@
+====== MPPS AIX Recovery Procedure 2022 ======
+
+ **CASE 1**: Booting the system from SAN (snapshot)
+    - Await for confirmation from Storage Team that disks were presented to AIX LPARs/servers
+    - If confirmed, start LPAR
+      - Login in HMC - (HMC server is not in the Frozen network -  not dependent on Active Directory)
+      - Select All Partitions from left menu
+      - Select LPAR to activate
+      - From menu listed above, select Actions -> Activate
+      - Select profile name to activate **(Partition Configuration = Current Configuration)**
+      - Select Advanced Settings
+      - Select Boot Mode Normal
+    - Ensure system starts.
+    - If system does not start with Normal boot Go back to Advanced settings and select System Management Services (SMS)
+      - Select menu item 5 (Select Boot Options)
+      - Select Install/Boot Device
+      - List all Devices (may take up to 45 min depending on system, example: sfldmiax153)
+      - Select Disk from the menu that displays <select one of bootable disks, boot from this disk, if it is alternate disk, reset both list to primary and reboot)
+      - Boot system into Normal Mode Boot
+    - If server is **RP server** after server boots  remove all network devices<code>for dev in $(lsdev -Ccif | grep ^en | awk '{print $1}' | sed "s;en;;g") 
+do 
+  rmdev -dl en${dev} 
+  rmdev -dl et${dev} 
+  rmdev -dl ent${dev} 
+  echo "${dev} removed" 
+done
+
+sudo cfgmgr</code>
+    - command is in this path on every server **/home/tauxrpt/rpt_config/configure_my_ip_cmds** to recreate ip connections
+    - NFS mounts:
+      - Ensure that NFS months are mounted correctly
+        - command to check what should be mounted (i.e. what servers should be up in order to provide NFS shares)
+        - Run df -g to check what filesystems are mounted
+        - Run mount -a to make sure all filesystems that are configured are mounted
+        - If you receive any errors regarding NFS mounts, Confirm that the server that is providing NFS mounts is available and running
+        - If NFS server is not available, (check to see why it is not running, confirm that the filesystem has been exported to the server that you are currently working with for the nfs mounts) 
+    - If system is part of a POWERHA/HACMP cluster, start the cluster services on both nodes (smit cl_start)
+    - In case of DR Exercise: add a logon welcome message that user is on DR system
+ **CASE 2** Recovering OS from backup
+    - Build OS from mksysb through NIM server
+    - Backup team restores filesystems from NetBackup
+    - In case NIM server should be built, build it from ISO image and restore from NetBackup
+
+
+====== PTCA AIX Recovery Procedure 2022 ======
+**CASE 1**: Booting the system from SAN (snapshot)
+    - Await for confirmation from Storage Team that disks were presented to AIX LPARs/servers
+    - If confirmed, start LPAR
+      - Login in HMC - (HMC server is not in the Frozen network -  not dependent on Active Directory)
+      - Select All Partitions from left menu
+      - Select LPAR to activate
+      - From menu listed above, select Actions -> Activate
+      - Select profile name to activate **(Partition Configuration = DR_Profile)**
+      - Select Advanced Settings
+      - Select Boot Mode Normal
+    - Ensure system starts.
+    - If system does not start with Normal boot Go back to Advanced settings and select System Management Services (SMS)
+      - Select menu item 5 (Select Boot Options)
+      - Select Install/Boot Device
+      - List all Devices (may take up to 45 min depending on system, example: sfldmiax153)
+      - Select Disk from the menu that displays <select one of bootable disks, boot from this disk, if it is alternate disk, reset both list to primary and reboot)
+      - Boot system into Normal Mode Boot
+    - NFS mounts:
+      - Ensure that NFS months are mounted correctly
+        - command to check what should be mounted (i.e. what servers should be up in order to provide NFS shares)
+        - Run df -g to check what filesystems are mounted
+        - Run mount -a to make sure all filesystems that are configured are mounted
+        - If you receive any errors regarding NFS mounts, Confirm that the server that is providing NFS mounts is available and running
+        - If NFS server is not available, (check to see why it is not running, confirm that the filesystem has been exported to the server that you are currently working with for the nfs mounts) 
+    - If system is part of a POWERHA/HACMP cluster, start the cluster services on both nodes (smit cl_start)
+    - In case of DR Exercise: add a logon welcome message that user is on DR system
+ **CASE 2** Recovering OS from backup
+    - Build OS from mksysb through NIM server
+    - Backup team restores filesystems from NetBackup
+    - In case NIM server should be built, build it from ISO image and restore from NetBackup
+

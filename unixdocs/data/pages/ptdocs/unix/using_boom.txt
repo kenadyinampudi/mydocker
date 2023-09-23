@@ -1,0 +1,79 @@
+====== Using BOOM to boot from snapshots in time ======
+
+[[https://www.redhat.com/en/blog/boom-booting-rhel-lvm-snapshots | This article shows a good demo for using boom]]
+
+Ultimately, boom relies on LVM to create a snapshot of the system, then injects entries into GRUB boot menu to allow you to boot from that snapshot in time.
+
+===== Prerequisites =====
+  * Need to have space in the root VG to create a snapshot LV with enough space to cover the changes
+  * Need to have BOOM installed
+  * Need to be RHEL 7.5 or bigger.  It might work with <7.5, but it's not tested.
+
+===== Caveats and Provisos =====
+  * This is a very manual process.  Scripting is not recommended.
+  * Because of space concerns, snapshots should be limited in time.  They can easily grow too large for the allocated space, which causes the snap to be invalidated.
+  * Cleanup is very manual, but must be done.
+  * The default is to have /boot be a physical partition, not LVM.  It will NOT be rolled back and will show all valid kernels even post-rollback
+  * Because /boot is not rolled back, it will still show newly installed kernels which could dramatically interfere with the boot process if the kernel is a new version but the main / gets rolled back to a previous version.
+  * Our standard disk layouts incorporates multiple LVs for root (like one for /var/spool, /etc).  You will need an LV snapshot created for each source LV and enough space VG space to make it happen.
+
+===== Process =====
+  * Install boom \\ 
+''yum install lvm2-python-boom''
+  * Make sure the root VG has enough space for a snapshot covering the changes.\\ 
+An upgrade of a stock system from 7.6 to 7.8 consumed about 6G of snapshot space, while just security patches took about 1G.\\
+''vgs''
+  * Get the name of the root VG and the root lv.  In this page, they will be $vg and $lv.\\ 
+''vgs; lvs''
+
+  * When ready, create a snapshot.  This is your point in time recovery, so make sure this is done before any changes. $date is the current date so you know when this was taken.  Here, I've allocated 15G for the snapshot LV. \\
+lvcreate -s $vg/$lv -n $lv_$date -L 15G
+
+  * Add entry into the boot menu so we can get back to this.  The title will be what shows up in the boot menu, so make it meaningful to you.\\
+''boom create --title "Root Snap - Preupgrade" --rootlv $vg/%lv_$date''
+
+=== Actual example ===
+
+  * An upgrade from stock 7.6 to 7.8 took about 8G of space.
+<code>[root@cdcpillx096 ~]# lvs
+  LV                   VG               Attr       LSize   Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  root                 rhel_cdcpillx096 owi-a-s--- <45.12g
+  root_snapshot_072020 rhel_cdcpillx096 swi-aos---  15.00g      root   54.86
+  swap                 rhel_cdcpillx096 -wi-ao----  <3.88g
+
+[root@cdcpillx096 ~]# lvdisplay /dev/rhel_cdcpillx096/root_snapshot_072020
+  --- Logical volume ---
+  LV Path                /dev/rhel_cdcpillx096/root_snapshot_072020
+  LV Name                root_snapshot_072020
+  VG Name                rhel_cdcpillx096
+  LV UUID                HPFcUD-L82K-TItT-o6EA-88Ap-kNh0-eK43JZ
+  LV Write Access        read/write
+  LV Creation host, time cdcpillx096.federalmogul.com, 2020-07-07 14:17:12 -0400
+  LV snapshot status     active destination for root
+  LV Status              available
+  # open                 1
+  LV Size                <45.12 GiB
+  Current LE             11550
+  COW-table size         15.00 GiB
+  COW-table LE           3840
+  Allocated to snapshot  54.86%
+  Snapshot chunk size    4.00 KiB
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:3</code>
+
+
+===== Rollback =====
+  * Merge the snapshot back into the root LVM to revert changes.  Normally this needs to be done offline, but since this is root, the box needs a boot to take affect. \\
+''lvconvert --merge /dev/$vg/$lv_$date''\\ 
+Example:\\ <code>[root@cdcpillx096 ~]# lvconvert --merge /dev/rhel_cdcpillx096/root_snapshot_072020
+  Delaying merge since snapshot is open.
+  Merging of snapshot rhel_cdcpillx096/root_snapshot_072020 will occur on next activation of rhel_cdcpillx096/root.</code> \\
+  Here, the system warns that the source LV (root) is currently mounted, so the rollback will take place on a reboot.
+
+
+===== To do =====
+How to get rid of the bad entries?   Maybe force another GRUB rebuild?
+May need to manually delete the unused kernels from the /boot area.

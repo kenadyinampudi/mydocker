@@ -1,0 +1,24 @@
+====== Managing Hosts in Ansible provisioning tool ======
+===== Adding the server to ansible provisioning tool =====
+  - Create the user “awxadm” and add it to taunix group so it has all the sudo privileges.<code>sudo useradd -g taunix  -c "Ansible_admin" -d /home/awadm  -m awxadm</code>
+  - Change the password <code>echo awxadm:savuqBIhp6PJo|sudo chpasswd -e</code>OR
+  - Password for awxadm is stored in secret server [[https://cdcpilms748.pt.int.tenneco.com/SecretServer/app/#/secret/4286/general|awxadm password]]
+  - Make sure the server has Python 2.7 or Python 3.5 and above.<code>inampk48@sfldmilx031:~> python -V 
+Python 2.7.18 </code>
+  - When the server have more than one version installed in it, make sure you link the correct Python version to /usr/bin/python<code>inampk48@sfldmilx031:~> ls -lrt /usr/bin/python
+lrwxrwxrwx 1 root root 9 Apr 27  2021 /usr/bin/python -> python2.7
+</code>
+  - Then log in to the Ansible Web URL[[https://pcdcawxlxap01:8043/#/home]]
+  - Admin login credentials are stored in secret server [[https://cdcpilms748.pt.int.tenneco.com/SecretServer/app/#/secret/4303/general|admin password]]
+  - Click on inventories and select the inventory where you want to add the server to {{ :kennedy:pasted:20220529-144214.png?800 }}
+  - After you've chosen the inventory click on "Hosts" and then click on "Add" as shown in the below picture {{ :kennedy:pasted:20220529-144232.png?800 }}
+  - Fill in the details like name description and under variables make sure you put the FQDN as shown below <code>ansible_host: FQDN 
+eg: ansible_host: sfldmiax140.driv.com</code> {{ :kennedy:pasted:20220529-144141.png?800 }}
+  - After the server is added associate it with the group like AIX, SUSE or Red Hat as shown in the below picture{{ :kennedy:pasted:20220529-144745.png?800 }}{{ :kennedy:pasted:20220529-144549.png?800 }}
+  - Test the server for communication select the server and click on run command as shown in the below picture{{ :kennedy:pasted:20220529-144557.png?800 }}
+  - Choose the module as "ping" and the credentials as "awxadm"{{ :kennedy:pasted:20220529-144602.png?800 }}{{ :kennedy:pasted:20220529-144606.png?800 }}
+  - After you have launched it you should see the ping output as successful{{ :kennedy:pasted:20220529-144609.png?800 }}
+===== Removing the server from ansible provisioning tool =====
+  - To remove a server log into the ansible webpage click on "Hosts" search for the server you want to remove select the server and click on "Delete" as shown in the below screenshot{{ :kennedy:pasted:20220529-144612.png?800 }}
+
+

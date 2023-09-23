@@ -1,0 +1,252 @@
+
+<h1 class="sectionedit1" id="redhat_linux_installation_notes">Redhat Linux Installation notes</h1>
+<div class="level1">
+
+</div>
+<!-- EDIT1 SECTION "Redhat Linux Installation notes" [1-47] -->
+<h2 class="sectionedit2" id="documentations_and_standards">Documentations and Standards</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Login to consoleDB server</div>
+<ul>
+<li class="level2"><div class="li"> MP/PS<pre class="code">ssh pcdcunxaxap01</pre>
+
+<p>
+ OR
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> PT/CA<pre class="code">ssh pgnmsv01</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Add the server to the console database <strong>/prod/images/etc/unix_sys_console</strong> on pcdcunxaxap01/pgnmsv01.<pre class="code">sudo vi /prod/images/etc/unix_sys_console</pre>
+
+<p>
+Sample entry would look like
+</p>
+<pre class="code">dcdcdsmlxdb01:std-vmware-vsphere:cdcvilms156:ADACCOUNT</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Find out the MAC address of the system</div>
+<ul>
+<li class="level2"><div class="li"> Virtual Machines</div>
+<ul>
+<li class="level3"><div class="li"> <a href="/doku.php?id=unix:vspherehosts" class="wikilink1" title="unix:vspherehosts">Login to the respective VSphere Server to document the MAC address for the VM.</a></div>
+</li>
+<li class="level3"><div class="li"> Locate the VM<pre class="code">Right click --&gt; Edit Settings --&gt; Select Network adapter 1 (Hardware Tab) --&gt; You will see the MAC address to the right.</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> Physical systems</div>
+<ul>
+<li class="level3"><div class="li"> Login to the iLO and pick up the first interface ( As of now, writing this document, NBU home made appliances are the only physical build of RHEL we support )</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT2 SECTION "Documentations and Standards" [48-979] -->
+<h2 class="sectionedit3" id="define_the_system_on_the_build_server">Define the system on the build server</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Login to the build server and export the build server as a variable</div>
+<ul>
+<li class="level2"><div class="li"> <em class="u">MP/PS</em><pre class="code">ssh pcdcunxlxap01
+export server=&quot;$(uname -n).driv.com&quot;</pre>
+
+<p>
+<em class="u">OR</em>
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> <em class="u">PT/CA</em><pre class="code">ssh pablsv02
+export server=&quot;$(uname -n).amer.int.tenneco.com&quot;</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> Export the server name. Please use the FQDN.<pre class="code">export host2build=&lt;hostname&gt;</pre>
+
+<p>
+i.e.
+</p>
+<pre class="code">export host2build=dcdcdsmlxdb01.driv.com</pre>
+
+<p>
+<em class="u">OR</em>
+</p>
+<pre class="code">export host2build=smhnbuhmams.pt.int.tenneco.com</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Store the short name<pre class="code">export shortname=$(echo ${host2build} | awk -F &quot;.&quot; &#039;{print $1}&#039;)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The server&#039;s MAC address<pre class="code">export mac_addr=aa:ww:ee:rr:tt:yy:tt</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set the correct boot interface</div>
+<ul>
+<li class="level2"><div class="li"> If the server is a VM<pre class="code">export interface=&quot;eth0&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If the server is physical (DL380 Gen10 for NBU appliance)<pre class="code">export interface=&quot;eno1&quot;</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> If the server is DELL PowerEdge for NBU appliance)<pre class="code">export interface=&quot;em1&quot;</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level1"><div class="li"> The server&#039;s IP Address<pre class="code">export ipaddr=$(nslookup ${host2build} | \
+sed -n /^Name/,/^$/p | grep ^Address | awk &#039;{print $NF}&#039;)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Confirm that the IP address alloted to you by the Network team is not in user<pre class="code">[[ $(ping -c1 ${ipaddr} &gt; /dev/null 2&gt;&amp;1;echo ${?}) -eq 0 ]] &amp;&amp; echo &quot;Warning --- IP Address is in use - please check &quot;</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The server&#039;s <abbr title="Domain Name System">DNS</abbr> domain<pre class="code">export domain=$(nslookup ${host2build} | \
+grep ^Name | awk &#039;{print $NF}&#039; | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$1=&quot;&quot;; print $0}&#039; | sed &quot;s;^.;;g&quot;)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The server&#039;s netmask. <strong>Most times, but there are some subnets with a different mask</strong>. When in doubt, ask Network team<pre class="code">export netmask=255.255.255.0</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> The server&#039;s default gateway. <strong>Most times, but there are some subnets with a different mask</strong>. When in doubt, ask Network team<pre class="code">export gateway=$(echo $ipaddr | awk -F&quot;.&quot; &#039;{OFS = &quot;.&quot;;$NF=&quot;&quot;;print $0&quot;1&quot;}&#039;)</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Set <abbr title="Domain Name System">DNS</abbr> server</div>
+<ul>
+<li class="level2"><div class="li"> <em class="u">MP/PS</em><pre class="code">export nameserver=&quot;10.128.11.200&quot;</pre>
+
+<p>
+ <em class="u">OR</em>
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> <em class="u">PT/CA</em><pre class="code">export nameserver=&quot;10.131.17.100&quot;</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT3 SECTION "Define the system on the build server" [980-3030] -->
+<h2 class="sectionedit4" id="pick_the_right_server_profile">Pick the right server profile</h2>
+<div class="level2">
+<div class="table sectionedit5"><table class="inline">
+	<tr class="row0">
+		<th class="col0 leftalign">Profile                            </th><th class="col1 leftalign">Description                                             </th>
+	</tr>
+	<tr class="row1">
+		<td class="col0 leftalign">rhel-6.8-x86_64                    </td><td class="col1 leftalign">RHEL 6.8 64 bit VMWare VM                               </td>
+	</tr>
+	<tr class="row2">
+		<td class="col0 leftalign">rhel-7.2-x86_64                    </td><td class="col1 leftalign">RHEL 7.2 64 bit VMWare VM                               </td>
+	</tr>
+	<tr class="row3">
+		<td class="col0 leftalign">rhel-7.2-x86_64-sap-app            </td><td class="col1 leftalign">RHEL 7.2 64 bit VMWare VM - SAP Application servers     </td>
+	</tr>
+	<tr class="row4">
+		<td class="col0 leftalign">rhel-7.2-x86_64-sap-hana           </td><td class="col1 leftalign">RHEL 7.2 64 bit VMWare VM - SAP HANA database servers   </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0 leftalign">rhel-7.2-x86_64-sap-hana-app       </td><td class="col1">RHEL 7.2 64 bit VMWare VM - SAP HANA Application servers</td>
+	</tr>
+	<tr class="row6">
+		<td class="col0 leftalign">rhel-7.2-x86_64-dl380g10           </td><td class="col1 leftalign">RHEL 7.2 64 bit HPE DL Physical - NBU appliance         </td>
+	</tr>
+	<tr class="row7">
+		<td class="col0 leftalign">rhel-7.7-x86_64-PowerEdgeR740xd    </td><td class="col1">RHEL 7.7 64 bit Dell PowerEdge physical - NBU appliance </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0 leftalign">rhel-7.7-hpcc-x86_64               </td><td class="col1 leftalign">RHEL 7.7 64 bit Dell PowerEdge physical - HPCC Builds   </td>
+	</tr>
+</table></div>
+<!-- EDIT5 TABLE [3074-3929] --><ul>
+<li class="level1"><div class="li"> Select a profile</div>
+<ul>
+<li class="level2"><div class="li"> RHEL 6.8<pre class="code">export profile=rhel-6.8-x86_64</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> RHEL 7.2<pre class="code">export profile=rhel-7.2-x86_64</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> RHEL 7.2 for SAP HANA DB server<pre class="code">export profile=rhel-7.2-x86_64-driv-sap-hana</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> RHEL 7.2 for SAP HANA APP server<pre class="code">export profile=rhel-7.2-x86_64-driv-sap-hana-app</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> RHEL 7.2 for NBU home grown for HP<pre class="code">export profile=rhel-7.2-x86_64-dl380g10</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> RHEL 7.7 for NBU home grown for Dell<pre class="code">export profile=rhel-7.7-x86_64-PowerEdgeR740xd</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> RHEL 7.7 for HPCC Builds on Dell<pre class="code">export profile=rhel-7.7-hpcc-x86_64</pre>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+<!-- EDIT4 SECTION "Pick the right server profile" [3031-4547] -->
+<h2 class="sectionedit6" id="add_the_system_to_cobbler_configurations">Add the system to Cobbler configurations</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Add the system to cobbler<pre class="code">sudo cobbler system add \
+--name=${shortname} \
+--profile=${profile} \
+--netboot-enabled=False \
+--name-servers=${nameserver} \
+--name-servers-search=${domain} \
+--gateway=${gateway} \
+--interface=${interface} \
+--management=True \
+--static=True \
+--mac=${mac_addr} \
+--ip-address=${ipaddr} \
+--netmask=${netmask} \
+--server=${server}</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT6 SECTION "Add the system to Cobbler configurations" [4548-4979] -->
+<h2 class="sectionedit7" id="create_an_iso_boot_image_and_prepare_it_for_installation">Create an ISO boot image and prepare it for installation</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> Create the Boot <abbr title="International Organization for Standardization">ISO</abbr> on Cobbler server<pre class="code">sudo cobbler buildiso --systems=&quot;${shortname}&quot; --iso=/var/www/html/servers/${shortname}.iso</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:nbuappl:crnbuappliance" class="wikilink1" title="unix:nbuappl:crnbuappliance">Perform these if you are building a home grown NBU appliance or HPCC nodes based on RHEL</a></div>
+</li>
+<li class="level1"><div class="li"> For systems at DRIV<pre class="code">sudo cp /var/www/html/servers/${shortname}.iso /prod/images/DRIV-bootisos/</pre>
+</div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT7 SECTION "Create an ISO boot image and prepare it for installation" [4980-5432] -->
+<h2 class="sectionedit8" id="perform_rhel_installation">Perform RHEL installation</h2>
+<div class="level2">
+<ul>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:vmware-install" class="wikilink1" title="unix:vmware-install">VMWare ? Click here </a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:standalone-install" class="wikilink1" title="unix:standalone-install">Standalone intel server ? Click here </a></div>
+</li>
+<li class="level1"><div class="li"> <a href="/doku.php?id=unix:standalone-nbu-dl380" class="wikilink1" title="unix:standalone-nbu-dl380">Standalone NBU home made appliance or HPCC builds</a></div>
+</li>
+</ul>
+
+</div>
+<!-- EDIT8 SECTION "Perform RHEL installation" [5433-] -->

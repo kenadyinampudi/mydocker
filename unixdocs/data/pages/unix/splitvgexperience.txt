@@ -1,0 +1,8 @@
+====== Split VG on AIX ======
+
+  - Add additional disks ( equal in size OR more )<code>sudo extendvg <vgname> <new set of disks></code>
+  - Mirror the VG<code>sudo mirrorvg <vgname> <new set of disks></code>
+  - Split the VG<code>sudo splitvg -y <newvgname> -c2 -i <vgname></code>
+  - Make a note of pvids<code>lspv</code>
+  - Now you may export that split copy and import it elsewhere.<code>sudo varyoffvg <newvgname>
+sudo exportvg <newvgname></code>

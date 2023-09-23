@@ -1,0 +1,215 @@
+
+<h1 class="sectionedit1" id="linux_disk_expansion_and_adding_new_disk">Linux Disk expansion and adding new disk</h1>
+<div class="level1">
+
+</div>
+
+<h5 id="summary_about_the_disks_in_newly_built_linux_servers">Summary about the disks in newly built linux servers</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> When we built new Redhat 7 servers we use three disks by default and more if it is required.</div>
+<ol>
+<li class="level2"><div class="li"> First disk used for bootdisk which is of 70Gb.</div>
+</li>
+<li class="level2"><div class="li"> Second disk used for VGdisk which is of 40Gb.</div>
+</li>
+<li class="level2"><div class="li"> Third disk used for paging space which will be calculated according to the paging requirements. <a href="https://unixdocs/doku.php?id=unix:vmbuildsapcluster" class="urlextern" title="https://unixdocs/doku.php?id=unix:vmbuildsapcluster"  rel="nofollow">https://unixdocs/doku.php?id=unix:vmbuildsapcluster</a></div>
+</li>
+</ol>
+</li>
+</ul>
+
+</div>
+
+<h5 id="linux_disk_expansion">Linux disk expansion</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Login to vSphere using fat client or web client.</div>
+</li>
+<li class="level1"><div class="li"> On the address space click and select “Hosts and Clusters”</div>
+</li>
+<li class="level1"><div class="li"> On the left hand pane, select “ITC-Plainsware Cluster”</div>
+</li>
+<li class="level1"><div class="li"> Expand “ITC-Plainsware Cluster” and select the required server i.e.qgpwap01</div>
+</li>
+<li class="level1"><div class="li"> On the right hand side, click on edit settings and see the size of vgdisk i.e 2nd disk if it is less then 40Gb than expand.</div>
+</li>
+<li class="level1"><div class="li"> Before expanding check whether the datastore has enough free space how to check that details below:-</div>
+<ul>
+<li class="level2"><div class="li"> In edit settings → Click on hard disk2 → check disk file option on right hand side.</div>
+</li>
+<li class="level2"><div class="li"> In the left hand pane → Click on one of the hosts → click configuration on right hand side → Click storage option </div>
+</li>
+<li class="level2"><div class="li"> You will find the respective datastore and click on it you can see the available space</div>
+<ul>
+<li class="level3"><div class="li"> If we got enough free space then we can go ahead and expand the disk</div>
+</li>
+<li class="level3"><div class="li"> If we do not have free space then send a ticket to storage team to add storage.</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> Once you have the enough space on the datastore go ahead and increase the disk to 40GB → Click ok once done</div>
+</li>
+<li class="level2"><div class="li"> Scenario &#039;On qgpwap01, there was one disk in datavg01 and it was having 30Gb and i wanted to add 10Gb.</div>
+</li>
+<li class="level2"><div class="li"> Once the storage has been added in vmware,this is what we have to do.</div>
+<ul>
+<li class="level3"><div class="li"> Current state<pre class="code">sudo fdisk -l | grep /dev/sd</pre>
+
+<p>
+The result looked like
+</p>
+<pre class="code">Disk /dev/sda: 75.2 GB, 75161927680 bytes, 146800640 sectors
+/dev/sda1   *        2048     2099199     1048576   83  Linux
+/dev/sda2         2099200   146800639    72350720   8e  Linux LVM
+Disk /dev/sdc: 68.7 GB, 68719476736 bytes, 134217728 sectors
+Disk /dev/sdb: 32.9 GB, 32949672960 bytes, 83886080 sectors</pre>
+</div>
+</li>
+</ul>
+</li>
+<li class="level2"><div class="li"> <code>/dev/sdb</code> is the disk we are working on. </div>
+</li>
+<li class="level2"><div class="li"> First step is to make sure the Redhat kernel detects the new size.<pre class="code">echo &quot;1&quot; | sudo tee /sys/block/sdc/device/rescan</pre>
+</div>
+</li>
+<li class="level2"><div class="li"> Now when we execute<pre class="code">sudo fdisk -l | grep /dev/sd</pre>
+
+<p>
+The output now looks like
+</p>
+<pre class="code">Disk /dev/sda: 75.2 GB, 75161927680 bytes, 146800640 sectors
+/dev/sda1   *        2048     2099199     1048576   83  Linux
+/dev/sda2         2099200   146800639    72350720   8e  Linux LVM
+Disk /dev/sdc: 68.7 GB, 68719476736 bytes, 134217728 sectors
+Disk /dev/sdb: 42.9 GB, 42949672960 bytes, 83886080 sectors</pre>
+
+<p>
+As you see <code>/dev/sdb</code> is now 42.9 <abbr title="Gigabyte">GB</abbr> or 40GB.
+</p>
+</div>
+</li>
+<li class="level2"><div class="li"> Next step is to make sure that LVM detects the new size</div>
+<ul>
+<li class="level3"><div class="li"> Current config<pre class="code">sudo pvs</pre>
+
+<p>
+And
+</p>
+<pre class="code">  PV         VG       Fmt  Attr PSize  PFree
+  /dev/sda2  sysvg    lvm2 a--  68.94g 23.94g
+  /dev/sdb   datavg01 lvm2 a--  30.00g     0
+  /dev/sdc   pagingvg lvm2 a--  64.00g     0</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> <code>/dev/sdb</code> shows 30G</div>
+</li>
+<li class="level3"><div class="li"> Rescan the PV<pre class="code">sudo pvresize /dev/sdc</pre>
+
+<p>
+STDOUT prints something like this
+</p>
+<pre class="code">  Physical volume &quot;/dev/sdb&quot; changed
+  1 physical volume(s) resized / 0 physical volume(s) not resized</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Now it shows<pre class="code">sudo pvs</pre>
+
+<p>
+And
+</p>
+<pre class="code">  PV         VG       Fmt  Attr PSize  PFree
+  /dev/sda2  sysvg    lvm2 a--  68.94g 23.94g
+  /dev/sdb   datavg01 lvm2 a--  40.00g     0
+  /dev/sdc   pagingvg lvm2 a--  64.00g     0</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> The free space is automatically displayed on the VG now<pre class="code">sudo vgs</pre>
+
+<p>
+And the output looks
+</p>
+<pre class="code">  VG       #PV #LV #SN Attr   VSize  VFree
+  datavg01   1   1   0 wz--n- 39.99g 11.99g
+  pagingvg   1   1   0 wz--n- 64.00g     0
+  sysvg      1   5   0 wz--n- 68.94g 23.94g</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> It is all done, now you can extend a logical volume and expand the filesystem, procedures are documented elsewhere.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+
+<h5 id="add_new_disk">Add New disk</h5>
+<div class="level5">
+<ul>
+<li class="level1"><div class="li"> Login to vSphere using fat client or web client.</div>
+</li>
+<li class="level1"><div class="li"> On the address space click and select “Hosts and Clusters”</div>
+</li>
+<li class="level1"><div class="li"> On the left hand pane, select “ITC-Plainsware Cluster”</div>
+</li>
+<li class="level1"><div class="li"> Expand “ITC-Plainsware Cluster” and select the required server i.e.qgpwap01</div>
+</li>
+<li class="level1"><div class="li"> On the right hand side, click on edit settings → Click add option → Select Hard disk → Select create a new virtual disk option → add the disk size i.e. 40Gb </div>
+</li>
+<li class="level1"><div class="li"> Select thin provision → Click next → Again click next → Read the summary and click finish.</div>
+</li>
+<li class="level1"><div class="li"> Scenario &#039;On qgpwap01, there was one disk in datavg01 and it was having 40Gb and I wanted to add 40Gb more.</div>
+</li>
+<li class="level1"><div class="li"> Once the disk is added in vmware login to the server i.e. qgpwap01 and do the following.</div>
+</li>
+<li class="level1"><div class="li"> Execute <pre class="code">sudo fdisk -l | grep /dev/sd</pre>
+
+<p>
+The output now looks like
+</p>
+<pre class="code">Disk /dev/sda: 75.2 GB, 75161927680 bytes, 146800640 sectors
+/dev/sda1   *        2048     2099199     1048576   83  Linux
+/dev/sda2         2099200   146800639    72350720   8e  Linux LVM
+Disk /dev/sdc: 68.7 GB, 68719476736 bytes, 134217728 sectors
+Disk /dev/sdb: 42.9 GB, 42949672960 bytes, 83886080 sectors</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Dont know which host has it hence<pre class="code">echo &quot;- - -&quot; | sudo tee /sys/class/scsi_host/host0/scan
+echo &quot;- - -&quot; | sudo tee /sys/class/scsi_host/host1/scan
+echo &quot;- - -&quot; | sudo tee /sys/class/scsi_host/host2/scan</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Now when we execute<pre class="code">sudo fdisk -l | grep /dev/sd</pre>
+
+<p>
+The output now looks like
+</p>
+<pre class="code">Disk /dev/sda: 75.2 GB, 75161927680 bytes, 146800640 sectors
+/dev/sda1   *        2048     2099199     1048576   83  Linux
+/dev/sda2         2099200   146800639    72350720   8e  Linux LVM
+Disk /dev/sdc: 68.7 GB, 68719476736 bytes, 134217728 sectors
+Disk /dev/sdb: 42.9 GB, 42949672960 bytes, 83886080 sectors
+Disk /dev/sdd: 42.9 GB, 42949672960 bytes, 83886080 sectors</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> <code>/dev/sdd</code> is the disk which got added.</div>
+</li>
+<li class="level1"><div class="li"> Create PV<pre class="code">sudo pvcreate /dev/sdd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check PV<pre class="code">sudo pvs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Extend the vg<pre class="code">sudo vgextend datavg01 /dev/sdd</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Check VG<pre class="code">sudo vgs</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Then finish your task why you needed the space.</div>
+</li>
+</ul>
+
+</div>

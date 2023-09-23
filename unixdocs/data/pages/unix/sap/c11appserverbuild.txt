@@ -1,0 +1,77 @@
+====== Customization for C11 App servers ======
+
+  - Create groups and users accounts<code>sudo groupadd -g 205 abap
+sudo groupadd -g 300 ftpgis
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,abap,ftpgis -d /home/c11adm -c "SAP EU System Admin" -m -u 3207 c11adm
+echo "c11adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+sudo useradd -s /usr/bin/csh -g dba -G sapinst,sapsys -d /home/orac11 -c "SAP EU Oracle Admin" -m -u 3206 orac11
+echo "orac11:DKK*],E-7Pwp?tqX" | sudo chpasswd
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,abap,ftpgis -d /home/it0adm -c "SAP EU System Admin" -m -u 3205 it0adm
+echo "it0adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst,dba,abap,ftpgis -d /home/ta2adm -c "SAP EU System Admin" -m -u 3203 ta2adm
+echo "ta2adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+</code>
+  - Create filesystems<code>sudo lvcreate -n oracle_C11        -L 1024MB  datavg01
+sudo lvcreate -n usr_sap_C11       -L 8192MB  datavg01
+sudo lvcreate -n usr_sap_C11_SUM   -L 10240MB datavg01
+sudo lvcreate -n home_c11adm       -L 512MB   datavg01
+
+sudo mkfs -t ext4 /dev/datavg01/oracle_C11
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_C11
+sudo mkfs -t ext4 /dev/datavg01/usr_sap_C11_SUM
+sudo mkfs -t ext4 /dev/datavg01/home_c11adm
+
+cat << EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-oracle_C11         /oracle/C11           ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_C11        /usr/sap/C11          ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_C11_SUM    /usr/sap/C11/SUM      ext4    defaults        1 2
+/dev/mapper/datavg01-home_c11adm        /home/c11adm          ext4    defaults        1 2
+EOF
+
+sudo chown orac11:dba /oracle
+sudo chown orac11:dba /oracle/client
+sudo chown c11adm:sapsys /usr/sap
+
+sudo mkdir -p /oracle/C11        ; sudo mount /oracle/C11          ; sudo chown orac11:dba /oracle/C11
+sudo mkdir -p /usr/sap/C11       ; sudo mount /usr/sap/C11         ; sudo chown c11adm:sapsys /usr/sap/C11
+sudo mkdir -p /usr/sap/C11/SUM   ; sudo mount /usr/sap/C11/SUM     ; sudo chown c11adm:sapsys /usr/sap/C11/SUM
+sudo mkdir -p /home/c11adm       ; sudo mount /home/c11adm         ; sudo chown c11adm:sapsys /home/c11adm</code>
+  - Add NFS. First export the filesystems from the NFS server<code>cat << EOF | sudo tee -a  /etc/fstab
+deerap00:/sapmnt/C11/exe       /sapmnt/C11/exe       nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+deerap00:/sapmnt/C11/profile   /sapmnt/C11/profile   nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+deerap00:/sapmnt/C11/global    /sapmnt/C11/global    nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+tepr2d01:/usr/sap/trans        /usr/sap/trans        nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+deerap00:/sapcomm              /sapcomm              nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+deerap00:/sapcomm/C11/archive  /sapcomm/C11/archive  nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+pgadap01:/sapmedia             /sapmedia             nfs    rsize=8192,wsize=8192,timeo=14,intr,soft,proto=tcp,mountproto=tcp
+EOF
+
+sudo mkdir -p /sapmnt/C11/exe          ; sudo mount /sapmnt/C11/exe
+sudo mkdir -p /sapmnt/C11/profile      ; sudo mount /sapmnt/C11/profile
+sudo mkdir -p /sapmnt/C11/global       ; sudo mount /sapmnt/C11/global
+sudo mkdir -p /usr/sap/trans           ; sudo mount /usr/sap/trans
+sudo mkdir -p /sapcomm                 ; sudo mount /sapcomm
+sudo mkdir -p /sapcomm/C11/archive     ; sudo mount /sapcomm/C11/archive
+sudo mkdir -p /sapmedia                ; sudo mount /sapmedia
+</code>
+  - If the system needs a Web dispatcher, follow these steps<code>
+sudo useradd -s /usr/bin/csh -g sapsys -G sapinst -d /home/dw1adm -c "Web dispatcher account - dev" -m -u 4533 dw1adm
+
+echo "dw1adm:DKK*],E-7Pwp?tqX" | sudo chpasswd
+
+sudo lvcreate -n sapmnt_DW1  -L 1G datavg01  ; sudo mkfs -t ext4 /dev/datavg01/sapmnt_DW1
+sudo lvcreate -n usr_sap_DW1 -L 2G datavg01  ; sudo mkfs -t ext4 /dev/datavg01/usr_sap_DW1
+
+cat << EOF | sudo tee -a  /etc/fstab
+/dev/mapper/datavg01-sapmnt_DW1    /sapmnt/DW1                    ext4    defaults        1 2
+/dev/mapper/datavg01-usr_sap_DW1   /usr/sap/DW1                   ext4    defaults        1 2
+EOF
+
+sudo mkdir -p /sapmnt/DW1  ; sudo mount /sapmnt/DW1
+sudo mkdir -p /usr/sap/DW1 ; sudo mount /usr/sap/DW1
+
+sudo chown dw1adm:sapsys /home/dw1adm /usr/sap/DW1 /sapmnt/DW1
+sudo chmod 700 /home/dw1adm
+sudo chmod 751 /usr/sap/DW1
+sudo chmod 755 /sapmnt/DW1</code>
+  - If the system needs unispool, enable it<code>sudo systemctl enable unispool</code>

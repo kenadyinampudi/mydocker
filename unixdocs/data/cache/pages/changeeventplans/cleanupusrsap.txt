@@ -1,0 +1,18 @@
+====== Cleanup "/usr/sap" filesystem ======
+
+  - Login to the server to be patched, check if "/usr/sap" is a seperate filesystem or not.
+    - This is not a separate file system <code>df -k /usr/sap
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/hd2          4194304    968940   77%    60829    20% /usr</code>
+    - This is a separate file system - <code>df -k /usr/sap
+Filesystem    1024-blocks      Free %Used    Iused %Iused Mounted on
+/dev/fslv24       2097152   1945868    8%      360     1% /usr/sap</code>
+  - **If it is a file system as shown above in Example II {/usr/sap}- go back - we are done. If it is not a separate file system, Example I {/usr} continue....**
+  - Unmount all filesystems mounted on "/usr/sap"<code>df -k | grep "/usr/sap" | awk '{print $NF}' | sort -r | xargs -n1 echo sudo umount</code>
+  - Rename "/usr/sap" to "/usr/sap.OLD"<code>sudo mv /usr/sap /usr/sap.OLD</code>
+  - Pick a volume group for /usr/sap.
+    - If binvg01, binvg or appvg exists, pick that. If not, pick datavg01. In any case, **do share this information with the Unix team and obtain an ok from all**
+    - Create a "/usr/sap" filesystem and mount it<code>sudo crfs -vjfs2 -g VGNAME -m /usr/sap -A yes -t no -a size=1G</code><code>sudo mount /usr/sap</code>
+  - Restore data to "/usr/sap"<code>sudo rsync -avv /usr/sap.OLD/ /usr/sap/</code>
+  - Mount all the filesystems<code>grep -p "/usr/sap" /etc/filesystems | grep : | sed "s;:;;g" | sort | xargs -n1 sudo mount</code>
+  - Modify /etc/filesystems and change the order of /usr/sap filesystem. /usr/sap needs to be right after all rootvg filesystems are mounted.

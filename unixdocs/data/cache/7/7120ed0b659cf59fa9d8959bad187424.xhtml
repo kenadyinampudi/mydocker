@@ -1,0 +1,25 @@
+
+<h2 class="sectionedit1" id="issue_will_be_emcp_xcryptd_will_be_taking_more_cpu_utilization_workaroundhalt_the_currently_running_process">Issue will be emcp_xcryptd will be taking more CPU utilization. Workaround: Halt the currently running process.</h2>
+<div class="level2">
+<ol>
+<li class="level1"><div class="li"> As far as emcp_xcryptd, you can stop this daemon from coming up since encryption is not yet supported for AIX Powerpath.<pre class="code">sudo /etc/rc.emcp_xcryptd stop</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Disable it from starting automagically.<pre class="code">sudo vi /etc/PowerPathExtensions</pre>
+
+<p>
+It contains these lines:
+</p>
+<pre class="code">mpxext:cfgmpx
+gpxext dmext:cfgdm 
+vlumdext:cfgvlumd 
+xcryptext:cfgxcrypt</pre>
+
+<p>
+Remove the last two lines, save the file. <strong>Note: Do NOT comment out the lines with #. The last two lines must be removed entirely. Using # to comment out the lines will cause PowerPath to not configure devices on reboot.</strong>
+</p>
+</div>
+</li>
+</ol>
+
+</div>

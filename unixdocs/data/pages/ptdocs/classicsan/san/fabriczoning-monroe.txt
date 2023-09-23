@@ -1,0 +1,54 @@
+====== Monroe IBM V7000 zoning ======
+
+** Fabric **
+
+^Storage array^Port Name^Switch Name^Port No^Fabric^Alias name^WWN^Zoning target^
+|monv7kvip1|Canister 1 Slot 2 port 1|monds300a|1|Fabric A|monv7k_ct1_fc1|50:05:07:68:0b:21:db:92|AIX/VMWARE|
+|monv7kvip1|Canister 2 Slot 2 port 2|monds300a|5|Fabric A|monv7k_ct2_fc2|50:05:07:68:0b:22:db:93|AIX/VMWARE|
+|monv7kvip1|Canister 1 Slot 2 port 2|monds300b|1|Fabric B|monv7k_ct1_fc2|50:05:07:68:0b:22:db:92|AIX/VMWARE|
+|monv7kvip1|Canister 2 Slot 2 port 1|monds300b|5|Fabric B|monv7k_ct2_fc1|50:05:07:68:0b:21:db:93|AIX/VMWARE|
+
+===== Creating Alias for storage array canisters =====
+
+  -FAB A Alias<code>alicreate "monv7k_ct1_fc1","50:05:07:68:0b:21:db:92"
+alicreate "monv7k_ct2_fc2","50:05:07:68:0b:22:db:93"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+  -FAB B Alias<code>alicreate "monv7k_ct1_fc2","50:05:07:68:0b:22:db:92"
+alicreate "monv7k_ct2_fc1","50:05:07:68:0b:21:db:93"
+cfgsave
+cfgenable "fab_b_act_config"</code>
+
+===== FAB A Zoning monds300a =====
+
+  -Zone the host to fabric A switch monds300a<code>zonecreate "pocmonsv01_4e00d0__monv7k_ct1_fc1","pocmonsv01_4e00d0;monv7k_ct1_fc1"
+zonecreate "pocmonsv01_4e00d0__monv7k_ct2_fc2","pocmonsv01_4e00d0;monv7k_ct2_fc2"
+
+zonecreate "pocmonsv01_4e00d4__monv7k_ct1_fc1","pocmonsv01_4e00d4;monv7k_ct1_fc1"
+zonecreate "pocmonsv01_4e00d4__monv7k_ct2_fc2","pocmonsv01_4e00d4;monv7k_ct2_fc2"
+
+cfgadd "fab_a_act_config","pocmonsv01_4e00d0__monv7k_ct1_fc1;pocmonsv01_4e00d0__monv7k_ct2_fc2;pocmonsv01_4e00d4__monv7k_ct1_fc1;pocmonsv01_4e00d4__monv7k_ct2_fc2"
+
+cfgsave
+cfgenable "fab_a_act_config"</code>
+
+===== FAB B zoning =====
+
+  -Zone host to Fab B switch monds300b<code>zonecreate "pocmonsv01_4e00d2__monv7k_ct1_fc2","pocmonsv01_4e00d2;monv7k_ct1_fc2"
+zonecreate "pocmonsv01_4e00d2__monv7k_ct2_fc1","pocmonsv01_4e00d2;monv7k_ct2_fc1"
+
+zonecreate "pocmonsv01_4e00d6__monv7k_ct1_fc2","pocmonsv01_4e00d6;monv7k_ct1_fc2"
+zonecreate "pocmonsv01_4e00d6__monv7k_ct2_fc1","pocmonsv01_4e00d6;monv7k_ct2_fc1"
+
+
+cfgadd "fab_b_act_config","pocmonsv01_4e00d2__monv7k_ct1_fc2;pocmonsv01_4e00d2__monv7k_ct2_fc1;pocmonsv01_4e00d6__monv7k_ct1_fc2;pocmonsv01_4e00d6__monv7k_ct2_fc1"
+
+cfgsave
+cfgenable "fab_b_act_config"</code>
+
+
+
+
+
+
+

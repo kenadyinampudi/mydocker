@@ -1,0 +1,9 @@
+====== Virtual IO Server ======
+
+  * Create an SEA adapter <code>mkvdev -sea <etherchannel> -vadapter <virtual_ent> -default <virtual_ent> -defaultid <pvid> -attr ha_mode=auto ctl_chan=<virtual_ctrl_channel> netaddr=<def_gateway>
+mkvdev -sea ent17 -vadapter ent21 -default ent21 -defaultid 49 -attr ha_mode=auto ctl_chan=ent19 netaddr=10.0.49.1</code>
+  * Assign IP address to the Primary SEA interface <code>mktcpip -hostname <hostname> -inetaddr <ip_addr> -interface <sea_ent> -netmask <mask> -gateway 10.0.49.1 -start
+mktcpip -hostname taprvio50 -inetaddr 10.0.49.49 -interface en23 -netmask 255.255.255.0 -gateway 10.0.49.1 -start</code>
+  * Assign IP address to additional interfaces <code>mktcpip -hostname <hostname> -inetaddr <ip> -interface <sea> -netmask <mask> </code>
+  * List all disks allocated to a vhost <code>lsmap -vadapter <vhostname> </code>
+  * List all virtual disks configuration <code>/usr/local/scripts/lsdiskcfg</code>

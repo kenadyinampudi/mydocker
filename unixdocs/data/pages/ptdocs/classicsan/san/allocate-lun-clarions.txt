@@ -1,0 +1,109 @@
+====== Clariion / VNX storage allocation ======
+
+
+==== Logon and add User security on the CLI server ====
+
+  * Login to the CLI server pgunap01 and set correct credentials if you haven't set already.
+    * LDC VNX5300<code>naviseccli -Scope 0 -AddUserSecurity -h ldcvnx53001spa -User sysadmin</code>
+    * St Truiden VNX5300<code>naviseccli -Scope 0 -AddUserSecurity -h strvnx5300spa -User sysadmin</code>
+    * Seward AX-4<code>naviseccli -Scope 0 -AddUserSecurity -h sewsan-sc1 -User tenneco</code>
+    * Monroe VNX5300<code>naviseccli -Scope 0 -AddUserSecurity -h monvnxspa -User sysadmin</code>
+    * GrassLake VNX5400<code>naviseccli -Scope 0 -AddUserSecurity -h glkvnx5400spa -User sysadmin</code>
+    * Rybnik VNX5400<code>naviseccli -Scope 0 -AddUserSecurity -h rybvnx5400spa -User sysadmin</code>
+    * Edenkoben VNX5400<code>naviseccli -Scope 0 -AddUserSecurity -h edevnx5400spa -User sysadmin</code>
+    * Gliwice VNX5400<code>naviseccli -Scope 0 -AddUserSecurity -h glwvnx5400spa -User sysadmin</code>
+  * Store the SPA name as a variable<code>export SPA=<></code>
+==== Register newly zoned server with VNX storage array ====
+  * First is to figure out to which SP ports given WWPN was zoned with, thus run this command <code>naviseccli -h SPA port -list</code>
+  * Then run similar commands to below to register a server and add it to storage group in this example EDE_VMWARE_FARM
+<code>naviseccli -h spa storagegroup -setpath -gname EDE_VMWARE_FARM -hbauid 20:00:00:24:FF:8A:7C:DA:21:00:00:24:FF:8A:7C:DA -sp a -spport 7 -ip 10.58.72.45 \
+-host edenbu5230amd.emea.int.tenneco.com -failovermode 4 -arraycommpath 1 -o
+naviseccli -h spa storagegroup -setpath -gname EDE_VMWARE_FARM -hbauid 20:00:00:24:FF:8A:7C:DA:21:00:00:24:FF:8A:7C:DA -sp b -spport 6 -ip 10.58.72.45 \
+-host edenbu5230amd.emea.int.tenneco.com -failovermode 4 -arraycommpath 1 -o
+naviseccli -h spa storagegroup -setpath -gname EDE_VMWARE_FARM -hbauid 20:00:00:24:FF:8A:7D:07:21:00:00:24:FF:8A:7D:07 -sp a -spport 0 -ip 10.58.72.45 \
+-host edenbu5230amd.emea.int.tenneco.com -failovermode 4 -arraycommpath 1 -o
+naviseccli -h spa storagegroup -setpath -gname EDE_VMWARE_FARM -hbauid 20:00:00:24:FF:8A:7D:07:21:00:00:24:FF:8A:7D:07 -sp b -spport 1 -ip 10.58.72.45 \
+-host edenbu5230amd.emea.int.tenneco.com -failovermode 4 -arraycommpath 1 -o
+</code>
+
+
+==== Select a LUN size and find out the storage group ====
+
+  * Storage the storage groupname as a variable<code>/nas/sbin/naviseccli -h spa storagegroup -list
+export STGGRP=<></code>
+  * Choose a LUN size<code>
+34 GB           34522
+69 GB           69045
+102 GB          103566
+138 GB          138090
+500 GB          512000
+1 TB            1048576
+2 TB            2097152</code>Store it as a variable<code>export SIZE=<></code>
+
+==== Find array configuration and allocate storage ====
+
+This is complicated at this time as we are in a transition state from individual raid groups to storage pools.
+
+  * Check if the array has raid groups<code>naviseccli -h ${SPA} getrg -all | grep -e "RaidGroup ID:" -e "RaidGroup Type:" \
+| awk '{printf $0" ";getline;print $0}' | grep -v hot_spare</code>If there is no output, the array use pools.
+  * Pick up the next available LUN number
+    * Clariions<code>naviseccli -h ${SPA} getlun | grep "LOGICAL UNIT NUMBER" | awk '{print $NF}' | sort -n | tail -10</code>
+    * VNX<code>naviseccli -h ${SPA} lun -list  | grep "LOGICAL UNIT NUMBER" | awk '{print $NF}' | sort -n | tail -10</code>
+  * Store the LUN number as a variable ( increment the last LUN or take a free LUN number from an unused block)<code>export LUN_NO=XXX</code> 
+==== Create Pool LUNs ====
+
+  * If the array uses pools,
+    * Get a list of pools<code>naviseccli -h ${SPA} storagepool -list | grep -e "Pool Name:" -e "Pool ID:" \
+| awk '{printf $0" ";getline;print $0}'</code>If there are multiple pools, please check with the team. Store the poolname as a variable<code>export POOL=<></code>
+    * Store the number and list of luns in variables<code>export COUNT=<></code><code>export LUNS=""</code>
+    * Create a bind the LUNs<code>while true
+do
+   echo "naviseccli -h ${SPA} lun -create -type Thin -capacity ${SIZE} -sq mb \
+-poolName "${POOL}" -aa 1 -l ${LUN_NO} -name ${STGGRP}_${LUN_NO}"
+   export LUNS="${LUNS} ${LUN_NO}"
+   export LUN_NO=$(echo "${LUN_NO} + 1" | bc )
+   COUNT=$(echo "${COUNT} - 1 " | bc)
+   [[ ${COUNT} -eq 0 ]] && break
+done</code>Execute the resulting commands.
+
+==== Create Raid Group LUNs ====
+
+  * If the array uses raid groups,
+    * Find raid groups with free space<code>for DG in $(naviseccli -h ${SPA} getrg -all | grep "^RaidGroup ID:" | awk '{print $NF}')
+do
+   naviseccli -h ${SPA} getrg ${DG} > /var/tmp/kapsout
+   free=$(grep "^Free Capacity" /var/tmp/kapsout | awk '{print $NF}' ) 
+   raid=$(grep "^RaidGroup Type" /var/tmp/kapsout | awk '{print $NF}' ) 
+   echo ${DG}:${raid}:${free}
+done</code>
+    * Choose the correct raid group and raid type, store the ID into a variable<code>export RG=<>
+export RG_TYPE=<></code>Where RAID5 is ''r5'' RAID10 is ''r1_0'' RAID6 is ''r6''
+    * Store the number and list of luns in variables<code>export COUNT=<></code><code>export LUNS=""</code>
+    * Create and bind the LUNs<code>[[ $(( $RANDOM % 2)) -eq 0 ]] && SP=A || SP=B
+while true
+do
+   if [ "${SP}" = "A" ]
+   then
+      echo "naviseccli -h ${SPA} bind ${RG_TYPE} ${LUN_NO} -rg ${RG} -sq mb -cap ${SIZE} -sp ${SP} -name ${STGGRP}_${LUN_NO}"
+      export LUNS="${LUNS} ${LUN_NO}"
+      export LUN_NO=$(echo "${LUN_NO} + 1" | bc )
+      COUNT=$(echo "${COUNT} - 1 " | bc)
+      [[ ${COUNT} -eq 0 ]] && break
+      SP=B
+   else
+      echo "naviseccli -h ${SPA} bind ${RG_TYPE} ${LUN_NO} -rg ${RG} -sq mb -cap ${SIZE} -sp ${SP} -name ${STGGRP}_${LUN_NO}"
+      export LUNS="${LUNS} ${LUN_NO}"
+      export LUN_NO=$(echo "${LUN_NO} + 1" | bc )
+      COUNT=$(echo "${COUNT} - 1 " | bc)
+      [[ ${COUNT} -eq 0 ]] && break
+      SP=A
+   fi      
+done</code>Execute the resulting commands.
+==== Add LUNs to storage group ====
+
+  * Store the next HLU number<code>HLU=$(naviseccli -h ${SPA} storagegroup -list -gname ${STGGRP} | tail -3 | head -1 | awk '{print $1+1}')</code>
+  * Add LUNs to storage group<code>for LUN in ${LUNS}
+do
+   echo "naviseccli -h ${SPA} storagegroup -addhlu -gname ${STGGRP} -alu ${LUN} -hlu ${HLU}"
+   export HLU=$(echo "${HLU} + 1" | bc )
+done</code>Execute the resulting commands - but only these which do not contain the name in ALU - only the ones containing number.

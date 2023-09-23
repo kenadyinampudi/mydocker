@@ -1,0 +1,33 @@
+====== Installing Veeam from Scratch ======
+===== STEP 0 PREP WORK =====
+  * Server needs to have all the backup storage already attached to it
+  * An IPM exception needs to be put in to have the sfld-veeamadmin account made a local administrator of the machine
+  * The PT-Linux group needs to have remote desktop login to the server for configuration
+===== STEP 1 INSTALL VEEAM =====
+  * Copy the Veeam base install package over.
+  * Copy the CD over to the destination location
+  * \\cdcpilms401.fedmog.federalmogul.com\d$\VeeamCD\VeeamBackup&Replication_9.5.4.2753.Update4a.iso
+  * Mount the CD somewhere.  (Windows will usually automatically mount it as a separate drive letter.)
+  * Run the "setup.exe"
+  * Click "Install" in any of the locations.\\ 
+<code>It will ask for a license file.  Skip this for the time being.
+It will roll through and check the requirements.</code>
+  * If any requirements are missing, click "Install" to fill in any missing items.\\ 
+<code>  Click next and agree to the database upgrade.
+  When it's ready to install, click the "Update remote components automatically", as there no remote components yet.
+  When it's complete, it will say so.</code>
+  * Close the installer and start up the console.
+  You should notice the console has changed from a light green to more of a darker green.
+
+===== STEP 2 ATTACH IT TO MS401 =====
+  * Open a webpage to https://cdcpilms401.fedmog.federalmogul.com:9443/Configuration.aspx#!configuration/backup_servers
+  * From the dashboard, click on the "Configuration" gear in the top right corner.
+  * Make sure "Backup servers" are selected in the left hand menu
+  * Click "+ Add" button in the top of the middle section.
+  * In the pop-up dialog box, enter the name of the server you've just installed Veeam into, along with the veeam backup user name
+  * After clicking OK, the main server at CDCPILMS401 will attempt to contact the remote server and add the licensing.
+  * At this point, the server is properly licensed and yet independent.  
+	  Note ... it will take a few minutes for the process to complete.  Your login window may timeout before the process is complete.  This is OK.
+
+===== STEP 3 CONFIGURATION OF REPLICATION, BACKUPS AND WHATNOT =====
+  * Turn over to the Backup team for final configuration

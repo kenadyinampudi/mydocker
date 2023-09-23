@@ -1,0 +1,196 @@
+
+====== taprvio50/51 ======
+
+** Monitor the guests **
+
+  - Open a ping monitoring from pgnmsv01<code>while true
+do
+   echo "Testing ping at $(date) "
+   for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+   do
+      ping -c1 ${host} > /dev/null 2>&1
+      [[ ${?} -eq 0 ]] && echo "Good  ::  ${host} pings " || echo "Bad   ::  ${host} does not ping"
+   done
+   sleep 20
+done</code>
+  - Monitor the syslog on pglgsv01<code>sudo tail -f "/prod/unixlog/errpt/errptreadable.log" | grep -v taryb</code> # Rybnik servers constantly produce error messages.
+
+** Upgrade activities **
+
+==== taprvio50 ====
+
+  - Take a snapshot of disk allocation<code>sudo lsdiskcfg > lsdiskcfg.out.1</code>
+  - Unmirror rootvg and run alt_disk_copy<code>sudo unmirrorvg rootvg hdisk1
+sudo bosboot -ad /dev/hdisk0
+sudo alt_disk_copy -B -d hdisk1</code>
+  - Unmap all devices<code>grep vhost lsdiskcfg.out.1 | awk -F: '{print "rmvdev -vdev "$1}'</code>Execute the resulting command as 'padmin' user.
+  - Check all the guest's for disk access.<code>for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+do
+   ssh ${host} /usr/local/scripts/chkdsk
+done</code>
+  - Remove device files<code>for dev in $(lspv | grep hdiskpower | awk '{print $1}' )
+do
+   sudo powermt remove dev=${dev}
+   sudo rmdev -dl ${dev}
+done</code>Remove devices from ODM<code>for dev in $( lsdev -Ccdisk | grep EMC | awk '{print $1}' )
+do
+   sudo rmdev -dl ${dev}
+done</code>
+  - Remove Powerpath and ODM filesets<code>sudo installp -u EMC.Symmetrix.aix.rte EMC.Symmetrix.fcp.rte EMC.Symmetrix.iscsi.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMCpower.base EMCpower.encryption EMCpower.mpx</code>
+  - Reboot <code>shutdown -restart</code>
+  - Install ODM<code>sudo mkdir -p /mnt/emc ;sudo  mount pgnmsv01:/prod/images/EMC /mnt/emc
+sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMC.Symmetrix.fcp.rte</code>
+  - Remove MPIO generic device files and run cfgmgr<code>lsdev -Ccdisk | grep MPIO | awk '{print $1}' | xargs -n1 sudo rmdev -dl</code>Now run cfgmgr<code>sudo cfgmgr -v</code>
+  - Install Powerpath<code>sudo installp -acX -d /mnt/emc/PowerPath/5.5-P04 EMCpower.base EMCpower.encryption EMCpower.migration_enabler EMCpower.mpx</code>Configure powerpath<code>sudo powermt config</code>
+  - Reboot
+  - Implement the ODM fix
+    - Reserve_lock<code>for dev in $(sudo odmget -q "attribute = reserve_lock" PdAt | grep uniquetype | sort -u | egrep -v "rwoptical|iscsi|cdrom" | awk '{print $NF}' | sed "s;\";;g")
+do
+echo "Changing ${dev} "
+sudo odmchange -o PdAt -q "attribute = reserve_lock and uniquetype like ${dev}" <<EOF
+PdAt:
+        deflt = "no"
+EOF
+done</code>
+    - Reserve_policy<code>for dev in $(sudo odmget -q "attribute = reserve_policy" PdAt | grep -p "/fcp"| grep uniquetype | sort -u | egrep -v "rwoptical|iscsi|cdrom" | awk '{print $NF}' | sed "s;\";;g")
+do
+echo "Changing ${dev} "
+sudo odmchange -o PdAt -q "attribute = reserve_policy and uniquetype like ${dev}" <<EOF
+PdAt:
+        deflt = "no_reserve"
+EOF
+done</code>
+  - Remove all EMC device files
+    - hdiskpower devices<code>for dev in $(lspv | grep hdiskpower | awk '{print $1}' )
+do
+   sudo powermt remove dev=${dev}
+   sudo rmdev -dl ${dev}
+done</code>
+    - hdisks<code>for dev in $( lsdev -Ccdisk | grep EMC | awk '{print $1}' )
+do
+   sudo rmdev -dl ${dev}
+done</code>
+  - Run cfgmgr<code>sudo cfgmgr -v</code>
+  - Check reserve_lock / reserve_policy attribute on all devices<code>for dev in $(lsdev -Ccdisk | egrep "EMC|Power" | awk '{print $1}' )
+do
+   lsattr -El ${dev} -a reserve_lock
+done</code>
+  - Map the devices back to vhosts.<code>for vhost in $(grep vhost lsdiskcfg.out.1 | awk -F: '{print $5}' | sort -u)
+do
+   > ${vhost}.map.cmds
+   grep -w ${vhost} lsdiskcfg.out.1 | awk -F: '{print 6}' > ${vhost}.pvids
+   for disk in $(lspv | grep -wf ${vhost}.pvids | awk '{print $1}' )
+   do
+      echo "mkvdev -vdev ${disk} -vadapter ${vhost}" >> ${vhost}.map.cmds
+   done
+done</code>Execute the commands prepared in 'vhost*.map.cmds' as padmin user.
+  - Enable paths on all guests<code>for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+do
+   ssh ${host} /usr/local/scripts/enablempiopaths
+done</code>
+  - Check all paths on guests<code>for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+do
+   ssh ${host} lspath
+done</code>
+    - If you see failed paths, Login to each host, and follow this fix<code>sudo rmdev -dl vscsiX -R</code>
+    - Run cfgmgr<code>sudo cfgmgr</code>
+    - Repeat the test<code>for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+do
+   ssh ${host} lspath
+done</code>
+  - Look at the ping monitor and path monitor and make sure all look good.
+  - Remirror rootvg<code>sudo alt_disk_install -X alt_rootvg
+sudo extendvg rootvg hdisk1
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdisk0
+sudo bosboot -ad /dev/hdisk1
+sudo bootlist -m normal hdisk0 hdisk1</code>
+
+==== taprvio51 ====
+
+  - Take a snapshot of disk allocation<code>sudo lsdiskcfg > lsdiskcfg.out.1</code>
+  - Unmirror rootvg and run alt_disk_copy<code>sudo unmirrorvg rootvg hdisk1
+sudo bosboot -ad /dev/hdisk0
+sudo alt_disk_copy -B -d hdisk1</code>
+  - Unmap all devices<code>grep vhost lsdiskcfg.out.1 | awk -F: '{print "rmvdev -vdev "$1}'</code>Execute the resulting command as 'padmin' user.
+  - Check all the guest's for disk access.<code>for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+do
+   ssh ${host} /usr/local/scripts/chkdsk
+done</code>
+  - Remove device files<code>for dev in $(lspv | grep hdiskpower | awk '{print $1}' )
+do
+   sudo powermt remove dev=${dev}
+   sudo rmdev -dl ${dev}
+done</code>Remove devices from ODM<code>for dev in $( lsdev -Ccdisk | grep EMC | awk '{print $1}' )
+do
+   sudo rmdev -dl ${dev}
+done</code>
+  - Remove Powerpath and ODM filesets<code>sudo installp -u EMC.Symmetrix.aix.rte EMC.Symmetrix.fcp.rte EMC.Symmetrix.iscsi.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMCpower.base EMCpower.encryption EMCpower.mpx</code>
+  - Reboot <code>shutdown -restart</code>
+  - Install ODM<code>sudo mkdir -p /mnt/emc ;sudo  mount pgnmsv01:/prod/images/EMC /mnt/emc
+sudo installp -acX -d /mnt/emc/ODM/$(oslevel)-latest EMC.Symmetrix.aix.rte EMC.CLARiiON.aix.rte EMC.CLARiiON.fcp.rte EMC.Symmetrix.fcp.rte</code>
+  - Remove MPIO generic device files and run cfgmgr<code>lsdev -Ccdisk | grep MPIO | awk '{print $1}' | xargs -n1 sudo rmdev -dl</code>Now run cfgmgr<code>sudo cfgmgr -v</code>
+  - Install Powerpath<code>sudo installp -acX -d /mnt/emc/PowerPath/5.5-P04 EMCpower.base EMCpower.encryption EMCpower.migration_enabler EMCpower.mpx</code>Configure powerpath<code>sudo powermt config</code>
+  - Reboot
+  - Implement the ODM fix
+    - Reserve_lock<code>for dev in $(sudo odmget -q "attribute = reserve_lock" PdAt | grep uniquetype | sort -u | egrep -v "rwoptical|iscsi|cdrom" | awk '{print $NF}' | sed "s;\";;g")
+do
+echo "Changing ${dev} "
+sudo odmchange -o PdAt -q "attribute = reserve_lock and uniquetype like ${dev}" <<EOF
+PdAt:
+        deflt = "no"
+EOF
+done</code>
+    - Reserve_policy<code>for dev in $(sudo odmget -q "attribute = reserve_policy" PdAt | grep -p "/fcp"| grep uniquetype | sort -u | egrep -v "rwoptical|iscsi|cdrom" | awk '{print $NF}' | sed "s;\";;g")
+do
+echo "Changing ${dev} "
+sudo odmchange -o PdAt -q "attribute = reserve_policy and uniquetype like ${dev}" <<EOF
+PdAt:
+        deflt = "no_reserve"
+EOF
+done</code>
+  - Remove all EMC device files
+    - hdiskpower devices<code>for dev in $(lspv | grep hdiskpower | awk '{print $1}' )
+do
+   sudo powermt remove dev=${dev}
+   sudo rmdev -dl ${dev}
+done</code>
+    - hdisks<code>for dev in $( lsdev -Ccdisk | grep EMC | awk '{print $1}' )
+do
+   sudo rmdev -dl ${dev}
+done</code>
+  - Run cfgmgr<code>sudo cfgmgr -v</code>
+  - Check reserve_lock / reserve_policy attribute on all devices<code>for dev in $(lsdev -Ccdisk | egrep "EMC|Power" | awk '{print $1}' )
+do
+   lsattr -El ${dev} -a reserve_lock
+done</code>
+  - Map the devices back to vhosts.<code>for vhost in $(grep vhost lsdiskcfg.out.1 | awk -F: '{print $5}' | sort -u)
+do
+   > ${vhost}.map.cmds
+   grep -w ${vhost} lsdiskcfg.out.1 | awk -F: '{print 6}' > ${vhost}.pvids
+   for disk in $(lspv | grep -wf ${vhost}.pvids | awk '{print $1}' )
+   do
+      echo "mkvdev -vdev ${disk} -vadapter ${vhost}" >> ${vhost}.map.cmds
+   done
+done</code>Execute the commands prepared in 'vhost*.map.cmds' as padmin user.
+  - Enable paths on all guests<code>for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+do
+   ssh ${host} /usr/local/scripts/enablempiopaths
+done</code>
+  - Check all paths on guests<code>for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+do
+   ssh ${host} lspath
+done</code>
+    - If you see failed paths, Login to each host, and follow this fix<code>sudo rmdev -dl vscsiX -R</code>
+    - Run cfgmgr<code>sudo cfgmgr</code>
+    - Repeat the test<code>for host in daerdb01 dafodb01 dahrdb01 deerap99 deerdb99 dgscdb01 pafoap01 pafodb01 pagi3p01 pgscdb01 qaerdb01 qahrdb01 qgscdb01 taqa1d01 teprbk01 tspr1d01 tsqa1d01
+do
+   ssh ${host} lspath
+done</code>
+  - Look at the ping monitor and path monitor and make sure all look good.
+  - Remirror rootvg<code>sudo alt_disk_install -X alt_rootvg
+sudo extendvg rootvg hdisk1
+sudo mirrorvg -c2 rootvg
+sudo bosboot -ad /dev/hdisk0
+sudo bosboot -ad /dev/hdisk1
+sudo bootlist -m normal hdisk0 hdisk1</code>

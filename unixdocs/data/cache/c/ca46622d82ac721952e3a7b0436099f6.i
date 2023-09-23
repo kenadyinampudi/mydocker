@@ -1,0 +1,21 @@
+a:41:{i:0;a:3:{i:0;s:14:"document_start";i:1;a:0:{}i:2;i:0;}i:1;a:3:{i:0;s:6:"header";i:1;a:3:{i:0;s:52:"AIX - Instructions disable DNS for some SAP projects";i:1;i:1;i:2;i:1;}i:2;i:1;}i:2;a:3:{i:0;s:12:"section_open";i:1;a:1:{i:0;i:1;}i:2;i:1;}i:3;a:3:{i:0;s:10:"listo_open";i:1;a:0:{}i:2;i:68;}i:4;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:68;}i:5;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:68;}i:6;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:37:" Make a backup of existing hosts file";}i:2;i:72;}i:7;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:36:"sudo cp /etc/hosts /etc/hosts.Backup";i:1;N;i:2;N;}i:2;i:114;}i:8;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:158;}i:9;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:158;}i:10;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:158;}i:11;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:158;}i:12;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:60:" Install this hosts file so that it can reach backup servers";}i:2;i:162;}i:13;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:63:"echo "127.0.0.1       loopback localhost" | sudo tee /etc/hosts";i:1;N;i:2;N;}i:2;i:227;}i:14;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:18:"sudo vi /etc/hosts";i:1;N;i:2;N;}i:2;i:303;}i:15;a:3:{i:0;s:6:"p_open";i:1;a:0:{}i:2;i:303;}i:16;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:42:"Add the host's local entry as follows e.g.";}i:2;i:329;}i:17;a:3:{i:0;s:7:"p_close";i:1;a:0:{}i:2;i:376;}i:18;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:59:"10.32.6.33       pocafasv02.amer.int.tenneco.com pocafasv02";i:1;N;i:2;N;}i:2;i:376;}i:19;a:3:{i:0;s:6:"p_open";i:1;a:0:{}i:2;i:376;}i:20;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:30:"Then add these for NIM servers";}i:2;i:443;}i:21;a:3:{i:0;s:7:"p_close";i:1;a:0:{}i:2;i:478;}i:22;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:70:"# For AIX recovery / NIM
+10.0.48.12      pgnmsv01.amer.int.tenneco.com";i:1;N;i:2;N;}i:2;i:478;}i:23;a:3:{i:0;s:6:"p_open";i:1;a:0:{}i:2;i:478;}i:24;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:13:"For netbackup";}i:2;i:556;}i:25;a:3:{i:0;s:7:"p_close";i:1;a:0:{}i:2;i:574;}i:26;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:1075:"# For netbackup team
+10.0.48.127 taqa1d01bck taqa1d01bck.amer.int.tenneco.com
+10.0.49.107 taitc025bck
+10.0.49.127 taqa1d01 taqa1d01.na.ten
+10.0.49.129 ldcnbu5230amd.amer.int.tenneco.com
+10.0.49.139 ldcnbu5230bmd.amer.int.tenneco.com
+10.0.49.187 teprbk01bck3.amer.int.tenneco.com teprbk01bck3 teprbk01bck3 teprbk01bck3.amer.int.tenneco.com
+10.0.49.23 taitc009bck taitc009bck.amer.int.tenneco.com taitc009bck taitc009bck.amer.int.tenneco.com
+10.0.49.97 taitc601
+10.32.50.166 teprbk01 teprbk01.amer.int.tenneco.com teprbk01 teprbk01.amer.int.tenneco.com
+10.32.51.155 taqa1d01bck3 taqa1d01bck3.amer.int.tenneco.com
+10.32.51.166 teprbk01bck.amer.int.tenneco.com teprbk01bck teprbk01bck teprbk01bck.amer.int.tenneco.com
+10.32.51.50 taitc025bck3
+10.32.60.12 taqa1d01bck2 taqa1d01bck2.amer.int.tenneco.com
+10.32.60.13 teprbk01bck2.amer.int.tenneco.com teprbk01bck2 teprbk01bck2 teprbk01bck2.amer.int.tenneco.com
+10.32.8.237 taitc025
+10.32.8.9 taitc009 taitc009.amer.int.tenneco.com taitc009 taitc009.amer.int.tenneco.com
+10.39.0.51 taitc025dd
+10.56.1.138 taitc138
+10.56.1.54 taitc054";i:1;N;i:2;N;}i:2;i:574;}i:27;a:3:{i:0;s:6:"p_open";i:1;a:0:{}i:2;i:574;}i:28;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:13:"Save the file";}i:2;i:1657;}i:29;a:3:{i:0;s:7:"p_close";i:1;a:0:{}i:2;i:1670;}i:30;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:1670;}i:31;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:1670;}i:32;a:3:{i:0;s:13:"listitem_open";i:1;a:1:{i:0;i:1;}i:2;i:1670;}i:33;a:3:{i:0;s:16:"listcontent_open";i:1;a:0:{}i:2;i:1670;}i:34;a:3:{i:0;s:5:"cdata";i:1;a:1:{i:0;s:19:" Rename resolv.conf";}i:2;i:1674;}i:35;a:3:{i:0;s:4:"code";i:1;a:3:{i:0;s:48:"sudo mv /etc/resolv.conf /etc/resolv.conf.Backup";i:1;N;i:2;N;}i:2;i:1698;}i:36;a:3:{i:0;s:17:"listcontent_close";i:1;a:0:{}i:2;i:1754;}i:37;a:3:{i:0;s:14:"listitem_close";i:1;a:0:{}i:2;i:1754;}i:38;a:3:{i:0;s:11:"listo_close";i:1;a:0:{}i:2;i:1754;}i:39;a:3:{i:0;s:13:"section_close";i:1;a:0:{}i:2;i:1755;}i:40;a:3:{i:0;s:12:"document_end";i:1;a:0:{}i:2;i:1755;}}

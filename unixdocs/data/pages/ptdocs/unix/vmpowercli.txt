@@ -1,0 +1,23 @@
+====== VMWare PowerCLI ======
+
+=== Purpose ===
+Instead of installing VMWare PowerCLI onto each box, this docker container allows for singleshot VMWare scripts. \\ 
+This is used for daily reports which get a list of all the VMWare datastores and VM vmdks.\\
+It can also be run interactively for ad-hoc reporting.
+
+=== Link  ===
+  * [[https://code.vmware.com/web/tool/12.0.0/vmware-powercli | VMWare PowerCLI official documentation, but it changes rapidly]]
+  * [[unix:installlocalpowercli | Install PowerCLI locally]]
+=== Image === 
+  * Original image ...[[https://hub.docker.com/r/vmware/powerclicore/ | vmware/powerclicore]]
+  * Local registry ... Not saved.  We should use the latest version when possible.
+=== How to start === 
+  * If you want to start it interactively ... \\ ''%%docker run -it --entrypoint="/usr/bin/pwsh" --name "powercli" localhost:5000/powerclicore%%''
+  * Running it unattended ... \\ ''%%docker run --rm  -v /misc/scripts:/scripts -v /misc/output:/output --entrypoint="/usr/bin/pwsh" --name "powercli" localhost:5000/powerclicore "/scripts/getvmvdiskinfo-powertrain.ps1"%%''
+ 
+=== Volumes ===
+  * /misc/scripts  cdcpilns013.federalmogul.com:/sandocumentation/tools/vmware/powercli/scripts 
+  * /misc/output  cdcpilns013.federalmogul.com:/sandocumentation/tools/vmware/powercli/output 
+
+==== Notes ====
+  * The volumes for this are not strictly necessary.  For unattended scripting (like in a cron job) I mount a source dir and a dest dir.  \\ I write the scripts to dump their output in local dir "/output", which is really the shared directory.  \\  Check out the scripts in /misc/scripts to see how I write them for remote execution. \\ 

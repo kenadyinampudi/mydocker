@@ -1,0 +1,41 @@
+====== Backup the configuration / validation prior to a major OS work on a server ======
+
+===== Backup system configuration =====
+
+  - Login to the NIM server ''pcdcunxaxap01''
+  - Export a variable that contains the host being patched<code>export host2patch="HOSTNAME"</code>
+  - Copy the pre-upgrade directory to the system that is being patched.<code>sudo rsync -a /prod/images/scripts/Pre_Upgrade/ ${host2patch}:/tmp/Pre_Upgrade/</code>
+  - Execute the ''saveenv'' script to document system configuration. First remove any old repositories<code>ssh ${host2patch} sudo rm -rf /tmp/Pre_Upgrade_report</code><code>ssh ${host2patch} "sudo /tmp/Pre_Upgrade/aix_upgrade/save_env.sh"</code>
+  - Copy the pre-upgrade backup files to NIM<code>sudo rsync -a ${host2patch}:/tmp/Pre_Upgrade_report/ /preupgrade/reports/${host2patch}-pre_upgrade.$(date +%Y%m%d)/</code>
+    - For AIX migrations ( not TL upgrades ) Make sure you check the Language Environment in the file "LANGUAGE" in the directory just created by this script. NOTE the FIRST line "LANG=" and the last line for the language reference number  YOU WILL NEED THESE at the Initial Migration Configuration Settings.
+  - Make sure that the lppchk.vm3 is 0 byte files<code>ls -l /preupgrade/reports/${host2patch}-pre_upgrade.$(date +%Y%m%d)/pre-lppchk/lppchk-vm3</code>
+
+===== Create a fresh alt_disk_copy =====
+
+  - Login to pcdcunxaxap01
+  - Export a variable that contains the host being patched<code>export host2patch="HOSTNAME"</code>
+  - Login to the host and preserve a copy of rootvg<code>ssh ${host2patch}</code>
+  - Disable the alt_disk_copy script<code>sudo touch /var/adm/do_not_run_alt_disk_until_removed_tenneco</code>
+  - Create an at job to remove this file after 7 days<code>echo "rm /var/adm/do_not_run_alt_disk_until_removed_tenneco" | sudo at now + 7 day</code>
+    - On a SAN booting system, 
+      - Find out the alt_disk<code>lspv | grep rootvg
+hdisk0          00021ffb513afe5a                    rootvg          active
+hdisk1          00021ffb513aff90                    altinst_rootvg</code>In this case hdisk1 is the alternate boot disk.
+      - Remove the current alt_disk_rootvg<code>sudo alt_rootvg_op -X altinst_rootvg</code>
+      - Create a fresh alt_disk_copy<code>sudo alt_disk_copy -B -d hdiskX</code>-B option makes sure that it does not execute a bootlist - FYI.
+      - Check altinst_rootvg has been created<code>lspv | grep rootvg</code>Make sure you see the altinst_rootvg in the output
+    - On a mirrored rootvg system do this,
+      - Unmirror the VG<code>sudo unmirrorvg rootvg hdiskX</code>
+      - Remove the disk from rootvg<code>sudo reducevg rootvg hdiskX</code>
+      - Clear the VGDA<code>sudo chpv -c hdiskX</code>
+      - Set the bootlist to boot from the remaining disk<code>sudo bootlist -m normal hdiskY</code>
+      - Perform an alt_disk_copy to the alt_rootvg<code>sudo alt_disk_copy -B -d hdiskX</code>
+
+===== Make sure NIM server has a latest copy of mksysb =====
+
+  - Login to pcdcunxaxap01
+  - Export a variable that contains the host being patched<code>export host2patch="HOSTNAME"</code>
+  - Find the mksysb target for the server to be patched<code>mksysbtarget=$(ssh ${host2patch} grep ^mksysb /var/adm/.information| awk -F: '{print $2}' )</code>
+  - Check a latest copy ( max 2-3 days old ) exists<code>ssh ${mksysbtarget} sudo ls -l /mksysb-images/bos.obj.${host2patch}.gz</code>**Check the timestamp on the file, it has to be less than 3 days old.**  If the mksysb is 3 days old or less Proceed to Step 6
+   - On the server to be upgraded create a new mksysb image. When the command has completed proceed to next step  <code>ssh ${host2patch} sudo /usr/local/scripts/mksysb.sh adhoc </code> 
+  - On NIM server copy the mksysb image to the repository - This is the backout of last resort. <code>ssh ${mksysbtarget} "sudo cp -p /mksysb-images/bos.obj.${host2patch}.gz /preupgrade/mksysb/"</code>

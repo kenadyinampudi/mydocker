@@ -1,0 +1,73 @@
+====== Procedure to snapshot for Core-SP upgrade ======
+
+===== Pre-work -- For first backup -- start this as soon as the last TA2 backup is complete =====
+
+  - Login to teprbk01 and offline the disks<code>sudo lsvpcfg.sh > lsvpcfg.out.1</code>
+  - Offline all VGs<code>for vg in $(grep datavg0 lsvpcfg.out.1 | awk -F: '{print $NF}' | sort -u)
+do
+   for fs in $(lsvgfs ${vg} )
+   do
+      sudo umount ${fs}
+      if [ ${?} -ne 0 ]
+      then
+         echo "Unable to unmount ${fs} -- please check "
+      fi
+   done
+   sudo varyoffvg ${vg}
+   if [ ${?} -ne 0 ]
+   then
+      echo "Unable to varyoff ${vg} -- please check"
+   fi
+   sudo exportvg ${vg}   
+   if [ ${?} -ne 0 ]
+   then
+      echo "Unable to export ${vg} -- please check"
+   fi
+done</code>
+  - Delete all the disks<code>grep datavg0 lsvpcfg.out.1 | awk -F: '{print $1}' | xargs -n1 sudo rmdev -dl</code>
+===== Pre-work -- for second backup -- start this a day before [[ Already done ]] =====
+
+  - Create "34" ( today 2/12/2017 -- we have 34 devices -- double check ) devices for target, un-compressed<code>for name in {001..034}
+do
+   ssh ldcv9ac2vip1 mkvdisk -autoexpand -cache readwrite -copies 1 -iogrp io_grp0 -mdiskgrp POOL_1381128 -name ta2dbcopy_${name} -nofmtdisk -rsize 2% -size 524288 -syncrate 50 -unit mb -vtype striped -warning 0%
+done</code>
+  - Collect device details from V9000<code>ssh ldcv9ac2vip1 lsvdisk > lsvdisk.out.v9000</code>
+  - Get the source volumes<code>grep ta2dbdata lsvdisk.out.v9000 | awk '{print $2}' | sort > source.vols.txt</code>
+  - Get the target volumes<code>grep ta2dbcopy lsvdisk.out.v9000 | awk '{print $2}' | sort > target.vols.txt</code>
+  - Create pairing file<code>paste source.vols.txt target.vols.txt > coresppairingfile.txt</code>
+  - Create the flashcopy task<code>ssh ldcv9ac2vip1 mkfcconsistgrp -name TA2CORESPBKP</code>
+  - Create ftasks and add to consistency group<code>cat coresppairingfile.txt | awk '{print "mkfcmap -consistgrp TA2CORESPBKP -copyrate 0 -cleanrate 0 -name TA2CORESPBKP_"number++" -source "$1" -target "$2}'</code>
+
+===== Line 63 in the main plan. Backup prior to upgrade. =====
+
+  - Assumes, you are still logged on to teprbk01
+  - Stop previous flashcopy job.<code>ssh ldcv9ac2vip1 stopfcconsistgrp -prep TA2ONLINEBKP</code>
+  - Ask DBAs to shutdown the primary database.
+  - Start flashcopy job<code>ssh ldcv9ac2vip1 startfcconsistgrp -prep TA2ONLINEBKP</code>
+  - Ask DBA to start the database back up and continue.
+  - Get a copy of lspv from Primary system<code>ssh peerdb99 lspv > lspv.peerdb99.out</code>
+  - Take a snapshot<code>sudo lsvpcfg.sh > lsvpcfg.out.2</code>
+  - cfgmgr<code>sudo cfgmgr</code>
+  - Take a snapshot now<code>sudo lsvpcfg.sh > lsvpcfg.out.3</code>
+  - Change the allocation policy<code>diff lsvpcfg.out.2 lsvpcfg.out.3 | grep ">" | awk '{print $2}' | awk -F: '{print $1}' | xargs -n1 -a algorithm=round_robin -a reserve_policy=no_reserve -l</code>
+  - Re-create the VGs and mount filesystems<code>for VG in $(grep datavg0 lspv.peerdb99.out | awk '{print $3}' | sort -u)
+do
+   echo "Working on ${VG} "
+   grep -w ${VG} lspv.peerdb99.out | awk '{print $2}' > ${VG}.pvids
+   PVS=$(lspv | grep -f ${VG}.pvids | awk '{print $1}' | tr "\n" " ")
+   echo "Recreating ${VG} using ${PVS}"
+   sudo recreatevg -Y/ -L/ -y ${VG} ${PVS}
+   for fs in $(lsvgfs ${VG} )
+   do
+      echo "Running fsck on ${VG} -- ${fs} "
+      sudo fsck -y ${fs}
+      echo "Mounting ${VG} -- ${fs} "
+      sudo mount ${fs}
+   done
+done</code>
+  - Handover to Datapres team
+
+===== Line 75 in the main plan. Backup after the upgrade. =====
+
+  - Ask DBA to shutdown or hot backup the database.
+  - Execute the flashcopy task<code>ssh ldcv9ac2vip1 startfcconsistgrp -prep TA2CORESPBKP</code>

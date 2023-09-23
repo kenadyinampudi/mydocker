@@ -1,0 +1,32 @@
+====== Fabric Zoning Lincolnshire Pure M20 ======
+
+===== Physical cabling of Pure M20 storage array =====
+
+^Storage array^Port Name      ^Switch Name^Port No^Fabric  ^Alias name       ^WWN                    
+|ldcpm20v1    |ct0-slot0-port0|ldcds6510a1|28     |Fabric A|ldcpm20v1_ct0_fc0  |52:4A:93:77:80:40:89:00|
+|ldcpm20v1    |ct1-slot0-port1|ldcds6510a1|29     |Fabric A|ldcpm20v1_ct1_fc0  |52:4A:93:77:80:40:89:10|
+|ldcpm20v1    |ct0-slot1-port0|ldcds6510b1|28     |Fabric B|ldcpm20v1_ct0_fc1  |52:4A:93:77:80:40:89:01|
+|ldcpm20v1    |ct1-slot1-port1|ldcds6510b1|29     |Fabric B|ldcpm20v1_ct1_fc1  |52:4A:93:77:80:40:89:11|
+
+====== Create Alias for storage array ======
+
+  - FAB A <code>alicreate "ldcpm20v1_ct0_fc0","52:4A:93:77:80:40:89:00"
+alicreate "ldcpm20v1_ct1_fc0","52:4A:93:77:80:40:89:10"</code>
+  - FAB B<code>alicreate "ldcpm20v1_ct0_fc1","52:4A:93:77:80:40:89:01"
+alicreate "ldcpm20v1_ct1_fc1","52:4A:93:77:80:40:89:11"</code>
+
+===== Fabric A zoning  =====
+
+  - Login to the primary switch ldcds5300a1<code>ssh admin@ldcds5300a1</code>
+  - Create zoning and add to config<code>zonecreate "pocpuresv01_4e00d0__ldcpm20v1_ct0_ct1_fc0","pocpuresv01_4e00d0;ldcpm20v1_ct0_fc0;ldcpm20v1_ct1_fc0"
+cfgadd "fab_a_act_config","pocpuresv01_4e00d0__ldcpm20v1_ct0_ct1_fc0"
+cfgsave
+cfgenable "fab_a_act_config"</code>
+
+===== Fabric B zoning =====
+
+  - Login to the primary switch ldcds5300b1<code>ssh admin@ldcds5300b1</code>
+  - Create zoning and add to config<code>zonecreate "pocpuresv01_4e00d2__ldcpm20v1_ct0_ct1_fc1","pocpuresv01_4e00d2;ldcpm20v1_ct0_fc1;ldcpm20v1_ct1_fc1"
+cfgadd "fab_b_act_config","pocpuresv01_4e00d2__ldcpm20v1_ct0_ct1_fc1"
+cfgsave
+cfgenable "fab_b_act_config"</code>

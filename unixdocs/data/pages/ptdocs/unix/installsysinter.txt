@@ -1,0 +1,21 @@
+====== Install sysinter ======
+
+===== AIX & VIOS =====
+
+  - Login to the master server pgnmsv01/pgnmsv01 and set a variable<code>export server_tenneco=<hostname></code>
+  - Make this directory<code>ssh ${server_tenneco} sudo mkdir -p /usr/local/bin</code>
+  - Copy this<code>sudo rsync -avv /prod/images/applications/csi/sysinter.aix5 ${server_tenneco}:/usr/local/bin/sysinter.aix5</code>
+  - Then do this<code>ssh ${server_tenneco} 'sudo echo "sysinter                40035/tcp" >> /etc/services'</code>
+  - Then do this<code>ssh ${server_tenneco} 'sudo echo "sysinter        stream  tcp     nowait  root    /usr/local/bin/sysinter.aix5" >> /etc/inetd.conf'</code>
+  - Now restart inetd<code>ssh ${server_tenneco} sudo refresh -s inetd</code>
+
+===== Linux =====
+
+  - Login to the master server pgnmsv01/pgnmsv01 and set a variable<code>export server_tenneco=<hostname></code>
+  - Make this directory<code>sudo ssh ${server_tenneco} mkdir -p /usr/local/bin</code>
+  - Copy this<code>sudo rsync -avv /prod/images/applications/csi/sysinter.redhat ${server_tenneco}:/usr/local/bin/sysinter.redhat</code>
+  - Then do this<code>sudo ssh ${server_tenneco} 'echo "sysinter                40035/tcp" | tee -a /etc/services'</code>
+  - Then do this<code>sudo rsync -avv /prod/images/applications/csi/sysinter-xinetd ${server_tenneco}:/etc/xinetd.d/sysinter-xinetd</code>
+  - Now restart inetd
+    - For RHEL6<code>sudo ssh ${server_tenneco} service xinetd reload</code>
+    - For RHEL7<code>sudo ssh ${server_tenneco} systemctl reload xinetd</code>

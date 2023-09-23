@@ -1,0 +1,91 @@
+====== How can we help security / Wintel team in case any NAS share is being written to by the locky ransomware ======
+
+  - First of all, VNX/Celerra's underlying infrastructure runs a custom version of Linux and there is an abstraction layer between AD permissions & the actual filesystems.
+  - Due to the above reason, the viruses or *wares do not affect the run state of VNX or Celerra.
+  - Yet, there are things we can do to identify the root cause or the source of infection.
+    - List active CIFS sessions on a VNX. Login to the control station as nasadmin<code>server_netstat server_2</code>This will print all sessions, from this you should be able to figure out the IP addresses / hostnames of the PCs. A snippet would be<code>server_netstat server_2 | grep ESTABLISHED | grep CIFS | awk '{print $3}' | awk -F"." '{print $1"."$2"."$3"."$4}' | sort -u</code>
+    - Access the CIFS filesystem from the control station and script the number of affected files
+      - Login to control station as nasadmin and switch to root<code>su -</code>The following path will have the root of each VDM<code>[root@edevnx5400cs0 slot_2]# pwd
+/nbsnas/rootfs/slot_2
+[root@edevnx5400cs0 slot_2]# ls -ld root*vdm*
+drwxr-xr-x 36 root bin 2048 Sep 30 20:30 root_vdm_1
+drwxr-xr-x 36 root bin 2048 Sep 30 21:00 root_vdm_2
+drwxr-xr-x 15 root bin 1024 Sep 30 20:00 root_vdm_3
+drwxr-xr-x  3 root bin   80 Dec 14  2015 root_vdm_4
+drwxr-xr-x 14 root bin 1024 Oct  1 01:33 root_vdm_5
+</code>Each directory has it's mounted filesystems and the checkpoints. From here, you should be able to script something like this<code>LOGDIR="/home/nasadmin/viruscheck.$(date +%d%m%Y)"
+[[ ! -d ${LOGDIR} ]] && mkdir -p ${LOGDIR}
+
+for VDMDIR in $(ls -d /nbsnas/rootfs/slot_2/root*vdm* )
+do
+   for FS in $(ls -1 ${VDMDIR} | grep -v ^ckpt )
+   do
+      FSLOGFILE=${LOGDIR}/${FS}.$(date +%m%d%Y%H%M%S)
+      find ${VDMDIR}/${FS} -name "*.odin" > ${FSLOGFILE}
+      echo "$(date)   ::   We have $(cat ${FSLOGFILE} | wc -l ) files with .odin extension ..."
+   done
+done</code>
+    - This is a windows script to check any open files with "odin" extension<code>@echo off
+rem Author: Pawel Tkaczyk, email ptkaczyk@tenneco.com
+rem Date 10/03/2016
+rem Script to look for open files on remote machine %1 - first parameter provided to this script
+rem which are having certain string in the file name, ie odin - second parameter provided to this script %2
+rem so example call might look like:
+rem open_files.bat taede100.emea.int.tenneco.com odin
+rem script is running in the loop - until CTLR+C is pressed.
+rem script is best run from server which is close to the examined one - the same site - for its speediness
+
+if "%1"=="" goto end
+if "%2"=="" goto end
+
+:start
+For /f "tokens=2-4 delims=/ " %%a in ('date /t') do (set mydate=%%c-%%a-%%b)
+For /f "tokens=1-2 delims=/:" %%a in ('time /t') do (set mytime=%%a%%b)
+echo %mydate%_%mytime%
+
+openfiles /query /fo csv /s \\%1 | findstr /I %2
+goto start
+
+:end
+echo Proper usage of this script is
+echo %0 server_name file_name_to_look_after
+echo example call of this script
+echo %0 taede100 odin</code>
+    - If a restore is requested, first you may check if the filesystem has successful checkpoints. List of filesystems<code>nas_fs -list | grep -v -e "ckpt_" -e root_fs -e automaticTempNDMP</code>Check checkpoints for each filesystem<code>fs_ckpt fs-taede100 -l</code>''fs-taede100'' is the filesystem here. Should see something like this in the output<code>id    ckpt_name                creation_time           inuse fullmark   total_savvol_used  ckpt_usage_on_savvol
+187   ckpt_fstaede100_003      09/21/2016-04:30:01-CEST  y   90%        88%                2%
+195   ckpt_fstaede100_004      09/22/2016-04:30:01-CEST  y   90%        88%                3%
+202   ckpt_fstaede100_005      09/23/2016-04:30:01-CEST  y   90%        88%                2%
+205   ckpt_fstaede100_006      09/24/2016-04:30:02-CEST  y   90%        88%                0%
+207   ckpt_fstaede100_007      09/25/2016-04:30:01-CEST  y   90%        88%                0%
+214   ckpt_fstaede100_008      09/26/2016-04:30:01-CEST  y   90%        88%                5%
+221   ckpt_fstaede100_009      09/27/2016-04:30:02-CEST  y   90%        88%                3%
+232   ckpt_fstaede100_010      09/28/2016-04:30:01-CEST  y   90%        88%                3%
+171   ckpt_fstaede100_001      09/29/2016-04:30:01-CEST  y   90%        88%                48%
+179   ckpt_fstaede100_002      09/30/2016-04:30:01-CEST  y   90%        88%                22%
+881   automaticTempNDMPCkpt670 09/30/2016-19:00:25-CEST  y   90%        88%                0%</code>
+    - If a full NDMP restore is proposed, be careful about dedupe and make sure you will not run out of storage<code>fs_dedupe -info fs-taede100</code>''fs-taede100'' is the filesystem here.You should see something like this in the output<code>Id                                 = 17
+Name                               = fs-taede100
+Deduplication                      = On
+Status                             = Idle
+As of the last file system scan (Mon Sep 26 06:48:50 CEST 2016):
+   Files scanned                   = 7596048
+   Files deduped                   = 5902996 (78% of total files)
+   File system capacity            = 7260236 MB
+   Original data size              = 10468220 MB (144% of current file system capacity)
+   Space saved                     = 4097736 MB (39% of original data size)
+File system parameters:
+   Case Sensitive                  = no
+   Duplicate Detection Method      = sha1
+   Access Time                     = 15
+   Modification Time               = 15
+   Minimum Size                    = 24 KB
+   Maximum Size                    = 8388608 MB
+   File Extension Exclude List     = 
+   Minimum Scan Interval           = 7
+   SavVol Threshold                = 90
+   Backup Data Threshold           = 90
+   Cifs Compression Enabled        = yes
+   Pathname Exclude List           = 
+   Compression Method              = fast</code>The most important line for restores is<code>   Original data size              = 10468220 MB (144% of current file system capacity)</code>Make sure that the filesystem has enough space. Netbackup will restore files and they wont be deduped by NAS until the next scheduled dedupe job run, which is once a day.
+       - Another point to note is that, due to the large number of changes caused by the full restore. Almost all the checkpoints are now unusable after a full restore.
+       - 

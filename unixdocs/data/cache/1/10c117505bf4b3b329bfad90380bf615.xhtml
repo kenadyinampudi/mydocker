@@ -1,0 +1,77 @@
+
+<h1 class="sectionedit1" id="configure_vio_non-vlan_tagged_networking">Configure VIO non-vlan tagged networking</h1>
+<div class="level1">
+
+<p>
+<strong>IVM on a blade</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Create an aggregate of the HEA adapters<pre class="code"> mkvdev -lnagg ent0 -attr backup_adapter=ent1
+ent8 Available
+en8
+et8</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Create an aggregate on the Other two ethernet interfaces<pre class="code">mkvdev -lnagg ent2 -attr backup_adapter=ent3
+ent9 Available
+en9
+et9</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Configure an IP on the aggregate<pre class="code">mktcpip -hostname taprvio18 -inetaddr 10.32.50.93 -interface en8  -netmask 255.255.255.0 -gateway 10.32.50.1 -start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Create a SEA adapter on the aggregate that we just made<pre class="code">mkvdev -sea ent9 -vadapter ent4 -default ent4 -defaultid 1
+            main:  86 Recived SEA events bytes 164
+ent10 Available
+en10
+et10</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Configure the backup IP on the SEA<pre class="code">oem_setup_env</pre>
+
+<p>
+And
+</p>
+<pre class="code">chdev -l enX -a netaddr=A.B.C.D -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Increase the memory of the VIO lpar to atleast 6G<pre class="code">Command to be added until then do it via the WebUI</pre>
+</div>
+</li>
+</ol>
+
+<p>
+<strong>Regular Power frame</strong>
+</p>
+<ol>
+<li class="level1"><div class="li"> Create an aggregate for the public network<pre class="code">mkvdev -lnagg entK -attr backup_adapter=entL</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Create an aggregate for the backup network<pre class="code">mkvdev -lnagg entM -attr backup_adapter=entN</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Create SEA for public network<pre class="code">mkvdev -sea entX -vadapter entY -default entY -defaultid 1 -attr ha_mode=auto ctl_chan=entZ netaddr=10.56.1.1</pre>
+
+<p>
+netaddr is the default gateway SEA will ping periodically. defaultid must match the VLAN id of the default Virtual NIC
+</p>
+</div>
+</li>
+<li class="level3"><div class="li"> Create SEA for backup network<pre class="code">mkvdev -sea entA -vadapter entB -default entB -defaultid 2 -attr ha_mode=auto ctl_chan=entC netaddr=10.56.12.1</pre>
+
+<p>
+netaddr is the default gateway SEA will ping periodically. defaultid must match the VLAN id of the default Virtual NIC
+</p>
+</div>
+</li>
+<li class="level3"><div class="li"> Assign IP address on the public SEA<pre class="code">mktcpip -hostname &lt;hostname&gt; -inetaddr A.B.C.D -interface enX  -netmask xxx.xxx.xxx.y -gateway aa.bb.cc.e -start</pre>
+</div>
+</li>
+<li class="level3"><div class="li"> Assign IP address on the backup SEA<pre class="code">oem_setup_env</pre>
+<pre class="code">chdev -l en10 -a netaddr=E.F.G.H -a netmask=255.255.255.0 -a state=up</pre>
+</div>
+</li>
+</ol>
+
+</div>

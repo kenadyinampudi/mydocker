@@ -1,0 +1,93 @@
+====== Re-IP cloned systems at MP ======
+
+  - This is a Unix team task
+  - Login to the MP HMC<code>ssh cdcvilhmc001.fmmotorparts.com</code>
+  - Command to get to console
+    - Shukant<code>mkvterm -m Powervm31-8284-22A-21AA51W -p dreiap99
+mkvterm -m Powervm38-8284-22A-21AA57W -p dreidb99
+mkvterm -m Powervm31-8284-22A-21AA51W -p ereiap99
+mkvterm -m Powervm38-8284-22A-21AA57W -p ereidb99
+mkvterm -m Powervm31-8284-22A-21AA51W -p drenap99
+mkvterm -m Powervm38-8284-22A-21AA57W -p drendb99</code>
+    - Vasu<code>mkvterm -m Powervm31-8284-22A-21AA51W -p erenap99
+mkvterm -m Powervm38-8284-22A-21AA57W -p erendb99
+mkvterm -m Powervm31-8284-22A-21AA51W -p drgtdb01
+mkvterm -m Powervm38-8284-22A-21AA57W -p drsndb01
+mkvterm -m Powervm31-8284-22A-21AA51W -p drsrdb01
+mkvterm -m Powervm38-8284-22A-21AA57W -p drhgap99</code>
+    - Naveej<code>mkvterm -m Powervm31-8284-22A-21AA51W -p drhgdb99
+mkvterm -m Powervm38-8284-22A-21AA57W -p prhgap99
+mkvterm -m Powervm31-8284-22A-21AA51W -p prhgdb99
+mkvterm -m Powervm38-8284-22A-21AA57W -p prgtdb01
+mkvterm -m Powervm31-8284-22A-21AA51W -p prsndb01
+mkvterm -m Powervm38-8284-22A-21AA57W -p prsrdb01</code>
+    - Sumit<code>mkvterm -m Powervm31-8284-22A-21AA51W -p prenap99
+mkvterm -m Powervm31-8284-22A-21AA51W -p prendb99
+mkvterm -m Powervm31-8284-22A-21AA51W -p xrenap99
+mkvterm -m Powervm38-8284-22A-21AA57W -p xrendb99
+mkvterm -m Powervm31-8284-22A-21AA51W -p preiap99
+mkvterm -m Powervm31-8284-22A-21AA51W -p preidb99
+mkvterm -m Powervm31-8284-22A-21AA51W -p xreiap99
+mkvterm -m Powervm38-8284-22A-21AA57W -p xreidb99</code>
+  - Each lpar should be at SMS. Navigate to the following menus and Boot the system.
+    - "5.   Select Boot Options"
+      - "1.   Select Install/Boot Device"
+        - "3.   Hard Drive"
+          - "7.   List All Devices"
+            - You will see a menu like this after the system scans for bootable disks.<code>-------------------------------------------------------------------------------
+ Select Device
+ Device  Current  Device
+ Number  Position  Name
+ 1.        2      Interpartition Logical LAN
+        ( loc=U8284.22A.21AA51W-V3-C2-T1 )
+ 2.        -      Interpartition Logical LAN
+        ( loc=U8284.22A.21AA51W-V3-C3-T1 )
+ 3.        1      148 GB   FC Harddisk, part=2 (AIX 7.1.0)
+        ( loc=U8284.22A.21AA51W-V3-C4-T1-W524a93770637b001-L0001000000000000 )
+ 4.        -      148 GB   FC Harddisk, part=2 (AIX 7.1.0)
+        ( loc=U8284.22A.21AA51W-V3-C4-T1-W524a93770637b001-L0002000000000000 )
+ 5.        -      148 GB   FC Harddisk, part=2 (AIX 7.1.0)
+        ( loc=U8284.22A.21AA51W-V3-C4-T1-W524a93770637b011-L0001000000000000 )
+ 6.        -      148 GB   FC Harddisk, part=2 (AIX 7.1.0)
+        ( loc=U8284.22A.21AA51W-V3-C4-T1-W524a93770637b011-L0002000000000000 )
+ -------------------------------------------------------------------------------</code>
+              - In my test, I selected "3.        1      148 GB   FC Harddisk, part=2 (AIX 7.1.0)"
+                - It may be the rootvg or the alt_rootvg -- Good luck.
+                  - Select "2.   Normal Mode Boot"
+                    - At this menu, choose "1.   Yes"<code> Are you sure you want to exit System Management Services?
+ 1.   Yes
+ 2.   No</code>
+  - Access the console and login as root.
+  - Check if you are booted from alt_rootvg<code>lspv | grep rootvg</code>
+    - If you see a "old_rootvg" Change the bootlist<code>bootlist -m normal $(lspv | grep -w old_rootvg | awk '{print $1}' )</code>Then reboot<code>shutdown -Fr</code>
+  - Access the console, login as root and change the IP address. Use the command documented for the respective system you are working on.
+  - Command to Re-IP from console
+    - Shukant<code>/usr/sbin/mktcpip -h dreiap99 -a 10.128.40.34 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h dreidb99 -a 10.128.40.35 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h ereiap99 -a 10.128.40.36 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h ereidb99 -a 10.128.40.37 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h drenap99 -a 10.128.40.38 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h drendb99 -a 10.128.40.39 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s</code>
+    - Vasu<code>/usr/sbin/mktcpip -h erenap99 -a 10.128.40.40 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h erendb99 -a 10.128.40.41 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h drgtdb01 -a 10.128.40.42 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h drsndb01 -a 10.128.40.43 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h drsrdb01 -a 10.128.40.44 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h drhgap99 -a 10.128.40.45 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s</code>
+    - Naveej<code>/usr/sbin/mktcpip -h drhgdb99 -a 10.128.40.46 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h prhgap99 -a 10.128.40.47 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h prhgdb99 -a 10.128.40.48 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h prgtdb01 -a 10.128.40.49 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h prsndb01 -a 10.128.40.50 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h prsrdb01 -a 10.128.40.51 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s</code>
+    - Sumit<code>/usr/sbin/mktcpip -h prenap99 -a 10.128.40.52 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h prendb99 -a 10.128.40.53 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h xrenap99 -a 10.128.40.54 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h xrendb99 -a 10.128.40.55 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h preiap99 -a 10.128.40.56 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h preidb99 -a 10.128.40.57 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h xreiap99 -a 10.128.40.58 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s
+/usr/sbin/mktcpip -h xreidb99 -a 10.128.40.59 -m 255.255.255.0 -i en0 -g 10.128.40.1 -A no -s</code>
+  - NTP Update<code>ntpdate -u 10.43.8.130</code>
+  - Set bootlist<code>bootlist -m normal $(lspv | grep -w rootvg | awk '{print $1}' )</code>Check it<code>bootlist -om normal</code>
+  - Perform a reboot<code>shutdown -Fr</code>

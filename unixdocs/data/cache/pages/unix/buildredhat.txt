@@ -1,0 +1,62 @@
+====== Redhat Linux Installation notes ======
+
+  * We only support Redhat Linux and only Virtual deployments. If you are building this on a physical machine, stop & escalate.
+  * Please request Wintel team to configure the VM for Linux.
+    * RHEL 5<code>Hello Wintel Team,
+Please configure the VM for Redhat Enter Prise Linux 5.
+Please set the Boot options --> Boot Delay to "10000"
+Please change the SCSI controller type to "LSI Logic Parallel"
+Please change the Ethernet Adapter type to "E1000".</code>
+    * RHEL 6<code>Hello Wintel Team,
+Please configure the VM for Redhat Enter Prise Linux 6.
+Please set the Boot options --> Boot Delay to "10000"</code>
+  * Add the server to the console database **/prod/images/etc/unix_sys_console** on pgnmsv01.<code>sudo vi /prod/images/etc/unix_sys_console</code>Sample entry would be<code>taitc059:std-vmware-vsphere:taitc176:ADACCOUNT</code>
+  * [[kapil:notesesx|Login to the respective VSphere Server]]
+  * Document the MAC address for the VM
+      * Find the VM --> Right click --> Edit Settings --> Select Network adapter 1 (Hardware Tab) --> You will see the MAC address to the right.
+  * Add the server to cobbler
+    * Login to pablsv01
+    * Choose the right profile for the system
+
+^Profile^Description^
+|rhel-5.8-i386|RHEL 5.8 32 bit for all intel hardware Tenneco support|
+|rhel-5.8-x86_64|RHEL 5.8 64 bit for all intel hardware Tenneco support|
+|rhel-6.3-i386|RHEL 6.3 32 bit for all intel hardware Tenneco support|
+|rhel-6.3-x86_64|RHEL 6.3 64 bit for all intel hardware Tenneco support|
+|rhel-6.4-x86_64|RHEL 6.4 64 bit for all intel hardware Tenneco support|
+|rhel-6.6-x86_64|RHEL 6.6 64 bit for all intel hardware Tenneco support|
+
+    * Define the system and assign the correct profile - Sample intranet
+      * Command Line method<code>sudo cobbler system add \
+--name=<hostname> \
+--profile=rhel-6.6-x86_64 \
+--netboot-enabled=False \
+--name-servers=10.32.8.53 \
+--name-servers-search=amer.int.tenneco.com \
+--gateway=<gateway> \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=<mac_address> \
+--ip-address=<ip_address> \
+--netmask=255.255.255.0 \
+--server=pablsv01.amer.int.tenneco.com</code>Sample DMZ<code>sudo cobbler system add \
+--name=<hostname> \
+--profile=rhel-6.6-x86_64 \
+--netboot-enabled=False \
+--name-servers=<ip_address> \
+--name-servers-search=tenneco.com, amer.int.tenneco.com \
+--gateway=<gateway> \
+--interface=eth0 \
+--management=True \
+--static=True \
+--mac=<mac_address> \
+--ip-address=<ip_address> \
+--netmask=255.255.255.192 \
+--server=pablsv01.amer.int.tenneco.com</code>Check the return code<code>echo ${?}</code>
+  * Create the Boot ISO on pablsv01<code>sudo cobbler buildiso --systems="<hostname>" --iso=/var/www/html/servers/<hostname>.iso</code>
+  * Copy the iso file to ISO datastore.
+    * For systems at Interexion, Login to penmsv01<code>sudo rsync -avv pablsv01:/var/www/html/servers/<hostname>.iso /prod/images/bootisos/</code>
+    * For all other systems, Login to pgnmsv01<code>sudo rsync -avv pablsv01:/var/www/html/servers/<hostname>.iso /prod/images/bootisos/</code>
+  * [[unix:vmware-install|VMWare ? Click here ]]
+  * [[unix:standalone-install|Standalone intel server ? Click here ]]

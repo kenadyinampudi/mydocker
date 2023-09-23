@@ -1,0 +1,47 @@
+====== Symmetrix / Clariion Cloning Documentation ======
+
+===== Symmetrix Cloning =====
+
+** Symmetrix VMAX symclone ( nocopy ) **
+
+  * Create the pairing file in this format<code>sourcelun targetlun</code>
+  * Create the symclone session with the nocopy attribute.<code>sudo symclone -sid 0301 -f ta2-stby-all.clone.txt create -nocopy</code>
+  * Activate the symclone session<code>sudo symclone -sid 0301 -f ta2-stby-all.clone.txt activate -consistent</code>
+
+===== Clariion Cloning =====
+
+  * In clariion world, the cloning relations are setup at a per lun basis unless we are mistaken or have no idea what we are doing.
+  * As the DMX, it is possible to perform a consistent split ( fracture in clariion world ) to preserve write order consistency. 
+  * Every LUN can have multiple clone targets, the first clone has a Clone-id value '0100000000000000'
+  * The command to list clones,<code>naviseccli -User <username> -Password <password> -Scope 0' -h <spname> snapview -listclonegroup | egrep "^Name:|^CloneID"
+Name:  AP99_2_clone_1
+CloneID:  0100000000000000
+Name:  AP99_3_clone_1
+CloneID:  0100000000000000</code>
+  * The command to perform a consistent split of the above mentioned clonegroups<code>naviseccli -User <username> -Password <password> -Scope 0' -h <spname> \
+snapview -consistentfractureclones -CloneGroupNameCloneId AP99_2_clone_1 0100000000000000 AP99_3_clone_1 0100000000000000</code>
+
+** Tips **
+
+  * For a regular BCV ( not snapshot ) kind of cloning setup, this is what I think we need.
+    * Create a clone group per lun ( every time we add a disk to the source database, we need to add a clone group ).
+    * We will have a script that will,
+      - Sync the clone groups <code>snapview -syncclone</code>
+      - Loop until all the clone groups are syncd.<code>snapview -listclonegroup</code>
+      - Quiesce the database I/O ( begin backup mode ).
+      - Fracture the clone <code>snapview -consistentfractureclones</code>
+      - Resume the database I/O ( End backup mode ).
+      - Import, fsck and mount the volume groups and filesystems on the backup server.
+      - Backup the filesystems
+
+  * For a one time clone (read production to QA refreshes )
+    * Create a clone group per source lun
+    * We will have a script that will,
+      - Sync the clone groups <code>snapview -syncclone</code>
+      - Loop until all the clone groups are syncd.
+      - Quiesce the database I/O ( begin backup mode ).
+      - Fracture the clone <code>snapview -consistentfractureclones</code>
+      - Resume the database I/O ( End backup mode ).
+      - Destroy the clone groups <code>snapview -destroyclonegroup</code>
+      - Import, fsck and mount the volume groups and filesystems on the QA/non production server.
+      - Recover and rename the database.

@@ -1,0 +1,58 @@
+====== Dell Repository Manager ======
+
+
+Dell provides a way to download firmware to a centralized location for consumption by iDRAC.
+It's the "Dell Repository Manager".
+
+This is a java based app which only runs on demand.
+It's currently installed on CDCPILLX056.
+
+===== To access DRM =====
+
+  * Log into the console for CDCPILLX056 in VMWare.  This is a GUI based application.
+  * Bring up a terminal session
+  * run ''drm'' to start a DRM session.  The app will look like this:
+{{:unix:drm_opening.jpg?400|DRM Opening Screen}}
+
+===== To Update DRM to newest firmware =====
+  * IMPORTANT!  ALWAYS DOWNLOAD THE WINDOWS VERSIONS!  NEVER USE LINUX VERSIONS WITH DRM!
+  * Check the box next to CDC. \\  {{:unix:drm_settings.jpg?400|DRM Settings}}
+  * Click on "Application Preferences" to bring up the settings.
+  * Click "Catalogs" on the left side.
+  * Check all the catalogs to select, then click "Update" button to download the latest versions. \\ {{:unix:drm_catalog.jpg?nolink&400|DRM Catalog Update}}
+
+
+===== To download the firmware to DRM =====
+  * Check the box next to CDC.
+  * Click "Download".
+  * Use ''/opt/dell/drm/store'' as the download location.
+  * Click "Download" to get started.  
+
+===== To make firmware available =====
+
+  * Firmware needs to be exported to someplace the iDRAC can see.
+  * Mount the NFS/CIFS mount to CDCPILLX056 somewhere.
+  * Check the box next to "CDC".
+  * Click "Export" button to begin.
+  * Make sure "CDC" is the selected repository.
+  * Click the "Share" tab.
+  * Type in the location of the mounted filesystem on CDCPILLX056 (like ''/mnt/dell'' or something.) \\ {{:unix:drm_exporting.jpg?400|DRM Export Screen}}
+  * Once you are notified the job is complete, hop back into a command line.
+  * Copy the newly produced xml file to "Catalog.xml" <cli prompt="#">
+cdcpillx056:/opt/dell/fdc_dell # ls
+CDC_1.00_Catalog.xml  
+CDC_1.02_Catalog.xml  
+Catalog.xml   
+cdcpillx056:/opt/dell/fdc_dell # cp CDC_1.02_Catalog.xml Catalog.xml
+cdcpillx056:/opt/dell/fdc_dell #
+</cli>
+
+
+
+===== Updating from iDRAC =====
+  * To select the repository you just made, make note of the NFS location and export share.
+    * In this case, I use "172.16.33.51" with a share name of "dell"
+  * Go to the iDRAC, find the iDRAC firmware update location (different in each version), and select "Network Share" or "NFS" for the update location.
+  * Enter the server IP and the share name, then click "Check for Update".
+    * The dependencies for this working are that the NFS share is reachable from the iDRAC, the catalog is sitting in the root of the share with the name "Catalog.xml" (capital "C"), and only the Windows versions of the updates were downloaded to the DRM.
+  * You should now see updates.  \\ {{:unix:drm_idracsettings.jpg?400|iDrac settings}} \\ {{:unix:drm_idracdone.jpg?400|Firmware updates available}}

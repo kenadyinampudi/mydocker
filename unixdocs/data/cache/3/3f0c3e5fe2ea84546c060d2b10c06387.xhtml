@@ -1,0 +1,128 @@
+
+<h1 class="sectionedit1" id="aix_commands_for_splitting_vouume_group_for_clone">AIX Commands for Splitting Vouume Group for Clone</h1>
+<div class="level1">
+<ol>
+<li class="level1"><div class="li"> Pay ATTENTION here⇒&gt;  On the server you are going to clone (the SOURCE server)  to an lspv <pre class="code"> sudo lspv </pre>
+
+<p>
+ and record the output.  You wlil need this later Don&#039;t loose it. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Determine number of disks required for the volume group you are going to cone and split and submit a ticket to the (at this time Gios Storage Team) requesting the disks you will need and ask they be assigned to the server. If the system you are cloning is a VIOS Client the disks will be assigned to the VIO Server for that client. Make sure you properly assign them to the correct VIOS Client system before you proceed.  </div>
+</li>
+<li class="level1"><div class="li"> Once you have the disks on the server you will be cloning another lapv to document capture the new disks.  <pre class="code"> sudo lapv </pre>
+
+<p>
+ and again record the output. Do Not Loose this You will need it later. 
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Extend the  volume group or groups you are going to clone with the new disks</div>
+</li>
+<li class="level1"><div class="li"> Mirror the volume group to the new disks <pre class="code">sudo mirrorvg -c2 {insert volume group here} {insert list of new disks here} </pre>
+
+<p>
+ you can track it 
+</p>
+<pre class="code">while true
+do
+echo `date`
+ps -aef | grep -v grep | grep mirror
+ps -aef | grep -v grep | grep lresynclv -l
+echo &quot;&quot;
+sleep 60
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> When mirror has cuccessfully completed spit the vilume group <pre class="code">sudo splitvg -y {newvg} -c2 -i {original vg}</pre>
+
+<p>
+ example: sudo splitvg -y datavg02 -c2 -i datavg01
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Unmount the file systems from the cloned {newvg} volume group, in the example it would be datavg02<pre class="code"> for FS in `lsvgfs $VG | sort -r`
+do
+sudo umount $FS
+wait
+done</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Varyoff the vouimme group(s) <pre class="code">sudo varyoffvg datavg02</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Export the volume group <pre class="code"> sudo exportvg datavg02 </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Give list of PVIDs from the added disks you caputed in step 3 above to GIOS Storage Member so they can “remove” them form the source server and assign them to the destination server.</div>
+</li>
+</ol>
+
+<p>
+The Followint are done on the TARGET /destination  server
+</p>
+<ol>
+<li class="level1"><div class="li"> Do lspv and caprure output <pre class="code"> sudo lapv </pre>
+
+<p>
+  This captured all existing disks. Save this you will need it later
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Run cfvmgr -v to bring disks onto server <pre class="code"> sudo cfgmgr -v</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Rrun lspv and caprute to record all new disks <pre class="code"> lspv </pre>
+
+<p>
+  This caprutes an disks including disks just imported via cgfmgr.  Save this you will need it later
+</p>
+</div>
+</li>
+<li class="level1"><div class="li"> Change Round -Robin and Reserver Lock Ploicies <pre class="code"> sudo chdev -l hdisk15 -a algorithm=round_robin -a rese rve_policy=no_reserve </pre>
+<pre class="code"> sudo chdev -l hdisk15 -a algorithm=round_robin -a rese rve_policy=no_reserve </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Import the volume goups using pvids captured above pvids<pre class="code">mportvg -y binvg01 00f81260b60c614e</pre>
+<pre class="code"> importvg -y datavg01 00f81260b60d0e9</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Run FSCK on each newly imported file systems  #&lt;&gt;# DO NOT PANIC The errors are expected #&lt;&gt;# <pre class="code"> for fs in $(lsvgfs binvg01)
+     do
+     sudo fsck -y $fs &amp;
+     done </pre>
+</div>
+</li>
+<li class="level1"><div class="li"> Remove the ”/fs” that is placed in front of file system names by the splitvg command, make directories, and mount <pre class="code"> for fs in $(lsvgfs binvg01 |sort )
+     do
+        newfs=$(echo ${fs} | sed &quot;s;/fs;;g&quot;)
+        sudo chfs -m $newfs $fs
+        sudo mkdir -p $newfs
+        sudo mount $newfs
+     done </pre>
+<pre class="code"> df -g</pre>
+</div>
+</li>
+<li class="level1"><div class="li"> and mount</div>
+</li>
+</ol>
+<pre class="code"> for fs in $(lsvgfs datavg01 |sort )    
+     do
+        newfs=$(echo ${fs} | sed &quot;s;/fs;;g&quot;)
+        sudo chfs -m $newfs $fs
+        sudo mkdir -p $newfs
+        sudo mount $newfs
+     done </pre>
+<ol>
+<li class="level1"><div class="li"> Create any additional file systems as required #&lt;&gt;# Hint use /usr/local/scripts/filesystems.txt all the code and sizes are in there #&lt;&gt;#</div>
+</li>
+<li class="level1"><div class="li"> Copy file systems from source server to this destinaton.  #&lt;&gt;# Remember t0 use the “x” and always rember to put in the trailing /                 </div>
+</li>
+</ol>
+
+<p>
+      sudo rsync -axvv /usr/sap/put/  sehrdb01:/usr/sap/put/
+</p>
+
+</div>

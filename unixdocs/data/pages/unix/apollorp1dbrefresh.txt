@@ -1,0 +1,25 @@
+====== RP1 DB refresh documentation ======
+
+^Source System  ^Source DC ^Target System  ^Target DC|
+|sfldmiax153    |CDC/MPPS   |acdcrp1axdb01|CDC/MPPS|
+
+  - Get a latest copy of PVIDs from the source server and copy to the target system.
+    - Login to one of the jump servers ''pcdcunxaxap01''<code>ssh sfldmiax153 "lspv | grep -e appvg -e sapvg1 -e sapvg2 -e sapvg3 -e sapvg4 -e sapvg5" > RP1.pvids
+scp RP1.pvids acdcrp1axdb01:</code>
+  - Login to the target server and perform the rest of the work<code>ssh acdcrp1axdb01</code>
+    - Discover the new disks<code>sudo cfgmgr</code>
+    - Import VGs and mount filesystems<code>for vg in appvg sapvg1 sapvg2 sapvg3 sapvg4 sapvg5
+do
+   echo "Working on ${vg} "
+   grep -w ${vg} RP1.pvids | awk '{print $2 }' > ${vg}.pvids
+   disks=$(lspv | grep -wf ${vg}.pvids | awk '{print $1}' | tr "\n" " ")
+   sudo recreatevg -Y/ -L/ -y ${vg} ${disks}
+   for fs in $(lsvgfs ${vg} | sort )
+   do
+      echo "$(date) :: Working on ${vg} -- ${fs} fsck and mount in progress"
+      sudo fsck -y ${fs}
+      sudo mkdir -p ${fs}
+      sudo mount ${fs}
+   done      
+done</code>
+  - Make sure CI filesystems are NFS exported and mounted on ''acdcrp1lxap01''

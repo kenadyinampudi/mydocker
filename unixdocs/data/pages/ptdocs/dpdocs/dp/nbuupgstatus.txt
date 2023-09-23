@@ -1,0 +1,9 @@
+Here is described how to check the NBU app upgrade status - valid for 7.7.x upgrades...
+Please login NBU console via ipmi interface. Once being there elevate to regular shell and run this command: ls -lart /log/patch_* ie<code>
+ermnbu5230ams:/home/maintenance # ls -lart /log/patch_*
+-rw------- 1 root root   3089 Feb  3 12:35 /log/patch_output_2.7.3_020317122431
+-rw------- 1 root root 136922 Feb  3 12:36 /log/patch_log_2.7.3_020317122431
+</code>Then do the tail on each file to see actual installation progress<code>
+tail -f /log/patch_output_2.7.3_020317122431 /log/patch_log_2.7.3_020317122431</code> or if someone is lazy<code>
+tail -f /log/patch_*</code>
+of course the file names will be changed. Once NBU will be rebooted again you need to login, elevate etc...

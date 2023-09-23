@@ -1,0 +1,40 @@
+====== RedHat Builds ======
+
+As of 4/1/2019, there is no "standard build."  The builds are basic installs from DVD.
+
+Current build procedure:
+  - Install the OS (RHEL 7.5)
+  - Needed packages
+    * nfs-utils.x86_64
+    * autofs
+  - Enable autofs
+  - <code> systemctl enable --now autofs</code>
+  - Add the /etc/auto.misc file to allow the remote repository to be mounted as needed.
+  - <code>
+#
+# This is an automounter map and it has the following format
+# key [ -mount-options-separated-by-comma ] location
+# Details may be found in the autofs(5) manpage
+
+cd              -fstype=iso9660,ro,nosuid,nodev :/dev/cdrom
+
+# the following entries are samples to pique your imagination
+#linux          -ro,soft,intr           ftp.example.org:/pub/linux
+#boot           -fstype=ext2            :/dev/hda1
+#floppy         -fstype=auto            :/dev/fd0
+#floppy         -fstype=ext2            :/dev/fd0
+#e2floppy       -fstype=ext2            :/dev/fd0
+#jaz            -fstype=ext2            :/dev/sdc1
+#removable      -fstype=ext2            :/dev/hdd
+rhel7.5         -ro,soft,intr           cdcpillx056.federalmogul.com:/apps/remoteinstall/OS/rhel7.5
+</code>
+  - Add the "local" repository in /etc/yum.repos.d/local.repo
+    - <code>[LocalRepo]
+name=LocalRepository
+baseurl=file:///misc/rhel7.5
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+</code>
+  - Test out the new config by making the cache.
+    - <code>yum makecache</code>
